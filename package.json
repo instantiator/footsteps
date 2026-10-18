@@ -43,8 +43,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-mustache-template-component": "^2.1.6",
-    "react-router": "^8.4.0",
-    "uuid": "^14.0.3"
+    "react-router": "^8.4.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

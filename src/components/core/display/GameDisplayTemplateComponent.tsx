@@ -63,7 +63,7 @@ export default function GameDisplayTemplateComponent({
 
   return (
     <div
-      id={summariseTemplateSource(templateSource)}
+      id={summariseTemplateSource(templateSource, uid)}
       key={`template-${uid}`}
       style={{ width: "100%", height: "100%", ...containerStyleParsed }}
     >
