@@ -81,7 +81,7 @@ The site is fully static: no server runs at any point after the build. React Rou
 - makes the SPA fallback `404.html`, which Pages serves for any path without a page of its own, so client-side routing can handle it;
 - under a base path, moves the pages to where Pages serves them (React Router writes them one folder too deep).
 
-`.github/workflows/deploy-pages.yaml` runs the tests, builds with `build:gh-pages`, and deploys `dist/client/` to GitHub Pages on every push to `main`.
+Deploys only follow a passing quality gate. On a push to `main` (or a manual run of the "Quality gate" workflow on `main`), `.github/workflows/check.yaml` runs the gate, then calls `.github/workflows/deploy-pages.yaml`, which builds with `build:gh-pages` and deploys `dist/client/` to GitHub Pages. The deploy workflow has no trigger of its own. Deploys run one at a time, and a deploy that has started is never cancelled.
 
 ### Base path
 
