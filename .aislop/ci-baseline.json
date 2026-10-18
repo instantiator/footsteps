@@ -343,13 +343,6 @@
       "file": "src/providers/GameRepositoryProvider.tsx",
       "fingerprint": "07e37e31d3fdadcf",
       "count": 1
-    },
-    {
-      "rule": "ai-slop/ts-directive",
-      "engine": "ai-slop",
-      "file": "vite.config.ts",
-      "fingerprint": "b71bda11c746224f",
-      "count": 1
     }
   ]
 }

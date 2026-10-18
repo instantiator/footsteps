@@ -5,3 +5,4 @@ public/games/
 src/assets/license-report.json
 package-lock.json
 public/schemas/
+.react-router/

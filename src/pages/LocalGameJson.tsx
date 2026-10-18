@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams } from "react-router";
 import GameJson from "../components/debug/GameJson";
 import type { GameId } from "../entities/data/GameData";
 import FeatureFlagsProvider from "../providers/FeatureFlagsProvider";
@@ -6,7 +6,7 @@ import { GameDataProvider } from "../providers/GameDataProvider";
 import GameRepositoryProvider from "../providers/GameRepositoryProvider";
 import GameStateProvider from "../providers/GameStateProvider";
 
-export function Component() {
+export default function LocalGameJson() {
   const { id } = useParams();
 
   return (

@@ -7,7 +7,7 @@ import tseslint from "typescript-eslint";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 
 export default defineConfig([
-  globalIgnores(["dist", "dev-qual"]),
+  globalIgnores(["dist", "dev-qual", ".react-router"]),
   {
     files: ["**/*.{ts,tsx}"],
     extends: [

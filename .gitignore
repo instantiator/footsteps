@@ -25,5 +25,9 @@ dist-ssr
 # vite-y things
 .vite-*-temp
 
-# aislop rewrites this on every scan
+# aislop rewrites these on every scan / hook run
 .aislop/baseline.json
+.aislop/session.jsonl
+
+# React Router generated route types
+.react-router/
