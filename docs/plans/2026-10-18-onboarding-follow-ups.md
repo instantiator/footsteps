@@ -32,7 +32,7 @@ These are follow-ups agreed with the user after the [onboarding plan](2026-10-18
 - [x] 3: Add a pull-request CI check
 - [x] 4: Keyboard access to click targets and the title screen
 - [x] 5: Replace uuid with useId()
-- [ ] 6: Remove the Vite README boilerplate
+- [x] 6: Remove the Vite README boilerplate
 - [ ] 7: Note the installer bug in dev-qual (no commit in this repo's history beyond ticking this)
 - [ ] 8: Wrap-up: comprehensive check, docs review, outstanding issues
 
