@@ -19,7 +19,7 @@ Our setup uses three main configuration files to make Prettier and ESLint work t
 
 This file defines our code style rules. It is the single source of truth for all formatting options.
 
-**`footsteps/.prettierrc.json`:**
+**`.prettierrc.json`:**
 
 ```json
 {
@@ -37,7 +37,7 @@ This file defines our code style rules. It is the single source of truth for all
 
 ESLint is configured for code quality, but we also integrate Prettier into its workflow. This allows us to see formatting issues as linting warnings and fix them automatically.
 
-**`footsteps/eslint.config.js`:**
+**`eslint.config.js`:**
 
 ```javascript
 import js from "@eslint/js";
@@ -143,5 +143,5 @@ Setting this up involved solving a few tricky problems.
 
 ## How to Modify the Configuration
 
-- **To change a formatting rule (e.g., line width, quotes):** Modify the `footsteps/.prettierrc.json` file. This is the single source of truth for all style options.
-- **To change an ESLint code-quality rule:** Modify the `rules` object in `footsteps/eslint.config.js`.
+- **To change a formatting rule (e.g., line width, quotes):** Modify the `.prettierrc.json` file. This is the single source of truth for all style options.
+- **To change an ESLint code-quality rule:** Modify the `rules` object in `eslint.config.js`.

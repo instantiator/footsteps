@@ -1,0 +1,7 @@
+# Other repos, generated output, and vendored game assets: not ours to format
+dev-qual/
+dist/
+public/games/
+src/assets/license-report.json
+package-lock.json
+public/schemas/

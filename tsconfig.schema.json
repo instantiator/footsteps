@@ -8,7 +8,5 @@
     "jsx": "react-jsx",
     "strict": true
   },
-  "include": [
-    "src/entities/*.ts"
-  ]
+  "include": ["src/entities/*.ts"]
 }

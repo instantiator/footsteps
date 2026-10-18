@@ -14,8 +14,12 @@
     "prepreview": "sh pre-build.sh",
     "preview": "vite preview",
     "pretest": "sh pre-build.sh",
-    "test": "vitest",
-    "test:run": "sh run-tests.sh"
+    "test": "vitest run",
+    "test:run": "sh run-tests.sh",
+    "lint:check": "eslint . --max-warnings 0",
+    "typecheck": "tsc -b",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

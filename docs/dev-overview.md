@@ -27,8 +27,8 @@ Launch footsteps locally with `npm run dev`
 
 All games in the local repository at `public/game-repository.json` are pre-built and made available at their own url.
 
-| Game           | Game URL                                | Game data URL                                |
-| -------------- | --------------------------------------- | -------------------------------------------- |
+| Game           | Game URL                                  | Game data URL                                  |
+| -------------- | ----------------------------------------- | ---------------------------------------------- |
 | `test-game`    | <http://localhost:5173/game/test-game>    | <http://localhost:5173/game/test-game/json>    |
 | `magic-trifle` | <http://localhost:5173/game/magic-trifle> | <http://localhost:5173/game/magic-trifle/json> |
 

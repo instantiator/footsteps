@@ -7,7 +7,7 @@ import tseslint from "typescript-eslint";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 
 export default defineConfig([
-  globalIgnores(["dist"]),
+  globalIgnores(["dist", "dev-qual"]),
   {
     files: ["**/*.{ts,tsx}"],
     extends: [

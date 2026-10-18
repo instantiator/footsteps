@@ -1,0 +1,6 @@
+# Ratchet: ci fails only on findings not in the baseline, or a score below
+# failBelow. Prune the baseline (aislop baseline prune) and raise failBelow
+# after each clean-up stage of docs/plans/2026-10-18-dev-qual-onboarding.md.
+ci:
+  failBelow: 65
+  baseline: .aislop/ci-baseline.json

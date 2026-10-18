@@ -5,4 +5,4 @@ set -o pipefail
 
 ./validate-repository.sh public/game-repository.json
 
-npx --yes vitest run
+npx --no-install vitest run

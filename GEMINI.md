@@ -1,6 +1,6 @@
 # Context
 
-The core of this project is a game engine called `footsteps`. It's a vite/react/ts application, found inside the `footsteps/` directory.
+The core of this project is a game engine called `footsteps`. It's a vite/react/ts application, at the root of this repository.
 
 ## Invocations
 
@@ -22,8 +22,8 @@ Launch footsteps locally with `npm run dev`
 
 All games are in the local repository at `public/game-repository.json` should be available at their own url.
 
-| Game           | Game URL                                | Game data URL                                |
-| -------------- | --------------------------------------- | -------------------------------------------- |
+| Game           | Game URL                                  | Game data URL                                  |
+| -------------- | ----------------------------------------- | ---------------------------------------------- |
 | `test-game`    | <http://localhost:5173/game/test-game>    | <http://localhost:5173/game/test-game/json>    |
 | `magic-trifle` | <http://localhost:5173/game/magic-trifle> | <http://localhost:5173/game/magic-trifle/json> |
 

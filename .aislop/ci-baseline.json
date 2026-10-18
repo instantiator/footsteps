@@ -1,0 +1,530 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:01ec7201c0f35908",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:07f7b147c6964395",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:435cda25ddf1e73e",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:524acf1bb11fe061",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:548876047a693475",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:577f61892e591158",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:5ab0c5cfa31a4a3c",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:5ff1456399fe44f8",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:60046669ba01c941",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:67587950970161e1",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:68f76d89bc11fbc1",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:8bcff5ed31b7f88b",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:8d02973735af80ea",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:95a97b56adc94172",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:9fbdeea21102a3ca",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:a0c4faa3ed52a795",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:a0e6478a99342cd3",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:a77762e3e78e3772",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:b19ec534e0424895",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:c008adc3602c8c19",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:c49fa9a029f13d0a",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:c92ebe8f571931ca",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:d56722280229eaa4",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:d60e6f3e90b90cc3",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:d693f6673ee6ef21",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:e3ec5ca4505755f1",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:e96d8552a1904640",
+      "count": 1
+    },
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:efd2a0bc4f06ad67",
+      "count": 1
+    },
+    {
+      "rule": "jsx-a11y/media-has-caption",
+      "engine": "lint",
+      "file": "src/components/camera/CharacterCamera.tsx",
+      "fingerprint": "bf08b1fd50c3281d",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/console-leftover",
+      "engine": "ai-slop",
+      "file": "src/components/camera/CharacterCanvas.tsx",
+      "fingerprint": "2d0ea5a89b2f73a7",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/console-leftover",
+      "engine": "ai-slop",
+      "file": "src/components/camera/CharacterCanvas.tsx",
+      "fingerprint": "8449d2f82f90be45",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/todo-stub",
+      "engine": "ai-slop",
+      "file": "src/components/camera/CharacterCanvas.tsx",
+      "fingerprint": "ebae03d2a637728f",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/trivial-comment",
+      "engine": "ai-slop",
+      "file": "src/components/camera/CharacterCanvas.tsx",
+      "fingerprint": "0c1f04836aae0039",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/trivial-comment",
+      "engine": "ai-slop",
+      "file": "src/components/camera/CharacterCanvas.tsx",
+      "fingerprint": "0efbdde72a57bc92",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/trivial-comment",
+      "engine": "ai-slop",
+      "file": "src/components/camera/CharacterCanvas.tsx",
+      "fingerprint": "3f1019f632296621",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/trivial-comment",
+      "engine": "ai-slop",
+      "file": "src/components/camera/CharacterCanvas.tsx",
+      "fingerprint": "447514d2246a7ede",
+      "count": 1
+    },
+    {
+      "rule": "jsx-a11y/alt-text",
+      "engine": "lint",
+      "file": "src/components/core/display/GameAudioComponent.tsx",
+      "fingerprint": "5afaa5c6f0525319",
+      "count": 1
+    },
+    {
+      "rule": "jsx-a11y/click-events-have-key-events",
+      "engine": "lint",
+      "file": "src/components/core/display/GameAudioComponent.tsx",
+      "fingerprint": "5afaa5c6f0525319",
+      "count": 2
+    },
+    {
+      "rule": "jsx-a11y/media-has-caption",
+      "engine": "lint",
+      "file": "src/components/core/display/GameAudioComponent.tsx",
+      "fingerprint": "fef479a0af38ffa4",
+      "count": 1
+    },
+    {
+      "rule": "jsx-a11y/no-noninteractive-element-interactions",
+      "engine": "lint",
+      "file": "src/components/core/display/GameAudioComponent.tsx",
+      "fingerprint": "5afaa5c6f0525319",
+      "count": 2
+    },
+    {
+      "rule": "jsx-a11y/click-events-have-key-events",
+      "engine": "lint",
+      "file": "src/components/core/display/GameDisplayScrollComponent.tsx",
+      "fingerprint": "36923bd4b13bffaf",
+      "count": 1
+    },
+    {
+      "rule": "jsx-a11y/click-events-have-key-events",
+      "engine": "lint",
+      "file": "src/components/core/display/GameDisplayScrollComponent.tsx",
+      "fingerprint": "cb0a9c35f5876f08",
+      "count": 1
+    },
+    {
+      "rule": "jsx-a11y/no-static-element-interactions",
+      "engine": "lint",
+      "file": "src/components/core/display/GameDisplayScrollComponent.tsx",
+      "fingerprint": "36923bd4b13bffaf",
+      "count": 1
+    },
+    {
+      "rule": "jsx-a11y/no-static-element-interactions",
+      "engine": "lint",
+      "file": "src/components/core/display/GameDisplayScrollComponent.tsx",
+      "fingerprint": "cb0a9c35f5876f08",
+      "count": 1
+    },
+    {
+      "rule": "react/set-state-in-effect",
+      "engine": "lint",
+      "file": "src/components/core/display/GameDisplayScrollComponent.tsx",
+      "fingerprint": "017dfe544d788ad6",
+      "count": 1
+    },
+    {
+      "rule": "react/set-state-in-effect",
+      "engine": "lint",
+      "file": "src/components/core/display/GameDisplayScrollComponent.tsx",
+      "fingerprint": "fb14e9723c37967a",
+      "count": 1
+    },
+    {
+      "rule": "react/set-state-in-effect",
+      "engine": "lint",
+      "file": "src/components/core/display/GameDisplayTemplateComponent.tsx",
+      "fingerprint": "931ad1c2d4c01c0f",
+      "count": 1
+    },
+    {
+      "rule": "react/set-state-in-effect",
+      "engine": "lint",
+      "file": "src/components/core/display/GameTextInputComponent.tsx",
+      "fingerprint": "bb346aa028aff7c3",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/console-leftover",
+      "engine": "ai-slop",
+      "file": "src/components/core/Game.tsx",
+      "fingerprint": "7d8443c082cf2138",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/console-leftover",
+      "engine": "ai-slop",
+      "file": "src/components/core/Game.tsx",
+      "fingerprint": "bd4efc17432561ab",
+      "count": 1
+    },
+    {
+      "rule": "react/set-state-in-effect",
+      "engine": "lint",
+      "file": "src/components/core/Game.tsx",
+      "fingerprint": "189d5587a332257a",
+      "count": 1
+    },
+    {
+      "rule": "react/set-state-in-effect",
+      "engine": "lint",
+      "file": "src/components/core/Game.tsx",
+      "fingerprint": "1bd161749ff26c68",
+      "count": 1
+    },
+    {
+      "rule": "react/set-state-in-effect",
+      "engine": "lint",
+      "file": "src/components/core/Game.tsx",
+      "fingerprint": "9255eef3f50fbeb8",
+      "count": 1
+    },
+    {
+      "rule": "react/set-state-in-effect",
+      "engine": "lint",
+      "file": "src/components/core/Game.tsx",
+      "fingerprint": "dccf9a7176241a27",
+      "count": 1
+    },
+    {
+      "rule": "react/set-state-in-effect",
+      "engine": "lint",
+      "file": "src/components/core/HeadsUpDisplay.tsx",
+      "fingerprint": "d03ddfa253dd3e92",
+      "count": 1
+    },
+    {
+      "rule": "jsx-a11y/click-events-have-key-events",
+      "engine": "lint",
+      "file": "src/components/core/layout/GameLayerWrappers.tsx",
+      "fingerprint": "d70b8e28e0ce8716",
+      "count": 2
+    },
+    {
+      "rule": "jsx-a11y/no-static-element-interactions",
+      "engine": "lint",
+      "file": "src/components/core/layout/GameLayerWrappers.tsx",
+      "fingerprint": "d70b8e28e0ce8716",
+      "count": 2
+    },
+    {
+      "rule": "ai-slop/ts-directive",
+      "engine": "ai-slop",
+      "file": "src/components/core/logic/GameClickUtils.ts",
+      "fingerprint": "8f4ebfe70ddf5c02",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/console-leftover",
+      "engine": "ai-slop",
+      "file": "src/components/core/logic/GameStateUtils.ts",
+      "fingerprint": "4d8e6590c552b9c5",
+      "count": 1
+    },
+    {
+      "rule": "complexity/function-too-long",
+      "engine": "code-quality",
+      "file": "src/components/core/logic/GameStateUtils.ts",
+      "fingerprint": "59c41ad29b434b15",
+      "count": 1
+    },
+    {
+      "rule": "react/set-state-in-effect",
+      "engine": "lint",
+      "file": "src/providers/FeatureFlagsProvider.tsx",
+      "fingerprint": "2a44e11a8d5a1b81",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/console-leftover",
+      "engine": "ai-slop",
+      "file": "src/providers/GameContentCacheHook.tsx",
+      "fingerprint": "573d48a7791e29cd",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/console-leftover",
+      "engine": "ai-slop",
+      "file": "src/providers/GameContentCacheHook.tsx",
+      "fingerprint": "5780af90e98e442f",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/console-leftover",
+      "engine": "ai-slop",
+      "file": "src/providers/GameContentCacheHook.tsx",
+      "fingerprint": "7f8773dd9ee9c97e",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/console-leftover",
+      "engine": "ai-slop",
+      "file": "src/providers/GameContentCacheHook.tsx",
+      "fingerprint": "b33eb704ab72877b",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/console-leftover",
+      "engine": "ai-slop",
+      "file": "src/providers/GameContentCacheHook.tsx",
+      "fingerprint": "e9ead9220ba33e76",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/console-leftover",
+      "engine": "ai-slop",
+      "file": "src/providers/GameDataProvider.tsx",
+      "fingerprint": "35432de4061d58a2",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/console-leftover",
+      "engine": "ai-slop",
+      "file": "src/providers/GameDataProvider.tsx",
+      "fingerprint": "79b3c4cd37d3f48b",
+      "count": 1
+    },
+    {
+      "rule": "complexity/deep-nesting",
+      "engine": "code-quality",
+      "file": "src/providers/GameDataProvider.tsx",
+      "fingerprint": "9fd2df586967cb32",
+      "count": 1
+    },
+    {
+      "rule": "react/set-state-in-effect",
+      "engine": "lint",
+      "file": "src/providers/GameDataProvider.tsx",
+      "fingerprint": "d3530cac649edd71",
+      "count": 1
+    },
+    {
+      "rule": "react/set-state-in-effect",
+      "engine": "lint",
+      "file": "src/providers/GameDataProvider.tsx",
+      "fingerprint": "dd493f183f4cfe47",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/console-leftover",
+      "engine": "ai-slop",
+      "file": "src/providers/GameRepositoryProvider.tsx",
+      "fingerprint": "35a9d4d4ded4df46",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/console-leftover",
+      "engine": "ai-slop",
+      "file": "src/providers/GameRepositoryProvider.tsx",
+      "fingerprint": "e2b768228080867f",
+      "count": 1
+    },
+    {
+      "rule": "react/set-state-in-effect",
+      "engine": "lint",
+      "file": "src/providers/GameRepositoryProvider.tsx",
+      "fingerprint": "07e37e31d3fdadcf",
+      "count": 1
+    },
+    {
+      "rule": "ai-slop/ts-directive",
+      "engine": "ai-slop",
+      "file": "vite.config.ts",
+      "fingerprint": "b71bda11c746224f",
+      "count": 1
+    }
+  ]
+}
