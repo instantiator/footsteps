@@ -36,6 +36,7 @@
     "@types/lodash": "^4.17.21",
     "@types/mustache": "^4.2.6",
     "@uidotdev/usehooks": "^2.4.1",
+    "isbot": "^5",
     "lodash": "^4.17.21",
     "mustache": "^4.2.0",
     "partycles": "^1.2.6",
@@ -43,8 +44,7 @@
     "react-dom": "^19.2.0",
     "react-mustache-template-component": "^2.1.6",
     "react-router": "^8.4.0",
-    "uuid": "^13.0.0",
-    "isbot": "^5"
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -66,11 +66,10 @@
     "prettier": "^3.6.2",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4",
+    "vite": "^8.3.4",
     "vitest": "^4.0.13"
   },
   "allowScripts": {
-    "esbuild": true,
     "msw": true,
     "core-js": false,
     "fsevents": false
