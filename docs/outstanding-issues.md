@@ -19,3 +19,9 @@ Deferred work, each with the condition that says when to act on it.
 The only workflow is `deploy-pages.yaml`, which runs tests and the build on pushes to `main`. Nothing runs `check.sh` on pull requests, so the git hooks are the only gate before merge.
 
 **Act when:** the repository takes pull requests from anyone other than the owner, or a change reaches `main` that `check.sh` would have failed. Use the `ci-setup` skill.
+
+## TypeScript 7 upgrade blocked by typescript-eslint
+
+TypeScript 7.0.2 is the latest release, but typescript-eslint 8.71.2 (latest) accepts `typescript >=4.8.4 <6.1.0`, so the project is on TypeScript 6.0.3.
+
+**Act when:** `npm view typescript-eslint peerDependencies.typescript` accepts 7.x. Then bump `typescript` and run `dev-qual/scripts/check.sh` with a clean cache (`rm -rf node_modules/.tmp`).
