@@ -22,17 +22,17 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 
 ## Invocations
 
-| Command                  | Does                                                                     |
-| ------------------------ | ------------------------------------------------------------------------ |
-| `npm run dev`            | Dev server on <http://localhost:5173>                                    |
-| `npm run build`          | Typecheck, then prerender every page to `dist/client/`                   |
-| `npm run build:gh-pages` | As `build`, with the `/2025-xmas-game/` base path GitHub Pages serves at |
-| `npm run preview`        | Serve `dist/client/` locally                                             |
-| `npm test`               | Run the tests once                                                       |
-| `npm run test:run`       | Validate `public/game-repository.json`, then run the tests               |
-| `npm run lint:check`     | ESLint, failing on any warning                                           |
-| `npm run typecheck`      | TypeScript, no output                                                    |
-| `npm run format`         | Prettier, rewriting files (`format:check` only reports)                  |
+| Command                  | Does                                                                                                                  |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`            | Dev server on <http://localhost:5173>                                                                                 |
+| `npm run build`          | Typecheck, then prerender every page to a static site in `dist/client/`                                               |
+| `npm run build:gh-pages` | As `build`, for GitHub Pages: with the `/2025-xmas-game/` base path, and a `404.html` fallback for client-side routes |
+| `npm run preview`        | Serve `dist/client/` locally                                                                                          |
+| `npm test`               | Run the tests once                                                                                                    |
+| `npm run test:run`       | Validate `public/game-repository.json`, then run the tests                                                            |
+| `npm run lint:check`     | ESLint, failing on any warning                                                                                        |
+| `npm run typecheck`      | TypeScript, no output                                                                                                 |
+| `npm run format`         | Prettier, rewriting files (`format:check` only reports)                                                               |
 
 `dev`, `build`, `lint`, `preview`, and `test` first run `pre-build.sh`, which regenerates `src/assets/license-report.json` and the JSON schemas.
 
@@ -74,5 +74,7 @@ Overview templates make elements clickable by giving them an `id` that the displ
 ```
 
 ## GitHub Pages
+
+The site is fully static: no server runs at any point after the build. React Router renders the pages in Node during the build, then `finish-static-build.sh` deletes that build-time renderer (`dist/server/`). For a base path, it also moves the pages to where GitHub Pages serves them, and makes the SPA fallback `404.html`, which Pages serves for any other path.
 
 `.github/workflows/deploy-pages.yaml` runs the tests, builds with `build:gh-pages`, and deploys `dist/client/` to GitHub Pages on every push to `main`.

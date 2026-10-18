@@ -26,7 +26,7 @@ Option 2. We use React Router (v8) in framework mode with server rendering turne
 - The router advisories are fixed, and vite-react-ssg is gone, so one fewer dependency has to keep pace with React Router and vite.
 - Routes are declared in a route config file rather than an array passed to a plugin. Each page is a "route module" (a file whose default export is the page component).
 - The HTML shell (head tags, fonts, root element) moves from `index.html` into a root route component.
-- Build and dev commands become `react-router build` and `react-router dev`, and the static output goes to `dist/client`, so the deploy workflow points there.
+- Build and dev commands become `react-router build` and `react-router dev`, and the static output goes to `dist/client`, so the deploy workflow points there. React Router's output needs one post-build step (`finish-static-build.sh`): it deletes the build-time renderer in `dist/server/`, and for the GitHub Pages base path it moves the prerendered pages up a level and makes the SPA fallback `404.html`. Without that step, direct links to game pages return 404 on Pages.
 - Harder: the app now follows React Router's framework conventions, so future router major versions may bring framework-level migration steps, not just API changes.
 - New games still need no route changes. The prerender list is read from `public/game-repository.json`, as before.
 
