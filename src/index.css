@@ -1,0 +1,25 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: "DynaPuff", Avenir, Helvetica, Arial, sans-serif;
+  line-height: 140%;
+  font-size: 3vh;
+}
+div {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* A button that looks like its content: for clickable icons and images */
+.plain-button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}

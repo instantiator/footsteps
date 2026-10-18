@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "rule": "security/vulnerable-dependency",
+      "engine": "security",
+      "file": "package.json",
+      "fingerprint": "message:c92ebe8f571931ca",
+      "count": 1
+    },
+    {
+      "rule": "jsx-a11y/media-has-caption",
+      "engine": "lint",
+      "file": "src/components/camera/CharacterCamera.tsx",
+      "fingerprint": "bf08b1fd50c3281d",
+      "count": 1
+    },
+    {
+      "rule": "react/set-state-in-effect",
+      "engine": "lint",
+      "file": "src/components/camera/CharacterCanvas.tsx",
+      "fingerprint": "39b7c53760753683",
+      "count": 1
+    },
+    {
+      "rule": "jsx-a11y/media-has-caption",
+      "engine": "lint",
+      "file": "src/components/core/display/GameAudioComponent.tsx",
+      "fingerprint": "fef479a0af38ffa4",
+      "count": 1
+    },
+    {
+      "rule": "jsx-a11y/click-events-have-key-events",
+      "engine": "lint",
+      "file": "src/components/core/layout/GameLayerWrappers.tsx",
+      "fingerprint": "d70b8e28e0ce8716",
+      "count": 2
+    },
+    {
+      "rule": "jsx-a11y/no-static-element-interactions",
+      "engine": "lint",
+      "file": "src/components/core/layout/GameLayerWrappers.tsx",
+      "fingerprint": "d70b8e28e0ce8716",
+      "count": 2
+    }
+  ]
+}

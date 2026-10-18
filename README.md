@@ -1,9 +1,12 @@
 # Christmas Game 2025
 
-This game is built around `footsteps` - a puzzle-game building system.
+This game is built on Footsteps, a puzzle game engine and interface (a Vite + React + TypeScript app).
 
-Footsteps is in the `footsteps/` directory. See the [README](footsteps/README.md) there for more information.
+- [Developer overview](docs/dev-overview.md): running locally, schemas, and validating game data.
+- [Code formatting](docs/code-formatting.md): Prettier and ESLint setup.
 
 ## Deployment to GitHub Pages
 
-There is a GitHub Actions workflow that will build the application statically and deploy it to GitHub Pages. You'll need to enable GitHub Pages in your repository.
+On every push to `main`, GitHub Actions runs the quality gate and, only if it passes, builds the application statically and deploys it to GitHub Pages. To use it, enable GitHub Pages in the repository settings, with **GitHub Actions** as the source.
+
+The site's base path (`/<repo-name>/`, or `/` on a custom domain) is read from the Pages settings at deploy time, so renaming the repository or adding a custom domain needs no code changes. See [GitHub Pages](docs/dev-overview.md#github-pages) in the developer overview.

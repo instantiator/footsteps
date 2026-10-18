@@ -1,0 +1,6 @@
+# ci fails on any finding not in the baseline, or a score below failBelow.
+# The baseline holds only the accepted sprintf-js advisory (see
+# docs/outstanding-issues.md); prune it with `aislop baseline prune` once fixed.
+ci:
+  failBelow: 98
+  baseline: .aislop/ci-baseline.json
