@@ -35,57 +35,19 @@ This file defines our code style rules. It is the single source of truth for all
 
 ### 2. ESLint (`eslint.config.js`)
 
-ESLint is configured for code quality, but we also integrate Prettier into its workflow. This allows us to see formatting issues as linting warnings and fix them automatically.
+ESLint checks code quality, with Prettier wired in so formatting problems show up as lint warnings. In order, the config:
 
-**`eslint.config.js`:**
+- ignores `dist/`, the `dev-qual/` submodule, and React Router's generated `.react-router/` types;
+- applies the recommended rules from `@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`, and `eslint-plugin-react-refresh` to `.ts`/`.tsx` files;
+- turns off `@typescript-eslint/indent`, which conflicts with Prettier (see Problem 1 below);
+- adds `eslint-plugin-prettier/recommended`, which disables ESLint's stylistic rules and reports Prettier differences as `prettier/prettier` warnings;
+- spreads **dev-qual's baseline last**, so nothing can weaken it: no `any`, strict equality, no empty `catch`, and limits on complexity (10), nesting depth (4), parameters (4), and function length (60 lines, except in tests).
 
-```javascript
-import js from "@eslint/js";
-import reactHooks from "eslint-plugin-react-hooks";
-import reactRefresh from "eslint-plugin-react-refresh";
-import { defineConfig, globalIgnores } from "eslint/config";
-import globals from "globals";
-import tseslint from "typescript-eslint";
-import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
-
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      js.configs.recommended,
-      tseslint.configs.recommended,
-      reactHooks.configs.flat.recommended,
-      reactRefresh.configs.vite,
-    ],
-    languageOptions: {
-      ecmaVersion: 2020,
-      globals: globals.browser,
-    },
-    rules: {
-      "react-hooks/set-state-in-effect": "off",
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-unused-vars": "warn",
-      "@typescript-eslint/indent": "off", // Explicitly disable indent rule to avoid conflict with Prettier
-    },
-  },
-  eslintPluginPrettierRecommended,
-  {
-    rules: {
-      "prettier/prettier": "warn", // Show Prettier issues as warnings, not errors
-    },
-  },
-]);
-```
-
-- **Integration:** We use `eslint-plugin-prettier/recommended`. This configuration does two crucial things:
-  1. It enables `eslint-config-prettier`, which disables all ESLint stylistic rules (like `indent`, `quotes`, etc.) that could conflict with Prettier.
-  2. It enables `eslint-plugin-prettier`, which runs Prettier as an ESLint rule (`prettier/prettier`).
-- **Rule Overrides:** We explicitly set `"@typescript-eslint/indent": "off"` to resolve a specific conflict and set `"prettier/prettier": "warn"` to make formatting issues appear as less-intrusive warnings.
+`npm run lint:check` and the pre-commit hook run with `--max-warnings 0`, so a warning (including a formatting one) fails the gate.
 
 ### 3. VS Code Workspace Settings (`.vscode/settings.json`)
 
-This file configures VS Code's behavior to automate formatting on save.
+`.vscode/` is gitignored, so these settings aren't in the repository: add them to your own `.vscode/settings.json` to format on save.
 
 **`.vscode/settings.json`:**
 
@@ -144,4 +106,4 @@ Setting this up involved solving a few tricky problems.
 ## How to Modify the Configuration
 
 - **To change a formatting rule (e.g., line width, quotes):** Modify the `.prettierrc.json` file. This is the single source of truth for all style options.
-- **To change an ESLint code-quality rule:** Modify the `rules` object in `eslint.config.js`.
+- **To change an ESLint code-quality rule:** Modify the `rules` object in `eslint.config.js`, before the dev-qual baseline. Rules the baseline sets can't be loosened there; change them in dev-qual, or add a targeted `eslint-disable-next-line` with the reason.

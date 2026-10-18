@@ -1,5 +1,5 @@
 ---
-status: active
+status: done
 ---
 
 # Plan: dev-qual onboarding — flatten layout, update deps, clear the quality gate
@@ -73,7 +73,7 @@ Intended outcome: the app sits at the repo root, `check.sh --comprehensive` pass
 - [x] Stage 6: Adopt eslint baseline; remove `any`
 - [x] Stage 7: Refactor for baseline limits (length, complexity, depth, params)
 - [x] Stage 8: Clear aislop findings
-- [ ] Stage 9: Documentation and wrap-up
+- [x] Stage 9: Documentation and wrap-up
 
 ### Stage 1: Fix markdownlint and commit the dev-qual install (Sonnet)
 

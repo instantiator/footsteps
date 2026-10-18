@@ -1,45 +1,63 @@
 # Developer overview
 
+Footsteps is a Vite + React + TypeScript app. It uses React Router's framework mode to prerender every page to static HTML for GitHub Pages ([ADR 0001](ADRs/0001-replace-vite-react-ssg-with-react-router-framework-mode.md)).
+
 ## Prerequisites
 
-- The basics: `bash`, `git`, `npm`
+- `bash`, `git`, and Node 24 LTS (`engines.node` in `package.json`: 24.15 or later)
 - [Code formatting configuration](code-formatting.md)
+- The `dev-qual` submodule: `git submodule update --init`
+
+## Layout
+
+| Path                         | What it is                                                                    |
+| ---------------------------- | ----------------------------------------------------------------------------- |
+| `react-router.config.ts`     | Static build settings: no server, the routes to prerender, the base path      |
+| `src/root.tsx`               | The HTML document every page renders into (head tags, fonts)                  |
+| `src/routes.ts`              | Route config: `/`, `/game/:id`, `/game/:id/json`                              |
+| `src/pages/`, `src/Home.tsx` | Route modules (one page each)                                                 |
+| `src/components/`            | Game engine UI: layers, displays, camera, and the game logic in `core/logic/` |
+| `src/providers/`             | React contexts: repository, game data, game state, music, feature flags       |
+| `tests/`                     | Vitest unit and component tests                                               |
 
 ## Invocations
 
-- Run locally with: `npm run dev`
-- Build static pages with: `npm run build`
-- View the static preview with: `npm run preview`
-- Build for GitHub Pages with: `npm run build:gh-pages`
-- Run the tests once: `npm run test:run`
-- Run the tests (and watch for changes): `npm run test`
-- Run eslint with: `npm run lint`
+| Command                  | Does                                                                     |
+| ------------------------ | ------------------------------------------------------------------------ |
+| `npm run dev`            | Dev server on <http://localhost:5173>                                    |
+| `npm run build`          | Typecheck, then prerender every page to `dist/client/`                   |
+| `npm run build:gh-pages` | As `build`, with the `/2025-xmas-game/` base path GitHub Pages serves at |
+| `npm run preview`        | Serve `dist/client/` locally                                             |
+| `npm test`               | Run the tests once                                                       |
+| `npm run test:run`       | Validate `public/game-repository.json`, then run the tests               |
+| `npm run lint:check`     | ESLint, failing on any warning                                           |
+| `npm run typecheck`      | TypeScript, no output                                                    |
+| `npm run format`         | Prettier, rewriting files (`format:check` only reports)                  |
 
-The license file in `src/assets/license-report.json` is generated before each action.
+`dev`, `build`, `lint`, `preview`, and `test` first run `pre-build.sh`, which regenerates `src/assets/license-report.json` and the JSON schemas.
 
-Output from builds goes to the `dist/` directory. A simple way to serve from there is with `npx serve`.
+## Quality gate
 
-## Run a dev server
-
-Launch footsteps locally with `npm run dev`
+`dev-qual/scripts/check.sh` runs formatting, lint, typecheck, build, tests, shell/workflow/markdown linters, and an [aislop](https://www.npmjs.com/package/aislop) scan. `--fast` (format, lint, typecheck only) runs as the git pre-commit hook; the full gate runs as the pre-push hook. aislop compares against `.aislop/ci-baseline.json` (accepted findings) and `ci.failBelow` in `.aislop/config.yml`.
 
 ## Sample games
 
-All games in the local repository at `public/game-repository.json` are pre-built and made available at their own url.
+Every game in the local repository, `public/game-repository.json`, is prerendered at its own URL:
 
 | Game           | Game URL                                  | Game data URL                                  |
 | -------------- | ----------------------------------------- | ---------------------------------------------- |
-| `test-game`    | <http://localhost:5173/game/test-game>    | <http://localhost:5173/game/test-game/json>    |
 | `magic-trifle` | <http://localhost:5173/game/magic-trifle> | <http://localhost:5173/game/magic-trifle/json> |
+
+`public/test-repository.json` holds `test-game`, which isn't in the local repository, so `/game/test-game` shows "not found".
 
 ## Schemas
 
-JSON schemas are generated and placed into the `src/assets/` directory by the `pre-build.sh` script.
+`pre-build.sh` generates JSON schemas from the TypeScript types:
 
-| Type             | Schema                               |
-| ---------------- | ------------------------------------ |
-| `GameRepository` | `public/game-repository-schema.json` |
-| `GameData`       | `public/game-data-schema.json`       |
+| Type             | Schema                                       |
+| ---------------- | -------------------------------------------- |
+| `GameRepository` | `public/schemas/game-repository-schema.json` |
+| `GameData`       | `public/schemas/game-data-schema.json`       |
 
 ### Validate data
 
@@ -53,4 +71,4 @@ JSON schemas are generated and placed into the `src/assets/` directory by the `p
 
 ## GitHub Pages
 
-The app is served through GitHub Pages, and there's a GitHub Actions workflow to deploy to GitHub Pages in `.github/workflows/deploy-pages.yaml`
+`.github/workflows/deploy-pages.yaml` runs the tests, builds with `build:gh-pages`, and deploys `dist/client/` to GitHub Pages on every push to `main`.

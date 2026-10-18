@@ -49,3 +49,9 @@ Overview and stage screens are clickable through event delegation. `GameLayerWra
 `GameDisplayMediaData` has no field for captions, so `GameAudioComponent` can't render a `<track>`. The jsx-a11y `media-has-caption` finding is disabled with that reason. The camera preview's `<video>` is exempt for good: it's a silent live feed of the player.
 
 **Act when:** a game ships audio containing speech. Add an optional `captionsResource` (WebVTT) to `GameDisplayMediaData` and render it as a `<track kind="captions">`.
+
+## Unused props on GameDisplayTemplateComponent
+
+`stageId`, `challengeId`, `solution`, and `onAnswer` on `GameDisplayTemplateComponent` (`src/components/core/display/GameDisplayTemplateComponent.tsx`) are accepted but never read. They were marked `TODO (currently unused)` with no condition.
+
+**Act when:** a template display needs to check answers itself (for example, an input embedded in template HTML). Then wire them up. Otherwise, if no such display is planned by the next feature touching template displays, delete them and stop passing them from `GameDisplayComponent` and `GameDisplayScrollComponent`.

@@ -16,10 +16,10 @@ interface GameDisplayTemplateProps {
   templateData: object;
   containerStyle?: React.CSSProperties;
   templateStyle?: React.CSSProperties;
-  stageId?: GameStageId; // TODO (currently unused)
-  challengeId?: GameChallengeId; // TODO (currently unused)
-  solution?: GameChallengeSolution; // TODO (currently unused)
-  onAnswer?: GameAnswerFunction; // TODO (currently unused)
+  stageId?: GameStageId; // unused: see docs/outstanding-issues.md
+  challengeId?: GameChallengeId; // unused: see docs/outstanding-issues.md
+  solution?: GameChallengeSolution; // unused: see docs/outstanding-issues.md
+  onAnswer?: GameAnswerFunction; // unused: see docs/outstanding-issues.md
 }
 
 const MUSTACHE_OPTIONS: Mustache.RenderOptions = {
