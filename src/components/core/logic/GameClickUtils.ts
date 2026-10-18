@@ -8,9 +8,7 @@ export const GameOverviewPurposeSequence: GameOverviewDisplayPurpose[] = [
   "game-overview-stages",
 ];
 
-// @ts-expect-error: layerId and targetId will be used in future
-
-export const getNewGameStateForClick = (state: GameState, layerId: string, targetId: string): GameState | undefined => {
+export const getNewGameStateForClick = (state: GameState, targetId: string): GameState | undefined => {
   if (!isDefined(state.current.stageId)) {
     const currentOverviewDisplay = calcOverviewDisplay(state);
     if (isDefined(currentOverviewDisplay)) {

@@ -12,7 +12,8 @@ import { summariseTemplateSource } from "../logic/TemplateUtils";
 
 interface GameDisplayTemplateProps {
   templateSource: GameDisplayTemplateData | undefined;
-  templateData: Record<string, any>;
+  /** Mustache view: any object whose fields the template may reference. */
+  templateData: object;
   containerStyle?: React.CSSProperties;
   templateStyle?: React.CSSProperties;
   stageId?: GameStageId; // TODO (currently unused)

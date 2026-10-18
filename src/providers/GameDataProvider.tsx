@@ -64,7 +64,7 @@ export function GameDataProvider({ id, children, loadingView }: React.PropsWithC
           .then((newResources) => {
             setData({ gameId: id, gameData: game, resources: newResources });
           })
-          .catch((err: any) => {
+          .catch((err) => {
             console.error("Error loading game resources:", err);
             setGameLoading({ loadingState: "resource-error" });
           });

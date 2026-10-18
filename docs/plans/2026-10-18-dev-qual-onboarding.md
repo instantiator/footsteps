@@ -175,7 +175,7 @@ Sub-stages:
 - Replace the 6 `any`s with real types. Use `unknown` plus a narrowing guard at JSON boundaries (`RenderDataUtils`, `GameDataProvider`), and the package's own types for `Dependencies.tsx` (license-report JSON → typed interface) and `AudioUtils`.
 - Resolve the 2 `@ts-ignore`s (`GameClickUtils.ts:11`, `vite.config.ts:9`): fix the types, or use `@ts-expect-error` with a reason.
 
-**Tests:** add `tests/RenderDataUtils.test.ts`, covering valid data, missing fields, and wrong types rejected by the guard.
+**Tests:** none. As built, every fix was type-only (`catch (err)` as `unknown`, inferred JSON import types, `GameTemplateData`/`object` for Mustache views), with no runtime guard to test. The `@ts-expect-error` in `GameClickUtils.ts` hid an unused `layerId` parameter, which was removed rather than kept "for future use".
 
 **Gate:** `no-explicit-any` has 0 hits, and `check.sh --fast` plus `npm test` pass. Stage 6 commits the `any`/`@ts-ignore` fixes and the new test only. The baseline config change is made here but committed with Stage 7, because the remaining 16 baseline errors would otherwise block the pre-commit hook.
 

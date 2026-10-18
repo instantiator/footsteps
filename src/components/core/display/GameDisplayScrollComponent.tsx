@@ -13,6 +13,7 @@ import type { GameChallengeId } from "../../../entities/data/GameChallengeData";
 import type { GameChallengeSolution } from "../../../entities/data/GameChallengeSolution";
 import type { GameStageId } from "../../../entities/data/GameStageData";
 import type { GameAnswerFunction } from "../Game";
+import type { GameTemplateData } from "../logic/RenderDataUtils";
 import { parseLines } from "../logic/TemplateUtils";
 import GameAudioComponent from "./GameAudioComponent";
 import type { LayerHint } from "./GameDisplayComponent";
@@ -23,7 +24,7 @@ interface GameDisplayScrollComponentProps {
   templateSource?: GameDisplayTemplateSourceData;
   containerStyle?: React.CSSProperties;
   templateStyle?: CSSProperties;
-  templateData?: Record<string, any>;
+  templateData?: GameTemplateData;
   scrollData: GameDisplayScrollComponentData;
   layerHint: LayerHint;
   stageId?: GameStageId;

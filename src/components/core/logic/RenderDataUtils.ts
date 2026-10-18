@@ -34,7 +34,7 @@ export interface LayeredGameDisplayRenderData {
  */
 export interface GameTemplateData {
   gameState: DecoratedGameState;
-  componentData: Record<string, any>;
+  componentData: Record<string, unknown>;
   resources: Record<string, string>;
   challenge: GameChallengeData | undefined;
   challengeState: GameChallengeState | undefined;
