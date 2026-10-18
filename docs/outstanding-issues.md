@@ -25,3 +25,9 @@ The only workflow is `deploy-pages.yaml`, which runs tests and the build on push
 TypeScript 7.0.2 is the latest release, but typescript-eslint 8.71.2 (latest) accepts `typescript >=4.8.4 <6.1.0`, so the project is on TypeScript 6.0.3.
 
 **Act when:** `npm view typescript-eslint peerDependencies.typescript` accepts 7.x. Then bump `typescript` and run `dev-qual/scripts/check.sh` with a clean cache (`rm -rf node_modules/.tmp`).
+
+## @types/node held on 24.x to match the Node 24 runtime
+
+`npm outdated` shows `@types/node` 26.x as the latest. We deliberately keep it on 24.x, because CI and `engines.node` target Node 24, the current LTS, and newer types would allow APIs that Node 24 lacks.
+
+**Act when:** Node 26 becomes the active LTS (scheduled for late October 2026; check `https://nodejs.org/dist/index.json`). Then move CI's `node-version`, `engines.node` and `@types/node` to 26 together.

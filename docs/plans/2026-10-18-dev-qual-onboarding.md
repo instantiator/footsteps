@@ -69,7 +69,7 @@ Intended outcome: the app sits at the repo root, `check.sh --comprehensive` pass
 - [x] Stage 2: Move footsteps to the repo root and wire up npm scripts
 - [x] Stage 3: In-range updates and audit fixes
 - [x] Stage 4: CI workflow update
-- [ ] Stage 5: Major dependency upgrades (sub-stages 5a–5h; router and fonts decisions recorded)
+- [x] Stage 5: Major dependency upgrades (sub-stages 5a–5h; router and fonts decisions recorded)
 - [ ] Stage 6: Adopt eslint baseline; remove `any`
 - [ ] Stage 7: Refactor for baseline limits (length, complexity, depth, params)
 - [ ] Stage 8: Clear aislop findings
