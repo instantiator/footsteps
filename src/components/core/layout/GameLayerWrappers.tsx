@@ -20,21 +20,33 @@ export interface LayerNodeProps {
   feetPositions?: FeetPositions;
   setFeetPositions?: React.Dispatch<React.SetStateAction<FeetPositions>>;
   debug?: boolean;
-  clickHandler?: (event: React.MouseEvent<HTMLElement, MouseEvent>, layerIdOverride?: string) => void;
+  clickHandler?: (event: React.SyntheticEvent<HTMLElement>, layerIdOverride?: string) => void;
   nodes?: ReactNode[];
   cameraEnabled?: boolean;
   layer?: string;
   layerHint?: LayerHint;
 }
 
+/**
+ * Treats Enter or Space on a focused template element marked `role="button"` like a click on it.
+ * Other elements (text inputs, native buttons) keep their own key handling.
+ */
+const isTemplateButtonActivation = (event: React.KeyboardEvent<HTMLElement>): boolean =>
+  (event.key === "Enter" || event.key === " ") && (event.target as HTMLElement).getAttribute("role") === "button";
+
 export const GameLayerWrapper = ({ nodes, style, zIndex, clickHandler, layer, layerHint }: LayerNodeProps) => (
-  // Delegates clicks from elements inside game-authored templates; keyboard access to those is tracked in docs/outstanding-issues.md
-  // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+  // Delegates clicks and key presses from elements inside game-authored templates, which are the real controls
+  // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
   <div
     id={`${layer!}-${layerHint!}-container`}
     className="outerStyle noClicks"
     style={{ ...style, zIndex: zIndex }}
     onClick={(event) => clickHandler?.(event, layer!)}
+    onKeyDown={(event) => {
+      if (!isTemplateButtonActivation(event)) return;
+      event.preventDefault(); // stop Space scrolling the page
+      clickHandler?.(event, layer!);
+    }}
   >
     {isDefined(nodes) && (
       <GameChallengeGrid layer={layer!} layerHint={layerHint!} className="innerStyle noClicks">

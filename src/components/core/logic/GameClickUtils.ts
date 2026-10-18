@@ -21,11 +21,18 @@ export const getNewGameStateForClick = (state: GameState, targetId: string): Gam
   const stageId = overviewDisplay.clickIdToStageId?.[targetId];
   if (isDefined(stageId)) return enterStage(state, stageId);
 
-  if (overviewDisplay.purpose === "game-overview-title") {
-    // the title screen was clicked - any click moves to the challenges overview
-    return { ...state, current: { ...state.current, overviewDisplay: "game-overview-stages" } };
-  }
-  return undefined;
+  // the title screen was clicked - any click moves to the challenges overview
+  return leaveTitleScreen(state);
+};
+
+/**
+ * Moves from the title screen to the stages overview, as any click (or Enter/Space) on the title does.
+ * @returns the new state, or undefined if the title screen isn't showing
+ */
+export const leaveTitleScreen = (state: GameState): GameState | undefined => {
+  if (isDefined(state.current.stageId) || calcOverviewDisplay(state)?.purpose !== "game-overview-title")
+    return undefined;
+  return { ...state, current: { ...state.current, overviewDisplay: "game-overview-stages" } };
 };
 
 /** Enters the given stage, unless it is locked or already completed. */

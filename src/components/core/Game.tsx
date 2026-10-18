@@ -17,7 +17,7 @@ import { isDefined } from "../../util/ObjectUtils";
 import GameDisplayComponent, { type LayerHint } from "./display/GameDisplayComponent";
 import "./Game.css";
 import GameLayersLayout, { type GameLayers } from "./layout/GameLayersLayout";
-import { getNewGameStateForClick } from "./logic/GameClickUtils";
+import { getNewGameStateForClick, leaveTitleScreen } from "./logic/GameClickUtils";
 import { findChallengeState } from "./logic/GameDataUtils";
 import { completeChallenge, validateAnswer } from "./logic/GameStateUtils";
 import {
@@ -69,6 +69,25 @@ function useGameFeedback() {
   }, [gameState]);
 }
 
+/**
+ * Enter or Space on the title screen moves on, as a click does. Only when nothing has focus,
+ * so focused buttons and inputs keep their own keys.
+ */
+function useTitleScreenKeys() {
+  const { gameState, setGameState } = useGameState();
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.key !== "Enter" && event.key !== " ") || event.target !== document.body) return;
+      const next = leaveTitleScreen(gameState);
+      if (!isDefined(next)) return;
+      event.preventDefault();
+      setGameState(next);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [gameState, setGameState]);
+}
+
 /** One display component per render datum, for the given layer. */
 const createDisplayComponents = (
   renderData: (GameDisplayRenderData | undefined)[] | undefined,
@@ -104,6 +123,7 @@ export default function Game() {
   const { resources } = useGameData();
   const { gameState, setGameState } = useGameState();
   useGameFeedback();
+  useTitleScreenKeys();
 
   /**
    * The callback function used when an answer is submitted (or tested) by a display component.

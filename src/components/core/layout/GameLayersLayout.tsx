@@ -24,7 +24,7 @@ export interface GameLayers {
   challenges?: { backgroundLayerNodes: ReactNode[] | undefined; foregroundLayerNodes: ReactNode[] | undefined };
 }
 
-type LayerClickHandler = (event: React.MouseEvent<HTMLElement, MouseEvent>, layerIdOverride?: string) => void;
+type LayerClickHandler = (event: React.SyntheticEvent<HTMLElement>, layerIdOverride?: string) => void;
 
 interface DisplayLayersProps {
   layers: GameLayers;

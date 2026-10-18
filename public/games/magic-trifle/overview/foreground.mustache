@@ -14,16 +14,16 @@
   <div id="stepping-stone-stage-{{stage.id}}" style="display: flex; flex-direction: column; align-items: center; justify-content: end;">
 
     {{#showCompleted}}
-    <img src="{{resources.star}}" style="width: calc( 40vw / {{gameState.totalStages}} ); height: auto;" />
-    <img id="stages-link-{{stage.id}}" src="{{resources.stepping-stone}}" style="width: calc( 75vw / {{gameState.totalStages}} ); height: auto; filter: drop-shadow(0 0 0.75rem green);" />
+    <img src="{{resources.star}}" alt="" style="width: calc( 40vw / {{gameState.totalStages}} ); height: auto;" />
+    <img id="stages-link-{{stage.id}}" src="{{resources.stepping-stone}}" alt="Stage {{oneIndex}}: completed" aria-disabled="true" style="width: calc( 75vw / {{gameState.totalStages}} ); height: auto; filter: drop-shadow(0 0 0.75rem green);" />
     {{/showCompleted}}
 
     {{#showUnlocked}}
-    <img id="stages-link-{{stage.id}}" src="{{resources.stepping-stone}}" style="width: calc( 75vw / {{gameState.totalStages}} ); height: auto; animation: floatAndZoom 3s ease-in-out infinite alternate; filter: drop-shadow(0 0 0.75rem crimson);" />
+    <img id="stages-link-{{stage.id}}" src="{{resources.stepping-stone}}" role="button" tabindex="0" alt="Stage {{oneIndex}}: play" style="width: calc( 75vw / {{gameState.totalStages}} ); height: auto; animation: floatAndZoom 3s ease-in-out infinite alternate; filter: drop-shadow(0 0 0.75rem crimson);" />
     {{/showUnlocked}}
 
     {{#showLocked}}
-    <img id="stages-link-{{stage.id}}" src="{{resources.stepping-stone}}" style="width: calc( 45vw / {{gameState.totalStages}} ); height: auto; opacity: 0.5;" />
+    <img id="stages-link-{{stage.id}}" src="{{resources.stepping-stone}}" alt="Stage {{oneIndex}}: locked" aria-disabled="true" style="width: calc( 45vw / {{gameState.totalStages}} ); height: auto; opacity: 0.5;" />
     {{/showLocked}}
 
     <div style="height: calc( 3vh * {{index}} )"></div>

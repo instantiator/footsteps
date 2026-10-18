@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getNewGameStateForClick } from "../src/components/core/logic/GameClickUtils";
+import { getNewGameStateForClick, leaveTitleScreen } from "../src/components/core/logic/GameClickUtils";
 import type { GameOverviewDisplay } from "../src/entities/data/displays/GameDisplayData";
 import type { GameStageState } from "../src/entities/state/GameStageState";
 import type { GameState } from "../src/entities/state/GameState";
@@ -53,5 +53,17 @@ describe("getNewGameStateForClick", () => {
   it("ignores clicks while a stage is in progress", () => {
     const inStage: GameState = { ...onStagesOverview, current: { stageId: "stage-1", overviewDisplay: null } };
     expect(getNewGameStateForClick(inStage, "door-1")).toBeUndefined();
+  });
+});
+
+describe("leaveTitleScreen", () => {
+  it("moves from the title screen to the stages overview", () => {
+    expect(leaveTitleScreen(simpleGameState)?.current.overviewDisplay).toBe("game-overview-stages");
+  });
+
+  it("does nothing once past the title screen, or during a stage", () => {
+    expect(leaveTitleScreen(onStagesOverview)).toBeUndefined();
+    const inStage: GameState = { ...simpleGameState, current: { stageId: "stage-1", overviewDisplay: null } };
+    expect(leaveTitleScreen(inStage)).toBeUndefined();
   });
 });

@@ -20,12 +20,6 @@ TypeScript 7.0.2 is the latest release, but typescript-eslint 8.71.2 (latest) ac
 
 **Act when:** `npm view typescript-eslint peerDependencies.typescript` accepts 7.x. Then bump `typescript` and run `dev-qual/scripts/check.sh` with a clean cache (`rm -rf node_modules/.tmp`).
 
-## Keyboard access to clickable elements in game templates
-
-Overview and stage screens are clickable through event delegation. `GameLayerWrapper` (`src/components/core/layout/GameLayerWrappers.tsx`) handles clicks on elements inside game-authored Mustache templates, matched by element `id` (e.g. `clickIdToStageId`). Those elements aren't focusable, so keyboard users can't choose a stage. The jsx-a11y findings on the wrapper are disabled with that reason.
-
-**Act when:** a game is published for players other than the author's household, or a player needs keyboard or switch access. Likely fix: have templates mark targets with `tabindex="0"` and `role="button"`, and have the wrapper handle Enter/Space on the focused target.
-
 ## No captions for game audio
 
 `GameDisplayMediaData` has no field for captions, so `GameAudioComponent` can't render a `<track>`. The jsx-a11y `media-has-caption` finding is disabled with that reason. The camera preview's `<video>` is exempt for good: it's a silent live feed of the player.
