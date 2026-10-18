@@ -4,7 +4,7 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 
 ## Prerequisites
 
-- `bash`, `git`, and Node 24 LTS (`engines.node` in `package.json`: 24.15 or later)
+- `bash`, `git`, and Node 26 (`engines.node` in `package.json`; LTS from 2026-10-28)
 - [Code formatting configuration](code-formatting.md)
 - The `dev-qual` submodule: `git submodule update --init`
 
