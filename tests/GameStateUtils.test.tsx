@@ -113,6 +113,29 @@ describe("GameStateUtils", () => {
           expect(simpleGameState_finished.stages.every((s) => s.challengeStates.every((c) => c.succeeded))).toBe(true);
           expect(simpleGameState_finished.current.stageId).toBe(null);
         });
+
+        // Characterises current behaviour, which looks inverted: see docs/outstanding-issues.md
+        it("with only a title display, shows the stages overview once the game is complete", () => {
+          expect(simpleGameState_finished.current.overviewDisplay).toBe("game-overview-stages");
+        });
+
+        it("shows the finale display once the game is complete, when the game has one", () => {
+          const finale = { ...simpleGameState.gameData.displays[0], purpose: "game-overview-complete" as const };
+          const withFinale: GameState = {
+            ...simpleGameState_s3_c1,
+            gameData: { ...simpleGameState.gameData, displays: [...simpleGameState.gameData.displays, finale] },
+          };
+          const finished = completeChallenge(withFinale, "stage-3", "stage-3-challenge-1");
+          expect(finished.current.overviewDisplay).toBe("game-overview-complete");
+        });
+      });
+
+      it("throws for a stage the game does not have", () => {
+        expect(() => completeChallenge(simpleGameState_s1_c1, "no-stage", "stage-1-challenge-1")).toThrow("no-stage");
+      });
+
+      it("throws for a challenge the stage does not have", () => {
+        expect(() => completeChallenge(simpleGameState_s1_c1, "stage-1", "no-challenge")).toThrow("no-challenge");
       });
     });
 

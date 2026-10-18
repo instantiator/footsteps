@@ -35,10 +35,10 @@ export const drawMask = async (
   video: HTMLVideoElement | null,
   segmentation: Segmentation[],
   ctx: CanvasRenderingContext2D,
-  canvas: HTMLCanvasElement,
   maskType: "binary" | "colored" | "extremities",
 ) => {
   if (!video) return;
+  const canvas = ctx.canvas;
 
   // For all modes, we start by drawing the person's silhouette from the video.
   const backgroundColor = { r: 0, g: 0, b: 0, a: 0 }; // Transparent

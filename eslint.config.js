@@ -5,6 +5,7 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
+import devQualBaseline from "./dev-qual/guidance/languages/typescript/tools/eslint-baseline.mjs";
 
 export default defineConfig([
   globalIgnores(["dist", "dev-qual", ".react-router"]),
@@ -22,8 +23,6 @@ export default defineConfig([
     },
     rules: {
       "react-hooks/set-state-in-effect": "off", // Disable the warning about setState in effect
-      "@typescript-eslint/no-explicit-any": "off", // Allow use of 'any' type
-      "@typescript-eslint/no-unused-vars": "warn", // Change unused var to warn
       "@typescript-eslint/indent": "off", // Explicitly disable indent rule to avoid conflict with Prettier
     },
   },
@@ -33,4 +32,6 @@ export default defineConfig([
       "prettier/prettier": "warn",
     },
   },
+  // dev-qual baseline last, so nothing after it can weaken it
+  ...devQualBaseline,
 ]);

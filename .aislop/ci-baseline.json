@@ -5,21 +5,7 @@
       "rule": "security/vulnerable-dependency",
       "engine": "security",
       "file": "package.json",
-      "fingerprint": "message:a0e6478a99342cd3",
-      "count": 1
-    },
-    {
-      "rule": "security/vulnerable-dependency",
-      "engine": "security",
-      "file": "package.json",
       "fingerprint": "message:c92ebe8f571931ca",
-      "count": 1
-    },
-    {
-      "rule": "security/vulnerable-dependency",
-      "engine": "security",
-      "file": "package.json",
-      "fingerprint": "message:e64b10e2f9a0001d",
       "count": 1
     },
     {
@@ -51,31 +37,10 @@
       "count": 1
     },
     {
-      "rule": "ai-slop/trivial-comment",
-      "engine": "ai-slop",
+      "rule": "react/set-state-in-effect",
+      "engine": "lint",
       "file": "src/components/camera/CharacterCanvas.tsx",
-      "fingerprint": "0c1f04836aae0039",
-      "count": 1
-    },
-    {
-      "rule": "ai-slop/trivial-comment",
-      "engine": "ai-slop",
-      "file": "src/components/camera/CharacterCanvas.tsx",
-      "fingerprint": "0efbdde72a57bc92",
-      "count": 1
-    },
-    {
-      "rule": "ai-slop/trivial-comment",
-      "engine": "ai-slop",
-      "file": "src/components/camera/CharacterCanvas.tsx",
-      "fingerprint": "3f1019f632296621",
-      "count": 1
-    },
-    {
-      "rule": "ai-slop/trivial-comment",
-      "engine": "ai-slop",
-      "file": "src/components/camera/CharacterCanvas.tsx",
-      "fingerprint": "447514d2246a7ede",
+      "fingerprint": "39b7c53760753683",
       "count": 1
     },
     {
@@ -110,42 +75,28 @@
       "rule": "jsx-a11y/click-events-have-key-events",
       "engine": "lint",
       "file": "src/components/core/display/GameDisplayScrollComponent.tsx",
-      "fingerprint": "36923bd4b13bffaf",
+      "fingerprint": "118675ea557256f2",
       "count": 1
     },
     {
       "rule": "jsx-a11y/click-events-have-key-events",
       "engine": "lint",
       "file": "src/components/core/display/GameDisplayScrollComponent.tsx",
-      "fingerprint": "cb0a9c35f5876f08",
+      "fingerprint": "a541e26ac425145a",
       "count": 1
     },
     {
       "rule": "jsx-a11y/no-static-element-interactions",
       "engine": "lint",
       "file": "src/components/core/display/GameDisplayScrollComponent.tsx",
-      "fingerprint": "36923bd4b13bffaf",
+      "fingerprint": "118675ea557256f2",
       "count": 1
     },
     {
       "rule": "jsx-a11y/no-static-element-interactions",
       "engine": "lint",
       "file": "src/components/core/display/GameDisplayScrollComponent.tsx",
-      "fingerprint": "cb0a9c35f5876f08",
-      "count": 1
-    },
-    {
-      "rule": "react/set-state-in-effect",
-      "engine": "lint",
-      "file": "src/components/core/display/GameDisplayScrollComponent.tsx",
-      "fingerprint": "017dfe544d788ad6",
-      "count": 1
-    },
-    {
-      "rule": "react/set-state-in-effect",
-      "engine": "lint",
-      "file": "src/components/core/display/GameDisplayScrollComponent.tsx",
-      "fingerprint": "fb14e9723c37967a",
+      "fingerprint": "a541e26ac425145a",
       "count": 1
     },
     {
@@ -179,34 +130,6 @@
     {
       "rule": "react/set-state-in-effect",
       "engine": "lint",
-      "file": "src/components/core/Game.tsx",
-      "fingerprint": "189d5587a332257a",
-      "count": 1
-    },
-    {
-      "rule": "react/set-state-in-effect",
-      "engine": "lint",
-      "file": "src/components/core/Game.tsx",
-      "fingerprint": "1bd161749ff26c68",
-      "count": 1
-    },
-    {
-      "rule": "react/set-state-in-effect",
-      "engine": "lint",
-      "file": "src/components/core/Game.tsx",
-      "fingerprint": "9255eef3f50fbeb8",
-      "count": 1
-    },
-    {
-      "rule": "react/set-state-in-effect",
-      "engine": "lint",
-      "file": "src/components/core/Game.tsx",
-      "fingerprint": "dccf9a7176241a27",
-      "count": 1
-    },
-    {
-      "rule": "react/set-state-in-effect",
-      "engine": "lint",
       "file": "src/components/core/HeadsUpDisplay.tsx",
       "fingerprint": "d03ddfa253dd3e92",
       "count": 1
@@ -226,24 +149,10 @@
       "count": 2
     },
     {
-      "rule": "ai-slop/ts-directive",
-      "engine": "ai-slop",
-      "file": "src/components/core/logic/GameClickUtils.ts",
-      "fingerprint": "8f4ebfe70ddf5c02",
-      "count": 1
-    },
-    {
       "rule": "ai-slop/console-leftover",
       "engine": "ai-slop",
       "file": "src/components/core/logic/GameStateUtils.ts",
       "fingerprint": "4d8e6590c552b9c5",
-      "count": 1
-    },
-    {
-      "rule": "complexity/function-too-long",
-      "engine": "code-quality",
-      "file": "src/components/core/logic/GameStateUtils.ts",
-      "fingerprint": "59c41ad29b434b15",
       "count": 1
     },
     {
@@ -264,20 +173,6 @@
       "rule": "ai-slop/console-leftover",
       "engine": "ai-slop",
       "file": "src/providers/GameContentCacheHook.tsx",
-      "fingerprint": "5780af90e98e442f",
-      "count": 1
-    },
-    {
-      "rule": "ai-slop/console-leftover",
-      "engine": "ai-slop",
-      "file": "src/providers/GameContentCacheHook.tsx",
-      "fingerprint": "7f8773dd9ee9c97e",
-      "count": 1
-    },
-    {
-      "rule": "ai-slop/console-leftover",
-      "engine": "ai-slop",
-      "file": "src/providers/GameContentCacheHook.tsx",
       "fingerprint": "b33eb704ab72877b",
       "count": 1
     },
@@ -291,36 +186,8 @@
     {
       "rule": "ai-slop/console-leftover",
       "engine": "ai-slop",
-      "file": "src/providers/GameDataProvider.tsx",
-      "fingerprint": "35432de4061d58a2",
-      "count": 1
-    },
-    {
-      "rule": "ai-slop/console-leftover",
-      "engine": "ai-slop",
-      "file": "src/providers/GameDataProvider.tsx",
-      "fingerprint": "79b3c4cd37d3f48b",
-      "count": 1
-    },
-    {
-      "rule": "complexity/deep-nesting",
-      "engine": "code-quality",
-      "file": "src/providers/GameDataProvider.tsx",
-      "fingerprint": "9fd2df586967cb32",
-      "count": 1
-    },
-    {
-      "rule": "react/set-state-in-effect",
-      "engine": "lint",
-      "file": "src/providers/GameDataProvider.tsx",
-      "fingerprint": "d3530cac649edd71",
-      "count": 1
-    },
-    {
-      "rule": "react/set-state-in-effect",
-      "engine": "lint",
-      "file": "src/providers/GameDataProvider.tsx",
-      "fingerprint": "dd493f183f4cfe47",
+      "file": "src/providers/GameContentCacheHook.tsx",
+      "fingerprint": "f259d9c4baadccef",
       "count": 1
     },
     {

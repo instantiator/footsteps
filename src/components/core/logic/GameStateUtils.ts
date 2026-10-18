@@ -1,6 +1,7 @@
 import _ from "lodash";
 import type { GameChallengeData, GameChallengeId } from "../../../entities/data/GameChallengeData";
 import type { GameChallengeAnswer, GameChallengeAnswerValidation } from "../../../entities/data/GameChallengeSolution";
+import type { GameOverviewDisplayPurpose } from "../../../entities/data/displays/GameDisplayData";
 import type { GameStageId } from "../../../entities/data/GameStageData";
 import type { GameChallengeState } from "../../../entities/state/GameChallengeState";
 import type { GameStageCompletionState, GameStageState } from "../../../entities/state/GameStageState";
@@ -101,32 +102,8 @@ export function completeChallenge(gameState: GameState, stageId: GameStageId, ch
   if (!isDefined(stageState)) {
     throw new Error(`No stage state found for stage id ${stageId}`);
   }
-  const challengeState = stageState.challengeStates.find((c) => c.challenge.id === challengeId);
-  if (!isDefined(challengeState)) {
-    throw new Error(`No challenge state found for challenge id ${challengeId} in stage id ${stageId}`);
-  }
-
-  // Mark the challenge as complete.
-  const updatedChallengeState: GameChallengeState = {
-    ...challengeState,
-    succeeded: true,
-  };
-
-  // If not all challenges in the current stage are complete, mark the stage as partially complete.
-  // If all challenges in the current stage are complete mark the stage as complete.
-  const allStageChallengesComplete = stageState.challengeStates.every((c) =>
-    c.challenge.id === challengeId ? true : c.succeeded,
-  );
-  const stageCompletion: GameStageCompletionState = allStageChallengesComplete ? "completed" : "partial";
-
-  // Update the stage state with the updated challenge state and completion status.
-  const updatedStageState: GameStageState = {
-    ...stageState,
-    completion: stageCompletion,
-    challengeStates: stageState.challengeStates.map((c) =>
-      c.challenge.id === challengeId ? updatedChallengeState : c,
-    ),
-  };
+  const updatedStageState = markChallengeSucceeded(stageState, challengeId);
+  const allStageChallengesComplete = updatedStageState.completion === "completed";
 
   const gameStateWithUpdatedStageState: GameState = {
     ...gameState,
@@ -142,52 +119,57 @@ export function completeChallenge(gameState: GameState, stageId: GameStageId, ch
     ),
   };
 
-  // Determine if all stages are complete.
-  const allStagesComplete = gameStateWithUpdatedStageStateAndUnlocks.stages.every((s) =>
-    s.stage.id === stageId ? allStageChallengesComplete : s.completion === "completed",
-  );
-
-  // Check for existence of overview displays.
-  const gameTitleDisplayDefined = isDefined(
-    gameState.gameData.displays.find((d) => d.purpose === "game-overview-title"),
-  );
-  const gameStagesDisplayDefined = isDefined(
-    gameState.gameData.displays.find((d) => d.purpose === "game-overview-stages"),
-  );
-  const gameCompletionDisplayDefined = isDefined(
-    gameState.gameData.displays.find((d) => d.purpose === "game-overview-complete"),
-  );
+  const allStagesComplete = gameStateWithUpdatedStageStateAndUnlocks.stages.every((s) => s.completion === "completed");
 
   // Determine the new value for the current stage id.
   // If there's no stage overview display, automatically advance to the next stage if available.
   const newCurrentStageId = allStageChallengesComplete
-    ? gameStagesDisplayDefined
+    ? hasOverviewDisplay(gameState, "game-overview-stages")
       ? null // return to the stage overview if one exists
       : recommendedStageId // advance to the next stage if no overview
     : gameState.current.stageId;
 
-  // Determine the new overview display.
-  // If all stages are complete, the game is complete - switch the overview view to a finale display.
-  // If no finale display is available, fall back to the title page, or the stages overview.
-  const newOverviewDisplayPurpose = allStagesComplete
-    ? gameCompletionDisplayDefined
-      ? "game-overview-complete"
-      : gameTitleDisplayDefined
-        ? "game-overview-stages"
-        : "game-overview-title"
-    : gameState.current.overviewDisplay;
-
-  const newState: GameState = {
+  return {
     ...gameStateWithUpdatedStageStateAndUnlocks,
     current: {
       ...gameState.current,
       stageId: newCurrentStageId,
-      overviewDisplay: newOverviewDisplayPurpose,
+      overviewDisplay: allStagesComplete ? calcFinaleOverviewDisplay(gameState) : gameState.current.overviewDisplay,
     },
   };
-
-  return newState;
 }
+
+/**
+ * Marks one challenge in a stage as succeeded, and the stage as completed
+ * if that was its last outstanding challenge (otherwise partial).
+ */
+const markChallengeSucceeded = (stageState: GameStageState, challengeId: GameChallengeId): GameStageState => {
+  const challengeState = stageState.challengeStates.find((c) => c.challenge.id === challengeId);
+  if (!isDefined(challengeState)) {
+    throw new Error(`No challenge state found for challenge id ${challengeId} in stage id ${stageState.stage.id}`);
+  }
+  const challengeStates = stageState.challengeStates.map((c) =>
+    c.challenge.id === challengeId ? { ...challengeState, succeeded: true } : c,
+  );
+  const completion: GameStageCompletionState = challengeStates.every((c) => c.succeeded) ? "completed" : "partial";
+  return { ...stageState, completion, challengeStates };
+};
+
+const hasOverviewDisplay = (gameState: GameState, purpose: GameOverviewDisplayPurpose): boolean =>
+  gameState.gameData.displays.some((d) => d.purpose === purpose);
+
+/**
+ * The overview to show once every stage is complete: the finale display if the game has one.
+ * ponytail: the title/stages fallback looks inverted against its original comment ("fall back to
+ * the title page, or the stages overview"); kept as-is in a no-behaviour-change refactor, see
+ * docs/outstanding-issues.md.
+ */
+const calcFinaleOverviewDisplay = (gameState: GameState): GameOverviewDisplayPurpose =>
+  hasOverviewDisplay(gameState, "game-overview-complete")
+    ? "game-overview-complete"
+    : hasOverviewDisplay(gameState, "game-overview-title")
+      ? "game-overview-stages"
+      : "game-overview-title";
 
 /**
  * Identifies the id of the stage following the given stage id.

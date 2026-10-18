@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { drawMask } from "./BodySegSupport";
 import { findFeet, type FeetPositions } from "./CameraSupport";
 
-// Define a type for the loaded model network
 type BodySegNet = bodySeg.BodySegmenter;
+type Segmentation = Awaited<ReturnType<BodySegNet["segmentPeople"]>>;
 
 interface CharacterCanvasProps {
   video: HTMLVideoElement | null;
@@ -16,6 +16,53 @@ interface CharacterCanvasProps {
   style?: React.CSSProperties;
   maskType?: "binary" | "colored" | "extremities";
 }
+
+/** BodyPix on ResNet50, for accuracy over speed. */
+const MODEL_CONFIG: bodySeg.BodyPixModelConfig = {
+  architecture: "ResNet50",
+  outputStride: 32,
+  multiplier: 1.0, // Use 1.0 for ResNet50
+  quantBytes: 4,
+};
+
+const SEGMENTATION_CONFIG = {
+  internalResolution: "high", // Adjust resolution for performance
+  flipHorizontal: true, // Often needed for webcams
+  segmentationThreshold: 0.65, // Confidence threshold
+  segmentBodyParts: true,
+} as const;
+
+/** Loads the segmentation model, or resolves to null if it fails to load. */
+const loadBodySegNet = async (): Promise<BodySegNet | null> => {
+  await tf.ready();
+  try {
+    console.log("Loading BodySeg model...");
+    const bodySegNet = await bodySeg.createSegmenter(bodySeg.SupportedModels.BodyPix, MODEL_CONFIG);
+    console.log("Model loaded successfully!");
+    return bodySegNet;
+  } catch (error) {
+    console.error("Failed to load BodySeg model:", error);
+    return null;
+  }
+};
+
+/** Finds each segmented person's feet, keyed by their index in the segmentation. */
+const findAllFeet = async (segmentation: Segmentation): Promise<FeetPositions> => {
+  const feetPositions: FeetPositions = {};
+  for (let i = 0; i < segmentation.length; i++) {
+    const personMask = await bodySeg.toBinaryMask(
+      [segmentation[i]],
+      { r: 0, g: 0, b: 0, a: 255 },
+      { r: 0, g: 0, b: 0, a: 0 },
+    );
+    //TODO: replace undefined with offScreenThreshold_percent to not track feet below the bottom
+    const feet = findFeet(personMask, personMask.width, personMask.height, undefined);
+    if (feet) {
+      feetPositions[i] = feet;
+    }
+  }
+  return feetPositions;
+};
 
 export default function CharacterCanvas({
   video,
@@ -29,44 +76,18 @@ export default function CharacterCanvas({
   const [net, setNet] = useState<BodySegNet | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Load the model
+  // Load the model while there is a camera stream, and release it when there isn't
   useEffect(() => {
-    const loadModel = async () => {
-      // Wait for TensorFlow.js to be ready
-      await tf.ready();
-
-      // Load the BodyPix model with ResNet50 arch for higher accuracy
-      const modelConfig: bodySeg.BodyPixModelConfig = {
-        architecture: "ResNet50",
-        outputStride: 32,
-        multiplier: 1.0, // Use 1.0 for ResNet50
-        quantBytes: 4,
-      };
-
-      try {
-        console.log("Loading BodySeg model...");
-        const bodySegNet = await bodySeg.createSegmenter(bodySeg.SupportedModels.BodyPix, modelConfig);
-        setNet(bodySegNet);
-        console.log("Model loaded successfully!");
-      } catch (error) {
-        console.error("Failed to load BodySeg model:", error);
-      }
-    };
-
-    const unloadModel = async () => {
-      net?.dispose();
-      setNet(null);
-    };
-
     if (mediaStream && !net) {
-      loadModel();
+      loadBodySegNet().then((loaded) => loaded && setNet(loaded));
     }
     if (!mediaStream) {
-      unloadModel();
+      net?.dispose();
+      setNet(null);
     }
   }, [mediaStream, net]);
 
-  // Process the video stream
+  // Segment each video frame: report feet positions, then draw the mask
   useEffect(() => {
     const runSegmentationLoop = (net: BodySegNet, video: HTMLVideoElement, canvas: HTMLCanvasElement) => {
       const ctx = canvas.getContext("2d");
@@ -76,49 +97,17 @@ export default function CharacterCanvas({
       canvas.height = video.videoHeight;
 
       const segmentFrame = async () => {
-        const segmentation = await net.segmentPeople(video, {
-          internalResolution: "high", // Adjust resolution for performance
-          flipHorizontal: true, // Often needed for webcams
-          segmentationThreshold: 0.65, // Confidence threshold
-          segmentBodyParts: true,
-        });
-
+        const segmentation = await net.segmentPeople(video, SEGMENTATION_CONFIG);
         if (segmentation.length === 0) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          if (onFeetPositionsChange) {
-            onFeetPositionsChange({});
-          }
-          requestAnimationFrame(segmentFrame);
-          return;
+          onFeetPositionsChange?.({});
+        } else {
+          if (onFeetPositionsChange) onFeetPositionsChange(await findAllFeet(segmentation));
+          await drawMask(video, segmentation, ctx, maskType);
         }
-
-        // 1. Find the feet positions
-        if (onFeetPositionsChange) {
-          const feetPositions: FeetPositions = {};
-          for (let i = 0; i < segmentation.length; i++) {
-            const person = segmentation[i];
-            const personMask = await bodySeg.toBinaryMask(
-              [person],
-              { r: 0, g: 0, b: 0, a: 255 },
-              { r: 0, g: 0, b: 0, a: 0 },
-            );
-            //TODO: replace undefined with offScreenThreshold_percent to not track feet below the bottom
-            const feet = findFeet(personMask, personMask.width, personMask.height, undefined);
-            if (feet) {
-              feetPositions[i] = feet;
-            }
-          }
-          onFeetPositionsChange(feetPositions);
-        }
-
-        // 2. Draw the mask
-        await drawMask(video, segmentation, ctx, canvas, maskType);
-
-        // Request next frame for continuous real-time processing
         requestAnimationFrame(segmentFrame);
       };
 
-      // Start the loop
       segmentFrame();
     };
 

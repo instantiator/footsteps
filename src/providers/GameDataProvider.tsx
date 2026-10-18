@@ -1,12 +1,13 @@
-import { useContext, useEffect, useState, type ReactNode } from "react";
+import { useContext, useMemo, type ReactNode } from "react";
 import type { GameId, GameResourceDefinitions } from "../entities/data/GameData";
-import { getBaseURL, getDirectoryURL, isDefined } from "../util/ObjectUtils";
+import type { GameSource } from "../entities/GameSource";
+import { getBaseURL, isDefined, resolveRelativeURL } from "../util/ObjectUtils";
 import GameContentCacheProvider from "./GameContentCacheProvider";
 import {
   GameDataContext,
   GameDataLoadingContext,
   type GameDataContextType,
-  type GameDataLoadingContextType,
+  type GameDataLoadingState,
 } from "./GameDataContext";
 import { GameRepositoryContext } from "./GameRepositoryContext";
 
@@ -15,95 +16,52 @@ interface GameDataProviderParams {
   loadingView?: ReactNode;
 }
 
+/** Resolves each of a game's resource definitions to an absolute URL. */
+const resolveResources = (
+  definitions: GameResourceDefinitions | undefined,
+  repositorySource: GameSource,
+): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries(definitions ?? {}).map(([key, def]) => {
+      switch (def.type) {
+        case "local":
+          return [key, new URL(def.target, getBaseURL()).toString()];
+        case "relative":
+          return [key, resolveRelativeURL(def.target, repositorySource, "resource targets")];
+        case "url":
+          return [key, new URL(def.target).toString()]; // simple urls can be used directly
+      }
+    }),
+  );
+
+/** Provides the requested game's data, with its resources resolved, once the repository has it. */
 export function GameDataProvider({ id, children, loadingView }: React.PropsWithChildren<GameDataProviderParams>) {
   const { repository, source: repositorySource } = useContext(GameRepositoryContext);
+  const game = repository.ready ? repository.games[id] : undefined;
 
-  const [gameLoading, setGameLoading] = useState<GameDataLoadingContextType>({
-    loadingState: "waiting-for-repository",
-  });
-
-  const [data, setData] = useState<GameDataContextType | undefined>(undefined);
-
-  useEffect(() => {
-    const loadGameResources = async (definitions: GameResourceDefinitions | undefined) => {
-      const resources: Record<string, string> = {};
-      if (!isDefined(definitions)) {
-        return resources;
-      }
-      for (const [key, def] of Object.entries(definitions)) {
-        switch (def.type) {
-          case "local":
-            resources[key] = new URL(def.target, getBaseURL()).toString();
-            break;
-          case "relative":
-            switch (repositorySource.type) {
-              case "RemoteRepository":
-                resources[key] = new URL(def.target, getDirectoryURL(repositorySource.src)).toString();
-                break;
-              case "LocalRepository":
-                resources[key] = new URL(def.target, getBaseURL()).toString();
-                break;
-              case "RawRepository":
-                throw "Raw repository does not support relative resource targets";
-            }
-            break;
-          case "url":
-            resources[key] = new URL(def.target).toString(); // simple urls can be used directly
-            break;
-        }
-        console.debug(`Loaded resource [${key}]: ${resources[key]}`);
-      }
-      return resources;
-    };
-
-    setData(undefined);
-    if (repository.ready) {
-      const game = repository.games[id];
-      if (isDefined(game)) {
-        loadGameResources(game.resources)
-          .then((newResources) => {
-            setData({ gameId: id, gameData: game, resources: newResources });
-          })
-          .catch((err) => {
-            console.error("Error loading game resources:", err);
-            setGameLoading({ loadingState: "resource-error" });
-          });
-      }
+  const { data, loadingState } = useMemo((): { data?: GameDataContextType; loadingState: GameDataLoadingState } => {
+    if (!repository.ready) return { loadingState: "waiting-for-repository" };
+    if (!isDefined(game)) return { loadingState: "not-found" };
+    try {
+      const resources = resolveResources(game.resources, repositorySource);
+      return { data: { gameId: id, gameData: game, resources }, loadingState: "ready" };
+    } catch (err) {
+      console.error("Error loading game resources:", err);
+      return { loadingState: "resource-error" };
     }
-  }, [id, repository, repositorySource]);
+  }, [repository.ready, game, id, repositorySource]);
 
-  useEffect(() => {
-    if (!repository.ready) {
-      setGameLoading({ loadingState: "waiting-for-repository" });
-    }
-    if (repository.ready && !isDefined(repository.games[id])) {
-      setData(undefined);
-      setGameLoading({ loadingState: "not-found" });
-    }
-    if (repository.ready && isDefined(repository.games[id]) && !isDefined(data)) {
-      setGameLoading({ loadingState: "loading-resources" });
-    }
-    if (repository.ready && isDefined(repository.games[id]) && isDefined(data)) {
-      setGameLoading({ loadingState: "ready" });
-    }
-  }, [repository, id, data]);
-
-  useEffect(() => {
-    console.debug(`Game loading state: ${gameLoading.loadingState}`);
-  }, [gameLoading.loadingState]);
+  const loading = useMemo(() => ({ loadingState }), [loadingState]);
 
   return (
-    <>
-      <GameDataLoadingContext.Provider value={gameLoading}>
-        {!isDefined(data) && <>{loadingView}</>}
-        {isDefined(data) && (
-          <>
-            <GameDataContext.Provider value={data}>
-              <GameContentCacheProvider>{children}</GameContentCacheProvider>
-            </GameDataContext.Provider>
-          </>
-        )}
-      </GameDataLoadingContext.Provider>
-    </>
+    <GameDataLoadingContext.Provider value={loading}>
+      {isDefined(data) ? (
+        <GameDataContext.Provider value={data}>
+          <GameContentCacheProvider>{children}</GameContentCacheProvider>
+        </GameDataContext.Provider>
+      ) : (
+        loadingView
+      )}
+    </GameDataLoadingContext.Provider>
   );
 }

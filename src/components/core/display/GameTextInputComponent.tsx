@@ -3,7 +3,7 @@ import type { GameChallengeAnswer, GameChallengeAnswerValidation } from "../../.
 import { isDefined } from "../../../util/ObjectUtils";
 import type { GameAnswerFunction } from "../Game";
 
-interface GameTextInputComponentProps {
+export interface GameTextInputComponentProps {
   label?: string;
   stageId?: string;
   challengeId?: string;
@@ -11,6 +11,25 @@ interface GameTextInputComponentProps {
   setSolved?: React.Dispatch<React.SetStateAction<boolean>>;
   onAnswer?: GameAnswerFunction;
   autoSubmit?: boolean;
+}
+
+const INPUT_STYLE: React.CSSProperties = {
+  width: "90%",
+  textTransform: "uppercase",
+  fontSize: "2em",
+  fontFamily: "inherit",
+};
+
+/** Why the last answer was wrong, if the challenge says. */
+function ValidationList({ validations }: { validations: GameChallengeAnswerValidation[] }) {
+  if (validations.length === 0) return null;
+  return (
+    <ul style={{ color: "red" }}>
+      {validations.map((v, i) => (
+        <li key={`validation-${i}`}>{v}</li>
+      ))}
+    </ul>
+  );
 }
 
 export default function GameTextInputComponent({
@@ -63,24 +82,13 @@ export default function GameTextInputComponent({
           disabled={solved}
           autoComplete="off"
           autoCorrect="off"
-          style={{
-            width: "90%",
-            textTransform: "uppercase",
-            fontSize: "2em",
-            fontFamily: "inherit",
-          }}
+          style={INPUT_STYLE}
           onChange={(e) => {
             setInput(e.target.value);
           }}
         />
       </div>
-      {validations.length > 0 && (
-        <ul style={{ color: "red" }}>
-          {validations.map((v, i) => (
-            <li key={`validation-${i}`}>{v}</li>
-          ))}
-        </ul>
-      )}
+      <ValidationList validations={validations} />
     </>
   );
 }

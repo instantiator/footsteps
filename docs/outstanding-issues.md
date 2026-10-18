@@ -31,3 +31,9 @@ TypeScript 7.0.2 is the latest release, but typescript-eslint 8.71.2 (latest) ac
 `npm outdated` shows `@types/node` 26.x as the latest. We deliberately keep it on 24.x, because CI and `engines.node` target Node 24, the current LTS, and newer types would allow APIs that Node 24 lacks.
 
 **Act when:** Node 26 becomes the active LTS (scheduled for late October 2026; check `https://nodejs.org/dist/index.json`). Then move CI's `node-version`, `engines.node` and `@types/node` to 26 together.
+
+## Game-complete overview fallback looks inverted
+
+In `calcFinaleOverviewDisplay` (`src/components/core/logic/GameStateUtils.ts`), when every stage is complete and the game has no `game-overview-complete` display, the code shows `game-overview-stages` if a **title** display exists, and `game-overview-title` otherwise. The original comment said "fall back to the title page, or the stages overview", which suggests the reverse. A characterisation test in `tests/GameStateUtils.test.tsx` pins the current behaviour. We left it unchanged during the Stage 7 no-behaviour-change refactor.
+
+**Act when:** the game author confirms which overview a finished game without a finale display should show. Then fix the function and update that test.
