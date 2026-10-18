@@ -154,17 +154,15 @@ const hasOverviewDisplay = (gameState: GameState, purpose: GameOverviewDisplayPu
   gameState.gameData.displays.some((d) => d.purpose === purpose);
 
 /**
- * The overview to show once every stage is complete: the finale display if the game has one.
- * ponytail: the title/stages fallback looks inverted against its original comment ("fall back to
- * the title page, or the stages overview"); kept as-is in a no-behaviour-change refactor, see
- * docs/outstanding-issues.md.
+ * The overview to show once every stage is complete: the finale display if the game has one,
+ * otherwise the title screen, otherwise the stages overview.
  */
 const calcFinaleOverviewDisplay = (gameState: GameState): GameOverviewDisplayPurpose =>
   hasOverviewDisplay(gameState, "game-overview-complete")
     ? "game-overview-complete"
     : hasOverviewDisplay(gameState, "game-overview-title")
-      ? "game-overview-stages"
-      : "game-overview-title";
+      ? "game-overview-title"
+      : "game-overview-stages";
 
 /**
  * Identifies the id of the stage following the given stage id.

@@ -32,12 +32,6 @@ TypeScript 7.0.2 is the latest release, but typescript-eslint 8.71.2 (latest) ac
 
 **Act when:** Node 26 becomes the active LTS (scheduled for late October 2026; check `https://nodejs.org/dist/index.json`). Then move CI's `node-version`, `engines.node` and `@types/node` to 26 together.
 
-## Game-complete overview fallback looks inverted
-
-In `calcFinaleOverviewDisplay` (`src/components/core/logic/GameStateUtils.ts`), when every stage is complete and the game has no `game-overview-complete` display, the code shows `game-overview-stages` if a **title** display exists, and `game-overview-title` otherwise. The original comment said "fall back to the title page, or the stages overview", which suggests the reverse. A characterisation test in `tests/GameStateUtils.test.tsx` pins the current behaviour. We left it unchanged during the Stage 7 no-behaviour-change refactor.
-
-**Act when:** the game author confirms which overview a finished game without a finale display should show. Then fix the function and update that test.
-
 ## Keyboard access to clickable elements in game templates
 
 Overview and stage screens are clickable through event delegation. `GameLayerWrapper` (`src/components/core/layout/GameLayerWrappers.tsx`) handles clicks on elements inside game-authored Mustache templates, matched by element `id` (e.g. `clickIdToStageId`). Those elements aren't focusable, so keyboard users can't choose a stage. The jsx-a11y findings on the wrapper are disabled with that reason.

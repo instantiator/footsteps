@@ -114,9 +114,18 @@ describe("GameStateUtils", () => {
           expect(simpleGameState_finished.current.stageId).toBe(null);
         });
 
-        // Characterises current behaviour, which looks inverted: see docs/outstanding-issues.md
-        it("with only a title display, shows the stages overview once the game is complete", () => {
-          expect(simpleGameState_finished.current.overviewDisplay).toBe("game-overview-stages");
+        it("with a title display but no finale, returns to the title once the game is complete", () => {
+          expect(simpleGameState_finished.current.overviewDisplay).toBe("game-overview-title");
+        });
+
+        it("with neither a title nor a finale display, shows the stages overview once the game is complete", () => {
+          const stagesOnly = { ...simpleGameState.gameData.displays[0], purpose: "game-overview-stages" as const };
+          const withoutTitle: GameState = {
+            ...simpleGameState_s3_c1,
+            gameData: { ...simpleGameState.gameData, displays: [stagesOnly] },
+          };
+          const finished = completeChallenge(withoutTitle, "stage-3", "stage-3-challenge-1");
+          expect(finished.current.overviewDisplay).toBe("game-overview-stages");
         });
 
         it("shows the finale display once the game is complete, when the game has one", () => {
