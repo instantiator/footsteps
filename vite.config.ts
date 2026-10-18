@@ -3,8 +3,6 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import localRepository from "./public/game-repository.json";
 
-import Unfonts from "unplugin-fonts/vite";
-
 // https://vitejs.dev/config/
 // @ts-expect-error keeping mode here, for future use
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -13,15 +11,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     base,
-    plugins: [
-      react(),
-      Unfonts({
-        /* options */
-        google: {
-          families: ["Crimson Pro", "Open Sans", "Material+Icons", "DynaPuff"],
-        },
-      }),
-    ],
+    plugins: [react()],
     ssgOptions: {
       script: "async",
       formatting: "prettify",

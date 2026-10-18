@@ -43,7 +43,6 @@
     "react-dom": "^19.2.0",
     "react-mustache-template-component": "^2.1.6",
     "react-router-dom": "^6.23.1",
-    "unplugin-fonts": "^1.4.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

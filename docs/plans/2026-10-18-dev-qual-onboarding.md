@@ -67,9 +67,9 @@ Intended outcome: the app sits at the repo root, `check.sh --comprehensive` pass
 
 - [x] Stage 1: Fix markdownlint and commit the dev-qual install
 - [x] Stage 2: Move footsteps to the repo root and wire up npm scripts
-- [ ] Stage 3: In-range updates and audit fixes
-- [ ] Stage 4: CI workflow update
-- [ ] Stage 5: Major dependency upgrades (sub-stages 5a–5h)
+- [x] Stage 3: In-range updates and audit fixes
+- [x] Stage 4: CI workflow update
+- [ ] Stage 5: Major dependency upgrades (sub-stages 5a–5h; router and fonts decisions recorded)
 - [ ] Stage 6: Adopt eslint baseline; remove `any`
 - [ ] Stage 7: Refactor for baseline limits (length, complexity, depth, params)
 - [ ] Stage 8: Clear aislop findings
@@ -144,18 +144,26 @@ Adding a separate PR check workflow is out of scope. Record it in outstanding-is
 
 One commit per sub-stage. Each one: read the upstream migration guide, bump, fix the fallout, and run the gate. If a major is blocked by a peer range (check `npm view <pkg> peerDependencies`), defer it to outstanding-issues with the condition "<blocking pkg> supports <version>", then move on.
 
-- 5a: **vite 8 + @vitejs/plugin-react 6 + vite-react-ssg 0.9 + unplugin-fonts 2.** These are coupled, and this one clears the remaining build-tool vulns. Check that `vite.config.ts` and the SSG `BASE_URL` path still work.
-- 5b: **vitest 5 + jsdom 30 + @testing-library/jest-dom 7 + msw 3.** Update `tests/setup.ts`, `tests/mocks/*`, and `tsconfig.vitest.json` types.
-- 5c: **eslint 10 + @eslint/js 10 + globals 17 + eslint-plugin-react-refresh 0.5.** Check that `typescript-eslint` and `eslint-plugin-react-hooks` support eslint 10 before bumping.
-- 5d: **TypeScript 7.** Likely blocked by typescript-eslint's peer range. Defer if so.
-- 5e: **react-router-dom 7.** Migrate `src/routes.tsx` and the `react-router-dom` imports. In v7, `react-router` is the main package. Check that vite-react-ssg supports v7.
-- 5f: **MUI 9** (`@mui/material`, `@mui/icons-material`). Follow the migration guide and codemods. Visually smoke-test the landing page and game HUD.
-- 5g: **uuid 14.**
-- 5h: **@types/node 26** (matching the engines/Node 24 choice; take 24.x types if we settle on Node 24).
+Re-ordered after two findings, both decided with the user (2026-10-18):
 
-**Tests:** existing suites, plus build. No new tests unless an API change needs one.
+- vite-react-ssg 0.9.2 (latest) still peers on `react-router-dom` v6, and react-router's advisories need v7.18+. **Decision:** drop vite-react-ssg and use React Router's framework mode with `prerender` (now `react-router` v8.4; `react-router-dom` stopped at 7.x).
+- unplugin-fonts (1.x and 2.0) depends on fast-glob → braces, a high-severity advisory with no fixed release. **Decision:** replace it with Google Fonts `<link>` tags.
 
-**Gate per sub-stage:** `check.sh --fast`, `npm test`, and `npm run build` all pass. For 5a, 5e and 5f, also smoke-test `npm run dev` with `/game/test-game` and `/game/magic-trifle` (load the page, advance one stage). The end of Stage 5 must also pass `npm outdated`, showing nothing except deferred items, and `npm audit` clean (or recorded).
+Sub-stages:
+
+- 5a: **Fonts.** Remove unplugin-fonts and the `unfonts.css` import, and put a preconnect plus Google Fonts `<link>` for Crimson Pro, Open Sans, Material Icons and DynaPuff in the HTML head.
+- 5b: **React Router 8 framework mode, dropping vite-react-ssg.** Record an ADR (`adr` skill) first. Add `react-router.config.ts` (`ssr: false`, `prerender` from `public/game-repository.json` ids, `basename` from `BASE_URL`), a root route with the HTML shell, and a route config. The pages become default-export route modules. Swap `react-router-dom` imports to `react-router`. Replace `@vitejs/plugin-react` with the `reactRouter()` plugin, skipping it under vitest. Update the scripts (`react-router dev`/`build`) and the deploy artifact path. Keep the `/game/:id` and `/game/:id/json` URLs.
+- 5c: **vite 8** (plus `@vitejs/plugin-react` 6, if it's still needed after 5b).
+- 5d: **vitest 5, jsdom 30, @testing-library/jest-dom 7, msw 3.** Update `tests/setup.ts`, `tests/mocks/*`, and `tsconfig.vitest.json` types.
+- 5e: **eslint 10, @eslint/js 10, globals 17, eslint-plugin-react-refresh 0.5.** Check that `typescript-eslint` and `eslint-plugin-react-hooks` support eslint 10 first.
+- 5f: **TypeScript 7.** Check typescript-eslint's peer range, and defer if blocked.
+- 5g: **MUI 9** (`@mui/material`, `@mui/icons-material`), via the migration guide and codemods.
+- 5h: **uuid 14.**
+- `@types/node` stays on 24.x to match the Node 24 LTS runtime (decided in Stage 4).
+
+**Tests:** existing suites, plus build. For 5b, `tests/Home.test.tsx` moves to `react-router`'s `MemoryRouter`.
+
+**Gate per sub-stage:** `check.sh --fast`, `npm test` and `npm run build` all pass. For 5a, 5b, 5c and 5g, also smoke-test the dev server and the built output: `/`, `/game/test-game` and `/game/magic-trifle` load, and the prerendered HTML exists for each route. The end of Stage 5 must also pass `npm outdated` (only deferred items) and `npm audit` (clean, or recorded).
 
 ### Stage 6: Adopt eslint baseline; remove `any` (Opus)
 
