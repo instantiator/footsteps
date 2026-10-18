@@ -1,5 +1,5 @@
 ---
-status: active
+status: done
 ---
 
 # Plan: dev-qual onboarding follow-ups
@@ -33,7 +33,7 @@ These are follow-ups agreed with the user after the [onboarding plan](2026-10-18
 - [x] 4: Keyboard access to click targets and the title screen
 - [x] 5: Replace uuid with useId()
 - [x] 6: Remove the Vite README boilerplate
-- [ ] 7: Note the installer bug in dev-qual (no commit in this repo's history beyond ticking this)
-- [ ] 8: Wrap-up: comprehensive check, docs review, outstanding issues
+- [x] 7: Note the installer bug in dev-qual (no commit in this repo's history beyond ticking this)
+- [x] 8: Wrap-up: comprehensive check, docs review, outstanding issues
 
 Each TODO's gate is `dev-qual/scripts/check.sh` (full) passing, plus its own tests.
