@@ -31,3 +31,6 @@ dist-ssr
 
 # React Router generated route types
 .react-router/
+
+# Test reports written in CI
+test-results/

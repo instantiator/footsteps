@@ -19,5 +19,10 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: "./tests/setup.ts",
     include: ["tests/**/*.test.{ts,tsx}"],
+    // In GitHub Actions: annotate failures and write a job summary, plus a JUnit file for the run's artefacts
+    ...(process.env.GITHUB_ACTIONS === "true" && {
+      reporters: ["default", "github-actions", "junit"],
+      outputFile: { junit: "test-results/junit.xml" },
+    }),
   },
 });
