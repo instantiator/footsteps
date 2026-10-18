@@ -96,21 +96,21 @@ const NAVIGATION_STYLE: CSSProperties = {
 };
 
 /** Arrows to page back and forward through the scroll's contents, with spacers where there's no page. */
-function ScrollNavigation({ onRetreat, onAdvance }: { onRetreat?: () => void; onAdvance?: () => void }) {
+export function ScrollNavigation({ onRetreat, onAdvance }: { onRetreat?: () => void; onAdvance?: () => void }) {
   if (!onRetreat && !onAdvance) return null;
   return (
     <div style={NAVIGATION_STYLE}>
       {onRetreat ? (
-        <span onClick={onRetreat} style={{ cursor: "pointer" }}>
+        <button type="button" className="plain-button" onClick={onRetreat} aria-label="Previous page">
           <ArrowCircleLeftTwoToneIcon style={{ fontSize: "3em" }} />
-        </span>
+        </button>
       ) : (
         <div style={{ width: "3em" }}></div>
       )}
       {onAdvance ? (
-        <span onClick={onAdvance} style={{ cursor: "pointer" }}>
+        <button type="button" className="plain-button" onClick={onAdvance} aria-label="Next page">
           <ArrowCircleRightTwoToneIcon style={{ fontSize: "3em" }} />
-        </span>
+        </button>
       ) : (
         <div style={{ width: "3em" }}></div>
       )}

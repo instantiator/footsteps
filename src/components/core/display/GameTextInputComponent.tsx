@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 import type { GameChallengeAnswer, GameChallengeAnswerValidation } from "../../../entities/data/GameChallengeSolution";
 import { isDefined } from "../../../util/ObjectUtils";
 import type { GameAnswerFunction } from "../Game";
@@ -41,36 +41,24 @@ export default function GameTextInputComponent({
   onAnswer,
   autoSubmit,
 }: GameTextInputComponentProps) {
-  const [input, setInput] = useState<string>("");
   const [validations, setValidations] = useState<GameChallengeAnswerValidation[]>([]);
 
   const uid = useId();
 
-  const submitAnswer = useCallback(
-    (answer: GameChallengeAnswer) => {
-      if (!isDefined(onAnswer)) {
-        throw new Error("No onAnswer handler defined.");
-      }
-      if (solved) {
-        return;
-      }
-      if (!isDefined(stageId) || !isDefined(challengeId)) {
-        throw new Error(`Stage id (${stageId}) and challenge id (${challengeId}) must be defined to submit an answer.`);
-      }
-      const validation = onAnswer(stageId, challengeId, answer);
-      setSolved?.(validation === true);
-      setValidations(validation === true ? [] : validation);
-    },
-    [onAnswer, solved, stageId, challengeId, setSolved],
-  );
-
-  useEffect(() => {
-    if (isDefined(onAnswer)) {
-      if (autoSubmit ?? true) {
-        submitAnswer(input);
-      }
+  const submitAnswer = (answer: GameChallengeAnswer) => {
+    if (!isDefined(onAnswer)) {
+      throw new Error("No onAnswer handler defined.");
     }
-  }, [input, autoSubmit, onAnswer, submitAnswer]);
+    if (solved) {
+      return;
+    }
+    if (!isDefined(stageId) || !isDefined(challengeId)) {
+      throw new Error(`Stage id (${stageId}) and challenge id (${challengeId}) must be defined to submit an answer.`);
+    }
+    const validation = onAnswer(stageId, challengeId, answer);
+    setSolved?.(validation === true);
+    setValidations(validation === true ? [] : validation);
+  };
 
   return (
     <>
@@ -84,7 +72,7 @@ export default function GameTextInputComponent({
           autoCorrect="off"
           style={INPUT_STYLE}
           onChange={(e) => {
-            setInput(e.target.value);
+            if (isDefined(onAnswer) && (autoSubmit ?? true)) submitAnswer(e.target.value);
           }}
         />
       </div>

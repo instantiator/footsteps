@@ -1,18 +1,12 @@
-import { useEffect, useState } from "react";
 import { useGameState } from "../../providers/GameStateHook";
 import { getRenderMode } from "./logic/RenderDataUtils";
 
+/** Buttons to leave the current challenge, or return to the title screen, when either applies. */
 export default function HeadsUpDisplay() {
   const { gameState, setGameState } = useGameState();
 
-  const [showCloseChallengeButton, setShowCloseChallengeButton] = useState<boolean>(false);
-  const [showTitleReturnButton, setShowTitleReturnButton] = useState<boolean>(false);
-
-  useEffect(() => {
-    const gameMode = getRenderMode(gameState);
-    setShowCloseChallengeButton(gameMode === "stage");
-    setShowTitleReturnButton(gameState.current.overviewDisplay !== "game-overview-title");
-  }, [gameState]);
+  const showCloseChallengeButton = getRenderMode(gameState) === "stage";
+  const showTitleReturnButton = gameState.current.overviewDisplay !== "game-overview-title";
 
   const returnToTitle = () => {
     setGameState({

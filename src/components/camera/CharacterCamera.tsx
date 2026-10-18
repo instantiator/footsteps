@@ -42,6 +42,7 @@ export default function CharacterCamera({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "start" }}>
+      {/* oxlint-disable-next-line jsx-a11y/media-has-caption -- a live, silent preview of the player: nothing to caption */}
       <video
         ref={videoRef}
         style={{

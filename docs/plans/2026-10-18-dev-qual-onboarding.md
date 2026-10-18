@@ -72,7 +72,7 @@ Intended outcome: the app sits at the repo root, `check.sh --comprehensive` pass
 - [x] Stage 5: Major dependency upgrades (sub-stages 5a–5h; router and fonts decisions recorded)
 - [x] Stage 6: Adopt eslint baseline; remove `any`
 - [x] Stage 7: Refactor for baseline limits (length, complexity, depth, params)
-- [ ] Stage 8: Clear aislop findings
+- [x] Stage 8: Clear aislop findings
 - [ ] Stage 9: Documentation and wrap-up
 
 ### Stage 1: Fix markdownlint and commit the dev-qual install (Sonnet)

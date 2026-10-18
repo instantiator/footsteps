@@ -32,10 +32,8 @@ export default function useContentCache() {
   const { cache, setCache } = useContext(GameContentCacheContext);
 
   const fetchTemplate = async (template: GameDisplayTemplateSourceData): Promise<GameDisplayTemplateSourceData> => {
-    console.debug(`Loading URL template: ${template.templateSource}`);
     const response = await fetch(template.templateSource!);
     const text = await response.text();
-    console.debug(`Loaded URL template: ${template.templateSource}`);
     setCache((previous) => ({ ...previous, templates: [...previous.templates, { ...template, content: text }] }));
     return { ...template, content: text };
   };
@@ -45,7 +43,6 @@ export default function useContentCache() {
   ): Promise<GameDisplayTemplateSourceData | undefined> => {
     if (!isDefined(template)) return undefined;
     if (template.sourceType === "embedded") {
-      console.debug(`Loaded embedded template.`);
       return template;
     }
 
@@ -56,7 +53,6 @@ export default function useContentCache() {
 
     if (template.sourceType === "url") return fetchTemplate(template);
 
-    console.debug(`Loading ${template.sourceType} template: ${template.templateSource}`);
     return getTemplate({
       ...template,
       sourceType: "url",

@@ -135,11 +135,9 @@ export default function Game() {
     [gameState, onAnswer, resources],
   );
 
-  const handleElementClick = (layerId: string, elementId: string) => {
-    console.debug(`Element ${elementId} on layer ${layerId} clicked.`);
+  const handleElementClick = (_layerId: string, elementId: string) => {
     const newState = getNewGameStateForClick(gameState, elementId);
     if (!isDefined(newState)) return false;
-    console.debug("Updating game state from click.", newState);
     setGameState(newState);
     return true;
   };

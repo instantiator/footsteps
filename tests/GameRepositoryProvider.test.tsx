@@ -49,3 +49,21 @@ describe("GameRepositoryProvider", () => {
     expect(contextValue!.repository.games["magic-trifle"]).toBeDefined();
   });
 });
+
+describe("GameRepositoryProvider with a raw repository", () => {
+  it("provides it as ready on the first render, without fetching", () => {
+    const raw: GameRepository = { games: {}, ready: false, loading: false };
+    let contextValue: GameRepositoryContextType | undefined;
+    render(
+      <GameRepositoryProvider source={{ type: "RawRepository", repository: raw }}>
+        <GameRepositoryContext.Consumer>
+          {(context) => {
+            contextValue = context;
+            return null;
+          }}
+        </GameRepositoryContext.Consumer>
+      </GameRepositoryProvider>,
+    );
+    expect(contextValue!.repository.ready).toBe(true);
+  });
+});

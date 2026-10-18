@@ -1,4 +1,4 @@
-import { useEffect, useState, type PropsWithChildren } from "react";
+import { useMemo, type PropsWithChildren } from "react";
 import { useSearchParams } from "react-router";
 import { DEFAULT_FEATURE_FLAGS, FeatureFlagsContext, type FeatureFlags } from "./FeatureFlagsContext";
 
@@ -23,13 +23,10 @@ const composeFeatureFlags = (
   return flags;
 };
 
+/** Feature flags from props, overridden by matching URL query parameters (e.g. ?debug=true). */
 export default function FeatureFlagsProvider(props: PropsWithChildren<FeatureFlagsProviderProps>) {
   const [searchParams] = useSearchParams();
-  const [flags, setFlags] = useState<FeatureFlags>(composeFeatureFlags(DEFAULT_FEATURE_FLAGS, props, searchParams));
-
-  useEffect(() => {
-    setFlags(composeFeatureFlags(DEFAULT_FEATURE_FLAGS, props, searchParams));
-  }, [props, searchParams]);
+  const flags = useMemo(() => composeFeatureFlags(DEFAULT_FEATURE_FLAGS, props, searchParams), [props, searchParams]);
 
   return <FeatureFlagsContext.Provider value={flags}>{props.children}</FeatureFlagsContext.Provider>;
 }

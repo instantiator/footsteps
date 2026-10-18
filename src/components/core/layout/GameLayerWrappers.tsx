@@ -28,6 +28,8 @@ export interface LayerNodeProps {
 }
 
 export const GameLayerWrapper = ({ nodes, style, zIndex, clickHandler, layer, layerHint }: LayerNodeProps) => (
+  // Delegates clicks from elements inside game-authored templates; keyboard access to those is tracked in docs/outstanding-issues.md
+  // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
   <div
     id={`${layer!}-${layerHint!}-container`}
     className="outerStyle noClicks"
@@ -67,6 +69,8 @@ export const CharacterCameraLayerWrapper = ({
 );
 
 export const DebugLayerWrapper = ({ style, zIndex, clickHandler, feetPositions, cameraEnabled }: LayerNodeProps) => (
+  // Debug-only overlay that delegates clicks, as GameLayerWrapper does
+  // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
   <div
     id="debug-overlay-container"
     className="outerStyle noClicks"

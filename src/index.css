@@ -12,3 +12,14 @@ div {
   margin: 0;
   padding: 0;
 }
+
+/* A button that looks like its content: for clickable icons and images */
+.plain-button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}

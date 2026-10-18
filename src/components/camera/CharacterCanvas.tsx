@@ -36,9 +36,7 @@ const SEGMENTATION_CONFIG = {
 const loadBodySegNet = async (): Promise<BodySegNet | null> => {
   await tf.ready();
   try {
-    console.log("Loading BodySeg model...");
     const bodySegNet = await bodySeg.createSegmenter(bodySeg.SupportedModels.BodyPix, MODEL_CONFIG);
-    console.log("Model loaded successfully!");
     return bodySegNet;
   } catch (error) {
     console.error("Failed to load BodySeg model:", error);
@@ -46,8 +44,11 @@ const loadBodySegNet = async (): Promise<BodySegNet | null> => {
   }
 };
 
-/** Finds each segmented person's feet, keyed by their index in the segmentation. */
-const findAllFeet = async (segmentation: Segmentation): Promise<FeetPositions> => {
+/**
+ * Finds each segmented person's feet, keyed by their index in the segmentation.
+ * @param offScreenThreshold_percent feet lower than this (% of height) are not tracked
+ */
+const findAllFeet = async (segmentation: Segmentation, offScreenThreshold_percent?: number): Promise<FeetPositions> => {
   const feetPositions: FeetPositions = {};
   for (let i = 0; i < segmentation.length; i++) {
     const personMask = await bodySeg.toBinaryMask(
@@ -55,8 +56,7 @@ const findAllFeet = async (segmentation: Segmentation): Promise<FeetPositions> =
       { r: 0, g: 0, b: 0, a: 255 },
       { r: 0, g: 0, b: 0, a: 0 },
     );
-    //TODO: replace undefined with offScreenThreshold_percent to not track feet below the bottom
-    const feet = findFeet(personMask, personMask.width, personMask.height, undefined);
+    const feet = findFeet(personMask, personMask.width, personMask.height, offScreenThreshold_percent);
     if (feet) {
       feetPositions[i] = feet;
     }
@@ -78,14 +78,20 @@ export default function CharacterCanvas({
 
   // Load the model while there is a camera stream, and release it when there isn't
   useEffect(() => {
-    if (mediaStream && !net) {
-      loadBodySegNet().then((loaded) => loaded && setNet(loaded));
-    }
-    if (!mediaStream) {
-      net?.dispose();
+    if (!mediaStream) return;
+    let loaded: BodySegNet | null = null;
+    let cancelled = false;
+    loadBodySegNet().then((bodySegNet) => {
+      if (cancelled) return bodySegNet?.dispose();
+      loaded = bodySegNet;
+      setNet(bodySegNet);
+    });
+    return () => {
+      cancelled = true;
+      loaded?.dispose();
       setNet(null);
-    }
-  }, [mediaStream, net]);
+    };
+  }, [mediaStream]);
 
   // Segment each video frame: report feet positions, then draw the mask
   useEffect(() => {
@@ -102,7 +108,7 @@ export default function CharacterCanvas({
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           onFeetPositionsChange?.({});
         } else {
-          if (onFeetPositionsChange) onFeetPositionsChange(await findAllFeet(segmentation));
+          if (onFeetPositionsChange) onFeetPositionsChange(await findAllFeet(segmentation, offScreenThreshold_percent));
           await drawMask(video, segmentation, ctx, maskType);
         }
         requestAnimationFrame(segmentFrame);

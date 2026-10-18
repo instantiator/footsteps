@@ -22,7 +22,6 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      "react-hooks/set-state-in-effect": "off", // Disable the warning about setState in effect
       "@typescript-eslint/indent": "off", // Explicitly disable indent rule to avoid conflict with Prettier
     },
   },

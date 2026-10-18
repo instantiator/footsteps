@@ -1,5 +1,5 @@
 import Mustache from "mustache";
-import { useEffect, useId, useState, type PropsWithChildren } from "react";
+import { useEffect, useId, useMemo, useState, type PropsWithChildren } from "react";
 import MustacheTemplate from "react-mustache-template-component";
 import type { GameDisplayTemplateSourceData as GameDisplayTemplateData } from "../../../entities/data/displays/GameDisplayTemplateComponentData";
 import type { GameChallengeId } from "../../../entities/data/GameChallengeData";
@@ -34,14 +34,14 @@ export default function GameDisplayTemplateComponent({
   children,
 }: PropsWithChildren<GameDisplayTemplateProps>) {
   const [render, setRender] = useState<GameDisplayTemplateData | undefined>();
-  const [containerStyleParsed, setContainerStyleParsed] = useState<React.CSSProperties>({});
 
   const { getTemplate } = useContentCache();
 
   const uid = useId();
 
-  useEffect(() => {
-    setContainerStyleParsed(
+  // Style values may themselves be Mustache templates over the same data
+  const containerStyleParsed = useMemo(
+    (): React.CSSProperties =>
       isDefined(containerStyle)
         ? Object.fromEntries(
             Object.entries(containerStyle).map(([key, value]) => [
@@ -50,8 +50,8 @@ export default function GameDisplayTemplateComponent({
             ]),
           )
         : {},
-    );
-  }, [containerStyle, templateData]);
+    [containerStyle, templateData],
+  );
 
   useEffect(() => {
     async function loadTemplate() {

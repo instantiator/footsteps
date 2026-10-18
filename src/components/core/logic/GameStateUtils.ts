@@ -36,12 +36,7 @@ export function validateAnswer(
 
   const isMatch = solutionAnswers.some((a) => a === answer);
 
-  if (isMatch) {
-    console.debug(`answer: "${answer}", matches.`, solutionAnswers);
-    return true;
-  } else {
-    return [];
-  }
+  return isMatch ? true : [];
 }
 
 /**
