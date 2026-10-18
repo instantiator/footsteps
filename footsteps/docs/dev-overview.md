@@ -29,8 +29,8 @@ All games in the local repository at `public/game-repository.json` are pre-built
 
 | Game           | Game URL                                | Game data URL                                |
 | -------------- | --------------------------------------- | -------------------------------------------- |
-| `test-game`    | http://localhost:5173/game/test-game    | http://localhost:5173/game/test-game/json    |
-| `magic-trifle` | http://localhost:5173/game/magic-trifle | http://localhost:5173/game/magic-trifle/json |
+| `test-game`    | <http://localhost:5173/game/test-game>    | <http://localhost:5173/game/test-game/json>    |
+| `magic-trifle` | <http://localhost:5173/game/magic-trifle> | <http://localhost:5173/game/magic-trifle/json> |
 
 ## Schemas
 
@@ -44,11 +44,11 @@ JSON schemas are generated and placed into the `src/assets/` directory by the `p
 ### Validate data
 
 ```bash
-$ ./validate-repository.sh public/game-repository.json
+./validate-repository.sh public/game-repository.json
 ```
 
 ```bash
-$ ./validate-game.sh path/to/some-game.json
+./validate-game.sh path/to/some-game.json
 ```
 
 ## GitHub Pages

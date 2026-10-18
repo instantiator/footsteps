@@ -24,8 +24,8 @@ All games are in the local repository at `public/game-repository.json` should be
 
 | Game           | Game URL                                | Game data URL                                |
 | -------------- | --------------------------------------- | -------------------------------------------- |
-| `test-game`    | http://localhost:5173/game/test-game    | http://localhost:5173/game/test-game/json    |
-| `magic-trifle` | http://localhost:5173/game/magic-trifle | http://localhost:5173/game/magic-trifle/json |
+| `test-game`    | <http://localhost:5173/game/test-game>    | <http://localhost:5173/game/test-game/json>    |
+| `magic-trifle` | <http://localhost:5173/game/magic-trifle> | <http://localhost:5173/game/magic-trifle/json> |
 
 ## Coding practices
 

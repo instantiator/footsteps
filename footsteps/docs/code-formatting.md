@@ -6,8 +6,8 @@ This document outlines the configuration for code formatting (Prettier) and code
 
 For the editor integration to work as described, you must have the following VS Code extensions installed:
 
-1.  **ESLint** (`dbaeumer.vscode-eslint`): Integrates ESLint into VS Code, showing linting errors and warnings directly in the editor.
-2.  **Prettier - Code formatter** (`prettier.prettier-vscode`): The official Prettier extension, used to format code.
+1. **ESLint** (`dbaeumer.vscode-eslint`): Integrates ESLint into VS Code, showing linting errors and warnings directly in the editor.
+2. **Prettier - Code formatter** (`prettier.prettier-vscode`): The official Prettier extension, used to format code.
 
 ---
 
@@ -79,8 +79,8 @@ export default defineConfig([
 ```
 
 - **Integration:** We use `eslint-plugin-prettier/recommended`. This configuration does two crucial things:
-  1.  It enables `eslint-config-prettier`, which disables all ESLint stylistic rules (like `indent`, `quotes`, etc.) that could conflict with Prettier.
-  2.  It enables `eslint-plugin-prettier`, which runs Prettier as an ESLint rule (`prettier/prettier`).
+  1. It enables `eslint-config-prettier`, which disables all ESLint stylistic rules (like `indent`, `quotes`, etc.) that could conflict with Prettier.
+  2. It enables `eslint-plugin-prettier`, which runs Prettier as an ESLint rule (`prettier/prettier`).
 - **Rule Overrides:** We explicitly set `"@typescript-eslint/indent": "off"` to resolve a specific conflict and set `"prettier/prettier": "warn"` to make formatting issues appear as less-intrusive warnings.
 
 ### 3. VS Code Workspace Settings (`.vscode/settings.json`)
@@ -107,8 +107,8 @@ This file configures VS Code's behavior to automate formatting on save.
 ```
 
 - **TypeScript/TSX Files:** For these files, two actions run on save in sequence:
-  1.  `"editor.formatOnSave": true` runs first, using Prettier (`prettier.prettier-vscode`) to format the entire file.
-  2.  `"editor.codeActionsOnSave"` runs immediately after, triggering ESLint to fix any remaining auto-fixable code quality issues.
+  1. `"editor.formatOnSave": true` runs first, using Prettier (`prettier.prettier-vscode`) to format the entire file.
+  2. `"editor.codeActionsOnSave"` runs immediately after, triggering ESLint to fix any remaining auto-fixable code quality issues.
 - **Markdown Files:** We handle Markdown separately to avoid ESLint trying to parse it as code. The `"[markdown]"` block configures VS Code to use only the Prettier extension to format `.md` files on save.
 
 ---
@@ -122,6 +122,7 @@ Setting this up involved solving a few tricky problems.
 - **Issue:** When saving a TypeScript file, the indentation would quickly change to 2 spaces (correct) and then immediately "bounce" back to 4 spaces (incorrect), especially for multi-line imports.
 - **Diagnosis:** This indicated that two formatters were running in sequence. A diagnostic test confirmed that the Prettier extension alone worked correctly, meaning the conflict was coming from the ESLint "fix on save" action.
 - **Resolution:** The root cause was an indentation rule from `@typescript-eslint` that was not being properly disabled by the Prettier configuration for import statements. We resolved this by explicitly disabling the rule in `eslint.config.js`:
+
   ```javascript
   "rules": {
     "@typescript-eslint/indent": "off"
