@@ -11,7 +11,7 @@
     "dev": "react-router dev",
     "prebuild": "sh pre-build.sh",
     "build": "tsc -b && react-router build && sh finish-static-build.sh",
-    "build:gh-pages": "tsc -b && BASE_URL=/2025-xmas-game/ react-router build && sh finish-static-build.sh /2025-xmas-game/",
+    "build:gh-pages": "BASE_URL=${BASE_URL:-/2025-xmas-game/} npm run build",
     "prelint": "sh pre-build.sh",
     "lint": "eslint .",
     "prepreview": "sh pre-build.sh",
