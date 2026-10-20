@@ -27,11 +27,6 @@ export interface GameDisplayScrollComponentDataContent {
   text?: string;
   /** If true, shows an answer input on this page. */
   showInput?: boolean;
-  /**
-   * A hint for this page.
-   * Not yet implemented: never shown. See docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md #4.
-   */
-  hint?: string;
   /** Label for the answer input. Used only when `showInput` is true. */
   label?: string;
   /** Audio to play on this page. */

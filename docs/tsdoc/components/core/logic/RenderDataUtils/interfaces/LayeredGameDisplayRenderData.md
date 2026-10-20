@@ -6,7 +6,7 @@
 
 # Interface: LayeredGameDisplayRenderData
 
-Defined in: [components/core/logic/RenderDataUtils.ts:33](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L33)
+Defined in: [components/core/logic/RenderDataUtils.ts:34](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L34)
 
 The displays to show at once, layered: the overview, the current stage's shared display, and its active challenges.
 
@@ -16,7 +16,7 @@ The displays to show at once, layered: the overview, the current stage's shared 
 
 > `optional` **challengesRenderData?**: [`GameDisplayRenderData`](GameDisplayRenderData.md)[]
 
-Defined in: [components/core/logic/RenderDataUtils.ts:39](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L39)
+Defined in: [components/core/logic/RenderDataUtils.ts:40](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L40)
 
 One per active challenge in the current chunk.
 
@@ -26,7 +26,7 @@ One per active challenge in the current chunk.
 
 > `optional` **overviewRenderData?**: [`GameDisplayRenderData`](GameDisplayRenderData.md)
 
-Defined in: [components/core/logic/RenderDataUtils.ts:35](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L35)
+Defined in: [components/core/logic/RenderDataUtils.ts:36](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L36)
 
 Present when no stage is current.
 
@@ -36,6 +36,6 @@ Present when no stage is current.
 
 > `optional` **stageRenderData?**: [`GameDisplayRenderData`](GameDisplayRenderData.md)
 
-Defined in: [components/core/logic/RenderDataUtils.ts:37](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L37)
+Defined in: [components/core/logic/RenderDataUtils.ts:38](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L38)
 
 The current stage's `shared` display, if it has one.

@@ -30,8 +30,7 @@ describe("GameStateProvider", () => {
     );
   });
 
-  // BUG #8 (docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md): state should reset to the new game's blank state when the game changes; actual: useState keeps the first game's state
-  it.skip("resets to the new game's blank state when the game changes", () => {
+  it("resets to the new game's blank state when the game changes", () => {
     const repository = { games: { first: simpleGameData, second: smallGame } };
     const { rerender } = render(
       <GameProviders repository={repository} gameId="first">

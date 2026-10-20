@@ -259,8 +259,7 @@ describe("completeChallenge progression", () => {
     });
   });
 
-  // BUG #3 (docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md): autoAdvanceStages: true should move straight to the next stage even with a stages overview; the flag is never read, so the game returns to the overview.
-  it.skip("advances straight to the next stage when config.autoAdvanceStages is true", () => {
+  it("advances straight to the next stage when config.autoAdvanceStages is true", () => {
     const state = atStage(
       threeStages(["game-overview-title", "game-overview-stages"], { sequential: true, autoAdvanceStages: true }),
       "s1",
@@ -272,7 +271,7 @@ describe("completeChallenge progression", () => {
 describe("validateAnswer", () => {
   const withSolution = (solution: Partial<GameChallengeSolution>): GameChallengeData => ({
     ...challenge("c"),
-    solution: { answers: ["Hello World"], hints: [], ...solution },
+    solution: { answers: ["Hello World"], ...solution },
   });
 
   it("accepts the answer ignoring case and whitespace by default", () => {

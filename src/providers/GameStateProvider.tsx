@@ -6,7 +6,7 @@ import { GameStateContext } from "./GameStateContext";
 /** Holds the player's progress, starting from a blank state for the loaded game. */
 export default function GameStateProvider({ children }: { children: ReactNode }) {
   const { gameData } = useGameData();
-  const [gameState, setGameState] = useState<GameState>(createBlankGameState(gameData));
+  const [gameState, setGameState] = useState<GameState>(() => createBlankGameState(gameData));
 
   return <GameStateContext.Provider value={{ gameState, setGameState }}>{children}</GameStateContext.Provider>;
 }

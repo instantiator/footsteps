@@ -16,9 +16,9 @@ interface GameDisplayTemplateProps {
   templateSource: GameDisplayTemplateData | undefined;
   /** Mustache view: any object whose fields the template may reference. */
   templateData: object;
-  /** Style for the container; its values are rendered as Mustache templates over `templateData`. */
+  /** Style for the container; its string values are rendered as Mustache templates over `templateData`. */
   containerStyle?: React.CSSProperties;
-  /** Style for the rendered template itself. */
+  /** Style for the rendered template itself; its string values are rendered as Mustache templates too. */
   templateStyle?: React.CSSProperties;
   stageId?: GameStageId; // unused: see docs/outstanding-issues.md
   challengeId?: GameChallengeId; // unused: see docs/outstanding-issues.md
@@ -32,8 +32,22 @@ const MUSTACHE_OPTIONS: Mustache.RenderOptions = {
 };
 
 /**
+ * Renders a style's string values as Mustache templates over the data. Numbers and undefined pass
+ * through unchanged.
+ * @throws if a value is anything else, naming the style key, so a mistake in game data is easy to find
+ */
+const renderStyle = (style: React.CSSProperties | undefined, data: object): React.CSSProperties =>
+  Object.fromEntries(
+    Object.entries(style ?? {}).map(([key, value]: [string, unknown]) => {
+      if (typeof value === "string") return [key, Mustache.render(value, data, undefined, MUSTACHE_OPTIONS)];
+      if (typeof value === "number" || value === undefined) return [key, value];
+      throw new Error(`Style value for "${key}" must be a string or a number, not ${typeof value}`);
+    }),
+  );
+
+/**
  * Fetches a Mustache template (via the content cache) and renders it with the template data,
- * inside a container whose style is Mustache-rendered too. Children follow the rendered template.
+ * inside a container. Both styles' string values are Mustache-rendered too. Children follow the rendered template.
  */
 export default function GameDisplayTemplateComponent({
   templateSource,
@@ -48,26 +62,16 @@ export default function GameDisplayTemplateComponent({
 
   const uid = useId();
 
-  // Style values may themselves be Mustache templates over the same data
-  const containerStyleParsed = useMemo(
-    (): React.CSSProperties =>
-      isDefined(containerStyle)
-        ? Object.fromEntries(
-            Object.entries(containerStyle).map(([key, value]) => [
-              key,
-              Mustache.render(value, templateData, undefined, MUSTACHE_OPTIONS),
-            ]),
-          )
-        : {},
-    [containerStyle, templateData],
-  );
+  const containerStyleParsed = useMemo(() => renderStyle(containerStyle, templateData), [containerStyle, templateData]);
+  const templateStyleParsed = useMemo(() => renderStyle(templateStyle, templateData), [templateStyle, templateData]);
 
   useEffect(() => {
-    async function loadTemplate() {
-      const retrieved = await getTemplate(templateSource);
-      setRender(retrieved);
-    }
-    loadTemplate();
+    getTemplate(templateSource)
+      .then(setRender)
+      .catch((error) => {
+        console.error("Error loading template:", error);
+        setRender(undefined);
+      });
   }, [templateSource, getTemplate]);
 
   return (
@@ -77,7 +81,7 @@ export default function GameDisplayTemplateComponent({
       style={{ width: "100%", height: "100%", ...containerStyleParsed }}
     >
       {isDefined(render) && (
-        <MustacheTemplate template={render.content ?? ""} data={templateData} style={templateStyle} />
+        <MustacheTemplate template={render.content ?? ""} data={templateData} style={templateStyleParsed} />
       )}
       {children}
     </div>

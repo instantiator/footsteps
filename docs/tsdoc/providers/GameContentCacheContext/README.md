@@ -12,5 +12,4 @@
 
 ## Variables
 
-- [BLANK\_CACHE](variables/BLANK_CACHE.md)
 - [GameContentCacheContext](variables/GameContentCacheContext.md)

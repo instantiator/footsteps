@@ -6,7 +6,7 @@
 
 # Interface: GameTemplateData
 
-Defined in: [components/core/logic/RenderDataUtils.ts:45](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L45)
+Defined in: [components/core/logic/RenderDataUtils.ts:46](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L46)
 
 Data to provide to game challenge Mustache templates.
 
@@ -16,7 +16,7 @@ Data to provide to game challenge Mustache templates.
 
 > **challenge**: [`GameChallengeData`](../../../../../entities/data/GameChallengeData/interfaces/GameChallengeData.md) \| `undefined`
 
-Defined in: [components/core/logic/RenderDataUtils.ts:53](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L53)
+Defined in: [components/core/logic/RenderDataUtils.ts:54](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L54)
 
 Only set for challenge displays.
 
@@ -26,7 +26,7 @@ Only set for challenge displays.
 
 > **challengeState**: [`GameChallengeState`](../../../../../entities/state/GameChallengeState/interfaces/GameChallengeState.md) \| `undefined`
 
-Defined in: [components/core/logic/RenderDataUtils.ts:55](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L55)
+Defined in: [components/core/logic/RenderDataUtils.ts:56](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L56)
 
 Only set for challenge displays.
 
@@ -36,7 +36,7 @@ Only set for challenge displays.
 
 > **componentData**: `Record`\<`string`, `unknown`\>
 
-Defined in: [components/core/logic/RenderDataUtils.ts:49](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L49)
+Defined in: [components/core/logic/RenderDataUtils.ts:50](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L50)
 
 The display's own `component.data`, authored freely.
 
@@ -46,7 +46,7 @@ The display's own `component.data`, authored freely.
 
 > **gameState**: [`DecoratedGameState`](../../TemplateUtils/type-aliases/DecoratedGameState.md)
 
-Defined in: [components/core/logic/RenderDataUtils.ts:47](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L47)
+Defined in: [components/core/logic/RenderDataUtils.ts:48](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L48)
 
 The game state, with per-stage flags for templates that can't compute them.
 
@@ -56,6 +56,6 @@ The game state, with per-stage flags for templates that can't compute them.
 
 > **resources**: `Record`\<`string`, `string`\>
 
-Defined in: [components/core/logic/RenderDataUtils.ts:51](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L51)
+Defined in: [components/core/logic/RenderDataUtils.ts:52](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L52)
 
 Resolved resource URLs, by resource name.

@@ -3,6 +3,7 @@ import type { GameChallengeSolution } from "../../../entities/data/GameChallenge
 import type { GameStageData, GameStageId } from "../../../entities/data/GameStageData";
 import type {
   GameChallengeDisplay,
+  GameChallengeDisplayPurpose,
   GameDisplayBase,
   GameOverviewDisplay,
   GameStageDisplay,
@@ -196,15 +197,21 @@ export const calcStageDisplay = (
 export const calcChallengeDisplays = (challengeStates: GameChallengeState[]) =>
   challengeStates?.map((challengeState) => calcChallengeDisplay(challengeState)) ?? [];
 
+/** The order in which a challenge's displays are preferred, before and after it is solved. */
+const CHALLENGE_DISPLAY_PREFERENCE: Record<"unsolved" | "solved", GameChallengeDisplayPurpose[]> = {
+  unsolved: ["challenge-title", "challenge-in-progress", "challenge-completed"],
+  solved: ["challenge-completed", "challenge-in-progress", "challenge-title"],
+};
+
 /**
- * Gets the challenge display for the given challenge state: its set display purpose if any,
- * otherwise the first of title, in-progress and completed that it has.
+ * Gets the challenge display for the given challenge state: the first it has of title, in-progress and
+ * completed while unsolved, or of completed, in-progress and title once solved.
  * @param challengeState the state of the challenge to get the display for
  * @returns a GameChallengeDisplay if one can be determined, or undefined if not
  */
-export const calcChallengeDisplay = (challengeState: GameChallengeState): GameChallengeDisplay | undefined =>
-  isDefined(challengeState.displayPurpose)
-    ? challengeState.challenge.displays.find((d) => d.purpose === challengeState.displayPurpose)
-    : (challengeState.challenge.displays.find((d) => d.purpose === "challenge-title") ??
-      challengeState.challenge.displays.find((d) => d.purpose === "challenge-in-progress") ??
-      challengeState.challenge.displays.find((d) => d.purpose === "challenge-completed"));
+export const calcChallengeDisplay = (challengeState: GameChallengeState): GameChallengeDisplay | undefined => {
+  const preference = CHALLENGE_DISPLAY_PREFERENCE[challengeState.succeeded ? "solved" : "unsolved"];
+  return preference
+    .map((purpose) => challengeState.challenge.displays.find((d) => d.purpose === purpose))
+    .find(isDefined);
+};

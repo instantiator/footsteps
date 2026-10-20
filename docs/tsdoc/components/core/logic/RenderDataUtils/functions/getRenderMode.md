@@ -8,7 +8,7 @@
 
 > **getRenderMode**(`gameState`): [`GameDisplayMode`](../type-aliases/GameDisplayMode.md)
 
-Defined in: [components/core/logic/RenderDataUtils.ts:59](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L59)
+Defined in: [components/core/logic/RenderDataUtils.ts:60](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L60)
 
 Shows the overview until a stage is entered.
 

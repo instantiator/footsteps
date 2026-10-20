@@ -88,8 +88,7 @@ describe("GameLayersLayout", () => {
     expect(received.canvas.at(-1)?.maskType).toBe("binary");
   });
 
-  // BUG #15 (docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md): debug should give the camera silhouette the "colored" mask; actual: debug is never passed to CharacterCanvasLayerWrapper so it is always "binary"
-  it.skip("tints the camera silhouette by body part when debugging", async () => {
+  it("tints the camera silhouette by body part when debugging", async () => {
     renderLayout({ cameraLayer: { enabled: true }, debug: true });
     await screen.findByTestId("canvas");
     expect(received.canvas.at(-1)?.maskType).toBe("colored");

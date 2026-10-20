@@ -46,11 +46,11 @@ The URL of the track.
 
 ### playMusic
 
-> **playMusic**: (`res`) => `boolean`
+> **playMusic**: (`res`) => `void`
 
 Defined in: [providers/GameMusicContext.tsx:15](https://github.com/instantiator/2025-xmas-game/blob/main/src/providers/GameMusicContext.tsx#L15)
 
-Starts the track at the given URL, unless music is already playing.
+Starts the track at the given URL, fading out any track already playing.
 
 #### Parameters
 
@@ -60,9 +60,7 @@ Starts the track at the given URL, unless music is already playing.
 
 #### Returns
 
-`boolean`
-
-whether playback was attempted
+`void`
 
 ***
 

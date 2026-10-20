@@ -6,8 +6,8 @@
 
 # Variable: GameContentCacheContext
 
-> `const` **GameContentCacheContext**: `Context`\<\{ `cache`: [`GameContentCache`](../interfaces/GameContentCache.md); `setCache`: `Dispatch`\<`SetStateAction`\<[`GameContentCache`](../interfaces/GameContentCache.md)\>\>; \}\>
+> `const` **GameContentCacheContext**: `Context`\<[`GameContentCache`](../interfaces/GameContentCache.md)\>
 
-Defined in: [providers/GameContentCacheContext.tsx:16](https://github.com/instantiator/2025-xmas-game/blob/main/src/providers/GameContentCacheContext.tsx#L16)
+Defined in: [providers/GameContentCacheContext.tsx:10](https://github.com/instantiator/2025-xmas-game/blob/main/src/providers/GameContentCacheContext.tsx#L10)
 
-The content cache and its setter; see `GameContentCacheProvider`.
+The content cache; see `GameContentCacheProvider`.

@@ -145,6 +145,7 @@ export default function GameLayersLayout({
           characterStream={characterStream}
           aspectRatio={aspectRatio}
           setFeetPositions={setFeetPositions}
+          debug={debug}
         />
       )}
       {cameraEnabled && (

@@ -32,8 +32,6 @@ export function createBlankGameState(game: GameData): GameState {
     completion: "ready",
     challengeStates: stage.challenges.map((challenge) => ({
       challenge: challenge,
-      displayPurpose: null,
-      attempts: [],
       succeeded: false,
     })),
   }));
