@@ -205,6 +205,7 @@
                 },
                 "type": {
                     "const": "audio",
+                    "description": "The kind of media: only audio is supported.",
                     "type": "string"
                 }
             },
