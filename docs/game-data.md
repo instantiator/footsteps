@@ -19,22 +19,22 @@ GameData
         ├── id
         ├── displays: GameChallengeDisplay[]
         └── solution: GameChallengeSolution
-            └── answers, ignoreCase, trimWhitespace, ignoreWhitespace, autoAccept, hints
+            └── answers, ignoreCase, trimWhitespace, ignoreWhitespace
 ```
 
 - **`config.sequential`** (default `true`) unlocks only the first stage at the start. Each completed challenge then unlocks the first stage that isn't complete. With `false`, every stage starts unlocked.
-- **`config.autoAdvanceStages`** isn't read yet ([bug #3](prompts/000.00.02.feedback%20-%20fixes%20from%20identified%20bugs%20and%20tests.md)). The code itself decides what happens when a stage is complete: the game returns to the `game-overview-stages` display if it has one, and otherwise goes straight to the next incomplete stage.
-- **`solution`**: an answer matches if it equals any of the `answers` after the optional case and whitespace normalisation. All three normalisations default to `true`. `autoAccept` and `hints` aren't used yet ([bug #4](prompts/000.00.02.feedback%20-%20fixes%20from%20identified%20bugs%20and%20tests.md)).
+- **`config.autoAdvanceStages`** decides what happens when a stage is complete. With `true`, the game goes straight to the next incomplete stage. Otherwise it returns to the `game-overview-stages` display if it has one, and goes straight on if it doesn't.
+- **`solution`**: an answer matches if it equals any of the `answers` after the optional case and whitespace normalisation. All three normalisations default to `true`.
 
 ## Displays
 
 Every display has a `purpose`, which says when it shows, and a `component`, which says how it renders (`src/entities/data/displays/`).
 
-| Level     | Purposes                                                                | Chosen by                                                                                                                                          |
-| --------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Game      | `game-overview-title`, `game-overview-stages`, `game-overview-complete` | `gameState.current.overviewDisplay`. The game starts on the title if it has one, otherwise on the stages.                                          |
-| Stage     | `shared`                                                                | Shown whenever that stage is open                                                                                                                  |
-| Challenge | `challenge-title`, `challenge-in-progress`, `challenge-completed`       | The first of these the challenge has, in that order ([bug #5](prompts/000.00.02.feedback%20-%20fixes%20from%20identified%20bugs%20and%20tests.md)) |
+| Level     | Purposes                                                                | Chosen by                                                                                                 |
+| --------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Game      | `game-overview-title`, `game-overview-stages`, `game-overview-complete` | `gameState.current.overviewDisplay`. The game starts on the title if it has one, otherwise on the stages. |
+| Stage     | `shared`                                                                | Shown whenever that stage is open                                                                         |
+| Challenge | `challenge-title`, `challenge-in-progress`, `challenge-completed`       | Unsolved: the first it has of title, in-progress, completed. Solved: of completed, in-progress, title.    |
 
 The selection code is `calcOverviewDisplay`, `calcStageDisplay` and `calcChallengeDisplay` in `src/components/core/logic/RenderDataUtils.ts`. Once every stage is complete, the overview switches to `game-overview-complete`, or falls back to the title, and then to the stages.
 
@@ -58,8 +58,10 @@ The active challenges are the first chunk of `challengeChunking` challenges that
 Both component types carry `data`, a free-form object that templates see as `componentData`, and a background and a foreground, each with:
 
 - `backgroundTemplate` / `foregroundTemplate`: a `GameDisplayTemplateSourceData` (see [Templating](#templating))
-- `backgroundStyle` / `foregroundStyle`: CSS for the layer's container. Values may use Mustache.
-- `backgroundTemplateStyle` / `foregroundTemplateStyle`: CSS for the rendered template. Values don't use Mustache ([bug #2](prompts/000.00.02.feedback%20-%20fixes%20from%20identified%20bugs%20and%20tests.md)).
+- `backgroundStyle` / `foregroundStyle`: CSS for the layer's container.
+- `backgroundTemplateStyle` / `foregroundTemplateStyle`: CSS for the rendered template.
+
+String values in all four styles may use Mustache over the [template data](#template-data), for example `"backgroundImage": "url('{{resources.bg}}')"`. Numbers pass through as they are. Any other kind of value is an error that names the style key.
 
 The **`template`** type renders those templates and nothing more. The **`scroll`** type shows paged text on an old-paper image. Each entry in its `contents[]` is one page, with:
 
@@ -83,7 +85,7 @@ If a resource can't be resolved, the game's loading state becomes `resource-erro
 
 ## Templating
 
-Templates are [Mustache](https://mustache.github.io/mustache.5.html), rendered to HTML. In templates, `{{value}}` is HTML-escaped as usual, so use `{{{value}}}` to insert markup. Mustache values in container styles are not escaped, so URLs in CSS stay intact ([bug #17](prompts/000.00.02.feedback%20-%20fixes%20from%20identified%20bugs%20and%20tests.md)). A `GameDisplayTemplateSourceData` gives the template's `sourceType` and its `templateSource` or `content`:
+Templates are [Mustache](https://mustache.github.io/mustache.5.html), rendered to HTML. In templates, `{{value}}` is HTML-escaped as usual, so use `{{{value}}}` to insert markup. Mustache values in styles are not escaped, so URLs in CSS stay intact. A `GameDisplayTemplateSourceData` gives the template's `sourceType` and its `templateSource` or `content`:
 
 | `sourceType` | Template comes from                                             |
 | ------------ | --------------------------------------------------------------- |
@@ -96,7 +98,7 @@ Templates are [Mustache](https://mustache.github.io/mustache.5.html), rendered t
 
 ### Template data
 
-Every template, and every Mustache value in a container style, is rendered with `GameTemplateData` (`src/components/core/logic/RenderDataUtils.ts`):
+Every template, and every Mustache value in a style, is rendered with `GameTemplateData` (`src/components/core/logic/RenderDataUtils.ts`):
 
 | Field            | What it holds                                                                                                                                               |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |

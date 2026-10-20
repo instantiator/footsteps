@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useCallback, useContext } from "react";
 import type { GameDisplayTemplateSourceData } from "../entities/data/displays/GameDisplayTemplateComponentData";
 import type { GameSource } from "../entities/GameSource";
 import { getBaseURL, isDefined, resolveRelativeURL } from "../util/ObjectUtils";
@@ -26,42 +26,40 @@ export const resolveTemplateURL = (
   }
 };
 
-/** Loads display templates, caching any fetched from a URL. */
+/** Fetches a template's text, failing on an error response rather than returning the error page. */
+const fetchTemplateText = async (url: string): Promise<string> => {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Template ${url}: ${response.status} ${response.statusText}`);
+  return response.text();
+};
+
+/** Loads display templates, fetching each URL once and sharing the result. */
 export default function useContentCache() {
   const { source: repositorySource } = useContext(GameRepositoryContext);
-  const { cache, setCache } = useContext(GameContentCacheContext);
+  const { templates } = useContext(GameContentCacheContext);
 
-  const fetchTemplate = async (template: GameDisplayTemplateSourceData): Promise<GameDisplayTemplateSourceData> => {
-    const response = await fetch(template.templateSource!);
-    const text = await response.text();
-    setCache((previous) => ({ ...previous, templates: [...previous.templates, { ...template, content: text }] }));
-    return { ...template, content: text };
-  };
+  const getTemplate = useCallback(
+    async (template: GameDisplayTemplateSourceData | undefined): Promise<GameDisplayTemplateSourceData | undefined> => {
+      if (!isDefined(template)) return undefined;
+      if (template.sourceType === "embedded") return template;
 
-  const getTemplate = async (
-    template: GameDisplayTemplateSourceData | undefined,
-  ): Promise<GameDisplayTemplateSourceData | undefined> => {
-    if (!isDefined(template)) return undefined;
-    if (template.sourceType === "embedded") {
-      return template;
-    }
-
-    const cached = cache.templates.find(
-      (t) => t.sourceType === template.sourceType && t.templateSource === template.templateSource,
-    );
-    if (isDefined(cached)) return cached;
-
-    if (template.sourceType === "url") return fetchTemplate(template);
-
-    return getTemplate({
-      ...template,
-      sourceType: "url",
-      templateSource: resolveTemplateURL(template.sourceType, template.templateSource!, repositorySource),
-    });
-  };
+      const url =
+        template.sourceType === "url"
+          ? template.templateSource!
+          : resolveTemplateURL(template.sourceType, template.templateSource!, repositorySource);
+      let text = templates.get(url);
+      if (!isDefined(text)) {
+        text = fetchTemplateText(url);
+        templates.set(url, text);
+        text.catch(() => templates.delete(url)); // let a later render retry a failed fetch
+      }
+      return { ...template, content: await text };
+    },
+    [templates, repositorySource],
+  );
 
   return {
-    /** Gets a template with its content: embedded as-is, otherwise from the cache or fetched. */
+    /** Gets a template with its content: embedded as-is, otherwise fetched once per URL. */
     getTemplate,
   };
 }

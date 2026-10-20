@@ -8,10 +8,10 @@
 
 > **default**(`__namedParameters`): `Element`
 
-Defined in: [components/core/display/GameDisplayTemplateComponent.tsx:38](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayTemplateComponent.tsx#L38)
+Defined in: [components/core/display/GameDisplayTemplateComponent.tsx:52](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayTemplateComponent.tsx#L52)
 
 Fetches a Mustache template (via the content cache) and renders it with the template data,
-inside a container whose style is Mustache-rendered too. Children follow the rendered template.
+inside a container. Both styles' string values are Mustache-rendered too. Children follow the rendered template.
 
 ## Parameters
 

@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
+import { http, HttpResponse } from "msw";
 import type { ReactNode } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import GameDisplayTemplateComponent from "../src/components/core/display/GameDisplayTemplateComponent";
 import type { GameDisplayTemplateSourceData } from "../src/entities/data/displays/GameDisplayTemplateComponentData";
 import type { GameSource } from "../src/entities/GameSource";
@@ -8,6 +9,7 @@ import GameContentCacheProvider from "../src/providers/GameContentCacheProvider"
 import { GameRepositoryContext } from "../src/providers/GameRepositoryContext";
 import { LOADING_REPOSITORY } from "../src/entities/GameRepository";
 import { getBaseURL } from "../src/util/ObjectUtils";
+import { server } from "./mocks/server";
 
 const localSource: GameSource = { type: "LocalRepository", path: "game-repository.json" };
 
@@ -32,17 +34,16 @@ describe("GameDisplayTemplateComponent", () => {
     expect(await screen.findByText("Hello Nanny")).toBeInTheDocument();
   });
 
-  // BUG #17 (docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md): data HTML should be inserted unescaped in the template body (docs/game-data.md); actual: MustacheTemplate renders with its own default-escaping Mustache, so MUSTACHE_OPTIONS only affects container styles
-  it.skip("does not escape HTML in the data, so data can contribute markup", async () => {
+  it("escapes {{value}} in the template body, but not {{{value}}}, so markup needs triple braces", async () => {
     const { container } = render(
       <GameDisplayTemplateComponent
-        templateSource={embedded("<div>{{markup}}</div>")}
+        templateSource={embedded("<div><p>{{markup}}</p>{{{markup}}}</div>")}
         templateData={{ markup: "<b id='bold'>hi</b>" }}
       />,
       { wrapper: Wrapper },
     );
-    expect(await screen.findByText("hi")).toBeInTheDocument();
-    expect(container.querySelector("b#bold")).not.toBeNull();
+    expect(await screen.findByText("<b id='bold'>hi</b>")).toBeInTheDocument();
+    expect(container.querySelector("b#bold")).toHaveTextContent("hi");
   });
 
   it("fetches a url template", async () => {
@@ -96,8 +97,7 @@ describe("GameDisplayTemplateComponent", () => {
     expect(template.compareDocumentPosition(child) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  // BUG #1 (docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md): numeric style values such as zIndex: 2 should apply; actual: Mustache.render throws on a non-string
-  it.skip("applies numeric container style values", async () => {
+  it("applies numeric container style values", async () => {
     const { container } = render(
       <GameDisplayTemplateComponent
         templateSource={embedded("<p>x</p>")}
@@ -110,8 +110,7 @@ describe("GameDisplayTemplateComponent", () => {
     expect((container.firstElementChild as HTMLElement).style.zIndex).toBe("2");
   });
 
-  // BUG #2 (docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md): template style values should be Mustache-rendered like container styles; actual: {{...}} reaches the DOM literally
-  it.skip("renders template style values as Mustache templates over the data", async () => {
+  it("renders template style values as Mustache templates over the data", async () => {
     render(
       <GameDisplayTemplateComponent
         templateSource={embedded("<p>x</p>")}
@@ -122,5 +121,57 @@ describe("GameDisplayTemplateComponent", () => {
     );
     const wrapper = (await screen.findByText("x")).parentElement as HTMLElement;
     expect(wrapper.style.fontFamily).toBe("Courier");
+  });
+  it("names the style key when a style value is neither a string nor a number", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    // Game data arrives as JSON, so it can break the types; parse some that does
+    const badStyle: React.CSSProperties = JSON.parse('{"zIndex": {"oops": true}}');
+    expect(() =>
+      render(
+        <GameDisplayTemplateComponent
+          templateSource={embedded("<p>x</p>")}
+          templateData={{}}
+          containerStyle={badStyle}
+        />,
+        { wrapper: Wrapper },
+      ),
+    ).toThrow('Style value for "zIndex" must be a string or a number, not object');
+  });
+
+  it("logs and renders nothing for a template that fails to load, rather than the error page", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    server.use(http.get("/missing.mustache", () => HttpResponse.text("<h1>Not found</h1>", { status: 404 })));
+    const { container } = render(
+      <GameDisplayTemplateComponent
+        templateSource={{ sourceType: "url", templateSource: new URL("missing.mustache", getBaseURL()).toString() }}
+        templateData={{}}
+      />,
+      { wrapper: Wrapper },
+    );
+    await vi.waitFor(() => expect(error).toHaveBeenCalled());
+    expect(container).not.toHaveTextContent("Not found");
+  });
+
+  it("fetches a template once for displays that ask for it at the same time", async () => {
+    let fetches = 0;
+    server.use(
+      http.get("/shared.mustache", () => {
+        fetches++;
+        return HttpResponse.text("<p>shared</p>");
+      }),
+    );
+    const source: GameDisplayTemplateSourceData = {
+      sourceType: "url",
+      templateSource: new URL("shared.mustache", getBaseURL()).toString(),
+    };
+    render(
+      <>
+        <GameDisplayTemplateComponent templateSource={source} templateData={{}} />
+        <GameDisplayTemplateComponent templateSource={source} templateData={{}} />
+      </>,
+      { wrapper: Wrapper },
+    );
+    expect(await screen.findAllByText("shared")).toHaveLength(2);
+    expect(fetches).toBe(1);
   });
 });

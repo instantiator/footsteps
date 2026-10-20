@@ -41,7 +41,10 @@ function ValidationList({ validations }: { validations: GameChallengeAnswerValid
   );
 }
 
-/** The answer box for a challenge: submits to `onAnswer` on every change when `autoSubmit` (the default), and lists why a wrong answer was wrong. */
+/**
+ * The answer box for a challenge: submits to `onAnswer` on every change when `autoSubmit` (the default),
+ * otherwise on Enter, and lists why a wrong answer was wrong.
+ */
 export default function GameTextInputComponent({
   label,
   stageId,
@@ -72,10 +75,18 @@ export default function GameTextInputComponent({
 
   return (
     <>
-      <div style={{ marginTop: "10px", textAlign: "center" }}>
+      <form
+        style={{ marginTop: "10px", textAlign: "center" }}
+        onSubmit={(e) => {
+          e.preventDefault(); // stay on the page
+          if (isDefined(onAnswer) && !(autoSubmit ?? true))
+            submitAnswer(String(new FormData(e.currentTarget).get("answer") ?? ""));
+        }}
+      >
         {label && <p>{label}</p>}
         <input
           id={`input-${stageId}-${challengeId}-${uid}`}
+          name="answer"
           type="text"
           disabled={solved}
           autoComplete="off"
@@ -85,7 +96,7 @@ export default function GameTextInputComponent({
             if (isDefined(onAnswer) && (autoSubmit ?? true)) submitAnswer(e.target.value);
           }}
         />
-      </div>
+      </form>
       <ValidationList validations={validations} />
     </>
   );

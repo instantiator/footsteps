@@ -6,16 +6,16 @@
 
 # Interface: GameContentCache
 
-Defined in: [providers/GameContentCacheContext.tsx:5](https://github.com/instantiator/2025-xmas-game/blob/main/src/providers/GameContentCacheContext.tsx#L5)
+Defined in: [providers/GameContentCacheContext.tsx:4](https://github.com/instantiator/2025-xmas-game/blob/main/src/providers/GameContentCacheContext.tsx#L4)
 
-Content fetched during play, so it is only fetched once.
+Content fetched during play, so each URL is only fetched once.
 
 ## Properties
 
 ### templates
 
-> **templates**: [`GameDisplayTemplateSourceData`](../../../entities/data/displays/GameDisplayTemplateComponentData/interfaces/GameDisplayTemplateSourceData.md)[]
+> **templates**: `Map`\<`string`, `Promise`\<`string`\>\>
 
-Defined in: [providers/GameContentCacheContext.tsx:7](https://github.com/instantiator/2025-xmas-game/blob/main/src/providers/GameContentCacheContext.tsx#L7)
+Defined in: [providers/GameContentCacheContext.tsx:6](https://github.com/instantiator/2025-xmas-game/blob/main/src/providers/GameContentCacheContext.tsx#L6)
 
-Templates fetched from a URL, with their content.
+Template text by URL: fetched, or still in flight, so concurrent requests share one fetch.

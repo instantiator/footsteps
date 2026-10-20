@@ -92,8 +92,9 @@ export const getCurrentChallengeStates = (
 
 /**
  * Marks a challenge as succeeded, and advances the game accordingly.
- * The recommended stage (the first incomplete one) is unlocked. If that completes the stage, the game
- * returns to the stages overview if it has one, otherwise moves straight to the recommended stage.
+ * The recommended stage (the first incomplete one) is unlocked. If that completes the stage, the game moves
+ * straight to the recommended stage when `config.autoAdvanceStages` is set or there is no stages overview,
+ * and otherwise returns to the stages overview.
  * Once every stage is complete, the overview switches to the finale display.
  * @param gameState the current game state
  * @param stageId the stage id for the challenge
@@ -125,12 +126,13 @@ export function completeChallenge(gameState: GameState, stageId: GameStageId, ch
 
   const allStagesComplete = gameStateWithUpdatedStageStateAndUnlocks.stages.every((s) => s.completion === "completed");
 
-  // Determine the new value for the current stage id.
-  // If there's no stage overview display, automatically advance to the next stage if available.
+  // On completing a stage, advance if the game asks to or has no stages overview to return to
+  const advance =
+    gameState.gameData.config?.autoAdvanceStages === true || !hasOverviewDisplay(gameState, "game-overview-stages");
   const newCurrentStageId = allStageChallengesComplete
-    ? hasOverviewDisplay(gameState, "game-overview-stages")
-      ? null // return to the stage overview if one exists
-      : recommendedStageId // advance to the next stage if no overview
+    ? advance
+      ? recommendedStageId
+      : null
     : gameState.current.stageId;
 
   return {

@@ -23,7 +23,7 @@ export default function GameChallengeGrid({
     <div
       id={`${layer}-${layerHint}-grid`}
       key={`${layer}-${layerHint}-grid`}
-      className={`${className} noClicks`}
+      className={[className, "noClicks"].filter(Boolean).join(" ")}
       style={{
         ...style,
         display: "flex",

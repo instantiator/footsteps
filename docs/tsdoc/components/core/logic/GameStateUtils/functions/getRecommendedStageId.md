@@ -8,7 +8,7 @@
 
 > **getRecommendedStageId**(`gameState`): `string` \| `null`
 
-Defined in: [components/core/logic/GameStateUtils.ts:182](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/GameStateUtils.ts#L182)
+Defined in: [components/core/logic/GameStateUtils.ts:184](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/GameStateUtils.ts#L184)
 
 Identifies the stage the player should tackle next: the first one that isn't completed.
 

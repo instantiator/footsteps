@@ -73,7 +73,7 @@ export function findFeet(
 const bandCentreX = (isOpaque: (x: number, y: number) => boolean, width: number, lowestY: number): number | null => {
   let total = 0;
   let count = 0;
-  for (let y = lowestY; y > lowestY - FEET_BAND_ROWS && y > 0; y--) {
+  for (let y = lowestY; y > lowestY - FEET_BAND_ROWS && y >= 0; y--) {
     for (let x = 0; x < width; x++) {
       if (isOpaque(x, y)) {
         total += x;

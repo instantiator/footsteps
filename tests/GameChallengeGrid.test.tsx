@@ -24,8 +24,7 @@ describe("GameChallengeGrid", () => {
     expect(grid).toHaveClass("innerStyle", "noClicks");
   });
 
-  // BUG #10 (docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md): without a className only noClicks should be added; actual: class is "undefined noClicks"
-  it.skip("does not add the class 'undefined' when no className is given", () => {
+  it("does not add the class 'undefined' when no className is given", () => {
     const grid = renderGrid().container.querySelector("#challenges-foreground-grid")!;
     expect(grid.classList).not.toContain("undefined");
     expect(grid).toHaveClass("noClicks");

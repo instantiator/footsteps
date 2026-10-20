@@ -39,7 +39,7 @@ const resolveResources = (
 /** Provides the requested game's data, with its resources resolved, once the repository has it. */
 export function GameDataProvider({ id, children, loadingView }: React.PropsWithChildren<GameDataProviderParams>) {
   const { repository, source: repositorySource } = useContext(GameRepositoryContext);
-  const game = repository.ready ? repository.games[id] : undefined;
+  const game = repository.ready && Object.hasOwn(repository.games, id) ? repository.games[id] : undefined;
 
   const { data, loadingState } = useMemo((): { data?: GameDataContextType; loadingState: GameDataLoadingState } => {
     if (!repository.ready) return { loadingState: "waiting-for-repository" };
@@ -59,7 +59,8 @@ export function GameDataProvider({ id, children, loadingView }: React.PropsWithC
     <GameDataLoadingContext.Provider value={loading}>
       {isDefined(data) ? (
         <GameDataContext.Provider value={data}>
-          <GameContentCacheProvider>{children}</GameContentCacheProvider>
+          {/* Keyed by game, so per-game state beneath (content cache, game state) starts afresh for each game */}
+          <GameContentCacheProvider key={id}>{children}</GameContentCacheProvider>
         </GameDataContext.Provider>
       ) : (
         loadingView

@@ -48,8 +48,7 @@ describe("findFeet", () => {
 });
 
 describe("findFeet at the top of the frame", () => {
-  // BUG #11 (docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md): a mask opaque only in row 0 should give a position at y 0; bandCentreX skips row 0, so findFeet returns null.
-  it.skip("finds feet when the only opaque pixels are in the top row", () => {
+  it("finds feet when the only opaque pixels are in the top row", () => {
     const feet = findFeet(
       mask([
         [2, 0],

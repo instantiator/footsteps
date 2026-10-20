@@ -108,6 +108,8 @@ export default function CharacterCanvas({
 
   // Segment each video frame: report feet positions, then draw the mask
   useEffect(() => {
+    let cancelled = false;
+    let frame = 0;
     const runSegmentationLoop = (net: BodySegNet, video: HTMLVideoElement, canvas: HTMLCanvasElement) => {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
@@ -116,7 +118,9 @@ export default function CharacterCanvas({
       canvas.height = video.videoHeight;
 
       const segmentFrame = async () => {
+        if (cancelled) return;
         const segmentation = await net.segmentPeople(video, SEGMENTATION_CONFIG);
+        if (cancelled) return; // the model may have been disposed while this frame was segmented
         if (segmentation.length === 0) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           onFeetPositionsChange?.({});
@@ -124,18 +128,18 @@ export default function CharacterCanvas({
           if (onFeetPositionsChange) onFeetPositionsChange(await findAllFeet(segmentation, offScreenThreshold_percent));
           await drawMask(video, segmentation, ctx, maskType);
         }
-        requestAnimationFrame(segmentFrame);
+        frame = requestAnimationFrame(segmentFrame);
       };
 
       segmentFrame();
     };
 
-    if (net && video && mediaStream) {
-      runSegmentationLoop(net, video, canvasRef.current!);
-      return () => {
-        mediaStream.getTracks().forEach((track) => track.stop());
-      };
-    }
+    // The stream belongs to CharacterCamera, which stops its tracks; this effect only stops its own loop
+    if (net && video && mediaStream) runSegmentationLoop(net, video, canvasRef.current!);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
   }, [net, mediaStream, video, onFeetPositionsChange, offScreenThreshold_percent, maskType]);
 
   return <canvas ref={canvasRef} className={className} style={style} />;

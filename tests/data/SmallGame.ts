@@ -37,7 +37,7 @@ export const smallGame: GameData = {
     challenges: [
       {
         id: `${stageId}-challenge`,
-        solution: { answers: [index === 0 ? "custard" : "trifle"], hints: [] },
+        solution: { answers: [index === 0 ? "custard" : "trifle"] },
         displays: [
           {
             purpose: "challenge-in-progress",

@@ -33,13 +33,14 @@ describe("GameTextInputComponent", () => {
     expect(onAnswer).not.toHaveBeenCalled();
   });
 
-  // BUG #6 (docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md): with autoSubmit off, Enter should submit the typed answer; actual: nothing ever submits it
-  it.skip("submits the typed answer on Enter when autoSubmit is off", () => {
+  it("submits the typed answer on Enter when autoSubmit is off", () => {
     const onAnswer = vi.fn<GameAnswerFunction>(() => true);
     render(<GameTextInputComponent stageId="s1" challengeId="c1" onAnswer={onAnswer} autoSubmit={false} />);
-    const input = screen.getByRole("textbox");
+    const input = screen.getByRole<HTMLInputElement>("textbox");
     fireEvent.change(input, { target: { value: "trifle" } });
-    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onAnswer).not.toHaveBeenCalled();
+    // jsdom doesn't turn Enter into a submit, as browsers do, so submit the form directly
+    fireEvent.submit(input.form!);
     expect(onAnswer).toHaveBeenCalledWith("s1", "c1", "trifle");
   });
 
