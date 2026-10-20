@@ -32,8 +32,8 @@ TypeScript 7.0.2 is the latest release, but typescript-eslint 8.71.2 (latest) ac
 
 **Act when:** a template display needs to check answers itself (for example, an input embedded in template HTML). Then wire them up. Otherwise, if no such display is planned by the next feature touching template displays, delete them and stop passing them from `GameDisplayComponent` and `GameDisplayScrollComponent`.
 
-## Potential bugs from the documentation and test audit
+## Camera segmentation loop fix is untested on a real camera
 
-The audit for prompt 000.00.00 found 19 potential bugs, listed with their evidence in [`docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md`](prompts/000.00.02.feedback%20-%20fixes%20from%20identified%20bugs%20and%20tests.md). The 15 tests that show them are skipped, each with a `BUG #N` comment. Bugs #2, #12 and #17 need a decision about what the behaviour should be before they can be fixed.
+Bug #16 in [`docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md`](prompts/000.00.02.feedback%20-%20fixes%20from%20identified%20bugs%20and%20tests.md) was fixed in `CharacterCanvas`: the segmentation loop is cancelled on cleanup, and the webcam tracks are left to `CharacterCamera`. jsdom has no camera, WebGL or TensorFlow, so no automated test covers it.
 
-**Act when:** the follow-on work for 000.00.02 starts. Fix each bug, remove the `.skip` from its test, and delete its entry. Done when `grep -rn "BUG #" tests/` finds nothing and `npx vitest run` reports no skipped tests.
+**Act when:** a game with `modules.camera.enabled: true` is next run, at the latest during the camera-mode work (prompt 000.02.00). With `?debug=true`, check that the silhouette keeps tracking after toggling debug or changing the camera layout, and that the browser console shows no errors about a disposed model.
