@@ -8,7 +8,7 @@
 
 > **default**(): `object`
 
-Defined in: [providers/GameContentCacheHook.tsx:30](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/providers/GameContentCacheHook.tsx#L30)
+Defined in: [providers/GameContentCacheHook.tsx:30](https://github.com/instantiator/2025-xmas-game/blob/main/src/providers/GameContentCacheHook.tsx#L30)
 
 Loads display templates, caching any fetched from a URL.
 

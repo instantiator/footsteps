@@ -6,7 +6,7 @@
 
 # Interface: GameOverviewDisplay
 
-Defined in: [entities/data/displays/GameDisplayData.ts:39](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/displays/GameDisplayData.ts#L39)
+Defined in: [entities/data/displays/GameDisplayData.ts:39](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L39)
 
 A display shown when no stage is active.
 
@@ -20,7 +20,7 @@ A display shown when no stage is active.
 
 > `optional` **clickIdToStageId?**: `Record`\<`string`, `string`\>
 
-Defined in: [entities/data/displays/GameDisplayData.ts:42](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/displays/GameDisplayData.ts#L42)
+Defined in: [entities/data/displays/GameDisplayData.ts:42](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L42)
 
 Maps ids of elements in the template to the stage id that clicking them enters.
 
@@ -30,7 +30,7 @@ Maps ids of elements in the template to the stage id that clicking them enters.
 
 > **component**: [`GameDisplayComponentData`](../type-aliases/GameDisplayComponentData.md)
 
-Defined in: [entities/data/displays/GameDisplayData.ts:27](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/displays/GameDisplayData.ts#L27)
+Defined in: [entities/data/displays/GameDisplayData.ts:27](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L27)
 
 How this display is rendered.
 
@@ -44,7 +44,7 @@ How this display is rendered.
 
 > **purpose**: [`GameOverviewDisplayPurpose`](../type-aliases/GameOverviewDisplayPurpose.md)
 
-Defined in: [entities/data/displays/GameDisplayData.ts:40](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/displays/GameDisplayData.ts#L40)
+Defined in: [entities/data/displays/GameDisplayData.ts:40](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L40)
 
 When this display is shown.
 

@@ -8,6 +8,6 @@
 
 > **GameSource** = [`RemoteGameSource`](../interfaces/RemoteGameSource.md) \| [`LocalGameSource`](../interfaces/LocalGameSource.md) \| [`RawGameSource`](../interfaces/RawGameSource.md)
 
-Defined in: [entities/GameSource.ts:7](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/GameSource.ts#L7)
+Defined in: [entities/GameSource.ts:7](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/GameSource.ts#L7)
 
 Where a game repository is loaded from.

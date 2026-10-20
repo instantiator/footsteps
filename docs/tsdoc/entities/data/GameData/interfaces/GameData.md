@@ -6,7 +6,7 @@
 
 # Interface: GameData
 
-Defined in: [entities/data/GameData.ts:10](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/GameData.ts#L10)
+Defined in: [entities/data/GameData.ts:10](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L10)
 
 A game's authored definition: its overview displays, stages, challenges, resources and settings.
 
@@ -16,7 +16,7 @@ A game's authored definition: its overview displays, stages, challenges, resourc
 
 > `optional` **config?**: `object`
 
-Defined in: [entities/data/GameData.ts:25](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/GameData.ts#L25)
+Defined in: [entities/data/GameData.ts:25](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L25)
 
 Game-wide behaviour settings.
 
@@ -39,7 +39,7 @@ If true (the default when `config` is omitted), each stage unlocks only after th
 
 > **displays**: [`GameOverviewDisplay`](../../displays/GameDisplayData/interfaces/GameOverviewDisplay.md)[]
 
-Defined in: [entities/data/GameData.ts:14](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/GameData.ts#L14)
+Defined in: [entities/data/GameData.ts:14](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L14)
 
 Overview displays (title, stages, complete), shown when no stage is active.
 
@@ -49,7 +49,7 @@ Overview displays (title, stages, complete), shown when no stage is active.
 
 > **gameContainerStyle**: `CSSProperties`
 
-Defined in: [entities/data/GameData.ts:35](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/GameData.ts#L35)
+Defined in: [entities/data/GameData.ts:35](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L35)
 
 CSS applied to the element containing the whole game, e.g. fonts, colours and sizing.
 
@@ -59,7 +59,7 @@ CSS applied to the element containing the whole game, e.g. fonts, colours and si
 
 > `optional` **modules?**: `object`
 
-Defined in: [entities/data/GameData.ts:20](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/GameData.ts#L20)
+Defined in: [entities/data/GameData.ts:20](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L20)
 
 Optional modules to switch on for this game.
 
@@ -75,7 +75,7 @@ Layers the player's camera view into the game.
 
 > `optional` **resources?**: [`GameResourceDefinitions`](GameResourceDefinitions.md)
 
-Defined in: [entities/data/GameData.ts:18](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/GameData.ts#L18)
+Defined in: [entities/data/GameData.ts:18](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L18)
 
 Named media resources, referenced by `*Resource` keys and passed to templates as `resources`.
 
@@ -85,7 +85,7 @@ Named media resources, referenced by `*Resource` keys and passed to templates as
 
 > **stages**: [`GameStageData`](../../GameStageData/interfaces/GameStageData.md)[]
 
-Defined in: [entities/data/GameData.ts:16](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/GameData.ts#L16)
+Defined in: [entities/data/GameData.ts:16](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L16)
 
 The stages of the game, in order.
 
@@ -95,6 +95,6 @@ The stages of the game, in order.
 
 > **title**: `string`
 
-Defined in: [entities/data/GameData.ts:12](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/GameData.ts#L12)
+Defined in: [entities/data/GameData.ts:12](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L12)
 
 Name of the game, shown to players when choosing a game.

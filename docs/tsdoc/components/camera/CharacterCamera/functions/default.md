@@ -8,7 +8,7 @@
 
 > **default**(`__namedParameters`): `Element`
 
-Defined in: [components/camera/CharacterCamera.tsx:20](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/camera/CharacterCamera.tsx#L20)
+Defined in: [components/camera/CharacterCamera.tsx:20](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/camera/CharacterCamera.tsx#L20)
 
 Captures the player's webcam into a small mirrored preview video, for the segmentation to read; optionally with a colour key.
 

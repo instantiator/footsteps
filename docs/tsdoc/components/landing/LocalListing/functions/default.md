@@ -8,7 +8,7 @@
 
 > **default**(): `Element`
 
-Defined in: [components/landing/LocalListing.tsx:6](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/landing/LocalListing.tsx#L6)
+Defined in: [components/landing/LocalListing.tsx:6](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/landing/LocalListing.tsx#L6)
 
 The local repository's load status, and once ready a link to play each of its games.
 

@@ -8,7 +8,7 @@
 
 > **playAudio**(`res`): `Promise`\<\{ `audio`: `HTMLAudioElement`; `resource`: `string`; \} \| `undefined`\>
 
-Defined in: [components/core/sfx/AudioUtils.ts:5](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/core/sfx/AudioUtils.ts#L5)
+Defined in: [components/core/sfx/AudioUtils.ts:5](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/sfx/AudioUtils.ts#L5)
 
 Plays a sound effect once, fire and forget.
 

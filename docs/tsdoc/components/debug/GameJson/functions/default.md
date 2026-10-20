@@ -8,7 +8,7 @@
 
 > **default**(): `Element`
 
-Defined in: [components/debug/GameJson.tsx:5](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/debug/GameJson.tsx#L5)
+Defined in: [components/debug/GameJson.tsx:5](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/debug/GameJson.tsx#L5)
 
 Side-by-side pretty-printed JSON of the current game data and game state, for debugging.
 

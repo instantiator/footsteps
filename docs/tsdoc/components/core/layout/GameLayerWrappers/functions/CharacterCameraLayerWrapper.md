@@ -8,7 +8,7 @@
 
 > **CharacterCameraLayerWrapper**(`__namedParameters`): `Element`
 
-Defined in: [components/core/layout/GameLayerWrappers.tsx:86](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/core/layout/GameLayerWrappers.tsx#L86)
+Defined in: [components/core/layout/GameLayerWrappers.tsx:86](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/layout/GameLayerWrappers.tsx#L86)
 
 Layer holding the webcam preview ([CharacterCamera](../../../../camera/CharacterCamera/functions/default.md)).
 

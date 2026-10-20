@@ -6,7 +6,7 @@
 
 # Interface: CameraModuleData
 
-Defined in: [entities/data/GameModuleData.ts:9](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/GameModuleData.ts#L9)
+Defined in: [entities/data/GameModuleData.ts:9](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameModuleData.ts#L9)
 
 Settings for the camera module, which layers the player's camera view into the game.
 
@@ -20,7 +20,7 @@ Settings for the camera module, which layers the player's camera view into the g
 
 > **enabled**: `boolean`
 
-Defined in: [entities/data/GameModuleData.ts:4](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/GameModuleData.ts#L4)
+Defined in: [entities/data/GameModuleData.ts:4](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameModuleData.ts#L4)
 
 Whether the module is switched on for this game.
 

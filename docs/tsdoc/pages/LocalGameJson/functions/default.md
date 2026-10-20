@@ -8,7 +8,7 @@
 
 > **default**(): `Element`
 
-Defined in: [pages/LocalGameJson.tsx:10](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/pages/LocalGameJson.tsx#L10)
+Defined in: [pages/LocalGameJson.tsx:10](https://github.com/instantiator/2025-xmas-game/blob/main/src/pages/LocalGameJson.tsx#L10)
 
 Debug page: shows the data and state of the game with the id in the route, as JSON. Unlike `LocalGame`, it has no music provider.
 

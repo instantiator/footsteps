@@ -8,7 +8,7 @@
 
 > **calcStageDisplay**(`stage`, `purpose`): [`GameStageDisplay`](../../../../../entities/data/displays/GameDisplayData/interfaces/GameStageDisplay.md) \| `undefined`
 
-Defined in: [components/core/logic/RenderDataUtils.ts:187](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/core/logic/RenderDataUtils.ts#L187)
+Defined in: [components/core/logic/RenderDataUtils.ts:187](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L187)
 
 Gets the stage display for the given stage and purpose.
 

@@ -8,7 +8,7 @@
 
 > **getBaseURL**(): `URL`
 
-Defined in: [util/ObjectUtils.ts:42](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/util/ObjectUtils.ts#L42)
+Defined in: [util/ObjectUtils.ts:42](https://github.com/instantiator/2025-xmas-game/blob/main/src/util/ObjectUtils.ts#L42)
 
 This site's base URL, including any deployment sub-path.
 

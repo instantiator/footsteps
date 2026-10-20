@@ -8,7 +8,7 @@
 
 > **default**(`__namedParameters`): `Element`
 
-Defined in: [components/camera/CameraDebugOverlay.tsx:14](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/camera/CameraDebugOverlay.tsx#L14)
+Defined in: [components/camera/CameraDebugOverlay.tsx:14](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/camera/CameraDebugOverlay.tsx#L14)
 
 Marks the position of each person's feet over the camera layer, to check the tracking.
 

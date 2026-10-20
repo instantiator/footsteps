@@ -6,7 +6,7 @@
 
 # Interface: GameState
 
-Defined in: [entities/state/GameState.ts:9](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/state/GameState.ts#L9)
+Defined in: [entities/state/GameState.ts:9](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/state/GameState.ts#L9)
 
 Runtime progress of a game: its definition, per-stage progress, and what is currently showing.
 
@@ -16,7 +16,7 @@ Runtime progress of a game: its definition, per-stage progress, and what is curr
 
 > **current**: `object`
 
-Defined in: [entities/state/GameState.ts:15](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/state/GameState.ts#L15)
+Defined in: [entities/state/GameState.ts:15](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/state/GameState.ts#L15)
 
 What the player is currently looking at.
 
@@ -38,7 +38,7 @@ The stage being played, or null while an overview is showing.
 
 > **gameData**: [`GameData`](../../../data/GameData/interfaces/GameData.md)
 
-Defined in: [entities/state/GameState.ts:11](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/state/GameState.ts#L11)
+Defined in: [entities/state/GameState.ts:11](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/state/GameState.ts#L11)
 
 The authored definition of the game being played.
 
@@ -48,6 +48,6 @@ The authored definition of the game being played.
 
 > **stages**: [`GameStageState`](../../GameStageState/interfaces/GameStageState.md)[]
 
-Defined in: [entities/state/GameState.ts:13](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/state/GameState.ts#L13)
+Defined in: [entities/state/GameState.ts:13](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/state/GameState.ts#L13)
 
 Progress for each stage, in authored order.

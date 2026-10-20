@@ -8,6 +8,6 @@
 
 > **GameStageDisplayPurpose** = `"shared"`
 
-Defined in: [entities/data/displays/GameDisplayData.ts:11](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/displays/GameDisplayData.ts#L11)
+Defined in: [entities/data/displays/GameDisplayData.ts:11](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L11)
 
 What a stage display is for: `shared` displays sit behind all the stage's challenges.

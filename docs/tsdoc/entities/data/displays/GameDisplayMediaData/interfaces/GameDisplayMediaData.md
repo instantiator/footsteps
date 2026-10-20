@@ -6,7 +6,7 @@
 
 # Interface: GameDisplayMediaData
 
-Defined in: [entities/data/displays/GameDisplayMediaData.ts:2](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/displays/GameDisplayMediaData.ts#L2)
+Defined in: [entities/data/displays/GameDisplayMediaData.ts:2](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayMediaData.ts#L2)
 
 Media played with a display. Resources are names defined in the game's `resources`.
 
@@ -16,7 +16,7 @@ Media played with a display. Resources are names defined in the game's `resource
 
 > `optional` **audioDescription?**: `string`
 
-Defined in: [entities/data/displays/GameDisplayMediaData.ts:12](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/displays/GameDisplayMediaData.ts#L12)
+Defined in: [entities/data/displays/GameDisplayMediaData.ts:12](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayMediaData.ts#L12)
 
 Accessible description of the audio, for screen readers. Default: "audio".
 
@@ -26,7 +26,7 @@ Accessible description of the audio, for screen readers. Default: "audio".
 
 > `optional` **motionImageResource?**: `string`
 
-Defined in: [entities/data/displays/GameDisplayMediaData.ts:10](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/displays/GameDisplayMediaData.ts#L10)
+Defined in: [entities/data/displays/GameDisplayMediaData.ts:10](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayMediaData.ts#L10)
 
 Resource name of an image shown while the audio is playing.
 
@@ -36,7 +36,7 @@ Resource name of an image shown while the audio is playing.
 
 > **resource**: `string`
 
-Defined in: [entities/data/displays/GameDisplayMediaData.ts:6](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/displays/GameDisplayMediaData.ts#L6)
+Defined in: [entities/data/displays/GameDisplayMediaData.ts:6](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayMediaData.ts#L6)
 
 Resource name of the audio file.
 
@@ -46,7 +46,7 @@ Resource name of the audio file.
 
 > `optional` **stillImageResource?**: `string`
 
-Defined in: [entities/data/displays/GameDisplayMediaData.ts:8](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/displays/GameDisplayMediaData.ts#L8)
+Defined in: [entities/data/displays/GameDisplayMediaData.ts:8](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayMediaData.ts#L8)
 
 Resource name of an image shown while the audio is not playing.
 
@@ -56,6 +56,6 @@ Resource name of an image shown while the audio is not playing.
 
 > **type**: `"audio"`
 
-Defined in: [entities/data/displays/GameDisplayMediaData.ts:4](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/displays/GameDisplayMediaData.ts#L4)
+Defined in: [entities/data/displays/GameDisplayMediaData.ts:4](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayMediaData.ts#L4)
 
 The kind of media: only audio is supported.

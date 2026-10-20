@@ -6,7 +6,7 @@
 
 # Interface: GameTextInputComponentProps
 
-Defined in: [components/core/display/GameTextInputComponent.tsx:7](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/core/display/GameTextInputComponent.tsx#L7)
+Defined in: [components/core/display/GameTextInputComponent.tsx:7](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameTextInputComponent.tsx#L7)
 
 Props for [GameTextInputComponent](../functions/default.md).
 
@@ -16,7 +16,7 @@ Props for [GameTextInputComponent](../functions/default.md).
 
 > `optional` **autoSubmit?**: `boolean`
 
-Defined in: [components/core/display/GameTextInputComponent.tsx:21](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/core/display/GameTextInputComponent.tsx#L21)
+Defined in: [components/core/display/GameTextInputComponent.tsx:21](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameTextInputComponent.tsx#L21)
 
 Submit on every change rather than on request. Defaults to true.
 
@@ -26,7 +26,7 @@ Submit on every change rather than on request. Defaults to true.
 
 > `optional` **challengeId?**: `string`
 
-Defined in: [components/core/display/GameTextInputComponent.tsx:13](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/core/display/GameTextInputComponent.tsx#L13)
+Defined in: [components/core/display/GameTextInputComponent.tsx:13](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameTextInputComponent.tsx#L13)
 
 Challenge that answers are submitted to; required to submit.
 
@@ -36,7 +36,7 @@ Challenge that answers are submitted to; required to submit.
 
 > `optional` **label?**: `string`
 
-Defined in: [components/core/display/GameTextInputComponent.tsx:9](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/core/display/GameTextInputComponent.tsx#L9)
+Defined in: [components/core/display/GameTextInputComponent.tsx:9](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameTextInputComponent.tsx#L9)
 
 Prompt shown above the input.
 
@@ -46,7 +46,7 @@ Prompt shown above the input.
 
 > `optional` **onAnswer?**: [`GameAnswerFunction`](../../../Game/type-aliases/GameAnswerFunction.md)
 
-Defined in: [components/core/display/GameTextInputComponent.tsx:19](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/core/display/GameTextInputComponent.tsx#L19)
+Defined in: [components/core/display/GameTextInputComponent.tsx:19](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameTextInputComponent.tsx#L19)
 
 Submits an answer; nothing is submitted without it.
 
@@ -56,7 +56,7 @@ Submits an answer; nothing is submitted without it.
 
 > `optional` **setSolved?**: `Dispatch`\<`SetStateAction`\<`boolean`\>\>
 
-Defined in: [components/core/display/GameTextInputComponent.tsx:17](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/core/display/GameTextInputComponent.tsx#L17)
+Defined in: [components/core/display/GameTextInputComponent.tsx:17](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameTextInputComponent.tsx#L17)
 
 Lets the input record the outcome of a submission for its parent.
 
@@ -66,7 +66,7 @@ Lets the input record the outcome of a submission for its parent.
 
 > `optional` **solved?**: `boolean`
 
-Defined in: [components/core/display/GameTextInputComponent.tsx:15](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/core/display/GameTextInputComponent.tsx#L15)
+Defined in: [components/core/display/GameTextInputComponent.tsx:15](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameTextInputComponent.tsx#L15)
 
 Whether the challenge is solved; the input is then disabled and further answers ignored.
 
@@ -76,6 +76,6 @@ Whether the challenge is solved; the input is then disabled and further answers 
 
 > `optional` **stageId?**: `string`
 
-Defined in: [components/core/display/GameTextInputComponent.tsx:11](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/core/display/GameTextInputComponent.tsx#L11)
+Defined in: [components/core/display/GameTextInputComponent.tsx:11](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameTextInputComponent.tsx#L11)
 
 Stage of the challenge that answers are submitted to; required to submit.

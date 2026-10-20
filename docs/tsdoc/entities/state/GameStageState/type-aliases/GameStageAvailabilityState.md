@@ -8,6 +8,6 @@
 
 > **GameStageAvailabilityState** = `"locked"` \| `"unlocked"`
 
-Defined in: [entities/state/GameStageState.ts:8](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/state/GameStageState.ts#L8)
+Defined in: [entities/state/GameStageState.ts:8](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/state/GameStageState.ts#L8)
 
 Whether the player may enter a stage yet.
