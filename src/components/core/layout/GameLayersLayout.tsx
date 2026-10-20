@@ -11,21 +11,29 @@ import {
   HudLayerWrapper,
 } from "./GameLayerWrappers";
 
+/** Props for {@link GameLayersLayout}. */
 interface GameLayersLayoutProps {
+  /** The nodes to show in each display layer. */
   gameLayers?: GameLayers;
+  /** The game's camera module settings; the camera is used only if enabled. */
   cameraLayer: CameraModuleData | undefined;
+  /** Shows the debug overlay and the camera's colour key. */
   debug?: boolean;
+  /** Called when an element in a layer is clicked; returns whether the click was handled. */
   onElementClick?: (layerId: string, targetId: string) => boolean;
 }
 
+/** The nodes for the background and foreground of the overview, the stage, and its challenges. */
 export interface GameLayers {
   overview?: { backgroundLayerNodes: ReactNode[] | undefined; foregroundLayerNodes: ReactNode[] | undefined };
   stage?: { backgroundLayerNodes: ReactNode[] | undefined; foregroundLayerNodes: ReactNode[] | undefined };
   challenges?: { backgroundLayerNodes: ReactNode[] | undefined; foregroundLayerNodes: ReactNode[] | undefined };
 }
 
+/** Handles a click or key activation within a layer; `layerIdOverride` replaces the layer's own id as the source. */
 type LayerClickHandler = (event: React.SyntheticEvent<HTMLElement>, layerIdOverride?: string) => void;
 
+/** Props for the groups of display layers. */
 interface DisplayLayersProps {
   layers: GameLayers;
   clickHandler: LayerClickHandler;

@@ -2,8 +2,10 @@ import { useMemo, type PropsWithChildren } from "react";
 import { useSearchParams } from "react-router";
 import { DEFAULT_FEATURE_FLAGS, FeatureFlagsContext, type FeatureFlags } from "./FeatureFlagsContext";
 
+/** Any flag may be given as a prop to change its default. */
 type FeatureFlagsProviderProps = Partial<FeatureFlags>;
 
+/** Layers defaults, then props, then query parameters (any value but "false" turns a flag on). */
 const composeFeatureFlags = (
   defaultFlags: FeatureFlags,
   props: FeatureFlagsProviderProps,

@@ -3,16 +3,25 @@ import type { GameChallengeAnswer, GameChallengeAnswerValidation } from "../../.
 import { isDefined } from "../../../util/ObjectUtils";
 import type { GameAnswerFunction } from "../Game";
 
+/** Props for {@link GameTextInputComponent}. */
 export interface GameTextInputComponentProps {
+  /** Prompt shown above the input. */
   label?: string;
+  /** Stage of the challenge that answers are submitted to; required to submit. */
   stageId?: string;
+  /** Challenge that answers are submitted to; required to submit. */
   challengeId?: string;
+  /** Whether the challenge is solved; the input is then disabled and further answers ignored. */
   solved?: boolean;
+  /** Lets the input record the outcome of a submission for its parent. */
   setSolved?: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Submits an answer; nothing is submitted without it. */
   onAnswer?: GameAnswerFunction;
+  /** Submit on every change rather than on request. Defaults to true. */
   autoSubmit?: boolean;
 }
 
+/** Large, upper-case answer box. */
 const INPUT_STYLE: React.CSSProperties = {
   width: "90%",
   textTransform: "uppercase",
@@ -32,6 +41,7 @@ function ValidationList({ validations }: { validations: GameChallengeAnswerValid
   );
 }
 
+/** The answer box for a challenge: submits to `onAnswer` on every change when `autoSubmit` (the default), and lists why a wrong answer was wrong. */
 export default function GameTextInputComponent({
   label,
   stageId,

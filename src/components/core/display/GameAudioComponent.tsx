@@ -4,12 +4,17 @@ import { useGameData } from "../../../providers/GameDataHook";
 import useGameMusic from "../../../providers/GameMusicHook";
 import { isDefined } from "../../../util/ObjectUtils";
 
+/** Props for {@link GameAudioComponent}. */
 interface GameAudioComponentProps {
+  /** The audio resource, with optional still and motion images. */
   media: GameDisplayMediaData;
+  /** Whether to show the browser's own audio controls. */
   controls: boolean;
+  /** Style for the audio element's controls. */
   audioStyle?: React.CSSProperties;
 }
 
+/** Style for the still and motion images: floating, with a drop shadow. */
 const IMAGE_STYLE: React.CSSProperties = {
   height: "20vh",
   margin: "10px",

@@ -28,6 +28,7 @@ export function Layout({ children }: { children: ReactNode }) {
   );
 }
 
+/** The root route: renders whichever page the URL matched inside {@link Layout}. */
 export default function Root() {
   return <Outlet />;
 }

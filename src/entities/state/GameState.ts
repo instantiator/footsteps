@@ -5,15 +5,26 @@ import type { GameData } from "../data/GameData";
 import type { GameStageId } from "../data/GameStageData";
 import type { GameStageState } from "./GameStageState";
 
+/** Runtime progress of a game: its definition, per-stage progress, and what is currently showing. */
 export interface GameState {
+  /** The authored definition of the game being played. */
   gameData: GameData;
+  /** Progress for each stage, in authored order. */
   stages: GameStageState[];
+  /** What the player is currently looking at. */
   current: {
+    /** The stage being played, or null while an overview is showing. */
     stageId: GameStageId | null;
+    /** The overview display showing when no stage is active. */
     overviewDisplay: GameOverviewDisplayPurpose | null;
   };
 }
 
+/**
+ * Creates the starting state for a game: all challenges unsolved, and the first overview display showing.
+ * With sequential config (the default) only the first stage is unlocked; otherwise all are.
+ * @throws if the game has no overview display to start from
+ */
 export function createBlankGameState(game: GameData): GameState {
   const stages: GameStageState[] = game.stages.map((stage, index) => ({
     stage: stage,

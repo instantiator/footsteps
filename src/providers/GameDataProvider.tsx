@@ -12,7 +12,9 @@ import {
 import { GameRepositoryContext } from "./GameRepositoryContext";
 
 interface GameDataProviderParams {
+  /** The game to provide, picked from the repository. */
   id: GameId;
+  /** Shown instead of the children until the game is ready (and when it can't be). */
   loadingView?: ReactNode;
 }
 

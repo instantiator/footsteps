@@ -1,5 +1,6 @@
 import { isDefined } from "../../util/ObjectUtils";
 
+/** Asks the player for their webcam; rejects (after logging) if it is refused or unavailable. */
 export const getCameraStream = async () => {
   try {
     return await navigator.mediaDevices.getUserMedia({ video: true });
@@ -9,10 +10,12 @@ export const getCameraStream = async () => {
   }
 };
 
+/** Each tracked person's feet position, keyed by their index in the segmentation. */
 export type FeetPositions = {
   [personId: number]: FootPosition;
 };
 
+/** A person's feet position, both in pixels and as a percentage of the frame. */
 export interface FootPosition {
   absolute: { x: number; y: number };
   percent: { x: number; y: number };

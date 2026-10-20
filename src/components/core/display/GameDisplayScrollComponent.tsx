@@ -19,20 +19,33 @@ import type { LayerHint } from "./GameDisplayComponent";
 import GameDisplayTemplateComponent from "./GameDisplayTemplateComponent";
 import GameTextInputComponent, { type GameTextInputComponentProps } from "./GameTextInputComponent";
 
+/** Props for {@link GameDisplayScrollComponent}. */
 interface GameDisplayScrollComponentProps {
+  /** Overrides the default scroll template; see {@link defaultTemplate}. */
   templateSource?: GameDisplayTemplateSourceData;
+  /** Overrides for the scroll container's style; see {@link scrollContainerStyle}. */
   containerStyle?: React.CSSProperties;
+  /** Style for the rendered template. */
   templateStyle?: CSSProperties;
+  /** Extra template data, which takes precedence over the page's `text` and `lines`. */
   templateData?: GameTemplateData;
+  /** The scroll's pages of text, with their optional audio and answer input. */
   scrollData: GameDisplayScrollComponentData;
+  /** Whether to render the paper (background) or the text and controls (foreground). */
   layerHint: LayerHint;
+  /** Stage of the challenge that answers are submitted to. */
   stageId?: GameStageId;
+  /** Challenge that answers are submitted to. */
   challengeId?: GameChallengeId;
+  /** The challenge's solution. */
   solution?: GameChallengeSolution;
+  /** Called when the player submits an answer on a page. */
   onAnswer?: GameAnswerFunction;
 }
 
+/** The paper image's size, so the scroll text column can match its aspect ratio. */
 const paperMetadataEntry = metadata.resources.find((entry) => entry.file === "old-paper.png");
+/** CSS aspect ratio of the paper image. */
 const PAPER_ASPECT_RATIO = `${paperMetadataEntry?.width}/${paperMetadataEntry?.height}`;
 
 /** Fades the scrolling text out at the top and bottom of the paper. */
@@ -74,6 +87,7 @@ const scrollContainerStyle = (layerHint: LayerHint, containerStyle?: CSSProperti
         ...containerStyle,
       };
 
+/** Fills the display and centres its contents in a column. */
 const OUTER_STYLE: CSSProperties = {
   width: "100%",
   height: "100%",
@@ -83,6 +97,7 @@ const OUTER_STYLE: CSSProperties = {
   alignItems: "center",
 };
 
+/** Spreads the previous and next arrows to either side. */
 const NAVIGATION_STYLE: CSSProperties = {
   width: "100%",
   display: "flex",
@@ -118,10 +133,15 @@ export function ScrollNavigation({ onRetreat, onAdvance }: { onRetreat?: () => v
   );
 }
 
+/** Props for {@link ScrollPageControls}. */
 interface ScrollPageControlsProps {
+  /** The current page, if there is one. */
   content: GameDisplayScrollComponentDataContent | undefined;
+  /** What the page's answer input needs to submit answers. */
   input: Pick<GameTextInputComponentProps, "stageId" | "challengeId" | "solved" | "setSolved" | "onAnswer">;
+  /** Goes back a page; undefined on the first page. */
   onRetreat?: () => void;
+  /** Goes on a page; undefined on the last page. */
   onAdvance?: () => void;
 }
 

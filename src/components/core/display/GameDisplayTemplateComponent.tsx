@@ -10,11 +10,15 @@ import { isDefined } from "../../../util/ObjectUtils";
 import type { GameAnswerFunction } from "../Game";
 import { summariseTemplateSource } from "../logic/TemplateUtils";
 
+/** Props for {@link GameDisplayTemplateComponent}. */
 interface GameDisplayTemplateProps {
+  /** Where to get the Mustache template from; fetched via the content cache. */
   templateSource: GameDisplayTemplateData | undefined;
   /** Mustache view: any object whose fields the template may reference. */
   templateData: object;
+  /** Style for the container; its values are rendered as Mustache templates over `templateData`. */
   containerStyle?: React.CSSProperties;
+  /** Style for the rendered template itself. */
   templateStyle?: React.CSSProperties;
   stageId?: GameStageId; // unused: see docs/outstanding-issues.md
   challengeId?: GameChallengeId; // unused: see docs/outstanding-issues.md
@@ -22,10 +26,15 @@ interface GameDisplayTemplateProps {
   onAnswer?: GameAnswerFunction; // unused: see docs/outstanding-issues.md
 }
 
+/** Rendering options: HTML escaping is off, so data can contribute markup and CSS. */
 const MUSTACHE_OPTIONS: Mustache.RenderOptions = {
   escape: (text) => text, // disable HTML escaping
 };
 
+/**
+ * Fetches a Mustache template (via the content cache) and renders it with the template data,
+ * inside a container whose style is Mustache-rendered too. Children follow the rendered template.
+ */
 export default function GameDisplayTemplateComponent({
   templateSource,
   templateData,

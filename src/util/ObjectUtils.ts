@@ -1,21 +1,26 @@
 import type { GameSource } from "../entities/GameSource";
 
+/** Type guard: true unless the value is undefined or null. */
 export function isDefined<T>(value: T | undefined | null): value is T {
   return value !== undefined && value !== null;
 }
 
+/** Type guard: true if the string is present and contains something other than whitespace. */
 export function isDefinedAndHasContent(value: string | undefined | null): value is string {
   return !isUndefinedOrWhitespaceOrEmpty(value);
 }
 
+/** True if the value is missing, empty, or only whitespace. */
 export function isUndefinedOrWhitespaceOrEmpty(value: string | undefined | null): boolean {
   return value === undefined || value === null || isWhitespaceOrEmpty(value);
 }
 
+/** True if the string is empty or only whitespace. */
 export function isWhitespaceOrEmpty(value: string): boolean {
   return value.trim().length === 0;
 }
 
+/** Type guard: true if the value is a valid absolute http or https URL. */
 export function isUrl(value: string | undefined | null): value is string {
   if (isDefinedAndHasContent(value)) {
     try {
@@ -28,10 +33,12 @@ export function isUrl(value: string | undefined | null): value is string {
   return false;
 }
 
+/** The directory containing a file URL, for resolving paths beside it. */
 export function getDirectoryURL(fileURL: URL): URL {
   return new URL("./", fileURL);
 }
 
+/** This site's base URL, including any deployment sub-path. */
 export function getBaseURL(): URL {
   return new URL(import.meta.env.BASE_URL, window.location.origin);
 }

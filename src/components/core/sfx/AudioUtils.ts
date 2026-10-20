@@ -1,3 +1,4 @@
+/** Plays a sound effect once, fire and forget. @returns the playing audio, or undefined (after logging) if it could not play, eg. blocked by the browser. */
 export const playAudio = async (res: string): Promise<{ resource: string; audio: HTMLAudioElement } | undefined> => {
   try {
     const audio = new Audio(res);

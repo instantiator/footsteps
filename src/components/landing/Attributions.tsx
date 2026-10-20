@@ -1,3 +1,4 @@
+/** Credits for the third-party images, music and sound effects the game uses. */
 export default function Attributions() {
   return (
     <>
