@@ -6,7 +6,9 @@ Deferred work, each with the condition that says when to act on it.
 
 `dev-qual/adapters/opencode/install.sh` starts the skills block with `echo ''`, and `merge_block` adds a blank line after the start marker. The result fails markdownlint MD012. We fixed AGENTS.md by hand.
 
-**Act when:** the next `dev-qual/scripts/upgrade.sh` run. Re-check AGENTS.md with `dev-qual/scripts/check.sh --fast`, and fix the installer upstream in instantiator/dev-qual if it's still there. Noted (uncommitted) in `dev-qual/docs/outstanding-issues.md` on 2026-10-18.
+Fixed upstream in [instantiator/dev-qual#7](https://github.com/instantiator/dev-qual/pull/7), along with the pre-commit hook failing on staged deletions. Until it merges, the `dev-qual` checkout here is on its branch `fix/precommit-deletions-and-skills-blank-line`.
+
+**Act when:** dev-qual#7 merges. Run `dev-qual/scripts/upgrade.sh`, re-check AGENTS.md with `dev-qual/scripts/check.sh --fast`, commit the new submodule pointer, and delete this entry.
 
 ## Accepted risk: sprintf-js DoS advisory via @tensorflow/tfjs
 
