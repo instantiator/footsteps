@@ -2,6 +2,7 @@ import { useContext } from "react";
 import { Link } from "react-router";
 import { GameRepositoryContext } from "../../providers/GameRepositoryContext";
 
+/** The local repository's load status, and once ready a link to play each of its games. */
 export default function LocalListing() {
   const { repository } = useContext(GameRepositoryContext);
 

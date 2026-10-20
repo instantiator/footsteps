@@ -4,6 +4,10 @@ import type { GameStageId } from "../../../entities/data/GameStageData";
 import type { GameChallengeState } from "../../../entities/state/GameChallengeState";
 import type { GameState } from "../../../entities/state/GameState";
 
+/**
+ * Looks up a challenge's definition in the game data.
+ * @throws if the stage, or the challenge within it, doesn't exist
+ */
 export function findChallenge(
   gameData: GameData,
   stageId: GameStageId,
@@ -22,6 +26,10 @@ export function findChallenge(
   return challenge;
 }
 
+/**
+ * Looks up a challenge's state in the game state.
+ * @throws if the stage, or the challenge within it, has no state
+ */
 export function findChallengeState(
   gameState: GameState,
   stageId: GameStageId,

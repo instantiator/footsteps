@@ -4,6 +4,7 @@ import { FAILED_REPOSITORY, LOADING_REPOSITORY, type GameRepository } from "../e
 import type { GameSource } from "../entities/GameSource";
 import { GameRepositoryContext } from "./GameRepositoryContext";
 
+/** Props for {@link GameRepositoryProvider}. */
 interface GameRepositoryProviderParams {
   source: GameSource;
   children: ReactNode;

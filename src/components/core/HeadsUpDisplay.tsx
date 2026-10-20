@@ -5,7 +5,9 @@ import { getRenderMode } from "./logic/RenderDataUtils";
 export default function HeadsUpDisplay() {
   const { gameState, setGameState } = useGameState();
 
+  /** Offered while a stage is open. */
   const showCloseChallengeButton = getRenderMode(gameState) === "stage";
+  /** Offered everywhere except the title screen. */
   const showTitleReturnButton = gameState.current.overviewDisplay !== "game-overview-title";
 
   const returnToTitle = () => {

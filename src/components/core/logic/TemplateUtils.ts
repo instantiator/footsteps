@@ -2,19 +2,29 @@ import type { GameDisplayTemplateSourceData } from "../../../entities/data/displ
 import type { GameStageState } from "../../../entities/state/GameStageState";
 import type { GameState } from "../../../entities/state/GameState";
 
+/** The game state plus derived values, for Mustache templates (which can't compute them). */
 export type DecoratedGameState = GameState & {
+  /** Each stage's state, with its template values. */
   stages: DecoratedStageState[];
+  /** The number of stages in the game. */
   totalStages: number;
 };
 
+/** A stage's state plus derived values, for Mustache templates. */
 export type DecoratedStageState = GameStageState & {
+  /** Zero-based position in the game's stages. */
   index: number;
+  /** One-based position, for display to players. */
   oneIndex: number;
+  /** The stage is completed. */
   showCompleted: boolean;
+  /** The stage is available to play: unlocked and not yet completed. */
   showUnlocked: boolean;
+  /** The stage is locked. */
   showLocked: boolean;
 };
 
+/** Adds the derived template values to a game state. */
 export const decorateGameState = (gameState: GameState): DecoratedGameState => ({
   ...gameState,
   stages: gameState.stages.map((stageState, index) => ({
@@ -35,6 +45,7 @@ export const decorateGameState = (gameState: GameState): DecoratedGameState => (
 export const summariseTemplateSource = (source: GameDisplayTemplateSourceData | undefined, fallbackId: string) =>
   `${source?.sourceType ?? "undefined"}:${source?.templateSource ?? `uid:${fallbackId}`}`;
 
+/** Splits text into its trimmed, non-empty lines. */
 export const parseLines = (text: string | undefined): string[] => {
   if (!text) {
     return [];

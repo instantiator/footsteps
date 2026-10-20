@@ -18,6 +18,10 @@ describe("resolveTemplateURL", () => {
     expect(resolveTemplateURL("relative", "t.mustache", remote)).toBe("https://example.com/games/t.mustache");
   });
 
+  it("resolves parent-directory paths against the remote repository's directory", () => {
+    expect(resolveTemplateURL("relative", "../t.mustache", remote)).toBe("https://example.com/t.mustache");
+  });
+
   it("rejects local sources from a remote repository", () => {
     expect(() => resolveTemplateURL("local", "t.mustache", remote)).toThrow("does not support local");
   });

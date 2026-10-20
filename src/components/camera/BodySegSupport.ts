@@ -6,14 +6,23 @@ import type {
   Segmentation,
 } from "@tensorflow-models/body-segmentation/dist/shared/calculators/interfaces/common_interfaces";
 
+/** A body part that the segmentation model can label, and how to show it. */
 export interface BodyPartData {
+  /** The value the segmentation mask holds for pixels of this body part. */
   maskValue: number;
+  /** The colour used for this body part in a coloured mask. */
   color: Color;
+  /** Human-readable name of the body part, for the colour key. */
   description: string;
 }
 
+/** The body parts the model distinguishes, by name, from `body-seg-parts.json`. */
 export const BODY_PARTS: Record<string, BodyPartData> = bodyPartData;
 
+/**
+ * The colour a mask value is drawn in for the given mask type; transparent for unknown values, and for
+ * anything but hands and feet when the type is "extremities".
+ */
 export function maskValueToColor(maskValue: number, maskType: "binary" | "colored" | "extremities"): Color {
   if (maskType === "extremities") {
     const isHandOrFoot =
@@ -31,6 +40,10 @@ export function maskValueToColor(maskValue: number, maskType: "binary" | "colore
   );
 }
 
+/**
+ * Draws the player's silhouette from the video onto the canvas, according to the mask type:
+ * "binary" is the silhouette alone, "colored" tints it by body part, and "extremities" tints only hands and feet.
+ */
 export const drawMask = async (
   video: HTMLVideoElement | null,
   segmentation: Segmentation[],

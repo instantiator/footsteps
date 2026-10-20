@@ -1,6 +1,7 @@
 import type { GameChallengeData } from "./GameChallengeData";
 import type { GameStageDisplay } from "./displays/GameDisplayData";
 
+/** Unique identifier for a stage within a game. */
 export type GameStageId = string;
 
 /**
@@ -8,17 +9,15 @@ export type GameStageId = string;
  * A stage may contain more than one challenge, and may group its challenges together.
  */
 export interface GameStageData {
-  /** Unique id for this stage */
+  /** Unique id for this stage, referenced by `clickIdToStageId` in overview displays. */
   id: GameStageId;
 
-  /**
-   * Display information for the stage. (Optional.)
-   */
+  /** Displays shown behind this stage's challenges (purpose `shared`). Optional. */
   displays?: GameStageDisplay[];
 
-  /** If set, group challenges together in the active layout, otherwise assumes a chunking of 1 */
+  /** How many challenges to show together at once in the stage layout. Default: 1. */
   challengeChunking?: number;
 
-  /** All challenges in a stage */
+  /** The challenges in this stage, in the order they are presented. */
   challenges: GameChallengeData[];
 }

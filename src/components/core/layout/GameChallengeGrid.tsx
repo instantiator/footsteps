@@ -1,5 +1,9 @@
 import { Children } from "react";
 
+/**
+ * Lays a layer's challenges side by side in equal-width columns. Clicks pass through the grid
+ * and its columns to the elements inside them.
+ */
 export default function GameChallengeGrid({
   className,
   style,
@@ -9,7 +13,9 @@ export default function GameChallengeGrid({
 }: {
   className?: string;
   style?: React.CSSProperties;
+  /** Name of the layer (overview, stage or challenges) the grid belongs to; used to build element ids. */
   layer: string;
+  /** Whether the grid is in the layer's background or foreground; used to build element ids. */
   layerHint: string;
   children: React.ReactNode;
 }) {

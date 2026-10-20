@@ -1,6 +1,7 @@
 import { useGameData } from "../../providers/GameDataHook";
 import { useGameState } from "../../providers/GameStateHook";
 
+/** Side-by-side pretty-printed JSON of the current game data and game state, for debugging. */
 export default function GameJson() {
   const { gameData } = useGameData();
   const { gameState } = useGameState();

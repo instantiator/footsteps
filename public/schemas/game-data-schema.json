@@ -2,8 +2,10 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "definitions": {
         "CameraModuleData": {
+            "description": "Settings for the camera module, which layers the player's camera view into the game.",
             "properties": {
                 "enabled": {
+                    "description": "Whether the module is switched on for this game.",
                     "type": "boolean"
                 }
             },
@@ -16,19 +18,19 @@
             "description": "Describes an individual challenge in the game",
             "properties": {
                 "displays": {
-                    "description": "Displays associated with this challenge",
+                    "description": "Displays for this challenge, chosen by purpose: title, in progress, and completed.",
                     "items": {
                         "$ref": "#/definitions/GameChallengeDisplay"
                     },
                     "type": "array"
                 },
                 "id": {
-                    "description": "Unique id for this challenge",
+                    "description": "Unique id for this challenge, used when submitting and checking answers.",
                     "type": "string"
                 },
                 "solution": {
                     "$ref": "#/definitions/GameChallengeSolution",
-                    "description": "The solution for this challenge"
+                    "description": "How the player's answer is checked for this challenge."
                 }
             },
             "required": [
@@ -39,12 +41,15 @@
             "type": "object"
         },
         "GameChallengeDisplay": {
+            "description": "A display for one stage of a challenge's lifecycle.",
             "properties": {
                 "component": {
-                    "$ref": "#/definitions/GameDisplayComponentData"
+                    "$ref": "#/definitions/GameDisplayComponentData",
+                    "description": "How this display is rendered."
                 },
                 "purpose": {
-                    "$ref": "#/definitions/GameChallengeDisplayPurpose"
+                    "$ref": "#/definitions/GameChallengeDisplayPurpose",
+                    "description": "When this display is shown."
                 }
             },
             "required": [
@@ -54,6 +59,7 @@
             "type": "object"
         },
         "GameChallengeDisplayPurpose": {
+            "description": "What a challenge display is for: its title, while in progress, or once completed.",
             "enum": [
                 "challenge-completed",
                 "challenge-in-progress",
@@ -72,11 +78,11 @@
                     "type": "array"
                 },
                 "autoAccept": {
-                    "description": "Automatically accept a user's input if it matches a solution, default: true",
+                    "description": "Automatically accept a user's input if it matches a solution, default: true.\nNot yet implemented: see docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md #4.",
                     "type": "boolean"
                 },
                 "hints": {
-                    "description": "A series of hints, to be offered in order, if requested - leave empty for no hints",
+                    "description": "A series of hints, to be offered in order, if requested - leave empty for no hints.\nNot yet implemented: see docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md #4.",
                     "items": {
                         "type": "string"
                     },
@@ -109,24 +115,31 @@
                 {
                     "$ref": "#/definitions/GameDisplayScrollComponentData"
                 }
-            ]
+            ],
+            "description": "The rendering definition of a display, discriminated by `type`."
         },
         "GameDisplayMediaData": {
+            "description": "Media played with a display. Resources are names defined in the game's `resources`.",
             "properties": {
                 "audioDescription": {
+                    "description": "Accessible description of the audio, for screen readers. Default: \"audio\".",
                     "type": "string"
                 },
                 "motionImageResource": {
+                    "description": "Resource name of an image shown while the audio is playing.",
                     "type": "string"
                 },
                 "resource": {
+                    "description": "Resource name of the audio file.",
                     "type": "string"
                 },
                 "stillImageResource": {
+                    "description": "Resource name of an image shown while the audio is not playing.",
                     "type": "string"
                 },
                 "type": {
                     "const": "audio",
+                    "description": "The kind of media: only audio is supported.",
                     "type": "string"
                 }
             },
@@ -137,36 +150,46 @@
             "type": "object"
         },
         "GameDisplayScrollComponentData": {
+            "description": "A display of paged text on a paper image, with optional audio and answer input per page.",
             "properties": {
                 "backgroundStyle": {
-                    "$ref": "#/definitions/React.CSSProperties"
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the background layer's container."
                 },
                 "backgroundTemplate": {
-                    "$ref": "#/definitions/GameDisplayTemplateSourceData"
+                    "$ref": "#/definitions/GameDisplayTemplateSourceData",
+                    "description": "Template for the background layer, drawn behind the game's other content."
                 },
                 "backgroundTemplateStyle": {
-                    "$ref": "#/definitions/React.CSSProperties"
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the element wrapping the rendered background template."
                 },
                 "contents": {
+                    "description": "The pages of the scroll, shown one at a time in order.",
                     "items": {
                         "$ref": "#/definitions/GameDisplayScrollComponentDataContent"
                     },
                     "type": "array"
                 },
                 "data": {
-                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E"
+                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
+                    "description": "Extra values for this display, passed through to its templates as `componentData`."
                 },
                 "foregroundStyle": {
-                    "$ref": "#/definitions/React.CSSProperties"
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the foreground layer's container."
                 },
                 "foregroundTemplate": {
-                    "$ref": "#/definitions/GameDisplayTemplateSourceData"
+                    "$ref": "#/definitions/GameDisplayTemplateSourceData",
+                    "description": "Template for the foreground layer, drawn in front of the game's other content."
                 },
                 "foregroundTemplateStyle": {
-                    "$ref": "#/definitions/React.CSSProperties"
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the element wrapping the rendered foreground template."
                 },
                 "type": {
                     "const": "scroll",
+                    "description": "Which kind of component this is.",
                     "type": "string"
                 }
             },
@@ -178,50 +201,65 @@
             "type": "object"
         },
         "GameDisplayScrollComponentDataContent": {
+            "description": "One page of a scroll.",
             "properties": {
                 "hint": {
+                    "description": "A hint for this page.\nNot yet implemented: never shown. See docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md #4.",
                     "type": "string"
                 },
                 "label": {
+                    "description": "Label for the answer input. Used only when `showInput` is true.",
                     "type": "string"
                 },
                 "media": {
-                    "$ref": "#/definitions/GameDisplayMediaData"
+                    "$ref": "#/definitions/GameDisplayMediaData",
+                    "description": "Audio to play on this page."
                 },
                 "showInput": {
+                    "description": "If true, shows an answer input on this page.",
                     "type": "boolean"
                 },
                 "text": {
+                    "description": "The text of the page.",
                     "type": "string"
                 }
             },
             "type": "object"
         },
         "GameDisplayTemplateComponentData": {
+            "description": "A display built from Mustache templates, drawn as a background layer and a foreground layer.",
             "properties": {
                 "backgroundStyle": {
-                    "$ref": "#/definitions/React.CSSProperties"
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the background layer's container."
                 },
                 "backgroundTemplate": {
-                    "$ref": "#/definitions/GameDisplayTemplateSourceData"
+                    "$ref": "#/definitions/GameDisplayTemplateSourceData",
+                    "description": "Template for the background layer, drawn behind the game's other content."
                 },
                 "backgroundTemplateStyle": {
-                    "$ref": "#/definitions/React.CSSProperties"
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the element wrapping the rendered background template."
                 },
                 "data": {
-                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E"
+                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
+                    "description": "Extra values for this display, passed through to its templates as `componentData`."
                 },
                 "foregroundStyle": {
-                    "$ref": "#/definitions/React.CSSProperties"
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the foreground layer's container."
                 },
                 "foregroundTemplate": {
-                    "$ref": "#/definitions/GameDisplayTemplateSourceData"
+                    "$ref": "#/definitions/GameDisplayTemplateSourceData",
+                    "description": "Template for the foreground layer, drawn in front of the game's other content."
                 },
                 "foregroundTemplateStyle": {
-                    "$ref": "#/definitions/React.CSSProperties"
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the element wrapping the rendered foreground template."
                 },
                 "type": {
                     "const": "template",
+                    "description": "Which kind of component this is.",
                     "type": "string"
                 }
             },
@@ -232,14 +270,18 @@
             "type": "object"
         },
         "GameDisplayTemplateSourceData": {
+            "description": "Says where to find a template's text.",
             "properties": {
                 "content": {
+                    "description": "The template text itself. Used only when `sourceType` is `embedded`.",
                     "type": "string"
                 },
                 "sourceType": {
-                    "$ref": "#/definitions/TemplateSourceType"
+                    "$ref": "#/definitions/TemplateSourceType",
+                    "description": "How `templateSource` is resolved, or `embedded` to use `content`."
                 },
                 "templateSource": {
+                    "description": "Path or URL of the template, interpreted according to `sourceType`. Unused for `embedded`.",
                     "type": "string"
                 }
             },
@@ -249,15 +291,19 @@
             "type": "object"
         },
         "GameOverviewDisplay": {
+            "description": "A display shown when no stage is active.",
             "properties": {
                 "clickIdToStageId": {
-                    "$ref": "#/definitions/Record%3Cstring%2Cstring%3E"
+                    "$ref": "#/definitions/Record%3Cstring%2Cstring%3E",
+                    "description": "Maps ids of elements in the template to the stage id that clicking them enters."
                 },
                 "component": {
-                    "$ref": "#/definitions/GameDisplayComponentData"
+                    "$ref": "#/definitions/GameDisplayComponentData",
+                    "description": "How this display is rendered."
                 },
                 "purpose": {
-                    "$ref": "#/definitions/GameOverviewDisplayPurpose"
+                    "$ref": "#/definitions/GameOverviewDisplayPurpose",
+                    "description": "When this display is shown."
                 }
             },
             "required": [
@@ -267,6 +313,7 @@
             "type": "object"
         },
         "GameOverviewDisplayPurpose": {
+            "description": "What an overview display is for: the title screen, the stage selection, or the game-complete screen.",
             "enum": [
                 "game-overview-complete",
                 "game-overview-stages",
@@ -278,9 +325,11 @@
             "additionalProperties": {
                 "properties": {
                     "target": {
+                        "description": "The path or URL, interpreted according to `type`.",
                         "type": "string"
                     },
                     "type": {
+                        "description": "`local`: path on this site. `relative`: relative to the repository's location. `url`: absolute URL used as-is.",
                         "enum": [
                             "local",
                             "relative",
@@ -295,31 +344,32 @@
                 ],
                 "type": "object"
             },
+            "description": "Named resources, keyed by the name used to refer to them.\nResolved to absolute URLs when the game loads.",
             "type": "object"
         },
         "GameStageData": {
             "description": "Describes a game stage - including its displays, and the challenges it contains.\nA stage may contain more than one challenge, and may group its challenges together.",
             "properties": {
                 "challengeChunking": {
-                    "description": "If set, group challenges together in the active layout, otherwise assumes a chunking of 1",
+                    "description": "How many challenges to show together at once in the stage layout. Default: 1.",
                     "type": "number"
                 },
                 "challenges": {
-                    "description": "All challenges in a stage",
+                    "description": "The challenges in this stage, in the order they are presented.",
                     "items": {
                         "$ref": "#/definitions/GameChallengeData"
                     },
                     "type": "array"
                 },
                 "displays": {
-                    "description": "Display information for the stage. (Optional.)",
+                    "description": "Displays shown behind this stage's challenges (purpose `shared`). Optional.",
                     "items": {
                         "$ref": "#/definitions/GameStageDisplay"
                     },
                     "type": "array"
                 },
                 "id": {
-                    "description": "Unique id for this stage",
+                    "description": "Unique id for this stage, referenced by `clickIdToStageId` in overview displays.",
                     "type": "string"
                 }
             },
@@ -330,12 +380,15 @@
             "type": "object"
         },
         "GameStageDisplay": {
+            "description": "A display shared by all challenges in a stage.",
             "properties": {
                 "component": {
-                    "$ref": "#/definitions/GameDisplayComponentData"
+                    "$ref": "#/definitions/GameDisplayComponentData",
+                    "description": "How this display is rendered."
                 },
                 "purpose": {
                     "const": "shared",
+                    "description": "When this display is shown.",
                     "type": "string"
                 }
             },
@@ -355,6 +408,7 @@
             "type": "object"
         },
         "TemplateSourceType": {
+            "description": "Where a template is read from: `local` (path on this site), `relative` (relative to the repository's location),\n`url` (absolute URL, fetched as-is) or `embedded` (text inline in `content`).",
             "enum": [
                 "embedded",
                 "local",
@@ -364,13 +418,17 @@
             "type": "string"
         }
     },
+    "description": "A game's authored definition: its overview displays, stages, challenges, resources and settings.",
     "properties": {
         "config": {
+            "description": "Game-wide behaviour settings.",
             "properties": {
                 "autoAdvanceStages": {
+                    "description": "Whether to move on to the next stage automatically on completion.\nNot yet implemented: never read. See docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md #3.",
                     "type": "boolean"
                 },
                 "sequential": {
+                    "description": "If true (the default when `config` is omitted), each stage unlocks only after the previous one is completed.",
                     "type": "boolean"
                 }
             },
@@ -381,32 +439,39 @@
             "type": "object"
         },
         "displays": {
+            "description": "Overview displays (title, stages, complete), shown when no stage is active.",
             "items": {
                 "$ref": "#/definitions/GameOverviewDisplay"
             },
             "type": "array"
         },
         "gameContainerStyle": {
-            "$ref": "#/definitions/React.CSSProperties"
+            "$ref": "#/definitions/React.CSSProperties",
+            "description": "CSS applied to the element containing the whole game, e.g. fonts, colours and sizing."
         },
         "modules": {
+            "description": "Optional modules to switch on for this game.",
             "properties": {
                 "camera": {
-                    "$ref": "#/definitions/CameraModuleData"
+                    "$ref": "#/definitions/CameraModuleData",
+                    "description": "Layers the player's camera view into the game."
                 }
             },
             "type": "object"
         },
         "resources": {
-            "$ref": "#/definitions/GameResourceDefinitions"
+            "$ref": "#/definitions/GameResourceDefinitions",
+            "description": "Named media resources, referenced by `*Resource` keys and passed to templates as `resources`."
         },
         "stages": {
+            "description": "The stages of the game, in order.",
             "items": {
                 "$ref": "#/definitions/GameStageData"
             },
             "type": "array"
         },
         "title": {
+            "description": "Name of the game, shown to players when choosing a game.",
             "type": "string"
         }
     },

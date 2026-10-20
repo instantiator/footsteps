@@ -3,6 +3,7 @@ import type { GameState } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
 import { calcOverviewDisplay } from "./RenderDataUtils";
 
+/** The order in which the overview displays are normally shown. */
 export const GameOverviewPurposeSequence: GameOverviewDisplayPurpose[] = [
   "game-overview-title",
   "game-overview-stages",

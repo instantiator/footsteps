@@ -27,6 +27,10 @@ import {
 } from "./logic/RenderDataUtils";
 import { playAudio } from "./sfx/AudioUtils";
 
+/**
+ * Submits an answer to a challenge.
+ * @returns true if the answer solves the challenge, otherwise the reasons it was wrong (possibly none)
+ */
 export type GameAnswerFunction = (
   stageId: GameStageId,
   challengeId: GameChallengeId,
@@ -118,6 +122,10 @@ const createLayers = (renderData: LayeredGameDisplayRenderData, onAnswer: GameAn
   };
 };
 
+/**
+ * The game itself: builds layered render data from the game state, and hands it to {@link GameLayersLayout}
+ * along with the click handling, feedback (music, sound effects, rewards) and title screen keys.
+ */
 export default function Game() {
   const { debug } = useFeatureFlags();
   const { resources } = useGameData();

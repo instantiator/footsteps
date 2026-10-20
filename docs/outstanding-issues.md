@@ -31,3 +31,9 @@ TypeScript 7.0.2 is the latest release, but typescript-eslint 8.71.2 (latest) ac
 `stageId`, `challengeId`, `solution`, and `onAnswer` on `GameDisplayTemplateComponent` (`src/components/core/display/GameDisplayTemplateComponent.tsx`) are accepted but never read. They were marked `TODO (currently unused)` with no condition.
 
 **Act when:** a template display needs to check answers itself (for example, an input embedded in template HTML). Then wire them up. Otherwise, if no such display is planned by the next feature touching template displays, delete them and stop passing them from `GameDisplayComponent` and `GameDisplayScrollComponent`.
+
+## Potential bugs from the documentation and test audit
+
+The audit for prompt 000.00.00 found 19 potential bugs, listed with their evidence in [`docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md`](prompts/000.00.02.feedback%20-%20fixes%20from%20identified%20bugs%20and%20tests.md). The 15 tests that show them are skipped, each with a `BUG #N` comment. Bugs #2, #12 and #17 need a decision about what the behaviour should be before they can be fixed.
+
+**Act when:** the follow-on work for 000.00.02 starts. Fix each bug, remove the `.skip` from its test, and delete its entry. Done when `grep -rn "BUG #" tests/` finds nothing and `npx vitest run` reports no skipped tests.

@@ -8,22 +8,42 @@ import HeadsUpDisplay from "../HeadsUpDisplay";
 import type { LayerHint } from "../display/GameDisplayComponent";
 import GameChallengeGrid from "./GameChallengeGrid";
 
+/**
+ * Props shared by the layer wrappers. Each wrapper uses only the subset it needs, and
+ * assumes the ones it requires are provided.
+ */
 export interface LayerNodeProps {
+  /** Stacking order of the layer; see `GameLayersLayout`. */
   zIndex: number;
+  /** Extra style for the layer's container. */
   style?: CSSProperties;
+  /** The webcam video's aspect ratio, used to size the character canvas to match. */
   aspectRatio?: number;
+  /** Lets the camera report the video's aspect ratio. */
   setAspectRatio?: React.Dispatch<React.SetStateAction<number | undefined>>;
+  /** The webcam's video element, shared between the camera and the character canvas. */
   video?: HTMLVideoElement | null;
+  /** Lets the camera share its video element. */
   setVideo?: React.Dispatch<React.SetStateAction<HTMLVideoElement | null>>;
+  /** The webcam stream, shared between the camera and the character canvas. */
   characterStream?: MediaStream | undefined;
+  /** Lets the camera share its stream once the player allows it. */
   setCharacterStream?: React.Dispatch<React.SetStateAction<MediaStream | undefined>>;
+  /** Where the player's feet were last seen, for the debug overlay. */
   feetPositions?: FeetPositions;
+  /** Lets the character canvas report the feet positions. */
   setFeetPositions?: React.Dispatch<React.SetStateAction<FeetPositions>>;
+  /** Whether debug aids (colour key, coloured mask) are shown. */
   debug?: boolean;
+  /** Called with clicks on elements in the layer; `layerIdOverride` replaces the layer's own id as the source. */
   clickHandler?: (event: React.SyntheticEvent<HTMLElement>, layerIdOverride?: string) => void;
+  /** The display components to render in the layer, one per grid column. */
   nodes?: ReactNode[];
+  /** Whether the game uses the camera. */
   cameraEnabled?: boolean;
+  /** Name of the layer (overview, stage or challenges). */
   layer?: string;
+  /** Whether this is the layer's background or foreground. */
   layerHint?: LayerHint;
 }
 
@@ -34,6 +54,10 @@ export interface LayerNodeProps {
 const isTemplateButtonActivation = (event: React.KeyboardEvent<HTMLElement>): boolean =>
   (event.key === "Enter" || event.key === " ") && (event.target as HTMLElement).getAttribute("role") === "button";
 
+/**
+ * A background or foreground layer of the overview, stage or challenges: its display components in a
+ * {@link GameChallengeGrid}, with clicks and key presses delegated to the click handler.
+ */
 export const GameLayerWrapper = ({ nodes, style, zIndex, clickHandler, layer, layerHint }: LayerNodeProps) => (
   // Delegates clicks and key presses from elements inside game-authored templates, which are the real controls
   // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
@@ -58,6 +82,7 @@ export const GameLayerWrapper = ({ nodes, style, zIndex, clickHandler, layer, la
   </div>
 );
 
+/** Layer holding the webcam preview ({@link CharacterCamera}). */
 export const CharacterCameraLayerWrapper = ({
   style,
   zIndex,
@@ -80,6 +105,7 @@ export const CharacterCameraLayerWrapper = ({
   </div>
 );
 
+/** Layer holding the debug overlay: feet markers when the camera is enabled. */
 export const DebugLayerWrapper = ({ style, zIndex, clickHandler, feetPositions, cameraEnabled }: LayerNodeProps) => (
   // Debug-only overlay that delegates clicks, as GameLayerWrapper does
   // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
@@ -93,6 +119,7 @@ export const DebugLayerWrapper = ({ style, zIndex, clickHandler, feetPositions, 
   </div>
 );
 
+/** Layer holding the player's mirrored silhouette ({@link CharacterCanvas}), which also reports their feet positions. */
 export const CharacterCanvasLayerWrapper = ({
   style,
   zIndex,
@@ -114,6 +141,7 @@ export const CharacterCanvasLayerWrapper = ({
   </div>
 );
 
+/** Top layer, holding the {@link HeadsUpDisplay}. */
 export const HudLayerWrapper = ({ style, zIndex }: LayerNodeProps) => (
   <div id="hud-layer-container" className="hudStyle childClicksOnly" style={{ ...style, zIndex: zIndex }}>
     <HeadsUpDisplay />

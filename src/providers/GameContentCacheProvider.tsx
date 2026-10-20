@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { BLANK_CACHE, GameContentCacheContext, type GameContentCache } from "./GameContentCacheContext";
 
+/** Holds the {@link GameContentCache} for everything beneath it. */
 export default function ContentCacheProvider({ children }: { children: React.ReactNode }) {
   const [cache, setCache] = useState<GameContentCache>(BLANK_CACHE);
 

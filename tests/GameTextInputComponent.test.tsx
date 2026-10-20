@@ -25,4 +25,30 @@ describe("GameTextInputComponent", () => {
     fireEvent.change(input, { target: { value: "custard" } });
     expect(setSolved).toHaveBeenLastCalledWith(true);
   });
+
+  it("does not submit on change when autoSubmit is off", () => {
+    const onAnswer = vi.fn<GameAnswerFunction>(() => true);
+    render(<GameTextInputComponent stageId="s1" challengeId="c1" onAnswer={onAnswer} autoSubmit={false} />);
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "trifle" } });
+    expect(onAnswer).not.toHaveBeenCalled();
+  });
+
+  // BUG #6 (docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md): with autoSubmit off, Enter should submit the typed answer; actual: nothing ever submits it
+  it.skip("submits the typed answer on Enter when autoSubmit is off", () => {
+    const onAnswer = vi.fn<GameAnswerFunction>(() => true);
+    render(<GameTextInputComponent stageId="s1" challengeId="c1" onAnswer={onAnswer} autoSubmit={false} />);
+    const input = screen.getByRole("textbox");
+    fireEvent.change(input, { target: { value: "trifle" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onAnswer).toHaveBeenCalledWith("s1", "c1", "trifle");
+  });
+
+  it("ignores further answers once solved, and disables the input", () => {
+    const onAnswer = vi.fn<GameAnswerFunction>(() => true);
+    render(<GameTextInputComponent stageId="s1" challengeId="c1" onAnswer={onAnswer} solved={true} />);
+    const input = screen.getByRole("textbox");
+    expect(input).toBeDisabled();
+    fireEvent.change(input, { target: { value: "x" } });
+    expect(onAnswer).not.toHaveBeenCalled();
+  });
 });

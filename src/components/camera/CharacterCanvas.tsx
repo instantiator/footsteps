@@ -4,16 +4,24 @@ import { useEffect, useRef, useState } from "react";
 import { drawMask } from "./BodySegSupport";
 import { findFeet, type FeetPositions } from "./CameraSupport";
 
+/** The body segmentation model. */
 type BodySegNet = bodySeg.BodySegmenter;
+/** The model's result for one frame: one segmentation per person. */
 type Segmentation = Awaited<ReturnType<BodySegNet["segmentPeople"]>>;
 
+/** Props for {@link CharacterCanvas}. */
 interface CharacterCanvasProps {
+  /** The webcam video to segment. */
   video: HTMLVideoElement | null;
+  /** The webcam stream; the model is only loaded while there is one. */
   mediaStream: MediaStream | undefined;
+  /** Feet lower than this (% of frame height) count as off screen and are not reported. */
   offScreenThreshold_percent?: number;
+  /** Called every frame with the feet of everyone found (empty if nobody is). */
   onFeetPositionsChange?: (feetPositions: FeetPositions) => void;
   className?: string;
   style?: React.CSSProperties;
+  /** How to draw the silhouette; see {@link drawMask}. Defaults to "binary". */
   maskType?: "binary" | "colored" | "extremities";
 }
 
@@ -25,6 +33,7 @@ const MODEL_CONFIG: bodySeg.BodyPixModelConfig = {
   quantBytes: 4,
 };
 
+/** Per-frame segmentation settings: high resolution and body parts, mirrored to match the preview. */
 const SEGMENTATION_CONFIG = {
   internalResolution: "high", // Adjust resolution for performance
   flipHorizontal: true, // Often needed for webcams
@@ -64,6 +73,10 @@ const findAllFeet = async (segmentation: Segmentation, offScreenThreshold_percen
   return feetPositions;
 };
 
+/**
+ * Runs body segmentation on the webcam video every frame, draws the player's silhouette on a canvas,
+ * and reports where each person's feet are.
+ */
 export default function CharacterCanvas({
   video,
   mediaStream,

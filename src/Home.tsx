@@ -3,6 +3,7 @@ import Dependencies from "./components/landing/Dependencies";
 import LocalListing from "./components/landing/LocalListing";
 import GameRepositoryProvider from "./providers/GameRepositoryProvider";
 
+/** Landing page: lists the games in the local repository, then the attributions and dependency licences. */
 export default function Home() {
   return (
     <div style={{ padding: "20px" }}>

@@ -5,14 +5,22 @@ import type { GameDisplayRenderData } from "../logic/RenderDataUtils";
 import GameDisplayScrollComponent from "./GameDisplayScrollComponent";
 import GameDisplayTemplateComponent from "./GameDisplayTemplateComponent";
 
+/** Which half of a display a component renders: the background behind the camera character, or the foreground in front of it. */
 export type LayerHint = "background" | "foreground";
 
+/** Props for {@link GameDisplayComponent}. */
 interface GameDisplayComponentProps {
+  /** The display to render, with its template data and the challenge it belongs to. */
   render: GameDisplayRenderData;
   layerHint: LayerHint;
+  /** Called when the player submits an answer in the display. */
   onAnswer?: GameAnswerFunction;
 }
 
+/**
+ * Renders one half (the layer hint) of a display, using the template or scroll component to suit its type,
+ * and the background or foreground source and styles to suit the hint.
+ */
 export default function GameDisplayComponent({ render, layerHint, onAnswer }: GameDisplayComponentProps) {
   const getTemplateSource = (
     component: GameDisplayTemplateComponentData | GameDisplayScrollComponentData,

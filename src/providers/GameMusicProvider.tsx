@@ -3,6 +3,7 @@ import { playAudio } from "../components/core/sfx/AudioUtils";
 import { isDefined } from "../util/ObjectUtils";
 import { GameMusicContext } from "./GameMusicContext";
 
+/** Provides game music playback, allowing only one track at a time. */
 export default function GameMusicProvider({ children }: { children: React.ReactNode }) {
   const [currentMusic, setCurrentMusic] = useState<{ resource: string; audio: HTMLAudioElement } | undefined>(
     undefined,

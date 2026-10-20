@@ -9,10 +9,10 @@ import type { GameState } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
 
 /**
- * Validates an answer for a given challenge
+ * Validates an answer for a given challenge, applying the solution's case and whitespace rules (all on by default).
  * @param challenge the challenge (with solution) to validate against
  * @param input the submitted input
- * @returns true if the answer is correct, otherwise a GameChallengeAnswerValidation[]
+ * @returns true if the answer is correct, otherwise a GameChallengeAnswerValidation[] describing the failures
  */
 export function validateAnswer(
   challenge: GameChallengeData,
@@ -46,7 +46,12 @@ export function validateAnswer(
  */
 export const getActiveStageStateChallenges = (
   gameState: GameState,
-): { stageState: GameStageState | null; activeChallengeStates: GameChallengeState[] | null } => {
+): {
+  /** The current stage's state, or null if no stage is open. */
+  stageState: GameStageState | null;
+  /** The challenges to show now, or null if no stage is open. */
+  activeChallengeStates: GameChallengeState[] | null;
+} => {
   if (!isDefined(gameState.current.stageId)) {
     return { stageState: null, activeChallengeStates: null };
   }
@@ -86,11 +91,15 @@ export const getCurrentChallengeStates = (
 ): GameChallengeState[] | undefined => chunkedChallengeStates.find((chunk) => chunk.some((c) => !c.succeeded));
 
 /**
- * Marks a challenge as complete in the game state, and advances the game.
+ * Marks a challenge as succeeded, and advances the game accordingly.
+ * The recommended stage (the first incomplete one) is unlocked. If that completes the stage, the game
+ * returns to the stages overview if it has one, otherwise moves straight to the recommended stage.
+ * Once every stage is complete, the overview switches to the finale display.
  * @param gameState the current game state
  * @param stageId the stage id for the challenge
  * @param challengeId the challenge id to complete
- * @returns Partial<GameState> with the necessary updates to the game state
+ * @returns a new game state with the updates applied (the given state is not modified)
+ * @throws if the stage or challenge has no state
  */
 export function completeChallenge(gameState: GameState, stageId: GameStageId, challengeId: GameChallengeId): GameState {
   const stageState = getStageState(gameState, stageId);
@@ -150,6 +159,7 @@ const markChallengeSucceeded = (stageState: GameStageState, challengeId: GameCha
   return { ...stageState, completion, challengeStates };
 };
 
+/** Whether the game defines an overview display with the given purpose. */
 const hasOverviewDisplay = (gameState: GameState, purpose: GameOverviewDisplayPurpose): boolean =>
   gameState.gameData.displays.some((d) => d.purpose === purpose);
 
@@ -165,9 +175,9 @@ const calcFinaleOverviewDisplay = (gameState: GameState): GameOverviewDisplayPur
       : "game-overview-stages";
 
 /**
- * Identifies the id of the stage following the given stage id.
+ * Identifies the stage the player should tackle next: the first one that isn't completed.
  * @param gameState current game state
- * @returns the next stage id, or undefined if there is none
+ * @returns the recommended stage id, or null if every stage is completed
  */
 export const getRecommendedStageId = (gameState: GameState): GameStageId | null => {
   return gameState.stages.find((s) => s.completion !== "completed")?.stage.id ?? null;

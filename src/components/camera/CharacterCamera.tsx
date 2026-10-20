@@ -2,15 +2,21 @@ import { useEffect, useRef, type Dispatch, type SetStateAction } from "react";
 import { BODY_PARTS } from "./BodySegSupport";
 import { getCameraStream } from "./CameraSupport";
 
+/** Props for {@link CharacterCamera}. State is held by the parent, so sibling components can share the video and stream. */
 interface CharacterCameraProps {
+  /** The webcam stream, once the player has granted access. */
   stream: MediaStream | undefined;
   setStream: Dispatch<SetStateAction<MediaStream | undefined>>;
+  /** The preview's video element, once rendered. */
   video: HTMLVideoElement | null;
   setVideo: Dispatch<SetStateAction<HTMLVideoElement | null>>;
+  /** Reports the video's aspect ratio (width / height) once it is playing. */
   onAspectChange: Dispatch<SetStateAction<number | undefined>>;
+  /** Whether to show the colour key for the body parts, as used in a coloured mask. */
   colorKey: boolean;
 }
 
+/** Captures the player's webcam into a small mirrored preview video, for the segmentation to read; optionally with a colour key. */
 export default function CharacterCamera({
   stream,
   setStream,

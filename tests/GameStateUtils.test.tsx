@@ -3,8 +3,12 @@ import {
   completeChallenge,
   getActiveStageStateChallenges,
   getRecommendedStageId,
+  validateAnswer,
 } from "../src/components/core/logic/GameStateUtils";
-import type { GameState } from "../src/entities/state/GameState";
+import type { GameChallengeData } from "../src/entities/data/GameChallengeData";
+import type { GameChallengeSolution } from "../src/entities/data/GameChallengeSolution";
+import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
+import { challenge, game, stage } from "./data/GameBuilders";
 import { simpleGameState as gameState_stage1, simpleGameState } from "./data/SampleGameState";
 
 describe("GameState", () => {
@@ -179,5 +183,145 @@ describe("GameStateUtils", () => {
         });
       });
     });
+  });
+});
+
+/** Three stages: one challenge, two challenges, one challenge. */
+const threeStages = (overviews: Parameters<typeof game>[0], config?: Parameters<typeof game>[2]) =>
+  createBlankGameState(
+    game(
+      overviews,
+      [stage("s1", [challenge("c1")]), stage("s2", [challenge("c2"), challenge("c3")]), stage("s3", [challenge("c4")])],
+      config,
+    ),
+  );
+
+const atStage = (state: GameState, stageId: string): GameState => ({
+  ...state,
+  current: { ...state.current, stageId },
+});
+
+describe("completeChallenge progression", () => {
+  describe("with a stages overview", () => {
+    const start = atStage(threeStages(["game-overview-title", "game-overview-stages"]), "s1");
+
+    it("completes the stage, unlocks the next one and returns to the overview", () => {
+      const next = completeChallenge(start, "s1", "c1");
+      expect(next.stages[0].completion).toBe("completed");
+      expect(next.stages[1].availability).toBe("unlocked");
+      expect(next.stages[2].availability).toBe("locked");
+      expect(next.current.stageId).toBeNull();
+    });
+
+    it("marks a stage partial and stays on it when other challenges remain", () => {
+      const inS2 = atStage(start, "s2");
+      const next = completeChallenge(inS2, "s2", "c2");
+      expect(next.stages[1].completion).toBe("partial");
+      expect(next.current.stageId).toBe("s2");
+    });
+
+    it("does not modify the state it was given", () => {
+      const before = structuredClone(start);
+      completeChallenge(start, "s1", "c1");
+      expect(start).toEqual(before);
+    });
+  });
+
+  describe("without a stages overview", () => {
+    it("moves straight to the recommended next stage", () => {
+      const next = completeChallenge(atStage(threeStages(["game-overview-title"]), "s1"), "s1", "c1");
+      expect(next.current.stageId).toBe("s2");
+    });
+  });
+
+  describe("once every stage is complete", () => {
+    const finish = (overviews: Parameters<typeof game>[0]) => {
+      let state = atStage(threeStages(overviews), "s1");
+      for (const [stageId, challengeId] of [
+        ["s1", "c1"],
+        ["s2", "c2"],
+        ["s2", "c3"],
+        ["s3", "c4"],
+      ]) {
+        state = completeChallenge(state, stageId, challengeId);
+      }
+      return state;
+    };
+
+    it.each([
+      [["game-overview-title", "game-overview-stages", "game-overview-complete"], "game-overview-complete"],
+      [["game-overview-title", "game-overview-stages"], "game-overview-title"],
+      [["game-overview-stages"], "game-overview-stages"],
+    ] as const)("with overviews %j shows %s", (overviews, expected) => {
+      const state = finish([...overviews]);
+      expect(state.stages.every((s) => s.completion === "completed")).toBe(true);
+      expect(state.current.overviewDisplay).toBe(expected);
+    });
+  });
+
+  // BUG #3 (docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md): autoAdvanceStages: true should move straight to the next stage even with a stages overview; the flag is never read, so the game returns to the overview.
+  it.skip("advances straight to the next stage when config.autoAdvanceStages is true", () => {
+    const state = atStage(
+      threeStages(["game-overview-title", "game-overview-stages"], { sequential: true, autoAdvanceStages: true }),
+      "s1",
+    );
+    expect(completeChallenge(state, "s1", "c1").current.stageId).toBe("s2");
+  });
+});
+
+describe("validateAnswer", () => {
+  const withSolution = (solution: Partial<GameChallengeSolution>): GameChallengeData => ({
+    ...challenge("c"),
+    solution: { answers: ["Hello World"], hints: [], ...solution },
+  });
+
+  it("accepts the answer ignoring case and whitespace by default", () => {
+    expect(validateAnswer(withSolution({}), "  hELLo   wORLD ")).toBe(true);
+  });
+
+  it("accepts any of several answers", () => {
+    const multi = withSolution({ answers: ["one", "two"] });
+    expect(validateAnswer(multi, "two")).toBe(true);
+    expect(validateAnswer(multi, "three")).toEqual([]);
+  });
+
+  it("returns an empty list, not true, on a mismatch", () => {
+    expect(validateAnswer(withSolution({}), "goodbye")).toEqual([]);
+  });
+
+  it("makes case matter when ignoreCase is false", () => {
+    const strict = withSolution({ ignoreCase: false });
+    expect(validateAnswer(strict, "hello world")).toEqual([]);
+    expect(validateAnswer(strict, "Hello World")).toBe(true);
+  });
+
+  it("makes surrounding spaces matter when both trimWhitespace and ignoreWhitespace are false", () => {
+    const strict = withSolution({ trimWhitespace: false, ignoreWhitespace: false });
+    expect(validateAnswer(strict, " Hello World")).toEqual([]);
+    expect(validateAnswer(strict, "Hello World")).toBe(true);
+  });
+
+  it("makes inner spaces matter when ignoreWhitespace is false but trimming is on", () => {
+    const strict = withSolution({ ignoreWhitespace: false });
+    expect(validateAnswer(strict, "HelloWorld")).toEqual([]);
+    expect(validateAnswer(strict, "Hello  World")).toEqual([]);
+    expect(validateAnswer(strict, "  Hello World  ")).toBe(true);
+  });
+});
+
+describe("getRecommendedStageId edge cases", () => {
+  it("is the first incomplete stage, even if later ones are complete", () => {
+    const state = threeStages(["game-overview-title"]);
+    const withS3Done: GameState = {
+      ...state,
+      stages: state.stages.map((s) => (s.stage.id === "s3" ? { ...s, completion: "completed" } : s)),
+    };
+    expect(getRecommendedStageId(withS3Done)).toBe("s1");
+  });
+
+  it("is null when every stage is complete", () => {
+    const state = threeStages(["game-overview-title"]);
+    const allDone: GameState = { ...state, stages: state.stages.map((s) => ({ ...s, completion: "completed" })) };
+    expect(getRecommendedStageId(allDone)).toBeNull();
   });
 });
