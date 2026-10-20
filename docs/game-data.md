@@ -12,6 +12,7 @@ GameData
 ├── resources?                         name → { type, target }        (see Resources)
 ├── sounds?                            resource names of music and sound effects (see Sounds)
 ├── reward?                            { animation, particleCount? }: celebration on stage completion
+├── credits?                           [{ text, url? }]: credits for third-party media (see Credits)
 ├── stylesheets?                       resource names of CSS files to load (see Stylesheets)
 ├── displays: GameOverviewDisplay[]    the screens shown when no stage is open
 └── stages: GameStageData[]
@@ -102,6 +103,10 @@ For example, magic-trifle sets `"openingMusicResource": "music-opening"`, where 
 ## Reward
 
 `reward` is the celebration shown when a stage is completed: `animation` is the name of a [partycles](https://www.npmjs.com/package/partycles) animation, and `particleCount` (default 200) sets how many particles it launches. Without `reward` there is no celebration. Magic-trifle uses `{ "animation": "fireworks", "particleCount": 200 }`.
+
+## Credits
+
+`credits` lists the third-party media the game uses. The landing page shows them under the game: each `text` is a link when `url` is set, and plain text otherwise. The app's own media is credited in `src/components/landing/Attributions.tsx`. Magic-trifle credits its music, sound effect and bubble text this way.
 
 ## Stylesheets
 

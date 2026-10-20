@@ -35,6 +35,34 @@ describe("LocalListing", () => {
     expect(screen.queryByRole("list")).toBeNull();
   });
 
+  it("lists a game's credits, linked when they have a url and plain text when not", () => {
+    const game = simpleRepository.games["simple-game"];
+    const credits = [{ text: "Linked credit", url: "https://credit.example/" }, { text: "Plain credit" }];
+    render(
+      <MemoryRouter>
+        <GameRepositoryProvider
+          source={{ type: "RawRepository", repository: { games: { "simple-game": { ...game, credits } } } }}
+        >
+          <LocalListing />
+        </GameRepositoryProvider>
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("link", { name: "Linked credit" })).toHaveAttribute("href", "https://credit.example/");
+    expect(screen.getByText("Plain credit")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Plain credit" })).toBeNull();
+  });
+
+  it("shows no nested list for a game without credits", () => {
+    render(
+      <MemoryRouter>
+        <GameRepositoryProvider source={{ type: "RawRepository", repository: simpleRepository }}>
+          <LocalListing />
+        </GameRepositoryProvider>
+      </MemoryRouter>,
+    );
+    expect(screen.getAllByRole("list")).toHaveLength(1);
+  });
+
   it("lists each game of a ready repository as a link to play it", () => {
     render(
       <MemoryRouter>

@@ -451,6 +451,26 @@
             ],
             "type": "object"
         },
+        "credits": {
+            "description": "Credits for the third-party media this game uses, listed with the game on the landing page.",
+            "items": {
+                "properties": {
+                    "text": {
+                        "description": "What to show, e.g. the work's title and author.",
+                        "type": "string"
+                    },
+                    "url": {
+                        "description": "Where to link the text to, if anywhere.",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "text"
+                ],
+                "type": "object"
+            },
+            "type": "array"
+        },
         "displays": {
             "description": "Overview displays (title, stages, complete), shown when no stage is active.",
             "items": {

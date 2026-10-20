@@ -16,7 +16,7 @@ A game's authored definition: its overview displays, stages, challenges, resourc
 
 > `optional` **config?**: `object`
 
-Defined in: [entities/data/GameData.ts:77](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L77)
+Defined in: [entities/data/GameData.ts:84](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L84)
 
 Game-wide behaviour settings.
 
@@ -35,6 +35,28 @@ If true (the default when `config` is omitted), each stage unlocks only after th
 
 ***
 
+### credits?
+
+> `optional` **credits?**: `object`[]
+
+Defined in: [entities/data/GameData.ts:72](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L72)
+
+Credits for the third-party media this game uses, listed with the game on the landing page.
+
+#### text
+
+> **text**: `string`
+
+What to show, e.g. the work's title and author.
+
+#### url?
+
+> `optional` **url?**: `string`
+
+Where to link the text to, if anywhere.
+
+***
+
 ### displays
 
 > **displays**: [`GameOverviewDisplay`](../../displays/GameDisplayData/interfaces/GameOverviewDisplay.md)[]
@@ -49,7 +71,7 @@ Overview displays (title, stages, complete), shown when no stage is active.
 
 > **gameContainerStyle**: `CSSProperties`
 
-Defined in: [entities/data/GameData.ts:87](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L87)
+Defined in: [entities/data/GameData.ts:94](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L94)
 
 CSS applied to the element containing the whole game, e.g. fonts, colours and sizing.
 
@@ -59,7 +81,7 @@ CSS applied to the element containing the whole game, e.g. fonts, colours and si
 
 > `optional` **modules?**: `object`
 
-Defined in: [entities/data/GameData.ts:72](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L72)
+Defined in: [entities/data/GameData.ts:79](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L79)
 
 Optional modules to switch on for this game.
 

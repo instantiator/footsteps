@@ -68,6 +68,13 @@ export interface GameData {
     /** How many particles to launch (default 200). */
     particleCount?: number;
   };
+  /** Credits for the third-party media this game uses, listed with the game on the landing page. */
+  credits?: {
+    /** What to show, e.g. the work's title and author. */
+    text: string;
+    /** Where to link the text to, if anywhere. */
+    url?: string;
+  }[];
   /** Optional modules to switch on for this game. */
   modules?: {
     /** Layers the player's camera view into the game. */

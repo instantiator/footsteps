@@ -17,6 +17,13 @@ export default function LocalListing() {
                 <b>{gameData.title}</b>
               </Link>{" "}
               (id: {gameId})
+              {gameData.credits?.length ? (
+                <ul>
+                  {gameData.credits.map(({ text, url }) => (
+                    <li key={text}>{url ? <a href={url}>{text}</a> : text}</li>
+                  ))}
+                </ul>
+              ) : null}
             </li>
           ))}
         </ul>

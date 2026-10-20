@@ -13,6 +13,19 @@
         "sequential": true,
         "autoAdvanceStages": false
       },
+      "credits": [
+        { "text": "Bubble text created with Font generator", "url": "https://www.textstudio.com/" },
+        { "text": "Magical Christmas by Paul Yudin", "url": "https://uppbeat.io/track/paul-yudin/magical-christmas" },
+        { "text": "Elves Workshop by Simon Folwar", "url": "https://uppbeat.io/track/simon-folwar/elves-workshop" },
+        {
+          "text": "Arrival of a Princess by Aaron Paul Low",
+          "url": "https://uppbeat.io/t/aaron-paul-low/arrival-of-a-princess"
+        },
+        {
+          "text": "Magic Sound Effect by AnnaBaX01Q (Creative Commons 0 license)",
+          "url": "https://freesound.org/s/813273/"
+        }
+      ],
       "stylesheets": ["font-dynapuff"],
       "sounds": {
         "openingMusicResource": "music-opening",
