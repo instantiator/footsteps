@@ -13,12 +13,6 @@ export function Layout({ children }: { children: ReactNode }) {
         <meta httpEquiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'none'" />
         <title>footsteps</title>
         <link rel="icon" type="image/png" href={`${import.meta.env.BASE_URL}footprints-icon.png`} />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com/" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Crimson+Pro&family=Open+Sans&family=Material+Icons&family=DynaPuff&display=swap"
-        />
         <Meta />
         <Links />
       </head>

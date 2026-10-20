@@ -8,7 +8,7 @@
 
 > **default**(): `Element`
 
-Defined in: [root.tsx:34](https://github.com/instantiator/2025-xmas-game/blob/main/src/root.tsx#L34)
+Defined in: [root.tsx:28](https://github.com/instantiator/2025-xmas-game/blob/main/src/root.tsx#L28)
 
 The root route: renders whichever page the URL matched inside [Layout](Layout.md).
 

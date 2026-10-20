@@ -10,6 +10,7 @@ GameData
 ├── config?                            { sequential, autoAdvanceStages }
 ├── modules?.camera?                   { enabled }: show the player's camera silhouette
 ├── resources?                         name → { type, target }        (see Resources)
+├── stylesheets?                       resource names of CSS files to load (see Stylesheets)
 ├── displays: GameOverviewDisplay[]    the screens shown when no stage is open
 └── stages: GameStageData[]
     ├── id
@@ -82,6 +83,10 @@ Without its own templates, a scroll shows the page text one paragraph per line.
 | `url`      | Nothing: it must already be an absolute URL                                                                                                                                       |
 
 If a resource can't be resolved, the game's loading state becomes `resource-error`. Media fields such as `media.resource` and `stillImageResource` refer to resources by name. Templates see all of them as `resources`, for example `{{resources.star}}`.
+
+## Stylesheets
+
+`stylesheets` lists resource names whose files are CSS the game needs, such as a web font. They load when the game is shown, and the game appears once they have loaded (or failed to). Only `https:` or same-site URLs are used; any other is skipped with a console warning. For example, magic-trifle loads its font with `"stylesheets": ["font-dynapuff"]` and sets `"fontFamily"` in `gameContainerStyle`.
 
 ## Templating
 

@@ -16,7 +16,7 @@ A game's authored definition: its overview displays, stages, challenges, resourc
 
 > `optional` **config?**: `object`
 
-Defined in: [entities/data/GameData.ts:25](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L25)
+Defined in: [entities/data/GameData.ts:30](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L30)
 
 Game-wide behaviour settings.
 
@@ -49,7 +49,7 @@ Overview displays (title, stages, complete), shown when no stage is active.
 
 > **gameContainerStyle**: `CSSProperties`
 
-Defined in: [entities/data/GameData.ts:35](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L35)
+Defined in: [entities/data/GameData.ts:40](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L40)
 
 CSS applied to the element containing the whole game, e.g. fonts, colours and sizing.
 
@@ -59,7 +59,7 @@ CSS applied to the element containing the whole game, e.g. fonts, colours and si
 
 > `optional` **modules?**: `object`
 
-Defined in: [entities/data/GameData.ts:20](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L20)
+Defined in: [entities/data/GameData.ts:25](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L25)
 
 Optional modules to switch on for this game.
 
@@ -88,6 +88,17 @@ Named media resources, referenced by `*Resource` keys and passed to templates as
 Defined in: [entities/data/GameData.ts:16](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L16)
 
 The stages of the game, in order.
+
+***
+
+### stylesheets?
+
+> `optional` **stylesheets?**: `string`[]
+
+Defined in: [entities/data/GameData.ts:23](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L23)
+
+Names of resources (keys of `resources`) that are CSS stylesheets the game needs, such as a web font;
+loaded while the game is shown. Only `https:` or same-site URLs are used.
 
 ***
 

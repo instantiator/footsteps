@@ -454,6 +454,13 @@
             },
             "type": "array"
         },
+        "stylesheets": {
+            "description": "Names of resources (keys of `resources`) that are CSS stylesheets the game needs, such as a web font;\nloaded while the game is shown. Only `https:` or same-site URLs are used.",
+            "items": {
+                "type": "string"
+            },
+            "type": "array"
+        },
         "title": {
             "description": "Name of the game, shown to players when choosing a game.",
             "type": "string"

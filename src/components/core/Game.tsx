@@ -122,6 +122,26 @@ const createLayers = (renderData: LayeredGameDisplayRenderData, onAnswer: GameAn
   };
 };
 
+/** Whether a stylesheet URL is safe to load: `https:`, or on this site. */
+function isAllowedStylesheet(href: string): boolean {
+  const url = new URL(href, location.href);
+  return url.protocol === "https:" || url.origin === location.origin;
+}
+
+/** Loads the stylesheets the game names, skipping (with a warning) any that are missing or not allowed. */
+function GameStylesheets() {
+  const { resources } = useGameData();
+  const { gameState } = useGameState();
+  return (gameState.gameData.stylesheets ?? []).flatMap((key) => {
+    const href = resources[key];
+    if (!isDefined(href) || !isAllowedStylesheet(href)) {
+      console.warn(`Skipping stylesheet "${key}": ${href ?? "no such resource"}`);
+      return [];
+    }
+    return <link key={key} rel="stylesheet" href={href} precedence="game" />;
+  });
+}
+
 /**
  * The game itself: builds layered render data from the game state, and hands it to {@link GameLayersLayout}
  * along with the click handling, feedback (music, sound effects, rewards) and title screen keys.
@@ -183,6 +203,7 @@ export default function Game() {
         ...gameState.gameData.gameContainerStyle,
       }}
     >
+      <GameStylesheets />
       <div
         id="reward-element"
         style={{ position: "absolute", top: "50vh", left: "50vw", width: 0, height: 0, pointerEvents: "none" }}

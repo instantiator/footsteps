@@ -16,6 +16,11 @@ export interface GameData {
   stages: GameStageData[];
   /** Named media resources, referenced by `*Resource` keys and passed to templates as `resources`. */
   resources?: GameResourceDefinitions;
+  /**
+   * Names of resources (keys of `resources`) that are CSS stylesheets the game needs, such as a web font;
+   * loaded while the game is shown. Only `https:` or same-site URLs are used.
+   */
+  stylesheets?: string[];
   /** Optional modules to switch on for this game. */
   modules?: {
     /** Layers the player's camera view into the game. */
