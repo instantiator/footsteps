@@ -6,7 +6,7 @@
 
 # Interface: GameResourceDefinitions
 
-Defined in: [entities/data/GameData.ts:47](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L47)
+Defined in: [entities/data/GameData.ts:94](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L94)
 
 Named resources, keyed by the name used to refer to them.
 Resolved to absolute URLs when the game loads.

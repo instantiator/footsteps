@@ -391,6 +391,35 @@
         "Record<string,unknown>": {
             "type": "object"
         },
+        "RewardAnimation": {
+            "description": "The partycles animations a reward can use. Declared here rather than imported from partycles\nbecause the schema generator can't resolve that package; keep in step with its `AnimationType`.",
+            "enum": [
+                "aurora",
+                "balloons",
+                "bokeh",
+                "bubbles",
+                "coins",
+                "confetti",
+                "crystals",
+                "emoji",
+                "fireflies",
+                "fireworks",
+                "galaxy",
+                "geometric",
+                "glitch",
+                "hearts",
+                "leaves",
+                "magicdust",
+                "mortar",
+                "paint",
+                "petals",
+                "ribbons",
+                "snow",
+                "sparkles",
+                "stars"
+            ],
+            "type": "string"
+        },
         "TemplateSourceType": {
             "description": "Where a template is read from: `local` (path on this site), `relative` (relative to the repository's location),\n`url` (absolute URL, fetched as-is) or `embedded` (text inline in `content`).",
             "enum": [
@@ -446,6 +475,45 @@
         "resources": {
             "$ref": "#/definitions/GameResourceDefinitions",
             "description": "Named media resources, referenced by `*Resource` keys and passed to templates as `resources`."
+        },
+        "reward": {
+            "description": "The celebration shown when a stage is completed. Unset means none.",
+            "properties": {
+                "animation": {
+                    "$ref": "#/definitions/RewardAnimation",
+                    "description": "Which partycles animation to show."
+                },
+                "particleCount": {
+                    "description": "How many particles to launch (default 200).",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "animation"
+            ],
+            "type": "object"
+        },
+        "sounds": {
+            "description": "Music and sound effects, as resource names (keys of `resources`). Any left unset is silent.",
+            "properties": {
+                "closingMusicResource": {
+                    "description": "Music played on the game-complete overview.",
+                    "type": "string"
+                },
+                "openingMusicResource": {
+                    "description": "Music played when the stages overview shows.",
+                    "type": "string"
+                },
+                "stageCompletedSoundResource": {
+                    "description": "Sound effect played when a stage is completed.",
+                    "type": "string"
+                },
+                "stageOpenedSoundResource": {
+                    "description": "Sound effect played when a stage opens.",
+                    "type": "string"
+                }
+            },
+            "type": "object"
         },
         "stages": {
             "description": "The stages of the game, in order.",

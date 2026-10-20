@@ -14,8 +14,19 @@
         "autoAdvanceStages": false
       },
       "stylesheets": ["font-dynapuff"],
+      "sounds": {
+        "openingMusicResource": "music-opening",
+        "closingMusicResource": "music-closing",
+        "stageOpenedSoundResource": "sfx-stage-opened",
+        "stageCompletedSoundResource": "sfx-stage-completed"
+      },
+      "reward": { "animation": "fireworks", "particleCount": 200 },
       "resources": {
         "font-dynapuff": { "type": "url", "target": "https://fonts.googleapis.com/css2?family=DynaPuff&display=swap" },
+        "music-opening": { "type": "local", "target": "games/magic-trifle/music-1.mp3" },
+        "music-closing": { "type": "local", "target": "games/magic-trifle/music-2.mp3" },
+        "sfx-stage-completed": { "type": "local", "target": "games/magic-trifle/win-sound.mp3" },
+        "sfx-stage-opened": { "type": "local", "target": "games/magic-trifle/magical-event.m4a" },
         "title-background": { "type": "local", "target": "games/magic-trifle/title/background.png" },
         "title-foreground": { "type": "local", "target": "games/magic-trifle/title/foreground.png" },
         "blank-river": { "type": "local", "target": "games/magic-trifle/overview/blank-river.png" },

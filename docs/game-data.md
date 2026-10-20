@@ -10,6 +10,8 @@ GameData
 ├── config?                            { sequential, autoAdvanceStages }
 ├── modules?.camera?                   { enabled }: show the player's camera silhouette
 ├── resources?                         name → { type, target }        (see Resources)
+├── sounds?                            resource names of music and sound effects (see Sounds)
+├── reward?                            { animation, particleCount? }: celebration on stage completion
 ├── stylesheets?                       resource names of CSS files to load (see Stylesheets)
 ├── displays: GameOverviewDisplay[]    the screens shown when no stage is open
 └── stages: GameStageData[]
@@ -83,6 +85,23 @@ Without its own templates, a scroll shows the page text one paragraph per line.
 | `url`      | Nothing: it must already be an absolute URL                                                                                                                                       |
 
 If a resource can't be resolved, the game's loading state becomes `resource-error`. Media fields such as `media.resource` and `stillImageResource` refer to resources by name. Templates see all of them as `resources`, for example `{{resources.star}}`.
+
+## Sounds
+
+`sounds` names resources (see Resources) for the game's audio. Anything left unset is silent.
+
+| Field                         | Plays                                     |
+| ----------------------------- | ----------------------------------------- |
+| `openingMusicResource`        | Music, when the stages overview shows     |
+| `closingMusicResource`        | Music, on the game-complete overview      |
+| `stageOpenedSoundResource`    | A sound effect, when a stage opens        |
+| `stageCompletedSoundResource` | A sound effect, when a stage is completed |
+
+For example, magic-trifle sets `"openingMusicResource": "music-opening"`, where `music-opening` is a `local` resource for `games/magic-trifle/music-1.mp3`.
+
+## Reward
+
+`reward` is the celebration shown when a stage is completed: `animation` is the name of a [partycles](https://www.npmjs.com/package/partycles) animation, and `particleCount` (default 200) sets how many particles it launches. Without `reward` there is no celebration. Magic-trifle uses `{ "animation": "fireworks", "particleCount": 200 }`.
 
 ## Stylesheets
 

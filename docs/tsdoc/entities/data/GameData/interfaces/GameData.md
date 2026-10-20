@@ -6,7 +6,7 @@
 
 # Interface: GameData
 
-Defined in: [entities/data/GameData.ts:10](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L10)
+Defined in: [entities/data/GameData.ts:39](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L39)
 
 A game's authored definition: its overview displays, stages, challenges, resources and settings.
 
@@ -16,7 +16,7 @@ A game's authored definition: its overview displays, stages, challenges, resourc
 
 > `optional` **config?**: `object`
 
-Defined in: [entities/data/GameData.ts:30](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L30)
+Defined in: [entities/data/GameData.ts:77](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L77)
 
 Game-wide behaviour settings.
 
@@ -39,7 +39,7 @@ If true (the default when `config` is omitted), each stage unlocks only after th
 
 > **displays**: [`GameOverviewDisplay`](../../displays/GameDisplayData/interfaces/GameOverviewDisplay.md)[]
 
-Defined in: [entities/data/GameData.ts:14](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L14)
+Defined in: [entities/data/GameData.ts:43](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L43)
 
 Overview displays (title, stages, complete), shown when no stage is active.
 
@@ -49,7 +49,7 @@ Overview displays (title, stages, complete), shown when no stage is active.
 
 > **gameContainerStyle**: `CSSProperties`
 
-Defined in: [entities/data/GameData.ts:40](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L40)
+Defined in: [entities/data/GameData.ts:87](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L87)
 
 CSS applied to the element containing the whole game, e.g. fonts, colours and sizing.
 
@@ -59,7 +59,7 @@ CSS applied to the element containing the whole game, e.g. fonts, colours and si
 
 > `optional` **modules?**: `object`
 
-Defined in: [entities/data/GameData.ts:25](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L25)
+Defined in: [entities/data/GameData.ts:72](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L72)
 
 Optional modules to switch on for this game.
 
@@ -75,9 +75,65 @@ Layers the player's camera view into the game.
 
 > `optional` **resources?**: [`GameResourceDefinitions`](GameResourceDefinitions.md)
 
-Defined in: [entities/data/GameData.ts:18](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L18)
+Defined in: [entities/data/GameData.ts:47](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L47)
 
 Named media resources, referenced by `*Resource` keys and passed to templates as `resources`.
+
+***
+
+### reward?
+
+> `optional` **reward?**: `object`
+
+Defined in: [entities/data/GameData.ts:65](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L65)
+
+The celebration shown when a stage is completed. Unset means none.
+
+#### animation
+
+> **animation**: [`RewardAnimation`](../type-aliases/RewardAnimation.md)
+
+Which partycles animation to show.
+
+#### particleCount?
+
+> `optional` **particleCount?**: `number`
+
+How many particles to launch (default 200).
+
+***
+
+### sounds?
+
+> `optional` **sounds?**: `object`
+
+Defined in: [entities/data/GameData.ts:54](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L54)
+
+Music and sound effects, as resource names (keys of `resources`). Any left unset is silent.
+
+#### closingMusicResource?
+
+> `optional` **closingMusicResource?**: `string`
+
+Music played on the game-complete overview.
+
+#### openingMusicResource?
+
+> `optional` **openingMusicResource?**: `string`
+
+Music played when the stages overview shows.
+
+#### stageCompletedSoundResource?
+
+> `optional` **stageCompletedSoundResource?**: `string`
+
+Sound effect played when a stage is completed.
+
+#### stageOpenedSoundResource?
+
+> `optional` **stageOpenedSoundResource?**: `string`
+
+Sound effect played when a stage opens.
 
 ***
 
@@ -85,7 +141,7 @@ Named media resources, referenced by `*Resource` keys and passed to templates as
 
 > **stages**: [`GameStageData`](../../GameStageData/interfaces/GameStageData.md)[]
 
-Defined in: [entities/data/GameData.ts:16](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L16)
+Defined in: [entities/data/GameData.ts:45](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L45)
 
 The stages of the game, in order.
 
@@ -95,7 +151,7 @@ The stages of the game, in order.
 
 > `optional` **stylesheets?**: `string`[]
 
-Defined in: [entities/data/GameData.ts:23](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L23)
+Defined in: [entities/data/GameData.ts:52](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L52)
 
 Names of resources (keys of `resources`) that are CSS stylesheets the game needs, such as a web font;
 loaded while the game is shown. Only `https:` or same-site URLs are used.
@@ -106,6 +162,6 @@ loaded while the game is shown. Only `https:` or same-site URLs are used.
 
 > **title**: `string`
 
-Defined in: [entities/data/GameData.ts:12](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L12)
+Defined in: [entities/data/GameData.ts:41](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/GameData.ts#L41)
 
 Name of the game, shown to players when choosing a game.
