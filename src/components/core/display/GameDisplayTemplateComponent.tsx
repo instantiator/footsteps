@@ -46,13 +46,16 @@ const renderStyle = (style: React.CSSProperties | undefined, data: object): Reac
     }),
   );
 
+/** Game content may come from a remote repository: strip script, event handlers and forms from the HTML. */
+const SANITIZE_OPTIONS = { FORBID_TAGS: ["form"] };
+
 /**
- * Renders a template body over the data, sanitised so that game content can't inject script or forms.
+ * Renders a template body over the data. The result is unsanitised: sanitise it where it's inserted.
  * @returns the HTML, or undefined (after logging) if the template doesn't compile or render
  */
 const renderBody = (template: string, data: object): string | undefined => {
   try {
-    return DOMPurify.sanitize(Handlebars.compile(template, COMPILE_OPTIONS)(data), { FORBID_TAGS: ["form"] });
+    return Handlebars.compile(template, COMPILE_OPTIONS)(data);
   } catch (error) {
     console.error("Error rendering template:", error);
     return undefined;
@@ -98,7 +101,12 @@ export default function GameDisplayTemplateComponent({
       key={`template-${uid}`}
       style={{ width: "100%", height: "100%", ...containerStyleParsed }}
     >
-      {isDefined(html) && <div style={templateStyleParsed} dangerouslySetInnerHTML={{ __html: html }} />}
+      {isDefined(html) && (
+        <div
+          style={templateStyleParsed}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(html, SANITIZE_OPTIONS) }}
+        />
+      )}
       {children}
     </div>
   );

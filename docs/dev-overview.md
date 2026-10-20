@@ -13,7 +13,7 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 | Path                         | What it is                                                                    |
 | ---------------------------- | ----------------------------------------------------------------------------- |
 | `react-router.config.ts`     | Static build settings: no server, the routes to prerender, the base path      |
-| `src/root.tsx`               | The HTML document every page renders into (head tags, fonts)                  |
+| `src/root.tsx`               | The HTML document every page renders into (head tags, security policy)        |
 | `src/routes.ts`              | Route config: `/`, `/game/:id`, `/game/:id/json`                              |
 | `src/pages/`, `src/Home.tsx` | Route modules (one page each)                                                 |
 | `src/components/`            | Game engine UI: layers, displays, camera, and the game logic in `core/logic/` |
