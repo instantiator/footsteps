@@ -60,8 +60,7 @@ describe("GameDataProvider", () => {
     expect(screen.queryByRole("status", { name: "game" })).toBeNull();
   });
 
-  // BUG #9 (docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md): an id that is an Object.prototype key should be not-found; actual: the inherited function is treated as the game
-  it.skip.each(["constructor", "toString"])("reports not-found for the inherited key %s", (id) => {
+  it.each(["constructor", "toString"])("reports not-found for the inherited key %s", (id) => {
     renderProvider(rawSource({ real: gameWith() }), id);
     expect(screen.getByText("loading: not-found")).toBeInTheDocument();
   });

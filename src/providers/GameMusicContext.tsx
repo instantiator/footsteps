@@ -11,8 +11,8 @@ export interface CurrentMusicContext {
         audio: HTMLAudioElement;
       }
     | undefined;
-  /** Starts the track at the given URL, unless music is already playing. @returns whether playback was attempted */
-  playMusic: (res: string) => boolean;
+  /** Starts the track at the given URL, fading out any track already playing. */
+  playMusic: (res: string) => void;
   /** Stops the current music, if any. */
   stopMusic: () => void;
 }

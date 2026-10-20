@@ -66,11 +66,12 @@ export default function GameDisplayTemplateComponent({
   const templateStyleParsed = useMemo(() => renderStyle(templateStyle, templateData), [templateStyle, templateData]);
 
   useEffect(() => {
-    async function loadTemplate() {
-      const retrieved = await getTemplate(templateSource);
-      setRender(retrieved);
-    }
-    loadTemplate();
+    getTemplate(templateSource)
+      .then(setRender)
+      .catch((error) => {
+        console.error("Error loading template:", error);
+        setRender(undefined);
+      });
   }, [templateSource, getTemplate]);
 
   return (

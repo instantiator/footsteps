@@ -8,9 +8,9 @@
 
 > **default**(`__namedParameters`): `Element`
 
-Defined in: [providers/GameMusicProvider.tsx:7](https://github.com/instantiator/2025-xmas-game/blob/main/src/providers/GameMusicProvider.tsx#L7)
+Defined in: [providers/GameMusicProvider.tsx:31](https://github.com/instantiator/2025-xmas-game/blob/main/src/providers/GameMusicProvider.tsx#L31)
 
-Provides game music playback, allowing only one track at a time.
+Provides game music, one track at a time.
 
 ## Parameters
 

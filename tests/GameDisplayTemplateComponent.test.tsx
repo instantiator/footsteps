@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { http, HttpResponse } from "msw";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import GameDisplayTemplateComponent from "../src/components/core/display/GameDisplayTemplateComponent";
@@ -8,6 +9,7 @@ import GameContentCacheProvider from "../src/providers/GameContentCacheProvider"
 import { GameRepositoryContext } from "../src/providers/GameRepositoryContext";
 import { LOADING_REPOSITORY } from "../src/entities/GameRepository";
 import { getBaseURL } from "../src/util/ObjectUtils";
+import { server } from "./mocks/server";
 
 const localSource: GameSource = { type: "LocalRepository", path: "game-repository.json" };
 
@@ -134,5 +136,42 @@ describe("GameDisplayTemplateComponent", () => {
         { wrapper: Wrapper },
       ),
     ).toThrow('Style value for "zIndex" must be a string or a number, not object');
+  });
+
+  it("logs and renders nothing for a template that fails to load, rather than the error page", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    server.use(http.get("/missing.mustache", () => HttpResponse.text("<h1>Not found</h1>", { status: 404 })));
+    const { container } = render(
+      <GameDisplayTemplateComponent
+        templateSource={{ sourceType: "url", templateSource: new URL("missing.mustache", getBaseURL()).toString() }}
+        templateData={{}}
+      />,
+      { wrapper: Wrapper },
+    );
+    await vi.waitFor(() => expect(error).toHaveBeenCalled());
+    expect(container).not.toHaveTextContent("Not found");
+  });
+
+  it("fetches a template once for displays that ask for it at the same time", async () => {
+    let fetches = 0;
+    server.use(
+      http.get("/shared.mustache", () => {
+        fetches++;
+        return HttpResponse.text("<p>shared</p>");
+      }),
+    );
+    const source: GameDisplayTemplateSourceData = {
+      sourceType: "url",
+      templateSource: new URL("shared.mustache", getBaseURL()).toString(),
+    };
+    render(
+      <>
+        <GameDisplayTemplateComponent templateSource={source} templateData={{}} />
+        <GameDisplayTemplateComponent templateSource={source} templateData={{}} />
+      </>,
+      { wrapper: Wrapper },
+    );
+    expect(await screen.findAllByText("shared")).toHaveLength(2);
+    expect(fetches).toBe(1);
   });
 });

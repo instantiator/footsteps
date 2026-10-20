@@ -32,7 +32,10 @@ export default function GameRepositoryProvider({ source, children }: GameReposit
     if (!url) return;
     let stale = false;
     fetch(url)
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+        return response.json();
+      })
       .then(
         (data) => !stale && setFetched({ url, repository: { ...data, ready: true, loading: false } as GameRepository }),
       )

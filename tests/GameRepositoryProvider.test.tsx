@@ -94,8 +94,7 @@ describe("GameRepositoryProvider when the fetch fails", () => {
     expect(repository().ready).toBe(false);
   });
 
-  // BUG #13 (docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md): a 404 with a JSON body should be a failed repository; actual: response.ok is not checked, so the body is treated as a ready repository
-  it.skip("reports an error status response with a JSON body as not ready, with the error", async () => {
+  it("reports an error status response with a JSON body as not ready, with the error", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     server.use(http.get("/game-repository.json", () => HttpResponse.json({ message: "Not found" }, { status: 404 })));
     const repository = renderLocal();

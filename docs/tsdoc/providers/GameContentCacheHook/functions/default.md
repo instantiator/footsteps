@@ -8,9 +8,9 @@
 
 > **default**(): `object`
 
-Defined in: [providers/GameContentCacheHook.tsx:30](https://github.com/instantiator/2025-xmas-game/blob/main/src/providers/GameContentCacheHook.tsx#L30)
+Defined in: [providers/GameContentCacheHook.tsx:37](https://github.com/instantiator/2025-xmas-game/blob/main/src/providers/GameContentCacheHook.tsx#L37)
 
-Loads display templates, caching any fetched from a URL.
+Loads display templates, fetching each URL once and sharing the result.
 
 ## Returns
 
@@ -18,7 +18,7 @@ Loads display templates, caching any fetched from a URL.
 
 > **getTemplate**: (`template`) => `Promise`\<[`GameDisplayTemplateSourceData`](../../../entities/data/displays/GameDisplayTemplateComponentData/interfaces/GameDisplayTemplateSourceData.md) \| `undefined`\>
 
-Gets a template with its content: embedded as-is, otherwise from the cache or fetched.
+Gets a template with its content: embedded as-is, otherwise fetched once per URL.
 
 #### Parameters
 
