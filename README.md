@@ -2,4 +2,4 @@
 
 This game is built on Footsteps, a puzzle game engine and interface (a Vite + React + TypeScript app).
 
-See: [Documentation](docs/index.md)
+See: [Documentation](docs/index.md), and the generated [API reference](docs/tsdoc/README.md).

@@ -4,6 +4,7 @@ import type { GameState } from "../../../entities/state/GameState";
 
 /** The game state plus derived values, for Mustache templates (which can't compute them). */
 export type DecoratedGameState = GameState & {
+  /** Each stage's state, with its template values. */
   stages: DecoratedStageState[];
   /** The number of stages in the game. */
   totalStages: number;

@@ -5,7 +5,9 @@ export interface CurrentMusicContext {
   /** The track now playing, if any. */
   currentMusic:
     | {
+        /** The URL of the track. */
         resource: string;
+        /** The playing element. */
         audio: HTMLAudioElement;
       }
     | undefined;
@@ -15,5 +17,5 @@ export interface CurrentMusicContext {
   stopMusic: () => void;
 }
 
-/** The music controls; see {@link GameMusicProvider}. */
+/** The music controls; see `GameMusicProvider`. */
 export const GameMusicContext = createContext<CurrentMusicContext>(undefined!);

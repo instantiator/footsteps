@@ -6,12 +6,15 @@ export type GameDataLoadingState = "waiting-for-repository" | "ready" | "not-fou
 
 /** How loading the requested game is going. */
 export interface GameDataLoadingContextType {
+  /** The current stage of loading. */
   loadingState: GameDataLoadingState;
 }
 
 /** The requested game, once loaded. */
 export interface GameDataContextType {
+  /** The game's authored data. */
   gameData: GameData;
+  /** The game's id in the repository. */
   gameId: GameId;
   /** The game's resource URLs, resolved to absolute URLs by resource name. */
   resources: Record<string, string>;

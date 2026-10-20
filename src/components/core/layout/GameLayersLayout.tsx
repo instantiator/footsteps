@@ -25,9 +25,27 @@ interface GameLayersLayoutProps {
 
 /** The nodes for the background and foreground of the overview, the stage, and its challenges. */
 export interface GameLayers {
-  overview?: { backgroundLayerNodes: ReactNode[] | undefined; foregroundLayerNodes: ReactNode[] | undefined };
-  stage?: { backgroundLayerNodes: ReactNode[] | undefined; foregroundLayerNodes: ReactNode[] | undefined };
-  challenges?: { backgroundLayerNodes: ReactNode[] | undefined; foregroundLayerNodes: ReactNode[] | undefined };
+  /** The overview display, when no stage is open. */
+  overview?: {
+    /** The background half of the display. */
+    backgroundLayerNodes: ReactNode[] | undefined;
+    /** The foreground half; only the challenges' foreground sits above the camera character. */
+    foregroundLayerNodes: ReactNode[] | undefined;
+  };
+  /** The open stage's shared display. */
+  stage?: {
+    /** The background half of the display. */
+    backgroundLayerNodes: ReactNode[] | undefined;
+    /** The foreground half; only the challenges' foreground sits above the camera character. */
+    foregroundLayerNodes: ReactNode[] | undefined;
+  };
+  /** The active challenges' displays, one node per challenge. */
+  challenges?: {
+    /** The background half of the display. */
+    backgroundLayerNodes: ReactNode[] | undefined;
+    /** The foreground half; only the challenges' foreground sits above the camera character. */
+    foregroundLayerNodes: ReactNode[] | undefined;
+  };
 }
 
 /** Handles a click or key activation within a layer; `layerIdOverride` replaces the layer's own id as the source. */

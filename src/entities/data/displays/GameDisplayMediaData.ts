@@ -1,5 +1,6 @@
 /** Media played with a display. Resources are names defined in the game's `resources`. */
 export interface GameDisplayMediaData {
+  /** The kind of media: only audio is supported. */
   type: "audio";
   /** Resource name of the audio file. */
   resource: string;

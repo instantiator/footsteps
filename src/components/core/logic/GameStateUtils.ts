@@ -46,7 +46,12 @@ export function validateAnswer(
  */
 export const getActiveStageStateChallenges = (
   gameState: GameState,
-): { stageState: GameStageState | null; activeChallengeStates: GameChallengeState[] | null } => {
+): {
+  /** The current stage's state, or null if no stage is open. */
+  stageState: GameStageState | null;
+  /** The challenges to show now, or null if no stage is open. */
+  activeChallengeStates: GameChallengeState[] | null;
+} => {
   if (!isDefined(gameState.current.stageId)) {
     return { stageState: null, activeChallengeStates: null };
   }

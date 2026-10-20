@@ -17,8 +17,20 @@ export type FeetPositions = {
 
 /** A person's feet position, both in pixels and as a percentage of the frame. */
 export interface FootPosition {
-  absolute: { x: number; y: number };
-  percent: { x: number; y: number };
+  /** Position in pixels of the mask. */
+  absolute: {
+    /** Pixels from the left. */
+    x: number;
+    /** Pixels from the top. */
+    y: number;
+  };
+  /** Position as a percentage of the frame, for placing over a differently sized layer. */
+  percent: {
+    /** Percentage of the width, from the left. */
+    x: number;
+    /** Percentage of the height, from the top. */
+    y: number;
+  };
 }
 
 /** Rows above the lowest opaque row that still count as "feet". */

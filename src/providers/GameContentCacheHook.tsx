@@ -60,5 +60,8 @@ export default function useContentCache() {
     });
   };
 
-  return { getTemplate };
+  return {
+    /** Gets a template with its content: embedded as-is, otherwise from the cache or fetched. */
+    getTemplate,
+  };
 }

@@ -6,7 +6,7 @@ import { GameDataProvider } from "../providers/GameDataProvider";
 import GameRepositoryProvider from "../providers/GameRepositoryProvider";
 import GameStateProvider from "../providers/GameStateProvider";
 
-/** Debug page: shows the data and state of the game with the id in the route, as JSON. Unlike {@link LocalGame}, it has no music provider. */
+/** Debug page: shows the data and state of the game with the id in the route, as JSON. Unlike `LocalGame`, it has no music provider. */
 export default function LocalGameJson() {
   const { id } = useParams();
 

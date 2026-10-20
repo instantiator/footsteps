@@ -12,8 +12,10 @@ export const BLANK_CACHE: GameContentCache = {
   templates: [],
 };
 
-/** The content cache and its setter; see {@link GameContentCacheProvider}. */
+/** The content cache and its setter; see `GameContentCacheProvider`. */
 export const GameContentCacheContext = createContext<{
+  /** What has been fetched so far. */
   cache: GameContentCache;
+  /** Adds to the cache. */
   setCache: React.Dispatch<React.SetStateAction<GameContentCache>>;
 }>(undefined!);

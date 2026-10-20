@@ -11,5 +11,5 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   debug: false,
 };
 
-/** The resolved feature flags; see {@link FeatureFlagsProvider}. */
+/** The resolved feature flags; see `FeatureFlagsProvider`. */
 export const FeatureFlagsContext = createContext<FeatureFlags>(DEFAULT_FEATURE_FLAGS);

@@ -13,8 +13,9 @@ import GameChallengeGrid from "./GameChallengeGrid";
  * assumes the ones it requires are provided.
  */
 export interface LayerNodeProps {
-  /** Stacking order of the layer; see {@link GameLayersLayout}. */
+  /** Stacking order of the layer; see `GameLayersLayout`. */
   zIndex: number;
+  /** Extra style for the layer's container. */
   style?: CSSProperties;
   /** The webcam video's aspect ratio, used to size the character canvas to match. */
   aspectRatio?: number;
@@ -22,9 +23,11 @@ export interface LayerNodeProps {
   setAspectRatio?: React.Dispatch<React.SetStateAction<number | undefined>>;
   /** The webcam's video element, shared between the camera and the character canvas. */
   video?: HTMLVideoElement | null;
+  /** Lets the camera share its video element. */
   setVideo?: React.Dispatch<React.SetStateAction<HTMLVideoElement | null>>;
   /** The webcam stream, shared between the camera and the character canvas. */
   characterStream?: MediaStream | undefined;
+  /** Lets the camera share its stream once the player allows it. */
   setCharacterStream?: React.Dispatch<React.SetStateAction<MediaStream | undefined>>;
   /** Where the player's feet were last seen, for the debug overlay. */
   feetPositions?: FeetPositions;

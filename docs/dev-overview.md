@@ -32,13 +32,14 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 | `npm run test:run`       | Validate `public/game-repository.json`, then run the tests                                                              |
 | `npm run lint:check`     | ESLint, failing on any warning                                                                                          |
 | `npm run typecheck`      | TypeScript, no output                                                                                                   |
+| `npm run docs:api`       | Regenerate the API reference in `docs/tsdoc/` from the TSDoc comments, failing on any undocumented export               |
 | `npm run format`         | Prettier, rewriting files (`format:check` only reports)                                                                 |
 
 `dev`, `build`, `lint`, `preview`, and `test` first run `pre-build.sh`, which regenerates `src/assets/license-report.json` and the JSON schemas.
 
 ## Quality gate
 
-`dev-qual/scripts/check.sh` runs formatting, lint, typecheck, build, tests, shell/workflow/markdown linters, and an [aislop](https://www.npmjs.com/package/aislop) scan. `--fast` (format, lint, typecheck only) runs as the git pre-commit hook; the full gate runs as the pre-push hook, and in CI on every pull request and push to `main` (`.github/workflows/check.yaml`), which shows test results as annotations and a job summary, with the JUnit file as a downloadable artefact. aislop compares against `.aislop/ci-baseline.json` (accepted findings) and `ci.failBelow` in `.aislop/config.yml`.
+`dev-qual/scripts/check.sh` runs formatting, lint, typecheck, build, tests, shell/workflow/markdown linters, and an [aislop](https://www.npmjs.com/package/aislop) scan. `--fast` (format, lint, typecheck only) runs as the git pre-commit hook; the full gate runs as the pre-push hook, and in CI on every pull request and push to `main` (`.github/workflows/check.yaml`), which shows test results as annotations and a job summary, with the JUnit file as a downloadable artefact. Before committing, the hook also runs `scripts/pre-commit-fixups.sh`, which regenerates `docs/tsdoc/` whenever `src/`, `typedoc.json` or `package.json` is staged, and adds it to the commit. An export without a TSDoc comment fails the commit. aislop compares against `.aislop/ci-baseline.json` (accepted findings) and `ci.failBelow` in `.aislop/config.yml`.
 
 ## Sample games
 

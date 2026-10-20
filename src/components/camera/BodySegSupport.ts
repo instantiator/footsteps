@@ -12,6 +12,7 @@ export interface BodyPartData {
   maskValue: number;
   /** The colour used for this body part in a coloured mask. */
   color: Color;
+  /** Human-readable name of the body part, for the colour key. */
   description: string;
 }
 
