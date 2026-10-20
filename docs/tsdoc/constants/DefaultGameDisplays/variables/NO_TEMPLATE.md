@@ -8,6 +8,6 @@
 
 > `const` **NO\_TEMPLATE**: [`GameDisplayTemplateSourceData`](../../../entities/data/displays/GameDisplayTemplateComponentData/interfaces/GameDisplayTemplateSourceData.md)
 
-Defined in: [constants/DefaultGameDisplays.ts:4](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/constants/DefaultGameDisplays.ts#L4)
+Defined in: [constants/DefaultGameDisplays.ts:4](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/constants/DefaultGameDisplays.ts#L4)
 
 Fallback template shown when a display has no template of its own.

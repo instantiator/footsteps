@@ -8,7 +8,7 @@
 
 > `const` **DEFAULT\_GAME\_CHALLENGE\_SOLUTION\_PROPS**: `Partial`\<[`GameChallengeSolution`](../interfaces/GameChallengeSolution.md)\>
 
-Defined in: [entities/data/GameChallengeSolution.ts:5](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/data/GameChallengeSolution.ts#L5)
+Defined in: [entities/data/GameChallengeSolution.ts:5](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/GameChallengeSolution.ts#L5)
 
 Intended defaults for optional solution settings.
 Not yet implemented: never applied. See docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md #4.

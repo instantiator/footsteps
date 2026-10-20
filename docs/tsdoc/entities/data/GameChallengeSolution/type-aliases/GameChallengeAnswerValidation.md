@@ -8,6 +8,6 @@
 
 > **GameChallengeAnswerValidation** = `string`
 
-Defined in: [entities/data/GameChallengeSolution.ts:16](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/data/GameChallengeSolution.ts#L16)
+Defined in: [entities/data/GameChallengeSolution.ts:16](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/GameChallengeSolution.ts#L16)
 
 Feedback text describing the outcome of checking an answer.

@@ -6,7 +6,7 @@
 
 # Interface: GameLayers
 
-Defined in: [components/core/layout/GameLayersLayout.tsx:27](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/components/core/layout/GameLayersLayout.tsx#L27)
+Defined in: [components/core/layout/GameLayersLayout.tsx:27](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/components/core/layout/GameLayersLayout.tsx#L27)
 
 The nodes for the background and foreground of the overview, the stage, and its challenges.
 
@@ -16,7 +16,7 @@ The nodes for the background and foreground of the overview, the stage, and its 
 
 > `optional` **challenges?**: `object`
 
-Defined in: [components/core/layout/GameLayersLayout.tsx:43](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/components/core/layout/GameLayersLayout.tsx#L43)
+Defined in: [components/core/layout/GameLayersLayout.tsx:43](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/components/core/layout/GameLayersLayout.tsx#L43)
 
 The active challenges' displays, one node per challenge.
 
@@ -38,7 +38,7 @@ The foreground half; only the challenges' foreground sits above the camera chara
 
 > `optional` **overview?**: `object`
 
-Defined in: [components/core/layout/GameLayersLayout.tsx:29](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/components/core/layout/GameLayersLayout.tsx#L29)
+Defined in: [components/core/layout/GameLayersLayout.tsx:29](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/components/core/layout/GameLayersLayout.tsx#L29)
 
 The overview display, when no stage is open.
 
@@ -60,7 +60,7 @@ The foreground half; only the challenges' foreground sits above the camera chara
 
 > `optional` **stage?**: `object`
 
-Defined in: [components/core/layout/GameLayersLayout.tsx:36](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/components/core/layout/GameLayersLayout.tsx#L36)
+Defined in: [components/core/layout/GameLayersLayout.tsx:36](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/components/core/layout/GameLayersLayout.tsx#L36)
 
 The open stage's shared display.
 

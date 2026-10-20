@@ -8,7 +8,7 @@
 
 > **resolveTemplateURL**(`sourceType`, `templateSource`, `repositorySource`): `string`
 
-Defined in: [providers/GameContentCacheHook.tsx:13](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/providers/GameContentCacheHook.tsx#L13)
+Defined in: [providers/GameContentCacheHook.tsx:13](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/providers/GameContentCacheHook.tsx#L13)
 
 Resolves a "local" or "relative" template source to an absolute URL for the given repository:
 local sources resolve against the site, relative ones against the repository's own location.

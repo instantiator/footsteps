@@ -6,7 +6,7 @@
 
 # Interface: LocalGameSource
 
-Defined in: [entities/GameSource.ts:23](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/GameSource.ts#L23)
+Defined in: [entities/GameSource.ts:23](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/GameSource.ts#L23)
 
 A repository served from this site.
 
@@ -20,7 +20,7 @@ A repository served from this site.
 
 > **path**: `string`
 
-Defined in: [entities/GameSource.ts:26](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/GameSource.ts#L26)
+Defined in: [entities/GameSource.ts:26](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/GameSource.ts#L26)
 
 Path under this site's base URL. Relative paths resolve against the site.
 
@@ -30,7 +30,7 @@ Path under this site's base URL. Relative paths resolve against the site.
 
 > **type**: `"LocalRepository"`
 
-Defined in: [entities/GameSource.ts:24](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/GameSource.ts#L24)
+Defined in: [entities/GameSource.ts:24](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/GameSource.ts#L24)
 
 Which kind of source this is.
 

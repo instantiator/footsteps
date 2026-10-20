@@ -6,7 +6,7 @@
 
 # Interface: FootPosition
 
-Defined in: [components/camera/CameraSupport.ts:19](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/components/camera/CameraSupport.ts#L19)
+Defined in: [components/camera/CameraSupport.ts:19](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/components/camera/CameraSupport.ts#L19)
 
 A person's feet position, both in pixels and as a percentage of the frame.
 
@@ -16,7 +16,7 @@ A person's feet position, both in pixels and as a percentage of the frame.
 
 > **absolute**: `object`
 
-Defined in: [components/camera/CameraSupport.ts:21](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/components/camera/CameraSupport.ts#L21)
+Defined in: [components/camera/CameraSupport.ts:21](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/components/camera/CameraSupport.ts#L21)
 
 Position in pixels of the mask.
 
@@ -38,7 +38,7 @@ Pixels from the top.
 
 > **percent**: `object`
 
-Defined in: [components/camera/CameraSupport.ts:28](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/components/camera/CameraSupport.ts#L28)
+Defined in: [components/camera/CameraSupport.ts:28](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/components/camera/CameraSupport.ts#L28)
 
 Position as a percentage of the frame, for placing over a differently sized layer.
 

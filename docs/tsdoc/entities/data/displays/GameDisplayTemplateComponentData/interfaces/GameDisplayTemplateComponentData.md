@@ -6,7 +6,7 @@
 
 # Interface: GameDisplayTemplateComponentData
 
-Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:11](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L11)
+Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:11](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L11)
 
 A display built from Mustache templates, drawn as a background layer and a foreground layer.
 
@@ -20,7 +20,7 @@ A display built from Mustache templates, drawn as a background layer and a foreg
 
 > `optional` **backgroundStyle?**: `CSSProperties`
 
-Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:18](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L18)
+Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:18](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L18)
 
 CSS for the background layer's container.
 
@@ -30,7 +30,7 @@ CSS for the background layer's container.
 
 > `optional` **backgroundTemplate?**: [`GameDisplayTemplateSourceData`](GameDisplayTemplateSourceData.md)
 
-Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:14](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L14)
+Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:14](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L14)
 
 Template for the background layer, drawn behind the game's other content.
 
@@ -40,7 +40,7 @@ Template for the background layer, drawn behind the game's other content.
 
 > `optional` **backgroundTemplateStyle?**: `CSSProperties`
 
-Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:22](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L22)
+Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:22](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L22)
 
 CSS for the element wrapping the rendered background template.
 
@@ -50,7 +50,7 @@ CSS for the element wrapping the rendered background template.
 
 > **data**: `Record`\<`string`, `unknown`\>
 
-Defined in: [entities/data/displays/GameDisplayData.ts:35](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/data/displays/GameDisplayData.ts#L35)
+Defined in: [entities/data/displays/GameDisplayData.ts:35](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/displays/GameDisplayData.ts#L35)
 
 Extra values for this display, passed through to its templates as `componentData`.
 
@@ -64,7 +64,7 @@ Extra values for this display, passed through to its templates as `componentData
 
 > `optional` **foregroundStyle?**: `CSSProperties`
 
-Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:20](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L20)
+Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:20](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L20)
 
 CSS for the foreground layer's container.
 
@@ -74,7 +74,7 @@ CSS for the foreground layer's container.
 
 > `optional` **foregroundTemplate?**: [`GameDisplayTemplateSourceData`](GameDisplayTemplateSourceData.md)
 
-Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:16](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L16)
+Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:16](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L16)
 
 Template for the foreground layer, drawn in front of the game's other content.
 
@@ -84,7 +84,7 @@ Template for the foreground layer, drawn in front of the game's other content.
 
 > `optional` **foregroundTemplateStyle?**: `CSSProperties`
 
-Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:24](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L24)
+Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:24](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L24)
 
 CSS for the element wrapping the rendered foreground template.
 
@@ -94,7 +94,7 @@ CSS for the element wrapping the rendered foreground template.
 
 > **type**: `"template"`
 
-Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:12](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L12)
+Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:12](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L12)
 
 Which kind of component this is.
 

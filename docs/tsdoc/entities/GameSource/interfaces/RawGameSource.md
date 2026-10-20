@@ -6,7 +6,7 @@
 
 # Interface: RawGameSource
 
-Defined in: [entities/GameSource.ts:30](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/GameSource.ts#L30)
+Defined in: [entities/GameSource.ts:30](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/GameSource.ts#L30)
 
 An in-memory repository. It has no location, so cannot use relative paths.
 
@@ -20,7 +20,7 @@ An in-memory repository. It has no location, so cannot use relative paths.
 
 > **repository**: [`GameRepository`](../../GameRepository/interfaces/GameRepository.md)
 
-Defined in: [entities/GameSource.ts:33](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/GameSource.ts#L33)
+Defined in: [entities/GameSource.ts:33](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/GameSource.ts#L33)
 
 The repository itself.
 
@@ -30,7 +30,7 @@ The repository itself.
 
 > **type**: `"RawRepository"`
 
-Defined in: [entities/GameSource.ts:31](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/GameSource.ts#L31)
+Defined in: [entities/GameSource.ts:31](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/GameSource.ts#L31)
 
 Which kind of source this is.
 

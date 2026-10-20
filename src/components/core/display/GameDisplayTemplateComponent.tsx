@@ -26,7 +26,7 @@ interface GameDisplayTemplateProps {
   onAnswer?: GameAnswerFunction; // unused: see docs/outstanding-issues.md
 }
 
-/** Rendering options: HTML escaping is off, so data can contribute markup and CSS. */
+/** Options for rendering style values: no HTML escaping, which would corrupt CSS such as URLs. */
 const MUSTACHE_OPTIONS: Mustache.RenderOptions = {
   escape: (text) => text, // disable HTML escaping
 };

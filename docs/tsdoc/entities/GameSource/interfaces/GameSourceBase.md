@@ -6,7 +6,7 @@
 
 # Interface: GameSourceBase
 
-Defined in: [entities/GameSource.ts:10](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/GameSource.ts#L10)
+Defined in: [entities/GameSource.ts:10](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/GameSource.ts#L10)
 
 Fields common to every kind of [GameSource](../type-aliases/GameSource.md).
 
@@ -22,6 +22,6 @@ Fields common to every kind of [GameSource](../type-aliases/GameSource.md).
 
 > **type**: [`GameSourceType`](../type-aliases/GameSourceType.md)
 
-Defined in: [entities/GameSource.ts:12](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/GameSource.ts#L12)
+Defined in: [entities/GameSource.ts:12](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/GameSource.ts#L12)
 
 Which kind of source this is.

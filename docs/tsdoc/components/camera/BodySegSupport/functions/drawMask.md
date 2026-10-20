@@ -8,7 +8,7 @@
 
 > **drawMask**(`video`, `segmentation`, `ctx`, `maskType`): `Promise`\<`void`\>
 
-Defined in: [components/camera/BodySegSupport.ts:47](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/components/camera/BodySegSupport.ts#L47)
+Defined in: [components/camera/BodySegSupport.ts:47](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/components/camera/BodySegSupport.ts#L47)
 
 Draws the player's silhouette from the video onto the canvas, according to the mask type:
 "binary" is the silhouette alone, "colored" tints it by body part, and "extremities" tints only hands and feet.

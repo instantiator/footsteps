@@ -8,7 +8,7 @@
 
 > **createBlankGameState**(`game`): [`GameState`](../interfaces/GameState.md)
 
-Defined in: [entities/state/GameState.ts:28](https://github.com/instantiator/2025-xmas-game/blob/cbb15e480ff469af04954ca740a0022886e0c22d/src/entities/state/GameState.ts#L28)
+Defined in: [entities/state/GameState.ts:28](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/state/GameState.ts#L28)
 
 Creates the starting state for a game: all challenges unsolved, and the first overview display showing.
 With sequential config (the default) only the first stage is unlocked; otherwise all are.

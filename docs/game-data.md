@@ -83,7 +83,7 @@ If a resource can't be resolved, the game's loading state becomes `resource-erro
 
 ## Templating
 
-Templates are [Mustache](https://mustache.github.io/mustache.5.html), rendered to HTML with **escaping off**, so values are inserted as raw HTML. A `GameDisplayTemplateSourceData` gives the template's `sourceType` and its `templateSource` or `content`:
+Templates are [Mustache](https://mustache.github.io/mustache.5.html), rendered to HTML. In templates, `{{value}}` is HTML-escaped as usual, so use `{{{value}}}` to insert markup. Mustache values in container styles are not escaped, so URLs in CSS stay intact ([bug #17](prompts/000.00.02.feedback%20-%20fixes%20from%20identified%20bugs%20and%20tests.md)). A `GameDisplayTemplateSourceData` gives the template's `sourceType` and its `templateSource` or `content`:
 
 | `sourceType` | Template comes from                                             |
 | ------------ | --------------------------------------------------------------- |
