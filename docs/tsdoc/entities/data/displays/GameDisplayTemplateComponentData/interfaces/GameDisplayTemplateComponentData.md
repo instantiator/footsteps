@@ -8,7 +8,7 @@
 
 Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:11](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L11)
 
-A display built from Mustache templates, drawn as a background layer and a foreground layer.
+A display built from Handlebars templates, drawn as a background layer and a foreground layer.
 
 ## Extends
 

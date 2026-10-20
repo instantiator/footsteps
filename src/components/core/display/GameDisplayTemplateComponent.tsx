@@ -1,6 +1,6 @@
-import Mustache from "mustache";
+import DOMPurify from "dompurify";
+import Handlebars from "handlebars";
 import { useEffect, useId, useMemo, useState, type PropsWithChildren } from "react";
-import MustacheTemplate from "react-mustache-template-component";
 import type { GameDisplayTemplateSourceData as GameDisplayTemplateData } from "../../../entities/data/displays/GameDisplayTemplateComponentData";
 import type { GameChallengeId } from "../../../entities/data/GameChallengeData";
 import type { GameChallengeSolution } from "../../../entities/data/GameChallengeSolution";
@@ -12,13 +12,13 @@ import { summariseTemplateSource } from "../logic/TemplateUtils";
 
 /** Props for {@link GameDisplayTemplateComponent}. */
 interface GameDisplayTemplateProps {
-  /** Where to get the Mustache template from; fetched via the content cache. */
+  /** Where to get the Handlebars template from; fetched via the content cache. */
   templateSource: GameDisplayTemplateData | undefined;
-  /** Mustache view: any object whose fields the template may reference. */
+  /** Template context: any object whose fields the template may reference. */
   templateData: object;
-  /** Style for the container; its string values are rendered as Mustache templates over `templateData`. */
+  /** Style for the container; its string values are rendered as Handlebars templates over `templateData`. */
   containerStyle?: React.CSSProperties;
-  /** Style for the rendered template itself; its string values are rendered as Mustache templates too. */
+  /** Style for the rendered template itself; its string values are rendered as Handlebars templates too. */
   templateStyle?: React.CSSProperties;
   stageId?: GameStageId; // unused: see docs/outstanding-issues.md
   challengeId?: GameChallengeId; // unused: see docs/outstanding-issues.md
@@ -26,28 +26,42 @@ interface GameDisplayTemplateProps {
   onAnswer?: GameAnswerFunction; // unused: see docs/outstanding-issues.md
 }
 
-/** Options for rendering style values: no HTML escaping, which would corrupt CSS such as URLs. */
-const MUSTACHE_OPTIONS: Mustache.RenderOptions = {
-  escape: (text) => text, // disable HTML escaping
-};
+/** Game content may come from a remote repository: allow only Handlebars' built-in helpers. */
+const COMPILE_OPTIONS = { knownHelpersOnly: true };
+
+/** Style values are CSS, not HTML: escaping would corrupt values such as URLs. */
+const STYLE_COMPILE_OPTIONS = { ...COMPILE_OPTIONS, noEscape: true };
 
 /**
- * Renders a style's string values as Mustache templates over the data. Numbers and undefined pass
+ * Renders a style's string values as Handlebars templates over the data. Numbers and undefined pass
  * through unchanged.
  * @throws if a value is anything else, naming the style key, so a mistake in game data is easy to find
  */
 const renderStyle = (style: React.CSSProperties | undefined, data: object): React.CSSProperties =>
   Object.fromEntries(
     Object.entries(style ?? {}).map(([key, value]: [string, unknown]) => {
-      if (typeof value === "string") return [key, Mustache.render(value, data, undefined, MUSTACHE_OPTIONS)];
+      if (typeof value === "string") return [key, Handlebars.compile(value, STYLE_COMPILE_OPTIONS)(data)];
       if (typeof value === "number" || value === undefined) return [key, value];
       throw new Error(`Style value for "${key}" must be a string or a number, not ${typeof value}`);
     }),
   );
 
 /**
- * Fetches a Mustache template (via the content cache) and renders it with the template data,
- * inside a container. Both styles' string values are Mustache-rendered too. Children follow the rendered template.
+ * Renders a template body over the data, sanitised so that game content can't inject script or forms.
+ * @returns the HTML, or undefined (after logging) if the template doesn't compile or render
+ */
+const renderBody = (template: string, data: object): string | undefined => {
+  try {
+    return DOMPurify.sanitize(Handlebars.compile(template, COMPILE_OPTIONS)(data), { FORBID_TAGS: ["form"] });
+  } catch (error) {
+    console.error("Error rendering template:", error);
+    return undefined;
+  }
+};
+
+/**
+ * Fetches a Handlebars template (via the content cache) and renders it with the template data,
+ * inside a container. Both styles' string values are rendered too. Children follow the rendered template.
  */
 export default function GameDisplayTemplateComponent({
   templateSource,
@@ -64,6 +78,10 @@ export default function GameDisplayTemplateComponent({
 
   const containerStyleParsed = useMemo(() => renderStyle(containerStyle, templateData), [containerStyle, templateData]);
   const templateStyleParsed = useMemo(() => renderStyle(templateStyle, templateData), [templateStyle, templateData]);
+  const html = useMemo(
+    () => (isDefined(render) ? renderBody(render.content ?? "", templateData) : undefined),
+    [render, templateData],
+  );
 
   useEffect(() => {
     getTemplate(templateSource)
@@ -80,9 +98,7 @@ export default function GameDisplayTemplateComponent({
       key={`template-${uid}`}
       style={{ width: "100%", height: "100%", ...containerStyleParsed }}
     >
-      {isDefined(render) && (
-        <MustacheTemplate template={render.content ?? ""} data={templateData} style={templateStyleParsed} />
-      )}
+      {isDefined(html) && <div style={templateStyleParsed} dangerouslySetInnerHTML={{ __html: html }} />}
       {children}
     </div>
   );

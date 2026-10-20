@@ -61,7 +61,7 @@ Both component types carry `data`, a free-form object that templates see as `com
 - `backgroundStyle` / `foregroundStyle`: CSS for the layer's container.
 - `backgroundTemplateStyle` / `foregroundTemplateStyle`: CSS for the rendered template.
 
-String values in all four styles may use Mustache over the [template data](#template-data), for example `"backgroundImage": "url('{{resources.bg}}')"`. Numbers pass through as they are. Any other kind of value is an error that names the style key.
+String values in all four styles may use Handlebars over the [template data](#template-data), for example `"backgroundImage": "url('{{resources.bg}}')"`. Numbers pass through as they are. Any other kind of value is an error that names the style key.
 
 The **`template`** type renders those templates and nothing more. The **`scroll`** type shows paged text on an old-paper image. Each entry in its `contents[]` is one page, with:
 
@@ -85,7 +85,16 @@ If a resource can't be resolved, the game's loading state becomes `resource-erro
 
 ## Templating
 
-Templates are [Mustache](https://mustache.github.io/mustache.5.html), rendered to HTML. In templates, `{{value}}` is HTML-escaped as usual, so use `{{{value}}}` to insert markup. Mustache values in styles are not escaped, so URLs in CSS stay intact. A `GameDisplayTemplateSourceData` gives the template's `sourceType` and its `templateSource` or `content`:
+Templates are [Handlebars](https://handlebarsjs.com/guide/), rendered to HTML. In templates, `{{value}}` is HTML-escaped as usual, so use `{{{value}}}` to insert markup. Values in styles are not escaped, so URLs in CSS stay intact.
+
+Handlebars differs from Mustache in two ways that matter here:
+
+- Inside a block such as `{{#gameState.stages}}`, names resolve against the current item only. To reach the top-level template data, prefix the name with `@root.`, for example `{{@root.resources.star}}`.
+- Only Handlebars' built-in helpers (`if`, `unless`, `each`, `with`, `lookup`, `log`) can be used. A template that calls any other helper fails to compile, is logged, and renders nothing.
+
+Game repositories may be remote, so the rendered HTML is sanitised with [DOMPurify](https://github.com/cure53/DOMPurify): scripts, event-handler attributes such as `onclick`, `javascript:` URLs and `<form>` elements are removed.
+
+A `GameDisplayTemplateSourceData` gives the template's `sourceType` and its `templateSource` or `content`:
 
 | `sourceType` | Template comes from                                             |
 | ------------ | --------------------------------------------------------------- |
@@ -98,7 +107,7 @@ Templates are [Mustache](https://mustache.github.io/mustache.5.html), rendered t
 
 ### Template data
 
-Every template, and every Mustache value in a style, is rendered with `GameTemplateData` (`src/components/core/logic/RenderDataUtils.ts`):
+Every template, and every Handlebars value in a style, is rendered with `GameTemplateData` (`src/components/core/logic/RenderDataUtils.ts`):
 
 | Field            | What it holds                                                                                                                                               |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -119,7 +128,7 @@ A scroll's templates also get `text`, the current page's text, and `lines`, its 
 
 ### Example
 
-The magic-trifle stages overview (`public/games/magic-trifle/overview/foreground.mustache`) draws a stepping stone per stage. Each stone's id matches the display's `clickIdToStageId`:
+The magic-trifle stages overview (`public/games/magic-trifle/overview/foreground.hbs`) draws a stepping stone per stage. Each stone's id matches the display's `clickIdToStageId`:
 
 ```json
 {
@@ -128,7 +137,7 @@ The magic-trifle stages overview (`public/games/magic-trifle/overview/foreground
     "type": "template",
     "foregroundTemplate": {
       "sourceType": "relative",
-      "templateSource": "games/magic-trifle/overview/foreground.mustache"
+      "templateSource": "games/magic-trifle/overview/foreground.hbs"
     },
     "backgroundStyle": { "backgroundImage": "url('{{resources.blank-river}}')" },
     "data": {}
@@ -137,11 +146,17 @@ The magic-trifle stages overview (`public/games/magic-trifle/overview/foreground
 }
 ```
 
-```mustache
+```handlebars
 {{#gameState.stages}}
   {{#showUnlocked}}
-  <img id="stages-link-{{stage.id}}" src="{{resources.stepping-stone}}" role="button" tabindex="0"
-       alt="Stage {{oneIndex}}: play" style="width: calc( 75vw / {{gameState.totalStages}} )" />
+    <img
+      id="stages-link-{{stage.id}}"
+      src="{{@root.resources.stepping-stone}}"
+      role="button"
+      tabindex="0"
+      alt="Stage {{oneIndex}}: play"
+      style="width: calc( 75vw / {{@root.gameState.totalStages}} )"
+    />
   {{/showUnlocked}}
 {{/gameState.stages}}
 ```

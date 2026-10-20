@@ -34,7 +34,7 @@
             "type": "template",
             "foregroundTemplate": {
               "sourceType": "relative",
-              "templateSource": "games/magic-trifle/title/foreground.mustache"
+              "templateSource": "games/magic-trifle/title/foreground.hbs"
             },
             "foregroundTemplateStyle": { "width": "100%", "height": "100%" },
             "backgroundTemplate": {
@@ -56,7 +56,7 @@
             "type": "template",
             "foregroundTemplate": {
               "sourceType": "relative",
-              "templateSource": "games/magic-trifle/overview/foreground.mustache"
+              "templateSource": "games/magic-trifle/overview/foreground.hbs"
             },
             "foregroundTemplateStyle": { "width": "100%", "height": "100%" },
             "backgroundTemplate": {
@@ -93,7 +93,7 @@
                 "type": "template",
                 "foregroundTemplate": {
                   "sourceType": "relative",
-                  "templateSource": "games/magic-trifle/overview/foreground.mustache"
+                  "templateSource": "games/magic-trifle/overview/foreground.hbs"
                 },
                 "foregroundTemplateStyle": { "width": "100%", "height": "100%" },
                 "backgroundTemplate": {

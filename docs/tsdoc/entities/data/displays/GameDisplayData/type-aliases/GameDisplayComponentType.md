@@ -10,4 +10,4 @@
 
 Defined in: [entities/data/displays/GameDisplayData.ts:14](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L14)
 
-How a display is rendered: from Mustache `template`s, or as a paged `scroll`.
+How a display is rendered: from Handlebars `template`s, or as a paged `scroll`.

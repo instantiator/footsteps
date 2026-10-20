@@ -277,7 +277,7 @@
             "type": "object"
         },
         "GameDisplayTemplateComponentData": {
-            "description": "A display built from Mustache templates, drawn as a background layer and a foreground layer.",
+            "description": "A display built from Handlebars templates, drawn as a background layer and a foreground layer.",
             "properties": {
                 "backgroundStyle": {
                     "$ref": "#/definitions/React.CSSProperties",

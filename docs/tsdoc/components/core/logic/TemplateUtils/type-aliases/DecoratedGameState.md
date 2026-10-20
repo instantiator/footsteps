@@ -10,7 +10,7 @@
 
 Defined in: [components/core/logic/TemplateUtils.ts:6](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/TemplateUtils.ts#L6)
 
-The game state plus derived values, for Mustache templates (which can't compute them).
+The game state plus derived values, for templates, which can only look values up.
 
 ## Type Declaration
 

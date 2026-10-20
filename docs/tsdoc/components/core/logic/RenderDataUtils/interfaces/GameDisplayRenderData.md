@@ -80,4 +80,4 @@ The stage the display belongs to; undefined for overview displays.
 
 Defined in: [components/core/logic/RenderDataUtils.ts:24](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L24)
 
-The Mustache view for the display's template.
+The context for the display's template.

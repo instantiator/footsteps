@@ -7,7 +7,7 @@ import type { GameDisplayComponentBase } from "./GameDisplayData";
  */
 export type TemplateSourceType = "local" | "relative" | "url" | "embedded";
 
-/** A display built from Mustache templates, drawn as a background layer and a foreground layer. */
+/** A display built from Handlebars templates, drawn as a background layer and a foreground layer. */
 export interface GameDisplayTemplateComponentData extends GameDisplayComponentBase {
   type: "template";
   /** Template for the background layer, drawn behind the game's other content. */

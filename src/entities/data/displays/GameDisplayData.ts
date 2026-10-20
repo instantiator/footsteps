@@ -10,7 +10,7 @@ export type GameChallengeDisplayPurpose = "challenge-title" | "challenge-in-prog
 /** What a stage display is for: `shared` displays sit behind all the stage's challenges. */
 export type GameStageDisplayPurpose = "shared";
 
-/** How a display is rendered: from Mustache `template`s, or as a paged `scroll`. */
+/** How a display is rendered: from Handlebars `template`s, or as a paged `scroll`. */
 export type GameDisplayComponentType = "template" | "scroll";
 
 /** Any display purpose, at overview, stage or challenge level. */
