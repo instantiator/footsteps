@@ -6,7 +6,7 @@
 
 # Interface: RemoteGameSource
 
-Defined in: [entities/GameSource.ts:16](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/GameSource.ts#L16)
+Defined in: [entities/GameSource.ts:16](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/GameSource.ts#L16)
 
 A repository fetched from an absolute URL.
 
@@ -20,7 +20,7 @@ A repository fetched from an absolute URL.
 
 > **src**: `URL`
 
-Defined in: [entities/GameSource.ts:19](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/GameSource.ts#L19)
+Defined in: [entities/GameSource.ts:19](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/GameSource.ts#L19)
 
 URL of the repository JSON file. Relative paths resolve against its directory.
 
@@ -30,7 +30,7 @@ URL of the repository JSON file. Relative paths resolve against its directory.
 
 > **type**: `"RemoteRepository"`
 
-Defined in: [entities/GameSource.ts:17](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/GameSource.ts#L17)
+Defined in: [entities/GameSource.ts:17](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/GameSource.ts#L17)
 
 Which kind of source this is.
 

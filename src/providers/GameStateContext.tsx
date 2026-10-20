@@ -5,9 +5,9 @@ import type { GameState } from "../entities/state/GameState";
 export interface GameStateContextType {
   /** The current progress. */
   gameState: GameState;
-  /** Replaces the progress; the game re-renders from it. */
+  /** Sets new progress, e.g. after a correct answer. */
   setGameState: React.Dispatch<React.SetStateAction<GameState>>;
 }
 
-/** The player's progress; see `GameStateProvider`. */
+/** The player's progress, as held by `GameStateProvider`. */
 export const GameStateContext = createContext<GameStateContextType>(null!);

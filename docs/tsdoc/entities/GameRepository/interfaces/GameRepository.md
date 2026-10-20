@@ -6,7 +6,7 @@
 
 # Interface: GameRepository
 
-Defined in: [entities/GameRepository.ts:4](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/GameRepository.ts#L4)
+Defined in: [entities/GameRepository.ts:4](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/GameRepository.ts#L4)
 
 A collection of games, keyed by id. This is the top level of a game repository JSON file.
 
@@ -16,7 +16,7 @@ A collection of games, keyed by id. This is the top level of a game repository J
 
 > `optional` **error?**: `string`
 
-Defined in: [entities/GameRepository.ts:10](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/GameRepository.ts#L10)
+Defined in: [entities/GameRepository.ts:10](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/GameRepository.ts#L10)
 
 Runtime-only message, set by the provider if loading failed. Not authored.
 
@@ -26,7 +26,7 @@ Runtime-only message, set by the provider if loading failed. Not authored.
 
 > **games**: `object`
 
-Defined in: [entities/GameRepository.ts:12](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/GameRepository.ts#L12)
+Defined in: [entities/GameRepository.ts:12](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/GameRepository.ts#L12)
 
 The games in this repository, keyed by [GameId](../../data/GameData/type-aliases/GameId.md).
 
@@ -40,7 +40,7 @@ The games in this repository, keyed by [GameId](../../data/GameData/type-aliases
 
 > `optional` **loading?**: `boolean`
 
-Defined in: [entities/GameRepository.ts:8](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/GameRepository.ts#L8)
+Defined in: [entities/GameRepository.ts:8](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/GameRepository.ts#L8)
 
 Runtime-only flag, set by the provider while the repository is being fetched. Not authored.
 
@@ -50,6 +50,6 @@ Runtime-only flag, set by the provider while the repository is being fetched. No
 
 > `optional` **ready?**: `boolean`
 
-Defined in: [entities/GameRepository.ts:6](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/GameRepository.ts#L6)
+Defined in: [entities/GameRepository.ts:6](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/GameRepository.ts#L6)
 
 Runtime-only flag, set by the provider once loading has succeeded. Not authored.

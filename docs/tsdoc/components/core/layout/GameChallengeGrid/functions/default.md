@@ -8,7 +8,7 @@
 
 > **default**(`__namedParameters`): `Element`
 
-Defined in: [components/core/layout/GameChallengeGrid.tsx:7](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/components/core/layout/GameChallengeGrid.tsx#L7)
+Defined in: [components/core/layout/GameChallengeGrid.tsx:7](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/core/layout/GameChallengeGrid.tsx#L7)
 
 Lays a layer's challenges side by side in equal-width columns. Clicks pass through the grid
 and its columns to the elements inside them.

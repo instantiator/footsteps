@@ -6,7 +6,7 @@
 
 # Class: SelfieSegmentation
 
-Defined in: [shims/mediapipe-selfie-segmentation.ts:6](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/shims/mediapipe-selfie-segmentation.ts#L6)
+Defined in: [shims/mediapipe-selfie-segmentation.ts:6](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/shims/mediapipe-selfie-segmentation.ts#L6)
 
 Stand-in for `@mediapipe/selfie_segmentation`, a global script with no ES exports that
 vite 8 (Rolldown) refuses to bundle. body-segmentation imports it only for its MediaPipe
@@ -18,7 +18,7 @@ runtime; we use BodyPix on tfjs, so reaching this constructor is a bug.
 
 > **new SelfieSegmentation**(): `SelfieSegmentation`
 
-Defined in: [shims/mediapipe-selfie-segmentation.ts:7](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/shims/mediapipe-selfie-segmentation.ts#L7)
+Defined in: [shims/mediapipe-selfie-segmentation.ts:7](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/shims/mediapipe-selfie-segmentation.ts#L7)
 
 #### Returns
 

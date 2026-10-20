@@ -6,7 +6,7 @@
 
 # Interface: GameDisplayBase
 
-Defined in: [entities/data/displays/GameDisplayData.ts:23](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/displays/GameDisplayData.ts#L23)
+Defined in: [entities/data/displays/GameDisplayData.ts:23](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/displays/GameDisplayData.ts#L23)
 
 Fields common to every display.
 
@@ -23,7 +23,7 @@ Fields common to every display.
 
 > **component**: [`GameDisplayComponentData`](../type-aliases/GameDisplayComponentData.md)
 
-Defined in: [entities/data/displays/GameDisplayData.ts:27](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/displays/GameDisplayData.ts#L27)
+Defined in: [entities/data/displays/GameDisplayData.ts:27](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/displays/GameDisplayData.ts#L27)
 
 How this display is rendered.
 
@@ -33,6 +33,6 @@ How this display is rendered.
 
 > **purpose**: [`GameDisplayPurpose`](../type-aliases/GameDisplayPurpose.md)
 
-Defined in: [entities/data/displays/GameDisplayData.ts:25](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/displays/GameDisplayData.ts#L25)
+Defined in: [entities/data/displays/GameDisplayData.ts:25](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/displays/GameDisplayData.ts#L25)
 
 When this display is shown.

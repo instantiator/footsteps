@@ -6,7 +6,7 @@
 
 # Interface: GameStageData
 
-Defined in: [entities/data/GameStageData.ts:11](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/GameStageData.ts#L11)
+Defined in: [entities/data/GameStageData.ts:11](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/GameStageData.ts#L11)
 
 Describes a game stage - including its displays, and the challenges it contains.
 A stage may contain more than one challenge, and may group its challenges together.
@@ -17,7 +17,7 @@ A stage may contain more than one challenge, and may group its challenges togeth
 
 > `optional` **challengeChunking?**: `number`
 
-Defined in: [entities/data/GameStageData.ts:19](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/GameStageData.ts#L19)
+Defined in: [entities/data/GameStageData.ts:19](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/GameStageData.ts#L19)
 
 How many challenges to show together at once in the stage layout. Default: 1.
 
@@ -27,7 +27,7 @@ How many challenges to show together at once in the stage layout. Default: 1.
 
 > **challenges**: [`GameChallengeData`](../../GameChallengeData/interfaces/GameChallengeData.md)[]
 
-Defined in: [entities/data/GameStageData.ts:22](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/GameStageData.ts#L22)
+Defined in: [entities/data/GameStageData.ts:22](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/GameStageData.ts#L22)
 
 The challenges in this stage, in the order they are presented.
 
@@ -37,7 +37,7 @@ The challenges in this stage, in the order they are presented.
 
 > `optional` **displays?**: [`GameStageDisplay`](../../displays/GameDisplayData/interfaces/GameStageDisplay.md)[]
 
-Defined in: [entities/data/GameStageData.ts:16](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/GameStageData.ts#L16)
+Defined in: [entities/data/GameStageData.ts:16](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/GameStageData.ts#L16)
 
 Displays shown behind this stage's challenges (purpose `shared`). Optional.
 
@@ -47,6 +47,6 @@ Displays shown behind this stage's challenges (purpose `shared`). Optional.
 
 > **id**: `string`
 
-Defined in: [entities/data/GameStageData.ts:13](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/GameStageData.ts#L13)
+Defined in: [entities/data/GameStageData.ts:13](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/GameStageData.ts#L13)
 
 Unique id for this stage, referenced by `clickIdToStageId` in overview displays.

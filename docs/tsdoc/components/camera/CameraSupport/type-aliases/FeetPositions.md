@@ -8,7 +8,7 @@
 
 > **FeetPositions** = `object`
 
-Defined in: [components/camera/CameraSupport.ts:14](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/components/camera/CameraSupport.ts#L14)
+Defined in: [components/camera/CameraSupport.ts:14](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/camera/CameraSupport.ts#L14)
 
 Each tracked person's feet position, keyed by their index in the segmentation.
 

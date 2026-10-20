@@ -8,7 +8,7 @@
 
 > **TemplateSourceType** = `"local"` \| `"relative"` \| `"url"` \| `"embedded"`
 
-Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:8](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L8)
+Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:8](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L8)
 
 Where a template is read from: `local` (path on this site), `relative` (relative to the repository's location),
 `url` (absolute URL, fetched as-is) or `embedded` (text inline in `content`).

@@ -6,7 +6,7 @@
 
 # Interface: CurrentMusicContext
 
-Defined in: [providers/GameMusicContext.tsx:4](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/providers/GameMusicContext.tsx#L4)
+Defined in: [providers/GameMusicContext.tsx:4](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/providers/GameMusicContext.tsx#L4)
 
 Plays one music track at a time.
 
@@ -16,7 +16,7 @@ Plays one music track at a time.
 
 > **currentMusic**: \{ `audio`: `HTMLAudioElement`; `resource`: `string`; \} \| `undefined`
 
-Defined in: [providers/GameMusicContext.tsx:6](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/providers/GameMusicContext.tsx#L6)
+Defined in: [providers/GameMusicContext.tsx:6](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/providers/GameMusicContext.tsx#L6)
 
 The track now playing, if any.
 
@@ -48,7 +48,7 @@ The URL of the track.
 
 > **playMusic**: (`res`) => `boolean`
 
-Defined in: [providers/GameMusicContext.tsx:15](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/providers/GameMusicContext.tsx#L15)
+Defined in: [providers/GameMusicContext.tsx:15](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/providers/GameMusicContext.tsx#L15)
 
 Starts the track at the given URL, unless music is already playing.
 
@@ -70,7 +70,7 @@ whether playback was attempted
 
 > **stopMusic**: () => `void`
 
-Defined in: [providers/GameMusicContext.tsx:17](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/providers/GameMusicContext.tsx#L17)
+Defined in: [providers/GameMusicContext.tsx:17](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/providers/GameMusicContext.tsx#L17)
 
 Stops the current music, if any.
 

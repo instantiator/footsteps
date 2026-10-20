@@ -8,7 +8,7 @@
 
 > **default**(): `Element`
 
-Defined in: [components/core/HeadsUpDisplay.tsx:5](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/components/core/HeadsUpDisplay.tsx#L5)
+Defined in: [components/core/HeadsUpDisplay.tsx:5](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/core/HeadsUpDisplay.tsx#L5)
 
 Buttons to leave the current challenge, or return to the title screen, when either applies.
 

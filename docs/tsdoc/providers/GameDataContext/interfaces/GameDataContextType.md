@@ -6,7 +6,7 @@
 
 # Interface: GameDataContextType
 
-Defined in: [providers/GameDataContext.tsx:14](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/providers/GameDataContext.tsx#L14)
+Defined in: [providers/GameDataContext.tsx:14](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/providers/GameDataContext.tsx#L14)
 
 The requested game, once loaded.
 
@@ -16,7 +16,7 @@ The requested game, once loaded.
 
 > **gameData**: [`GameData`](../../../entities/data/GameData/interfaces/GameData.md)
 
-Defined in: [providers/GameDataContext.tsx:16](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/providers/GameDataContext.tsx#L16)
+Defined in: [providers/GameDataContext.tsx:16](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/providers/GameDataContext.tsx#L16)
 
 The game's authored data.
 
@@ -26,7 +26,7 @@ The game's authored data.
 
 > **gameId**: `string`
 
-Defined in: [providers/GameDataContext.tsx:18](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/providers/GameDataContext.tsx#L18)
+Defined in: [providers/GameDataContext.tsx:18](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/providers/GameDataContext.tsx#L18)
 
 The game's id in the repository.
 
@@ -36,6 +36,6 @@ The game's id in the repository.
 
 > **resources**: `Record`\<`string`, `string`\>
 
-Defined in: [providers/GameDataContext.tsx:20](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/providers/GameDataContext.tsx#L20)
+Defined in: [providers/GameDataContext.tsx:20](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/providers/GameDataContext.tsx#L20)
 
 The game's resource URLs, resolved to absolute URLs by resource name.

@@ -8,7 +8,7 @@
 
 > **default**(`props`): `Element`
 
-Defined in: [providers/FeatureFlagsProvider.tsx:29](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/providers/FeatureFlagsProvider.tsx#L29)
+Defined in: [providers/FeatureFlagsProvider.tsx:29](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/providers/FeatureFlagsProvider.tsx#L29)
 
 Feature flags from props, overridden by matching URL query parameters (e.g. ?debug=true).
 

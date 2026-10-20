@@ -6,7 +6,7 @@
 
 # Interface: GameDisplayRenderData
 
-Defined in: [components/core/logic/RenderDataUtils.ts:21](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/components/core/logic/RenderDataUtils.ts#L21)
+Defined in: [components/core/logic/RenderDataUtils.ts:21](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/core/logic/RenderDataUtils.ts#L21)
 
 Everything needed to render one display, and to respond to input on it.
 
@@ -20,7 +20,7 @@ Everything needed to render one display, and to respond to input on it.
 
 > **challengeId**: `string` \| `undefined`
 
-Defined in: [components/core/logic/RenderDataUtils.ts:27](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/components/core/logic/RenderDataUtils.ts#L27)
+Defined in: [components/core/logic/RenderDataUtils.ts:27](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/core/logic/RenderDataUtils.ts#L27)
 
 The challenge the display belongs to; undefined unless it is a challenge display.
 
@@ -30,7 +30,7 @@ The challenge the display belongs to; undefined unless it is a challenge display
 
 > **component**: [`GameDisplayComponentData`](../../../../../entities/data/displays/GameDisplayData/type-aliases/GameDisplayComponentData.md)
 
-Defined in: [entities/data/displays/GameDisplayData.ts:27](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/displays/GameDisplayData.ts#L27)
+Defined in: [entities/data/displays/GameDisplayData.ts:27](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/displays/GameDisplayData.ts#L27)
 
 How this display is rendered.
 
@@ -44,7 +44,7 @@ How this display is rendered.
 
 > **purpose**: [`GameDisplayPurpose`](../../../../../entities/data/displays/GameDisplayData/type-aliases/GameDisplayPurpose.md)
 
-Defined in: [entities/data/displays/GameDisplayData.ts:25](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/entities/data/displays/GameDisplayData.ts#L25)
+Defined in: [entities/data/displays/GameDisplayData.ts:25](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/entities/data/displays/GameDisplayData.ts#L25)
 
 When this display is shown.
 
@@ -58,7 +58,7 @@ When this display is shown.
 
 > **solution**: [`GameChallengeSolution`](../../../../../entities/data/GameChallengeSolution/interfaces/GameChallengeSolution.md) \| `undefined`
 
-Defined in: [components/core/logic/RenderDataUtils.ts:29](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/components/core/logic/RenderDataUtils.ts#L29)
+Defined in: [components/core/logic/RenderDataUtils.ts:29](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/core/logic/RenderDataUtils.ts#L29)
 
 The solution to check answers against; undefined unless it is a challenge display.
 
@@ -68,7 +68,7 @@ The solution to check answers against; undefined unless it is a challenge displa
 
 > **stageId**: `string` \| `undefined`
 
-Defined in: [components/core/logic/RenderDataUtils.ts:25](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/components/core/logic/RenderDataUtils.ts#L25)
+Defined in: [components/core/logic/RenderDataUtils.ts:25](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/core/logic/RenderDataUtils.ts#L25)
 
 The stage the display belongs to; undefined for overview displays.
 
@@ -78,6 +78,6 @@ The stage the display belongs to; undefined for overview displays.
 
 > **templateData**: [`GameTemplateData`](GameTemplateData.md)
 
-Defined in: [components/core/logic/RenderDataUtils.ts:23](https://github.com/instantiator/2025-xmas-game/blob/d67f65e2019a1627dadc2015b72d76777fad3271/src/components/core/logic/RenderDataUtils.ts#L23)
+Defined in: [components/core/logic/RenderDataUtils.ts:23](https://github.com/instantiator/2025-xmas-game/blob/ea2155993261ff7017c8ce5e381acb88812e1d8e/src/components/core/logic/RenderDataUtils.ts#L23)
 
 The Mustache view for the display's template.
