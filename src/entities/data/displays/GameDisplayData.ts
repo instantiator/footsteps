@@ -1,3 +1,4 @@
+import type { GameDisplayDialogComponentData } from "./GameDisplayDialogComponentData";
 import type { GameDisplayScrollComponentData } from "./GameDisplayScrollComponentData";
 import type { GameDisplayTemplateComponentData } from "./GameDisplayTemplateComponentData";
 
@@ -10,14 +11,15 @@ export type GameChallengeDisplayPurpose = "challenge-title" | "challenge-in-prog
 /** What a stage display is for: `shared` displays sit behind all the stage's challenges. */
 export type GameStageDisplayPurpose = "shared";
 
-/** How a display is rendered: from Handlebars `template`s, or as a paged `scroll`. */
-export type GameDisplayComponentType = "template" | "scroll";
+/** How a display is rendered: from Handlebars `template`s, as a paged `dialog` on the game's image, or as a `scroll` (a dialog on the app's old paper). */
+export type GameDisplayComponentType = "template" | "dialog" | "scroll";
 
 /** Any display purpose, at overview, stage or challenge level. */
 export type GameDisplayPurpose = GameOverviewDisplayPurpose | GameChallengeDisplayPurpose | GameStageDisplayPurpose;
 
 /** The rendering definition of a display, discriminated by `type`. */
-export type GameDisplayComponentData = GameDisplayTemplateComponentData | GameDisplayScrollComponentData;
+export type GameDisplayComponentData =
+  GameDisplayTemplateComponentData | GameDisplayDialogComponentData | GameDisplayScrollComponentData;
 
 /** Fields common to every display. */
 export interface GameDisplayBase {

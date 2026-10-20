@@ -1,201 +1,31 @@
-import ArrowCircleLeftTwoToneIcon from "@mui/icons-material/ArrowCircleLeftTwoTone";
-import ArrowCircleRightTwoToneIcon from "@mui/icons-material/ArrowCircleRightTwoTone";
-import { useState, type CSSProperties } from "react";
-import metadata from "../../../assets/resources/assets-metadata.json";
+import type { CSSProperties } from "react";
 import oldPaperImage from "../../../assets/resources/old-paper.png";
-import type {
-  GameDisplayScrollComponentData,
-  GameDisplayScrollComponentDataContent,
-} from "../../../entities/data/displays/GameDisplayScrollComponentData";
-import type { GameDisplayTemplateSourceData } from "../../../entities/data/displays/GameDisplayTemplateComponentData";
-import type { GameChallengeId } from "../../../entities/data/GameChallengeData";
-import type { GameChallengeSolution } from "../../../entities/data/GameChallengeSolution";
-import type { GameStageId } from "../../../entities/data/GameStageData";
-import type { GameAnswerFunction } from "../Game";
-import type { GameTemplateData } from "../logic/RenderDataUtils";
-import { parseLines } from "../logic/TemplateUtils";
-import GameAudioComponent from "./GameAudioComponent";
-import type { LayerHint } from "./GameDisplayComponent";
-import GameDisplayTemplateComponent from "./GameDisplayTemplateComponent";
-import GameTextInputComponent, { type GameTextInputComponentProps } from "./GameTextInputComponent";
+import type { GameDisplayDialogMargins } from "../../../entities/data/displays/GameDisplayDialogComponentData";
+import GameDisplayDialogComponent, { type GameDisplayDialogComponentProps } from "./GameDisplayDialogComponent";
 
-/** Props for {@link GameDisplayScrollComponent}. */
-interface GameDisplayScrollComponentProps {
-  /** Overrides the default scroll template; see {@link defaultTemplate}. */
-  templateSource?: GameDisplayTemplateSourceData;
-  /** Overrides for the scroll container's style; see {@link scrollContainerStyle}. */
-  containerStyle?: React.CSSProperties;
-  /** Style for the rendered template. */
-  templateStyle?: CSSProperties;
-  /** Extra template data, which takes precedence over the page's `text` and `lines`. */
-  templateData?: GameTemplateData;
-  /** The scroll's pages of text, with their optional audio and answer input. */
-  scrollData: GameDisplayScrollComponentData;
-  /** Whether to render the paper (background) or the text and controls (foreground). */
-  layerHint: LayerHint;
-  /** Stage of the challenge that answers are submitted to. */
-  stageId?: GameStageId;
-  /** Challenge that answers are submitted to. */
-  challengeId?: GameChallengeId;
-  /** The challenge's solution. */
-  solution?: GameChallengeSolution;
-  /** Called when the player submits an answer on a page. */
-  onAnswer?: GameAnswerFunction;
-}
+/** Where the text sits on the old paper, clear of its torn edges and curled top. */
+const SCROLL_MARGINS: GameDisplayDialogMargins = { top: "20%", right: "12%", bottom: "10%", left: "12%" };
 
-/** The paper image's size, so the scroll text column can match its aspect ratio. */
-const paperMetadataEntry = metadata.resources.find((entry) => entry.file === "old-paper.png");
-/** CSS aspect ratio of the paper image. */
-const PAPER_ASPECT_RATIO = `${paperMetadataEntry?.width}/${paperMetadataEntry?.height}`;
-
-/** Fades the scrolling text out at the top and bottom of the paper. */
+/** Fades the scrolling text out at its top and bottom. */
 const SCROLL_FADE_MASK = "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)";
 
-/** The default template: the text, line by line, in the foreground; nothing (the paper) behind it. */
-const defaultTemplate = (layerHint: LayerHint): GameDisplayTemplateSourceData => ({
-  sourceType: "embedded",
-  content: layerHint === "foreground" ? "{{#lines}}<p>{{.}}</p>{{/lines}}" : "<!-- scroll -->",
-});
+/** The paper's shadow, behind the game's other content. */
+const PAPER_STYLE: CSSProperties = { filter: "drop-shadow(8px 8px 10px rgba(0, 0, 0, 0.5))" };
 
-/** Foreground: a scrolling text column sized to the paper. Background: the paper image itself. */
-const scrollContainerStyle = (layerHint: LayerHint, containerStyle?: CSSProperties): CSSProperties =>
-  layerHint === "foreground"
-    ? {
-        aspectRatio: PAPER_ASPECT_RATIO,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "start",
-        alignItems: "center",
-        width: "auto",
-        height: "80%",
-        overflowY: "auto",
-        marginTop: "18vh",
-        marginBottom: "5vh",
-        paddingBottom: "5vh",
-        maskImage: SCROLL_FADE_MASK,
-        WebkitMaskImage: SCROLL_FADE_MASK,
-        ...containerStyle,
+/** The text fades as it scrolls under the top and bottom margins. */
+const TEXT_STYLE: CSSProperties = { maskImage: SCROLL_FADE_MASK, WebkitMaskImage: SCROLL_FADE_MASK };
+
+/** A dialog on the app's old-paper image: paged text, optionally with audio and an answer input on each page. */
+export default function GameDisplayScrollComponent(props: Omit<GameDisplayDialogComponentProps, "image" | "margins">) {
+  return (
+    <GameDisplayDialogComponent
+      {...props}
+      image={oldPaperImage}
+      margins={SCROLL_MARGINS}
+      containerStyle={
+        props.layerHint === "background" ? { ...PAPER_STYLE, ...props.containerStyle } : props.containerStyle
       }
-    : {
-        width: "100%",
-        height: "100%",
-        backgroundImage: `url(${oldPaperImage})`,
-        backgroundSize: "contain",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "center",
-        filter: "drop-shadow(8px 8px 10px rgba(0, 0, 0, 0.5))",
-        ...containerStyle,
-      };
-
-/** Fills the display and centres its contents in a column. */
-const OUTER_STYLE: CSSProperties = {
-  width: "100%",
-  height: "100%",
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "start",
-  alignItems: "center",
-};
-
-/** Spreads the previous and next arrows to either side. */
-const NAVIGATION_STYLE: CSSProperties = {
-  width: "100%",
-  display: "flex",
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginTop: "5%",
-  marginBottom: "5vh",
-  paddingLeft: "2%",
-  paddingRight: "2%",
-};
-
-/** Arrows to page back and forward through the scroll's contents, with spacers where there's no page. */
-export function ScrollNavigation({ onRetreat, onAdvance }: { onRetreat?: () => void; onAdvance?: () => void }) {
-  if (!onRetreat && !onAdvance) return null;
-  return (
-    <div style={NAVIGATION_STYLE}>
-      {onRetreat ? (
-        <button type="button" className="plain-button" onClick={onRetreat} aria-label="Previous page">
-          <ArrowCircleLeftTwoToneIcon style={{ fontSize: "3em" }} />
-        </button>
-      ) : (
-        <div style={{ width: "3em" }}></div>
-      )}
-      {onAdvance ? (
-        <button type="button" className="plain-button" onClick={onAdvance} aria-label="Next page">
-          <ArrowCircleRightTwoToneIcon style={{ fontSize: "3em" }} />
-        </button>
-      ) : (
-        <div style={{ width: "3em" }}></div>
-      )}
-    </div>
-  );
-}
-
-/** Props for {@link ScrollPageControls}. */
-interface ScrollPageControlsProps {
-  /** The current page, if there is one. */
-  content: GameDisplayScrollComponentDataContent | undefined;
-  /** What the page's answer input needs to submit answers. */
-  input: Pick<GameTextInputComponentProps, "stageId" | "challengeId" | "solved" | "setSolved" | "onAnswer">;
-  /** Goes back a page; undefined on the first page. */
-  onRetreat?: () => void;
-  /** Goes on a page; undefined on the last page. */
-  onAdvance?: () => void;
-}
-
-/** The current page's audio and answer input (if it has them), and the page navigation. */
-function ScrollPageControls({ content, input, onRetreat, onAdvance }: ScrollPageControlsProps) {
-  return (
-    <>
-      {content?.media?.type === "audio" && (
-        <GameAudioComponent audioStyle={{ margin: "10px", opacity: 0.25 }} media={content.media} controls={true} />
-      )}
-      {content?.showInput && <GameTextInputComponent {...input} autoSubmit={true} label={content.label} />}
-      <ScrollNavigation onRetreat={onRetreat} onAdvance={onAdvance} />
-    </>
-  );
-}
-
-/** A paged scroll of text, optionally with audio and an answer input on each page. */
-export default function GameDisplayScrollComponent({
-  templateSource,
-  containerStyle,
-  templateStyle,
-  templateData,
-  scrollData,
-  layerHint,
-  stageId,
-  challengeId,
-  solution,
-  onAnswer,
-}: GameDisplayScrollComponentProps) {
-  const [solved, setSolved] = useState<boolean>(false);
-  const [contentIndex, setContentIndex] = useState<number>(0);
-  const content: GameDisplayScrollComponentDataContent | undefined = scrollData.contents[contentIndex];
-
-  return (
-    <div style={OUTER_STYLE}>
-      <GameDisplayTemplateComponent
-        templateSource={templateSource ?? defaultTemplate(layerHint)}
-        containerStyle={scrollContainerStyle(layerHint, containerStyle)}
-        templateStyle={{ ...templateStyle }}
-        templateData={{ text: content?.text, lines: parseLines(content?.text), ...templateData }}
-        solution={solution}
-        onAnswer={onAnswer}
-      >
-        {layerHint === "foreground" && (
-          <ScrollPageControls
-            content={content}
-            input={{ stageId, challengeId, solved, setSolved, onAnswer }}
-            onRetreat={contentIndex > 0 ? () => setContentIndex(contentIndex - 1) : undefined}
-            onAdvance={
-              contentIndex < scrollData.contents.length - 1 ? () => setContentIndex(contentIndex + 1) : undefined
-            }
-          />
-        )}
-      </GameDisplayTemplateComponent>
-    </div>
+      templateStyle={props.layerHint === "foreground" ? { ...TEXT_STYLE, ...props.templateStyle } : props.templateStyle}
+    />
   );
 }

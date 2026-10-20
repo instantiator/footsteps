@@ -1,7 +1,7 @@
-import type { GameDisplayScrollComponentData } from "../../../entities/data/displays/GameDisplayScrollComponentData";
-import type { GameDisplayTemplateComponentData } from "../../../entities/data/displays/GameDisplayTemplateComponentData";
+import { isDefined } from "../../../util/ObjectUtils";
 import type { GameAnswerFunction } from "../Game";
 import type { GameDisplayRenderData } from "../logic/RenderDataUtils";
+import GameDisplayDialogComponent from "./GameDisplayDialogComponent";
 import GameDisplayScrollComponent from "./GameDisplayScrollComponent";
 import GameDisplayTemplateComponent from "./GameDisplayTemplateComponent";
 
@@ -18,52 +18,30 @@ interface GameDisplayComponentProps {
 }
 
 /**
- * Renders one half (the layer hint) of a display, using the template or scroll component to suit its type,
+ * Renders one half (the layer hint) of a display, using the template, dialog or scroll component to suit its type,
  * and the background or foreground source and styles to suit the hint.
  */
 export default function GameDisplayComponent({ render, layerHint, onAnswer }: GameDisplayComponentProps) {
-  const getTemplateSource = (
-    component: GameDisplayTemplateComponentData | GameDisplayScrollComponentData,
-    layerHint: LayerHint,
-  ) => (layerHint === "background" ? component.backgroundTemplate : component.foregroundTemplate);
+  const component = render.component;
+  const background = layerHint === "background";
+  const common = {
+    templateSource: background ? component.backgroundTemplate : component.foregroundTemplate,
+    containerStyle: background ? component.backgroundStyle : component.foregroundStyle,
+    templateStyle: background ? component.backgroundTemplateStyle : component.foregroundTemplateStyle,
+    templateData: render.templateData,
+    challengeId: render.challengeId,
+    solution: render.solution,
+    onAnswer,
+  };
+  if (component.type === "template") return <GameDisplayTemplateComponent {...common} />;
 
-  const getContainerStyle = (
-    component: GameDisplayTemplateComponentData | GameDisplayScrollComponentData,
-    layerHint: LayerHint,
-  ) => (layerHint === "background" ? component.backgroundStyle : component.foregroundStyle);
-
-  const getTemplateStyle = (
-    component: GameDisplayTemplateComponentData | GameDisplayScrollComponentData,
-    layerHint: LayerHint,
-  ) => (layerHint === "background" ? component.backgroundTemplateStyle : component.foregroundTemplateStyle);
-
+  const paged = { ...common, contents: component.contents, layerHint, stageId: render.stageId };
+  if (component.type === "scroll") return <GameDisplayScrollComponent {...paged} />;
   return (
-    <>
-      {render.component.type === "template" && (
-        <GameDisplayTemplateComponent
-          templateSource={getTemplateSource(render.component, layerHint)}
-          containerStyle={getContainerStyle(render.component, layerHint)}
-          templateStyle={getTemplateStyle(render.component, layerHint)}
-          templateData={render.templateData}
-          challengeId={render.challengeId}
-          solution={render.solution}
-          onAnswer={onAnswer}
-        />
-      )}
-      {render.component.type === "scroll" && (
-        <GameDisplayScrollComponent
-          templateSource={getTemplateSource(render.component, layerHint)}
-          containerStyle={getContainerStyle(render.component, layerHint)}
-          templateStyle={getTemplateStyle(render.component, layerHint)}
-          templateData={render.templateData}
-          scrollData={render.component}
-          layerHint={layerHint}
-          stageId={render.stageId}
-          challengeId={render.challengeId}
-          solution={render.solution}
-          onAnswer={onAnswer}
-        />
-      )}
-    </>
+    <GameDisplayDialogComponent
+      {...paged}
+      image={isDefined(component.imageResource) ? render.templateData.resources[component.imageResource] : undefined}
+      margins={component.imageMargins}
+    />
   );
 }

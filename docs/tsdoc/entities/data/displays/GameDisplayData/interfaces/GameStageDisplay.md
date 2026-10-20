@@ -6,7 +6,7 @@
 
 # Interface: GameStageDisplay
 
-Defined in: [entities/data/displays/GameDisplayData.ts:46](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L46)
+Defined in: [entities/data/displays/GameDisplayData.ts:48](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L48)
 
 A display shared by all challenges in a stage.
 
@@ -20,7 +20,7 @@ A display shared by all challenges in a stage.
 
 > **component**: [`GameDisplayComponentData`](../type-aliases/GameDisplayComponentData.md)
 
-Defined in: [entities/data/displays/GameDisplayData.ts:27](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L27)
+Defined in: [entities/data/displays/GameDisplayData.ts:29](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L29)
 
 How this display is rendered.
 
@@ -34,7 +34,7 @@ How this display is rendered.
 
 > **purpose**: `"shared"`
 
-Defined in: [entities/data/displays/GameDisplayData.ts:47](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L47)
+Defined in: [entities/data/displays/GameDisplayData.ts:49](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L49)
 
 When this display is shown.
 

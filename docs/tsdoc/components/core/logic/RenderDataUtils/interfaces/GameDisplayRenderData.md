@@ -30,7 +30,7 @@ The challenge the display belongs to; undefined unless it is a challenge display
 
 > **component**: [`GameDisplayComponentData`](../../../../../entities/data/displays/GameDisplayData/type-aliases/GameDisplayComponentData.md)
 
-Defined in: [entities/data/displays/GameDisplayData.ts:27](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L27)
+Defined in: [entities/data/displays/GameDisplayData.ts:29](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L29)
 
 How this display is rendered.
 
@@ -44,7 +44,7 @@ How this display is rendered.
 
 > **purpose**: [`GameDisplayPurpose`](../../../../../entities/data/displays/GameDisplayData/type-aliases/GameDisplayPurpose.md)
 
-Defined in: [entities/data/displays/GameDisplayData.ts:25](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L25)
+Defined in: [entities/data/displays/GameDisplayData.ts:27](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L27)
 
 When this display is shown.
 

@@ -67,13 +67,30 @@ Both component types carry `data`, a free-form object that templates see as `com
 
 String values in all four styles may use Handlebars over the [template data](#template-data), for example `"backgroundImage": "url('{{resources.bg}}')"`. Numbers pass through as they are. Any other kind of value is an error that names the style key.
 
-The **`template`** type renders those templates and nothing more. The **`scroll`** type shows paged text on an old-paper image. Each entry in its `contents[]` is one page, with:
+The **`template`** type renders those templates and nothing more. The **`dialog`** and **`scroll`** types show paged text on an image. Each entry in their `contents[]` is one page, with:
 
 - `text`
 - `showInput` and `label`: an answer box that checks the challenge's solution as the player types
 - `media`: a `GameDisplayMediaData` audio clip, with optional `stillImageResource` and `motionImageResource` images that play and stop it
 
-Without its own templates, a scroll shows the page text one paragraph per line.
+Without its own templates, a dialog or scroll shows the page text one paragraph per line. The text scrolls if it doesn't fit, and the page's audio, answer box and page arrows stay in view below it.
+
+A **`dialog`** draws its pages on the game's own image:
+
+- `imageResource`: the resource name of the background image. The image is scaled up or down to the largest size that fits the display, keeping its shape. The dialog works this out from the image itself, so it needs no size information. Without an image, the dialog fills its display.
+- `imageMargins`: `{ top?, right?, bottom?, left? }`, how far the text sits in from each edge of the image, as CSS percentages of the image's height (`top`, `bottom`) or width (`left`, `right`). Use them to keep text off transparent or decorative edges. Each defaults to no margin.
+
+```json
+{
+  "type": "dialog",
+  "data": {},
+  "imageResource": "parchment",
+  "imageMargins": { "top": "20%", "right": "12%", "bottom": "10%", "left": "12%" },
+  "contents": [{ "text": "Welcome, traveller" }]
+}
+```
+
+A **`scroll`** is a dialog on the app's own old-paper image, with margins set to suit it, a drop shadow, and text that fades at the top and bottom as it scrolls.
 
 ## Resources
 
@@ -153,7 +170,7 @@ Every template, and every Handlebars value in a style, is rendered with `GameTem
 - `showUnlocked`: the stage is unlocked and not complete
 - `showLocked`: the stage is locked
 
-A scroll's templates also get `text`, the current page's text, and `lines`, its non-blank lines.
+A dialog's or scroll's templates also get `text`, the current page's text, and `lines`, its non-blank lines.
 
 ### Example
 

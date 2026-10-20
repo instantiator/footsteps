@@ -6,13 +6,13 @@
 
 # Interface: GameDisplayScrollComponentData
 
-Defined in: [entities/data/displays/GameDisplayScrollComponentData.ts:6](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayScrollComponentData.ts#L6)
+Defined in: [entities/data/displays/GameDisplayScrollComponentData.ts:4](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayScrollComponentData.ts#L4)
 
-A display of paged text on a paper image, with optional audio and answer input per page.
+A dialog on the app's old-paper image: see [GameDisplayPagedComponentBase](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md) for its fields.
 
 ## Extends
 
-- [`GameDisplayComponentBase`](../../GameDisplayData/interfaces/GameDisplayComponentBase.md)
+- [`GameDisplayPagedComponentBase`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md)
 
 ## Properties
 
@@ -20,9 +20,13 @@ A display of paged text on a paper image, with optional audio and answer input p
 
 > `optional` **backgroundStyle?**: `CSSProperties`
 
-Defined in: [entities/data/displays/GameDisplayScrollComponentData.ts:13](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayScrollComponentData.ts#L13)
+Defined in: [entities/data/displays/GameDisplayDialogComponentData.ts:12](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayDialogComponentData.ts#L12)
 
 CSS for the background layer's container.
+
+#### Inherited from
+
+[`GameDisplayPagedComponentBase`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md).[`backgroundStyle`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md#backgroundstyle)
 
 ***
 
@@ -30,9 +34,13 @@ CSS for the background layer's container.
 
 > `optional` **backgroundTemplate?**: [`GameDisplayTemplateSourceData`](../../GameDisplayTemplateComponentData/interfaces/GameDisplayTemplateSourceData.md)
 
-Defined in: [entities/data/displays/GameDisplayScrollComponentData.ts:9](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayScrollComponentData.ts#L9)
+Defined in: [entities/data/displays/GameDisplayDialogComponentData.ts:8](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayDialogComponentData.ts#L8)
 
 Template for the background layer, drawn behind the game's other content.
+
+#### Inherited from
+
+[`GameDisplayPagedComponentBase`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md).[`backgroundTemplate`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md#backgroundtemplate)
 
 ***
 
@@ -40,19 +48,27 @@ Template for the background layer, drawn behind the game's other content.
 
 > `optional` **backgroundTemplateStyle?**: `CSSProperties`
 
-Defined in: [entities/data/displays/GameDisplayScrollComponentData.ts:17](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayScrollComponentData.ts#L17)
+Defined in: [entities/data/displays/GameDisplayDialogComponentData.ts:16](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayDialogComponentData.ts#L16)
 
 CSS for the element wrapping the rendered background template.
+
+#### Inherited from
+
+[`GameDisplayPagedComponentBase`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md).[`backgroundTemplateStyle`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md#backgroundtemplatestyle)
 
 ***
 
 ### contents
 
-> **contents**: [`GameDisplayScrollComponentDataContent`](GameDisplayScrollComponentDataContent.md)[]
+> **contents**: [`GameDisplayPageData`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPageData.md)[]
 
-Defined in: [entities/data/displays/GameDisplayScrollComponentData.ts:21](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayScrollComponentData.ts#L21)
+Defined in: [entities/data/displays/GameDisplayDialogComponentData.ts:20](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayDialogComponentData.ts#L20)
 
-The pages of the scroll, shown one at a time in order.
+The pages, shown one at a time in order.
+
+#### Inherited from
+
+[`GameDisplayPagedComponentBase`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md).[`contents`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md#contents)
 
 ***
 
@@ -60,13 +76,13 @@ The pages of the scroll, shown one at a time in order.
 
 > **data**: `Record`\<`string`, `unknown`\>
 
-Defined in: [entities/data/displays/GameDisplayData.ts:35](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L35)
+Defined in: [entities/data/displays/GameDisplayData.ts:37](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L37)
 
 Extra values for this display, passed through to its templates as `componentData`.
 
 #### Inherited from
 
-[`GameDisplayComponentBase`](../../GameDisplayData/interfaces/GameDisplayComponentBase.md).[`data`](../../GameDisplayData/interfaces/GameDisplayComponentBase.md#data)
+[`GameDisplayPagedComponentBase`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md).[`data`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md#data)
 
 ***
 
@@ -74,9 +90,13 @@ Extra values for this display, passed through to its templates as `componentData
 
 > `optional` **foregroundStyle?**: `CSSProperties`
 
-Defined in: [entities/data/displays/GameDisplayScrollComponentData.ts:15](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayScrollComponentData.ts#L15)
+Defined in: [entities/data/displays/GameDisplayDialogComponentData.ts:14](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayDialogComponentData.ts#L14)
 
-CSS for the foreground layer's container.
+CSS for the foreground layer's container: the column the pages are shown in.
+
+#### Inherited from
+
+[`GameDisplayPagedComponentBase`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md).[`foregroundStyle`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md#foregroundstyle)
 
 ***
 
@@ -84,9 +104,13 @@ CSS for the foreground layer's container.
 
 > `optional` **foregroundTemplate?**: [`GameDisplayTemplateSourceData`](../../GameDisplayTemplateComponentData/interfaces/GameDisplayTemplateSourceData.md)
 
-Defined in: [entities/data/displays/GameDisplayScrollComponentData.ts:11](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayScrollComponentData.ts#L11)
+Defined in: [entities/data/displays/GameDisplayDialogComponentData.ts:10](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayDialogComponentData.ts#L10)
 
-Template for the foreground layer, drawn in front of the game's other content.
+Template for each page in the foreground layer, drawn in front of the game's other content.
+
+#### Inherited from
+
+[`GameDisplayPagedComponentBase`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md).[`foregroundTemplate`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md#foregroundtemplate)
 
 ***
 
@@ -94,9 +118,13 @@ Template for the foreground layer, drawn in front of the game's other content.
 
 > `optional` **foregroundTemplateStyle?**: `CSSProperties`
 
-Defined in: [entities/data/displays/GameDisplayScrollComponentData.ts:19](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayScrollComponentData.ts#L19)
+Defined in: [entities/data/displays/GameDisplayDialogComponentData.ts:18](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayDialogComponentData.ts#L18)
 
 CSS for the element wrapping the rendered foreground template.
+
+#### Inherited from
+
+[`GameDisplayPagedComponentBase`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md).[`foregroundTemplateStyle`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md#foregroundtemplatestyle)
 
 ***
 
@@ -104,10 +132,10 @@ CSS for the element wrapping the rendered foreground template.
 
 > **type**: `"scroll"`
 
-Defined in: [entities/data/displays/GameDisplayScrollComponentData.ts:7](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayScrollComponentData.ts#L7)
+Defined in: [entities/data/displays/GameDisplayScrollComponentData.ts:5](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayScrollComponentData.ts#L5)
 
 Which kind of component this is.
 
 #### Overrides
 
-[`GameDisplayComponentBase`](../../GameDisplayData/interfaces/GameDisplayComponentBase.md).[`type`](../../GameDisplayData/interfaces/GameDisplayComponentBase.md#type)
+[`GameDisplayPagedComponentBase`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md).[`type`](../../GameDisplayDialogComponentData/interfaces/GameDisplayPagedComponentBase.md#type)

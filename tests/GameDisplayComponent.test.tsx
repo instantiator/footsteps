@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import GameDisplayComponent from "../src/components/core/display/GameDisplayComponent";
 import type { GameDisplayComponentData } from "../src/entities/data/displays/GameDisplayData";
 import type { GameDisplayRenderData } from "../src/components/core/logic/RenderDataUtils";
@@ -8,14 +8,18 @@ import { SMALL_GAME_ID, smallRepository } from "./data/SmallGame";
 import { simpleGameState } from "./data/SampleGameState";
 import GameProviders from "./helpers/GameProviders";
 
-const renderDisplay = (component: GameDisplayComponentData, layerHint: "foreground" | "background") => {
+const renderDisplay = (
+  component: GameDisplayComponentData,
+  layerHint: "foreground" | "background",
+  resources: Record<string, string> = {},
+) => {
   const display: GameDisplayRenderData = {
     purpose: "game-overview-stages",
     component,
     templateData: {
       gameState: decorateGameState(simpleGameState),
       componentData: {},
-      resources: {},
+      resources,
       challenge: undefined,
       challengeState: undefined,
     },
@@ -42,6 +46,20 @@ const templateComponent: GameDisplayComponentData = {
 };
 
 describe("GameDisplayComponent", () => {
+  it("renders a dialog on the game's image resource, with its pages in the foreground", async () => {
+    const dialog: GameDisplayComponentData = {
+      type: "dialog",
+      data: {},
+      imageResource: "parchment",
+      contents: [{ text: "A dialog page" }],
+    };
+    const { container, unmount } = renderDisplay(dialog, "background", { parchment: "https://img.example/p.png" });
+    await vi.waitFor(() => expect(container.querySelector("[style*='img.example/p.png']")).not.toBeNull());
+    unmount();
+    renderDisplay(dialog, "foreground");
+    expect(await screen.findByText("A dialog page")).toBeInTheDocument();
+  });
+
   it.each([
     ["background", "sky", "blue", "Courier"],
     ["foreground", "tree", "green", "Georgia"],

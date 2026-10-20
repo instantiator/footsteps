@@ -6,17 +6,17 @@
 
 # Function: default()
 
-> **default**(`__namedParameters`): `Element`
+> **default**(`props`): `Element`
 
-Defined in: [components/core/display/GameDisplayScrollComponent.tsx:162](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayScrollComponent.tsx#L162)
+Defined in: [components/core/display/GameDisplayScrollComponent.tsx:19](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayScrollComponent.tsx#L19)
 
-A paged scroll of text, optionally with audio and an answer input on each page.
+A dialog on the app's old-paper image: paged text, optionally with audio and an answer input on each page.
 
 ## Parameters
 
-### \_\_namedParameters
+### props
 
-`GameDisplayScrollComponentProps`
+`Omit`\<[`GameDisplayDialogComponentProps`](../../GameDisplayDialogComponent/interfaces/GameDisplayDialogComponentProps.md), `"image"` \| `"margins"`\>
 
 ## Returns
 

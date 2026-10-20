@@ -22,7 +22,7 @@ const scroll: GameDisplayScrollComponentData = {
 const renderScroll = (layerHint: "foreground" | "background" = "foreground") =>
   render(
     <GameProviders repository={smallRepository} gameId={SMALL_GAME_ID}>
-      <GameDisplayScrollComponent scrollData={scroll} layerHint={layerHint} stageId="s" challengeId="c" />
+      <GameDisplayScrollComponent contents={scroll.contents} layerHint={layerHint} stageId="s" challengeId="c" />
     </GameProviders>,
   );
 

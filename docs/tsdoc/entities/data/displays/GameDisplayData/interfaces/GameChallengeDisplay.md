@@ -6,7 +6,7 @@
 
 # Interface: GameChallengeDisplay
 
-Defined in: [entities/data/displays/GameDisplayData.ts:51](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L51)
+Defined in: [entities/data/displays/GameDisplayData.ts:53](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L53)
 
 A display for one stage of a challenge's lifecycle.
 
@@ -20,7 +20,7 @@ A display for one stage of a challenge's lifecycle.
 
 > **component**: [`GameDisplayComponentData`](../type-aliases/GameDisplayComponentData.md)
 
-Defined in: [entities/data/displays/GameDisplayData.ts:27](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L27)
+Defined in: [entities/data/displays/GameDisplayData.ts:29](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L29)
 
 How this display is rendered.
 
@@ -34,7 +34,7 @@ How this display is rendered.
 
 > **purpose**: [`GameChallengeDisplayPurpose`](../type-aliases/GameChallengeDisplayPurpose.md)
 
-Defined in: [entities/data/displays/GameDisplayData.ts:52](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L52)
+Defined in: [entities/data/displays/GameDisplayData.ts:54](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L54)
 
 When this display is shown.
 
