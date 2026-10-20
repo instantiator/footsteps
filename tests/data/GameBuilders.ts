@@ -23,7 +23,7 @@ export const challenge = (
 ): GameChallengeData => ({
   id,
   displays: purposes.map((p) => display(p)),
-  solution: { answers: ["ANSWER"], hints: [] },
+  solution: { answers: ["ANSWER"] },
 });
 
 /** A stage with the given challenges. */

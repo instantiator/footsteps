@@ -28,12 +28,12 @@ describe("createBlankGameState", () => {
     expect(state.stages.every((s) => s.availability === "unlocked")).toBe(true);
   });
 
-  it("starts everything ready, unsolved and with no attempts, on no stage", () => {
+  it("starts everything ready and unsolved, on no stage", () => {
     const state = createBlankGameState(game(["game-overview-title"], stages()));
     expect(state.stages.every((s) => s.completion === "ready")).toBe(true);
     const challengeStates = state.stages.flatMap((s) => s.challengeStates);
     expect(challengeStates).toHaveLength(4);
-    expect(challengeStates.every((c) => !c.succeeded && c.attempts.length === 0)).toBe(true);
+    expect(challengeStates.every((c) => !c.succeeded)).toBe(true);
     expect(state.current.stageId).toBeNull();
   });
 

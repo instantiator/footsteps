@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  decorateGameState,
-  parseLines,
-  summariseTemplateSource,
-  type DecoratedStageState,
-} from "../src/components/core/logic/TemplateUtils";
+import { decorateGameState, parseLines, summariseTemplateSource } from "../src/components/core/logic/TemplateUtils";
 import type { GameState } from "../src/entities/state/GameState";
 import { simpleGameState } from "./data/SampleGameState";
 
@@ -25,9 +20,6 @@ describe("summariseTemplateSource", () => {
   });
 });
 
-/** `DecoratedGameState.stages` is an intersection type, which indexes as the undecorated stage; this narrows it. */
-const decoratedStages = (state: GameState): DecoratedStageState[] => decorateGameState(state).stages;
-
 describe("decorateGameState", () => {
   const state: GameState = {
     ...simpleGameState,
@@ -38,7 +30,7 @@ describe("decorateGameState", () => {
     })),
   };
   const decorated = decorateGameState(state);
-  const stages = decoratedStages(state);
+  const stages = decorated.stages;
 
   it("flags a completed stage as showCompleted only", () => {
     const { showCompleted, showUnlocked, showLocked } = stages[0];

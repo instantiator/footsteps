@@ -77,17 +77,6 @@
                     },
                     "type": "array"
                 },
-                "autoAccept": {
-                    "description": "Automatically accept a user's input if it matches a solution, default: true.\nNot yet implemented: see docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md #4.",
-                    "type": "boolean"
-                },
-                "hints": {
-                    "description": "A series of hints, to be offered in order, if requested - leave empty for no hints.\nNot yet implemented: see docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md #4.",
-                    "items": {
-                        "type": "string"
-                    },
-                    "type": "array"
-                },
                 "ignoreCase": {
                     "description": "Solutions can be matched ignoring case, default: true",
                     "type": "boolean"
@@ -102,8 +91,7 @@
                 }
             },
             "required": [
-                "answers",
-                "hints"
+                "answers"
             ],
             "type": "object"
         },
@@ -203,10 +191,6 @@
         "GameDisplayScrollComponentDataContent": {
             "description": "One page of a scroll.",
             "properties": {
-                "hint": {
-                    "description": "A hint for this page.\nNot yet implemented: never shown. See docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md #4.",
-                    "type": "string"
-                },
                 "label": {
                     "description": "Label for the answer input. Used only when `showInput` is true.",
                     "type": "string"

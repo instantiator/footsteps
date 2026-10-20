@@ -8,7 +8,6 @@ import {
   getLayeredRenderData,
   getRenderMode,
 } from "../src/components/core/logic/RenderDataUtils";
-import type { DecoratedStageState } from "../src/components/core/logic/TemplateUtils";
 import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
 import { challenge, display, game, stage } from "./data/GameBuilders";
 
@@ -58,8 +57,7 @@ describe("getLayeredRenderData", () => {
       expect(data.challenge).toBeUndefined();
       expect(data.challengeState).toBeUndefined();
       expect(data.gameState.totalStages).toBe(2);
-      const stages: DecoratedStageState[] = data.gameState.stages;
-      expect(stages.map((s) => s.oneIndex)).toEqual([1, 2]);
+      expect(data.gameState.stages.map((s) => s.oneIndex)).toEqual([1, 2]);
     });
 
     it("belongs to no stage or challenge", () => {
@@ -95,7 +93,7 @@ describe("getLayeredRenderData", () => {
       const [datum] = getLayeredRenderData(state, resources).challengesRenderData!;
       expect(datum.stageId).toBe("s1");
       expect(datum.challengeId).toBe("c1");
-      expect(datum.solution).toEqual({ answers: ["ANSWER"], hints: [] });
+      expect(datum.solution).toEqual({ answers: ["ANSWER"] });
       expect(datum.templateData.challenge?.id).toBe("c1");
       expect(datum.templateData.challengeState?.challenge.id).toBe("c1");
       expect(datum.templateData.resources).toBe(resources);
@@ -158,8 +156,7 @@ describe("calcChallengeDisplay", () => {
     expect(calcChallengeDisplay(stateOf([]))).toBeUndefined();
   });
 
-  // BUG #5 (docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md): a succeeded challenge should show its challenge-completed display; displayPurpose is never updated so the title keeps showing.
-  it.skip("shows the completed display once the challenge is succeeded", () => {
+  it("shows the completed display once the challenge is succeeded", () => {
     const state = createBlankGameState(
       game(["game-overview-title"], [stage("s", [challenge("c", ["challenge-title", "challenge-completed"])])]),
     );
