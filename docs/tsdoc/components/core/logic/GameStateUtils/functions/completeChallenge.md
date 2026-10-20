@@ -8,11 +8,12 @@
 
 > **completeChallenge**(`gameState`, `stageId`, `challengeId`): [`GameState`](../../../../../entities/state/GameState/interfaces/GameState.md)
 
-Defined in: [components/core/logic/GameStateUtils.ts:104](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/GameStateUtils.ts#L104)
+Defined in: [components/core/logic/GameStateUtils.ts:105](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/GameStateUtils.ts#L105)
 
 Marks a challenge as succeeded, and advances the game accordingly.
-The recommended stage (the first incomplete one) is unlocked. If that completes the stage, the game
-returns to the stages overview if it has one, otherwise moves straight to the recommended stage.
+The recommended stage (the first incomplete one) is unlocked. If that completes the stage, the game moves
+straight to the recommended stage when `config.autoAdvanceStages` is set or there is no stages overview,
+and otherwise returns to the stages overview.
 Once every stage is complete, the overview switches to the finale display.
 
 ## Parameters

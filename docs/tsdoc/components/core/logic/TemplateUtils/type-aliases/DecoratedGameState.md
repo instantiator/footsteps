@@ -6,7 +6,7 @@
 
 # Type Alias: DecoratedGameState
 
-> **DecoratedGameState** = [`GameState`](../../../../../entities/state/GameState/interfaces/GameState.md) & `object`
+> **DecoratedGameState** = `Omit`\<[`GameState`](../../../../../entities/state/GameState/interfaces/GameState.md), `"stages"`\> & `object`
 
 Defined in: [components/core/logic/TemplateUtils.ts:6](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/TemplateUtils.ts#L6)
 

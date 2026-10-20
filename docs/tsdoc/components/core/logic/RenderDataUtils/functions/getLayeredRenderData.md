@@ -8,7 +8,7 @@
 
 > **getLayeredRenderData**(`state`, `resources`): [`LayeredGameDisplayRenderData`](../interfaces/LayeredGameDisplayRenderData.md)
 
-Defined in: [components/core/logic/RenderDataUtils.ts:63](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L63)
+Defined in: [components/core/logic/RenderDataUtils.ts:64](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L64)
 
 Gathers the render data for every layer of the current display.
 

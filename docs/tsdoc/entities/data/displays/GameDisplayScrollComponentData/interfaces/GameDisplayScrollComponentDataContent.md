@@ -12,22 +12,11 @@ One page of a scroll.
 
 ## Properties
 
-### hint?
-
-> `optional` **hint?**: `string`
-
-Defined in: [entities/data/displays/GameDisplayScrollComponentData.ts:34](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayScrollComponentData.ts#L34)
-
-A hint for this page.
-Not yet implemented: never shown. See docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md #4.
-
-***
-
 ### label?
 
 > `optional` **label?**: `string`
 
-Defined in: [entities/data/displays/GameDisplayScrollComponentData.ts:36](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayScrollComponentData.ts#L36)
+Defined in: [entities/data/displays/GameDisplayScrollComponentData.ts:31](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayScrollComponentData.ts#L31)
 
 Label for the answer input. Used only when `showInput` is true.
 
@@ -37,7 +26,7 @@ Label for the answer input. Used only when `showInput` is true.
 
 > `optional` **media?**: [`GameDisplayMediaData`](../../GameDisplayMediaData/interfaces/GameDisplayMediaData.md)
 
-Defined in: [entities/data/displays/GameDisplayScrollComponentData.ts:38](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayScrollComponentData.ts#L38)
+Defined in: [entities/data/displays/GameDisplayScrollComponentData.ts:33](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayScrollComponentData.ts#L33)
 
 Audio to play on this page.
 
