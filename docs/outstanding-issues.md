@@ -31,3 +31,21 @@ Bug #16 in [`docs/prompts/000.00.02.feedback - fixes from identified bugs and te
 Game repositories may be remote, and templates are compiled by Handlebars (which uses `new Function`) and inserted as HTML. `src/root.tsx` sets a CSP meta with `object-src 'none'; base-uri 'self'; form-action 'none'`, and DOMPurify strips script from template output. A `script-src` policy would also block injected script outright. But React Router's prerendered pages carry inline scripts that would need per-build hashes, and Handlebars needs `'unsafe-eval'`.
 
 **Act when:** the app loads game repositories from authors who aren't trusted, or gains logins or cookies. Then generate `script-src` hashes in `finish-static-build.sh` (or move to precompiled templates and drop `'unsafe-eval'`), or render games in a sandboxed iframe.
+
+## Validator does not read template contents
+
+`validate-game.sh` and `validate-repository.sh` check that a template file exists and can load, but not the `{{resources.name}}` references inside it, which Handlebars resolves at render time. Static scanning would miss dynamic lookups such as `lookup` and `{{resources.[name]}}`, so it could not be exhaustive.
+
+**Act when:** a template's resource reference is found missing only at runtime, or templates gain a stricter, scan-friendly format.
+
+## Data validation needs the network for `url` resources
+
+The validation scripts request each `url` resource (currently the game's Google Fonts stylesheet). `--skip-urls` avoids that, but pre-push and CI run without it, so an offline push or a third-party outage fails the gate.
+
+**Act when:** the gate blocks a push or CI run only because a third-party host is unreachable. Then report network failures as warnings, or check URLs in a dedicated CI step instead of inside `npm test`.
+
+## `local` resources in a third-party repository cannot be verified
+
+A repository checked out from someone else may use `local` paths, which mean "on the viewer's site". The validator resolves them against `--site-root` and cannot know whether that repository's host serves them.
+
+**Act when:** remote repositories become first-class content. Then validate `local` targets against the site that will host the repository, rather than against this checkout.
