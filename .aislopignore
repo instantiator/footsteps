@@ -1,0 +1,5 @@
+# Generated documentation and its build cache: TypeDoc HTML, VitePress cache, and the
+# assembled docs site. None of it is ours to score.
+docs/tsdoc/
+docs-static/
+docs/.vitepress/cache/

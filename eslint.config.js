@@ -8,7 +8,7 @@ import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended"
 import devQualBaseline from "./dev-qual/guidance/languages/typescript/tools/eslint-baseline.mjs";
 
 export default defineConfig([
-  globalIgnores(["dist", "dev-qual", ".react-router"]),
+  globalIgnores(["dist", "dev-qual", ".react-router", "docs/tsdoc", "docs-static", "docs/.vitepress/cache"]),
   {
     files: ["**/*.{ts,tsx}"],
     extends: [

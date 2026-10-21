@@ -37,7 +37,7 @@ This file defines our code style rules. It is the single source of truth for all
 
 ESLint checks code quality, with Prettier wired in so formatting problems show up as lint warnings. In order, the config:
 
-- ignores `dist/`, the `dev-qual/` submodule, and React Router's generated `.react-router/` types;
+- ignores `dist/`, the `dev-qual/` submodule, React Router's generated `.react-router/` types, and the generated documentation (`docs/tsdoc/`, `docs-static/`, and VitePress's cache);
 - applies the recommended rules from `@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`, and `eslint-plugin-react-refresh` to `.ts`/`.tsx` files;
 - turns off `@typescript-eslint/indent`, which conflicts with Prettier (see Problem 1 below);
 - adds `eslint-plugin-prettier/recommended`, which disables ESLint's stylistic rules and reports Prettier differences as `prettier/prettier` warnings;

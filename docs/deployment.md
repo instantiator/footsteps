@@ -30,3 +30,7 @@ Vite uses it for asset URLs, React Router uses it as the router's `basename`, `f
 **Local and PR builds** (`npm run build:gh-pages`) default `BASE_URL` to `/footsteps/`. This is set in `package.json`.
 
 `npm run dev`, `npm run build`, and `npm run preview` use `/`.
+
+## Documentation
+
+`npm run build:gh-pages` also builds the documentation site. VitePress renders `docs/` and TypeDoc's HTML from `docs/tsdoc/` is copied in, so the whole site is published at `<base>docs/` alongside the app. Dead links in `docs/` fail that build, so the documentation is checked before it deploys.
