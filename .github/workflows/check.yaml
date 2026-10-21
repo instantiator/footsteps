@@ -34,6 +34,11 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install dependencies
         run: npm ci
+      # Blocks the build on a resource file or URL that cannot load. `npm test`
+      # (inside check.sh) runs the same check through its pretest step, so the
+      # pre-push hook and CI agree.
+      - name: Validate game data
+        run: ./validate-repository.sh public/game-repository.json
       # check.sh skips linters that aren't installed; install them so CI can't pass by skipping
       - name: Install actionlint and markdownlint (shellcheck ships with the runner)
         run: |
