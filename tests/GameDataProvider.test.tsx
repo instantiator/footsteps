@@ -13,6 +13,7 @@ import { server } from "./mocks/server";
 
 const gameWith = (resources?: GameResourceDefinitions): GameData => ({
   title: "Resource Game",
+  description: "A game for tests.",
   displays: [],
   stages: [],
   gameContainerStyle: {},

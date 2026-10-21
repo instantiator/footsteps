@@ -4,6 +4,8 @@
     "magic-trifle": {
       "id": "magic-trifle",
       "title": "Nanny's Magic Trifle",
+      "description": "A rhyming Christmas treasure hunt through the house: follow the clues from room to room to find Nanny's magic trifle.",
+      "tileGraphic": "title-background",
       "modules": {
         "camera": {
           "enabled": false

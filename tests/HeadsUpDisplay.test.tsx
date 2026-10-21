@@ -1,6 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import HeadsUpDisplay from "../src/components/core/HeadsUpDisplay";
 import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
 import { GameStateContext } from "../src/providers/GameStateContext";
@@ -31,7 +31,46 @@ const overviewState: GameState = {
 
 const current = () => JSON.parse(screen.getByRole("status").textContent!);
 
+/** What the document reports as its fullscreen element, as the browser would. */
+let fullscreenElement: Element | null = null;
+
+/** Makes the document report the given fullscreen element, firing the change event as the browser does. */
+const setFullscreenElement = (element: Element | null) => {
+  fullscreenElement = element;
+  document.dispatchEvent(new Event("fullscreenchange"));
+};
+
+/** Mocks the fullscreen API, so a button press reports success and fires the change event. */
+const mockFullscreen = () => {
+  fullscreenElement = null;
+  Object.defineProperty(document, "fullscreenEnabled", { configurable: true, get: () => true });
+  Object.defineProperty(document, "fullscreenElement", { configurable: true, get: () => fullscreenElement });
+  const requestFullscreen = vi.fn(() => {
+    setFullscreenElement(document.documentElement);
+    return Promise.resolve();
+  });
+  const exitFullscreen = vi.fn(() => {
+    setFullscreenElement(null);
+    return Promise.resolve();
+  });
+  Object.defineProperty(document.documentElement, "requestFullscreen", {
+    configurable: true,
+    value: requestFullscreen,
+  });
+  Object.defineProperty(document, "exitFullscreen", { configurable: true, value: exitFullscreen });
+  return { requestFullscreen, exitFullscreen };
+};
+
 describe("HeadsUpDisplay", () => {
+  afterEach(() => {
+    fullscreenElement = null;
+    for (const key of ["fullscreenEnabled", "fullscreenElement", "exitFullscreen"]) {
+      Reflect.deleteProperty(document, key);
+    }
+    Reflect.deleteProperty(document.documentElement, "requestFullscreen");
+    vi.restoreAllMocks();
+  });
+
   it("offers nothing on the title screen with no stage open", () => {
     render(<Harness initial={titleState} />);
     expect(screen.queryByRole("button", { name: "Close challenge" })).toBeNull();
@@ -59,5 +98,40 @@ describe("HeadsUpDisplay", () => {
   it("does not offer 'To title' in a game with no title display", () => {
     render(<Harness initial={createBlankGameState(smallGame)} />);
     expect(screen.queryByRole("button", { name: "To title" })).toBeNull();
+  });
+
+  it("offers the fullscreen toggle on the title screen, where no other button applies", () => {
+    render(<Harness initial={titleState} />);
+    expect(screen.getByRole("button", { name: "Full screen" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("toggles the whole document in and out of fullscreen, following the label", () => {
+    const { requestFullscreen, exitFullscreen } = mockFullscreen();
+    render(<Harness initial={titleState} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Full screen" }));
+    expect(requestFullscreen).toHaveBeenCalledOnce();
+    const exit = screen.getByRole("button", { name: "Exit full screen" });
+    expect(exit).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(exit);
+    expect(exitFullscreen).toHaveBeenCalledOnce();
+    expect(screen.getByRole("button", { name: "Full screen" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("follows a fullscreen change the browser makes itself", () => {
+    mockFullscreen();
+    render(<Harness initial={titleState} />);
+
+    act(() => setFullscreenElement(document.documentElement));
+    expect(screen.getByRole("button", { name: "Exit full screen" })).toBeInTheDocument();
+  });
+
+  it("warns instead of failing when the browser has no fullscreen", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(<Harness initial={titleState} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Full screen" }));
+    expect(warn).toHaveBeenCalledOnce();
   });
 });

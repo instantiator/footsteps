@@ -1,8 +1,8 @@
 import { useContext } from "react";
-import { Link } from "react-router";
 import { GameRepositoryContext } from "../../providers/GameRepositoryContext";
+import GameTile from "./GameTile";
 
-/** The local repository's load status, and once ready a link to play each of its games. */
+/** The local repository's load status, and once ready a tile for each of its games. */
 export default function LocalListing() {
   const { repository } = useContext(GameRepositoryContext);
 
@@ -10,23 +10,17 @@ export default function LocalListing() {
     <>
       <p>Status: {repository.ready ? "Ready" : (repository.error ?? "Loading...")}</p>
       {repository.ready && (
-        <ul>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(14rem, 1fr))",
+            gap: "1rem",
+          }}
+        >
           {Object.entries(repository.games).map(([gameId, gameData]) => (
-            <li key={`game-key-${gameId}`}>
-              <Link to={`/game/${gameId}`}>
-                <b>{gameData.title}</b>
-              </Link>{" "}
-              (id: {gameId})
-              {gameData.credits?.length ? (
-                <ul>
-                  {gameData.credits.map(({ text, url }) => (
-                    <li key={text}>{url ? <a href={url}>{text}</a> : text}</li>
-                  ))}
-                </ul>
-              ) : null}
-            </li>
+            <GameTile key={`game-key-${gameId}`} gameId={gameId} gameData={gameData} />
           ))}
-        </ul>
+        </div>
       )}
     </>
   );

@@ -39,6 +39,7 @@ const writeFixture = (path: string, contents: unknown): void => {
 /** A game with no displays or stages unless the test supplies them. */
 const gameWith = (data: Partial<GameData>): GameData => ({
   title: "Test game",
+  description: "A game for tests.",
   displays: [],
   stages: [],
   gameContainerStyle: {},

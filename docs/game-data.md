@@ -6,7 +6,9 @@ A game is one `GameData` object (`src/entities/data/GameData.ts`), authored as J
 
 ```text
 GameData
-├── title, gameContainerStyle          shown as-is; the style applies to the game's outer container
+├── title, description                 shown as-is; the description goes on the landing-page tile
+├── tileGraphic?                       resource name of the tile's background image (see Landing tile)
+├── gameContainerStyle                 applied to the game's outer container
 ├── config?                            { sequential, autoAdvanceStages }
 ├── modules?.camera?                   { enabled }: show the player's camera silhouette
 ├── resources?                         name → { type, target }        (see Resources)
@@ -94,7 +96,7 @@ A **`scroll`** is a dialog on the app's own old-paper image, with margins set to
 
 ## Resources
 
-`resources` names the files a game uses. Each one is `{ type, target }`. `GameDataProvider` resolves each to an absolute URL when the game loads (`resolveResources` in `src/providers/GameDataProvider.tsx`):
+`resources` names the files a game uses. Each one is `{ type, target }`. `GameDataProvider` resolves each to an absolute URL when the game loads, and the landing page resolves a game's `tileGraphic` the same way (`resolveResources` in `src/util/ResourceUtils.ts`):
 
 | `type`     | `target` is resolved against                                                                                                                                                      |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -103,6 +105,12 @@ A **`scroll`** is a dialog on the app's own old-paper image, with margins set to
 | `url`      | Nothing: it must already be an absolute URL                                                                                                                                       |
 
 If a resource can't be resolved, the game's loading state becomes `resource-error`. Media fields such as `media.resource` and `stillImageResource` refer to resources by name. Templates see all of them as `resources`, for example `{{resources.star}}`.
+
+## Landing tile
+
+The landing page shows each game as a square tile with its `title`, its id, its `description`, and `tileGraphic` as the background image behind them. `tileGraphic` is a resource name (see [Resources](#resources)); a game without one, or whose graphic can't be resolved, gets a plain tinted tile instead.
+
+Magic-trifle uses its title background: `"tileGraphic": "title-background"`.
 
 ## Sounds
 
@@ -123,7 +131,7 @@ For example, magic-trifle sets `"openingMusicResource": "music-opening"`, where 
 
 ## Credits
 
-`credits` lists the third-party media the game uses. The landing page shows them under the game: each `text` is a link when `url` is set, and plain text otherwise. The app's own media is credited in `src/components/landing/Attributions.tsx`. Magic-trifle credits its music, sound effect and bubble text this way.
+`credits` lists the third-party media the game uses. The landing page shows each game's credits under that game's heading in the Attributions section: each `text` is a link when `url` is set, and plain text otherwise. The app's own media is credited under the `Footsteps` heading there, in `src/components/landing/Attributions.tsx`. Magic-trifle credits its music, sound effect and bubble text this way.
 
 ## Stylesheets
 

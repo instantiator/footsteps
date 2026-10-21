@@ -19,7 +19,7 @@ No bundled game turns it on yet. `magic-trifle` sets `"enabled": false`; `test-g
 - **A silhouette of themselves.** Their outline is cut out of the webcam picture and drawn into the game, mirrored left to right as in a mirror. It is not a drawing of a character: it is the player's own image, minus everything that isn't them.
 - **A small webcam preview** in the top-right corner, also mirrored, so they can see what the camera sees and line themselves up.
 - **The game's own artwork** behind and, for challenges, in front of the silhouette.
-- **The HUD** (heads-up display: the buttons for "Close challenge" and "To title") in the top-right corner.
+- **The HUD** (heads-up display: the buttons for "Close challenge", "To title", and the fullscreen toggle) in the top-right corner.
 
 The silhouette is why the player appears inside the artwork without a green screen. A machine-learning model - **body segmentation**, from TensorFlow's BodyPix model - looks at each webcam frame and decides which pixels belong to a person. Only those pixels are kept. It runs once per frame, using the browser's `requestAnimationFrame`, so the silhouette keeps up as the player moves.
 

@@ -1,7 +1,7 @@
 import { useContext, useMemo, type ReactNode } from "react";
-import type { GameId, GameResourceDefinitions } from "../entities/data/GameData";
-import type { GameSource } from "../entities/GameSource";
-import { getBaseURL, isDefined, resolveRelativeURL } from "../util/ObjectUtils";
+import type { GameId } from "../entities/data/GameData";
+import { isDefined } from "../util/ObjectUtils";
+import { resolveResources } from "../util/ResourceUtils";
 import GameContentCacheProvider from "./GameContentCacheProvider";
 import {
   GameDataContext,
@@ -17,24 +17,6 @@ interface GameDataProviderParams {
   /** Shown instead of the children until the game is ready (and when it can't be). */
   loadingView?: ReactNode;
 }
-
-/** Resolves each of a game's resource definitions to an absolute URL. */
-const resolveResources = (
-  definitions: GameResourceDefinitions | undefined,
-  repositorySource: GameSource,
-): Record<string, string> =>
-  Object.fromEntries(
-    Object.entries(definitions ?? {}).map(([key, def]) => {
-      switch (def.type) {
-        case "local":
-          return [key, new URL(def.target, getBaseURL()).toString()];
-        case "relative":
-          return [key, resolveRelativeURL(def.target, repositorySource, "resource targets")];
-        case "url":
-          return [key, new URL(def.target).toString()]; // simple urls can be used directly
-      }
-    }),
-  );
 
 /** Provides the requested game's data, with its resources resolved, once the repository has it. */
 export function GameDataProvider({ id, children, loadingView }: React.PropsWithChildren<GameDataProviderParams>) {

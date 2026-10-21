@@ -40,6 +40,7 @@ const optionsWith = (files: string[] = [], request: UrlRequest = OK, skipUrls = 
 /** A game with no displays or stages unless the test supplies them. */
 const gameWith = (data: Partial<GameData>): GameData => ({
   title: "Test game",
+  description: "A game for tests.",
   displays: [],
   stages: [],
   gameContainerStyle: {},
@@ -246,6 +247,7 @@ describe("resource names", () => {
     const game = gameWith({
       resources,
       stylesheets: ["known"],
+      tileGraphic: "known",
       sounds: { openingMusicResource: "known" },
       displays: [
         displayWith({
@@ -269,13 +271,14 @@ describe("resource names", () => {
     const result = await checkGame(game, optionsWith(["/site/games/known.png"]));
 
     expect(result.problems).toEqual([]);
-    expect(result.checked.names).toBe(6);
+    expect(result.checked.names).toBe(7);
   });
 
   it("reports every undefined name with its field's path", async () => {
     const game = gameWith({
       resources,
       stylesheets: ["known", "missing-sheet"],
+      tileGraphic: "missing-tile",
       sounds: { openingMusicResource: "missing-music" },
       displays: [
         displayWith({
@@ -305,6 +308,7 @@ describe("resource names", () => {
         "displays[0].component.imageResource",
         "sounds.openingMusicResource",
         "stylesheets[1]",
+        "tileGraphic",
       ].sort(),
     );
     expect(result.problems.map((problem) => problem.message)).toContain('refers to undefined resource "missing-audio"');
