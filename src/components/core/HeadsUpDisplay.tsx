@@ -1,9 +1,14 @@
 import { useGameState } from "../../providers/GameStateHook";
+import useFullscreen from "./FullscreenHook";
 import { getRenderMode } from "./logic/RenderDataUtils";
 
-/** Buttons to leave the current challenge, or return to the title screen, when either applies. */
+/** The HUD buttons' shared look: small and snug, so they take little of the game's space. */
+const buttonStyle = { margin: 0, padding: 5, fontSize: "0.75em" };
+
+/** Buttons to toggle fullscreen, leave the current challenge, or return to the title screen, when either applies. */
 export default function HeadsUpDisplay() {
   const { gameState, setGameState } = useGameState();
+  const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
 
   /** Offered while a stage is open. */
   const showCloseChallengeButton = getRenderMode(gameState) === "stage";
@@ -33,8 +38,6 @@ export default function HeadsUpDisplay() {
     });
   };
 
-  const showAny = showCloseChallengeButton || showTitleReturnButton;
-
   return (
     <>
       <div
@@ -43,22 +46,25 @@ export default function HeadsUpDisplay() {
           backdropFilter: "blur(4px)",
           padding: "10px",
           borderBottomLeftRadius: "10px",
-          display: showAny ? "flex" : "none",
+          display: "flex",
           flexDirection: "row",
           alignItems: "center",
           gap: "5px",
         }}
       >
         {showCloseChallengeButton && (
-          <button style={{ margin: 0, padding: 5, fontSize: "0.75em" }} onClick={closeChallenge}>
+          <button style={buttonStyle} onClick={closeChallenge}>
             Close challenge
           </button>
         )}
         {showTitleReturnButton && (
-          <button style={{ margin: 0, padding: 5, fontSize: "0.75em" }} onClick={returnToTitle}>
+          <button style={buttonStyle} onClick={returnToTitle}>
             To title
           </button>
         )}
+        <button style={buttonStyle} onClick={toggleFullscreen} aria-pressed={isFullscreen}>
+          {isFullscreen ? "Exit full screen" : "Full screen"}
+        </button>
       </div>
     </>
   );
