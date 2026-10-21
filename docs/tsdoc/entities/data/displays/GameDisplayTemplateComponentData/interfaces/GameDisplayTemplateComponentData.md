@@ -8,7 +8,7 @@
 
 Defined in: [entities/data/displays/GameDisplayTemplateComponentData.ts:11](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayTemplateComponentData.ts#L11)
 
-A display built from Mustache templates, drawn as a background layer and a foreground layer.
+A display built from Handlebars templates, drawn as a background layer and a foreground layer.
 
 ## Extends
 
@@ -50,7 +50,7 @@ CSS for the element wrapping the rendered background template.
 
 > **data**: `Record`\<`string`, `unknown`\>
 
-Defined in: [entities/data/displays/GameDisplayData.ts:35](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L35)
+Defined in: [entities/data/displays/GameDisplayData.ts:37](https://github.com/instantiator/2025-xmas-game/blob/main/src/entities/data/displays/GameDisplayData.ts#L37)
 
 Extra values for this display, passed through to its templates as `componentData`.
 

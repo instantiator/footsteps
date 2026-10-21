@@ -47,7 +47,7 @@ describe("GameDisplayTemplateComponent", () => {
   });
 
   it("fetches a url template", async () => {
-    const url = new URL("games/magic-trifle/title/foreground.mustache", getBaseURL()).toString();
+    const url = new URL("games/magic-trifle/title/foreground.hbs", getBaseURL()).toString();
     const { container } = render(
       <GameDisplayTemplateComponent
         templateSource={{ sourceType: "url", templateSource: url }}
@@ -62,7 +62,7 @@ describe("GameDisplayTemplateComponent", () => {
   it("fetches a local template from the site, for a local repository", async () => {
     render(
       <GameDisplayTemplateComponent
-        templateSource={{ sourceType: "local", templateSource: "games/magic-trifle/title/foreground.mustache" }}
+        templateSource={{ sourceType: "local", templateSource: "games/magic-trifle/title/foreground.hbs" }}
         templateData={{ resources: { "title-foreground": "local.png" } }}
       />,
       { wrapper: Wrapper },
@@ -70,7 +70,7 @@ describe("GameDisplayTemplateComponent", () => {
     expect(await screen.findByRole("img", { hidden: true })).toHaveAttribute("src", "local.png");
   });
 
-  it("renders string container style values as Mustache templates over the data", async () => {
+  it("renders string container style values as Handlebars templates over the data", async () => {
     const { container } = render(
       <GameDisplayTemplateComponent
         templateSource={embedded("<p>x</p>")}
@@ -110,7 +110,7 @@ describe("GameDisplayTemplateComponent", () => {
     expect((container.firstElementChild as HTMLElement).style.zIndex).toBe("2");
   });
 
-  it("renders template style values as Mustache templates over the data", async () => {
+  it("renders template style values as Handlebars templates over the data", async () => {
     render(
       <GameDisplayTemplateComponent
         templateSource={embedded("<p>x</p>")}
@@ -122,6 +122,62 @@ describe("GameDisplayTemplateComponent", () => {
     const wrapper = (await screen.findByText("x")).parentElement as HTMLElement;
     expect(wrapper.style.fontFamily).toBe("Courier");
   });
+
+  it("renders the built-in if and each helpers", async () => {
+    render(
+      <GameDisplayTemplateComponent
+        templateSource={embedded("{{#each items}}{{#if this.on}}<p>{{this.name}}</p>{{/if}}{{/each}}")}
+        templateData={{
+          items: [
+            { name: "shown", on: true },
+            { name: "hidden", on: false },
+          ],
+        }}
+      />,
+      { wrapper: Wrapper },
+    );
+    expect(await screen.findByText("shown")).toBeInTheDocument();
+    expect(screen.queryByText("hidden")).toBeNull();
+  });
+
+  it("reaches top-level data from inside a block with @root, but not without it", async () => {
+    render(
+      <GameDisplayTemplateComponent
+        templateSource={embedded("{{#stages}}<p>[{{@root.title}}|{{title}}]</p>{{/stages}}")}
+        templateData={{ title: "Trifle", stages: [{ id: "s1" }] }}
+      />,
+      { wrapper: Wrapper },
+    );
+    expect(await screen.findByText("[Trifle|]")).toBeInTheDocument();
+  });
+
+  it("strips scripts, event handlers, and forms from the rendered HTML", async () => {
+    const { container } = render(
+      <GameDisplayTemplateComponent
+        templateSource={embedded(
+          '<p>safe</p><script>window.hacked = true</script><img id="i" src="x.png" onerror="alert(1)" />' +
+            '<form action="https://evil.example"><input name="answer" /></form>',
+        )}
+        templateData={{}}
+      />,
+      { wrapper: Wrapper },
+    );
+    await screen.findByText("safe");
+    expect(container.querySelector("script")).toBeNull();
+    expect(container.querySelector("img#i")?.getAttribute("onerror")).toBeNull();
+    expect(container.querySelector("form")).toBeNull();
+  });
+
+  it("logs and renders nothing for a template that calls a helper that isn't built in", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { container } = render(
+      <GameDisplayTemplateComponent templateSource={embedded("<p>{{shout name}}</p>")} templateData={{ name: "x" }} />,
+      { wrapper: Wrapper },
+    );
+    await vi.waitFor(() => expect(error).toHaveBeenCalledWith("Error rendering template:", expect.any(Error)));
+    expect(container.querySelector("p")).toBeNull();
+  });
+
   it("names the style key when a style value is neither a string nor a number", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     // Game data arrives as JSON, so it can break the types; parse some that does
@@ -140,10 +196,10 @@ describe("GameDisplayTemplateComponent", () => {
 
   it("logs and renders nothing for a template that fails to load, rather than the error page", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    server.use(http.get("/missing.mustache", () => HttpResponse.text("<h1>Not found</h1>", { status: 404 })));
+    server.use(http.get("/missing.hbs", () => HttpResponse.text("<h1>Not found</h1>", { status: 404 })));
     const { container } = render(
       <GameDisplayTemplateComponent
-        templateSource={{ sourceType: "url", templateSource: new URL("missing.mustache", getBaseURL()).toString() }}
+        templateSource={{ sourceType: "url", templateSource: new URL("missing.hbs", getBaseURL()).toString() }}
         templateData={{}}
       />,
       { wrapper: Wrapper },
@@ -155,14 +211,14 @@ describe("GameDisplayTemplateComponent", () => {
   it("fetches a template once for displays that ask for it at the same time", async () => {
     let fetches = 0;
     server.use(
-      http.get("/shared.mustache", () => {
+      http.get("/shared.hbs", () => {
         fetches++;
         return HttpResponse.text("<p>shared</p>");
       }),
     );
     const source: GameDisplayTemplateSourceData = {
       sourceType: "url",
-      templateSource: new URL("shared.mustache", getBaseURL()).toString(),
+      templateSource: new URL("shared.hbs", getBaseURL()).toString(),
     };
     render(
       <>

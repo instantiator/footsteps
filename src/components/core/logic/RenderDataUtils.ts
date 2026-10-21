@@ -20,7 +20,7 @@ export type GameDisplayMode = "overview" | "stage";
 
 /** Everything needed to render one display, and to respond to input on it. */
 export interface GameDisplayRenderData extends GameDisplayBase {
-  /** The Mustache view for the display's template. */
+  /** The context for the display's template. */
   templateData: GameTemplateData;
   /** The stage the display belongs to; undefined for overview displays. */
   stageId: GameStageId | undefined;
@@ -41,7 +41,7 @@ export interface LayeredGameDisplayRenderData {
 }
 
 /**
- * Data to provide to game challenge Mustache templates.
+ * Data to provide to game challenge templates.
  */
 export interface GameTemplateData {
   /** The game state, with per-stage flags for templates that can't compute them. */

@@ -9,4 +9,3 @@
 ## Functions
 
 - [default](functions/default.md)
-- [ScrollNavigation](functions/ScrollNavigation.md)

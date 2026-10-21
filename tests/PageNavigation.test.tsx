@@ -1,11 +1,11 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { ScrollNavigation } from "../src/components/core/display/GameDisplayScrollComponent";
+import { PageNavigation } from "../src/components/core/display/GameDisplayDialogComponent";
 
-describe("ScrollNavigation", () => {
+describe("PageNavigation", () => {
   it("offers labelled buttons (so keyboard activation is native) for the pages that exist", () => {
     const onAdvance = vi.fn();
-    render(<ScrollNavigation onAdvance={onAdvance} />);
+    render(<PageNavigation onAdvance={onAdvance} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Next page" }));
     expect(onAdvance).toHaveBeenCalledOnce();
@@ -13,7 +13,7 @@ describe("ScrollNavigation", () => {
   });
 
   it("renders nothing when there is only one page", () => {
-    const { container } = render(<ScrollNavigation />);
+    const { container } = render(<PageNavigation />);
     expect(container).toBeEmptyDOMElement();
   });
 });

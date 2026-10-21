@@ -29,7 +29,11 @@ const repositoryServed = () =>
 describe("LocalGame", () => {
   it("plays the game with the routed id once the local repository loads", async () => {
     const { container } = renderAt("/game/magic-trifle");
-    await waitFor(() => expect(container.querySelector("#game-container")).not.toBeNull());
+    // jsdom never loads stylesheets, and React holds the game back until they have
+    await waitFor(() => {
+      document.head.querySelectorAll("link").forEach((link) => link.dispatchEvent(new Event("load")));
+      expect(container.querySelector("#game-container")).not.toBeNull();
+    });
     await waitFor(() =>
       expect(container.querySelector("#overview-foreground-container #magic-trifle-title")).not.toBeNull(),
     );

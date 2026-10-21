@@ -42,6 +42,13 @@
       "file": "src/components/core/layout/GameLayerWrappers.tsx",
       "fingerprint": "d70b8e28e0ce8716",
       "count": 2
+    },
+    {
+      "rule": "security/dangerously-set-innerhtml",
+      "engine": "security",
+      "file": "src/components/core/display/GameDisplayTemplateComponent.tsx",
+      "fingerprint": "561b51a472ef737e",
+      "count": 1
     }
   ]
 }

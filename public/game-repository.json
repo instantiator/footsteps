@@ -13,7 +13,33 @@
         "sequential": true,
         "autoAdvanceStages": false
       },
+      "credits": [
+        { "text": "Bubble text created with Font generator", "url": "https://www.textstudio.com/" },
+        { "text": "Magical Christmas by Paul Yudin", "url": "https://uppbeat.io/track/paul-yudin/magical-christmas" },
+        { "text": "Elves Workshop by Simon Folwar", "url": "https://uppbeat.io/track/simon-folwar/elves-workshop" },
+        {
+          "text": "Arrival of a Princess by Aaron Paul Low",
+          "url": "https://uppbeat.io/t/aaron-paul-low/arrival-of-a-princess"
+        },
+        {
+          "text": "Magic Sound Effect by AnnaBaX01Q (Creative Commons 0 license)",
+          "url": "https://freesound.org/s/813273/"
+        }
+      ],
+      "stylesheets": ["font-dynapuff"],
+      "sounds": {
+        "openingMusicResource": "music-opening",
+        "closingMusicResource": "music-closing",
+        "stageOpenedSoundResource": "sfx-stage-opened",
+        "stageCompletedSoundResource": "sfx-stage-completed"
+      },
+      "reward": { "animation": "fireworks", "particleCount": 200 },
       "resources": {
+        "font-dynapuff": { "type": "url", "target": "https://fonts.googleapis.com/css2?family=DynaPuff&display=swap" },
+        "music-opening": { "type": "local", "target": "games/magic-trifle/music-1.mp3" },
+        "music-closing": { "type": "local", "target": "games/magic-trifle/music-2.mp3" },
+        "sfx-stage-completed": { "type": "local", "target": "games/magic-trifle/win-sound.mp3" },
+        "sfx-stage-opened": { "type": "local", "target": "games/magic-trifle/magical-event.m4a" },
         "title-background": { "type": "local", "target": "games/magic-trifle/title/background.png" },
         "title-foreground": { "type": "local", "target": "games/magic-trifle/title/foreground.png" },
         "blank-river": { "type": "local", "target": "games/magic-trifle/overview/blank-river.png" },
@@ -34,7 +60,7 @@
             "type": "template",
             "foregroundTemplate": {
               "sourceType": "relative",
-              "templateSource": "games/magic-trifle/title/foreground.mustache"
+              "templateSource": "games/magic-trifle/title/foreground.hbs"
             },
             "foregroundTemplateStyle": { "width": "100%", "height": "100%" },
             "backgroundTemplate": {
@@ -56,7 +82,7 @@
             "type": "template",
             "foregroundTemplate": {
               "sourceType": "relative",
-              "templateSource": "games/magic-trifle/overview/foreground.mustache"
+              "templateSource": "games/magic-trifle/overview/foreground.hbs"
             },
             "foregroundTemplateStyle": { "width": "100%", "height": "100%" },
             "backgroundTemplate": {
@@ -93,7 +119,7 @@
                 "type": "template",
                 "foregroundTemplate": {
                   "sourceType": "relative",
-                  "templateSource": "games/magic-trifle/overview/foreground.mustache"
+                  "templateSource": "games/magic-trifle/overview/foreground.hbs"
                 },
                 "foregroundTemplateStyle": { "width": "100%", "height": "100%" },
                 "backgroundTemplate": {
@@ -367,6 +393,7 @@
         }
       ],
       "gameContainerStyle": {
+        "fontFamily": "\"DynaPuff\", Avenir, Helvetica, Arial, sans-serif",
         "backgroundColor": "#222222",
         "borderRadius": "20px",
         "boxShadow": "rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px"

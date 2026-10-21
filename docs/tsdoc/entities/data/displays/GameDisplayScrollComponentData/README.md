@@ -9,4 +9,3 @@
 ## Interfaces
 
 - [GameDisplayScrollComponentData](interfaces/GameDisplayScrollComponentData.md)
-- [GameDisplayScrollComponentDataContent](interfaces/GameDisplayScrollComponentDataContent.md)

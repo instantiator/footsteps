@@ -8,3 +8,7 @@ public/schemas/
 .react-router/
 test-results/
 docs/tsdoc/
+
+# <!-- dev-qual:submodules:start -->
+dev-qual
+# <!-- dev-qual:submodules:end -->

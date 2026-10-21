@@ -10,6 +10,10 @@ GameData
 ├── config?                            { sequential, autoAdvanceStages }
 ├── modules?.camera?                   { enabled }: show the player's camera silhouette
 ├── resources?                         name → { type, target }        (see Resources)
+├── sounds?                            resource names of music and sound effects (see Sounds)
+├── reward?                            { animation, particleCount? }: celebration on stage completion
+├── credits?                           [{ text, url? }]: credits for third-party media (see Credits)
+├── stylesheets?                       resource names of CSS files to load (see Stylesheets)
 ├── displays: GameOverviewDisplay[]    the screens shown when no stage is open
 └── stages: GameStageData[]
     ├── id
@@ -61,15 +65,32 @@ Both component types carry `data`, a free-form object that templates see as `com
 - `backgroundStyle` / `foregroundStyle`: CSS for the layer's container.
 - `backgroundTemplateStyle` / `foregroundTemplateStyle`: CSS for the rendered template.
 
-String values in all four styles may use Mustache over the [template data](#template-data), for example `"backgroundImage": "url('{{resources.bg}}')"`. Numbers pass through as they are. Any other kind of value is an error that names the style key.
+String values in all four styles may use Handlebars over the [template data](#template-data), for example `"backgroundImage": "url('{{resources.bg}}')"`. Numbers pass through as they are. Any other kind of value is an error that names the style key.
 
-The **`template`** type renders those templates and nothing more. The **`scroll`** type shows paged text on an old-paper image. Each entry in its `contents[]` is one page, with:
+The **`template`** type renders those templates and nothing more. The **`dialog`** and **`scroll`** types show paged text on an image. Each entry in their `contents[]` is one page, with:
 
 - `text`
 - `showInput` and `label`: an answer box that checks the challenge's solution as the player types
 - `media`: a `GameDisplayMediaData` audio clip, with optional `stillImageResource` and `motionImageResource` images that play and stop it
 
-Without its own templates, a scroll shows the page text one paragraph per line.
+Without its own templates, a dialog or scroll shows the page text one paragraph per line. The text scrolls if it doesn't fit, and the page's audio, answer box and page arrows stay in view below it.
+
+A **`dialog`** draws its pages on the game's own image:
+
+- `imageResource`: the resource name of the background image. The image is scaled up or down to the largest size that fits the display, keeping its shape. The dialog works this out from the image itself, so it needs no size information. Without an image, the dialog fills its display.
+- `imageMargins`: `{ top?, right?, bottom?, left? }`, how far the text sits in from each edge of the image, as CSS percentages of the image's height (`top`, `bottom`) or width (`left`, `right`). Use them to keep text off transparent or decorative edges. Each defaults to no margin.
+
+```json
+{
+  "type": "dialog",
+  "data": {},
+  "imageResource": "parchment",
+  "imageMargins": { "top": "20%", "right": "12%", "bottom": "10%", "left": "12%" },
+  "contents": [{ "text": "Welcome, traveller" }]
+}
+```
+
+A **`scroll`** is a dialog on the app's own old-paper image, with margins set to suit it, a drop shadow, and text that fades at the top and bottom as it scrolls.
 
 ## Resources
 
@@ -83,9 +104,43 @@ Without its own templates, a scroll shows the page text one paragraph per line.
 
 If a resource can't be resolved, the game's loading state becomes `resource-error`. Media fields such as `media.resource` and `stillImageResource` refer to resources by name. Templates see all of them as `resources`, for example `{{resources.star}}`.
 
+## Sounds
+
+`sounds` names resources (see Resources) for the game's audio. Anything left unset is silent.
+
+| Field                         | Plays                                     |
+| ----------------------------- | ----------------------------------------- |
+| `openingMusicResource`        | Music, when the stages overview shows     |
+| `closingMusicResource`        | Music, on the game-complete overview      |
+| `stageOpenedSoundResource`    | A sound effect, when a stage opens        |
+| `stageCompletedSoundResource` | A sound effect, when a stage is completed |
+
+For example, magic-trifle sets `"openingMusicResource": "music-opening"`, where `music-opening` is a `local` resource for `games/magic-trifle/music-1.mp3`.
+
+## Reward
+
+`reward` is the celebration shown when a stage is completed: `animation` is the name of a [partycles](https://www.npmjs.com/package/partycles) animation, and `particleCount` (default 200) sets how many particles it launches. Without `reward` there is no celebration. Magic-trifle uses `{ "animation": "fireworks", "particleCount": 200 }`.
+
+## Credits
+
+`credits` lists the third-party media the game uses. The landing page shows them under the game: each `text` is a link when `url` is set, and plain text otherwise. The app's own media is credited in `src/components/landing/Attributions.tsx`. Magic-trifle credits its music, sound effect and bubble text this way.
+
+## Stylesheets
+
+`stylesheets` lists resource names whose files are CSS the game needs, such as a web font. They load when the game is shown, and the game appears once they have loaded (or failed to). Only `https:` or same-site URLs are used; any other is skipped with a console warning. For example, magic-trifle loads its font with `"stylesheets": ["font-dynapuff"]` and sets `"fontFamily"` in `gameContainerStyle`.
+
 ## Templating
 
-Templates are [Mustache](https://mustache.github.io/mustache.5.html), rendered to HTML. In templates, `{{value}}` is HTML-escaped as usual, so use `{{{value}}}` to insert markup. Mustache values in styles are not escaped, so URLs in CSS stay intact. A `GameDisplayTemplateSourceData` gives the template's `sourceType` and its `templateSource` or `content`:
+Templates are [Handlebars](https://handlebarsjs.com/guide/), rendered to HTML. In templates, `{{value}}` is HTML-escaped as usual, so use `{{{value}}}` to insert markup. Values in styles are not escaped, so URLs in CSS stay intact.
+
+Handlebars differs from Mustache in two ways that matter here:
+
+- Inside a block such as `{{#gameState.stages}}`, names resolve against the current item only. To reach the top-level template data, prefix the name with `@root.`, for example `{{@root.resources.star}}`.
+- Only Handlebars' built-in helpers (`if`, `unless`, `each`, `with`, `lookup`, `log`) can be used. A template that calls any other helper fails to compile, is logged, and renders nothing.
+
+Game repositories may be remote, so the rendered HTML is sanitised with [DOMPurify](https://github.com/cure53/DOMPurify): scripts, event-handler attributes such as `onclick`, `javascript:` URLs and `<form>` elements are removed.
+
+A `GameDisplayTemplateSourceData` gives the template's `sourceType` and its `templateSource` or `content`:
 
 | `sourceType` | Template comes from                                             |
 | ------------ | --------------------------------------------------------------- |
@@ -98,7 +153,7 @@ Templates are [Mustache](https://mustache.github.io/mustache.5.html), rendered t
 
 ### Template data
 
-Every template, and every Mustache value in a style, is rendered with `GameTemplateData` (`src/components/core/logic/RenderDataUtils.ts`):
+Every template, and every Handlebars value in a style, is rendered with `GameTemplateData` (`src/components/core/logic/RenderDataUtils.ts`):
 
 | Field            | What it holds                                                                                                                                               |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -115,11 +170,11 @@ Every template, and every Mustache value in a style, is rendered with `GameTempl
 - `showUnlocked`: the stage is unlocked and not complete
 - `showLocked`: the stage is locked
 
-A scroll's templates also get `text`, the current page's text, and `lines`, its non-blank lines.
+A dialog's or scroll's templates also get `text`, the current page's text, and `lines`, its non-blank lines.
 
 ### Example
 
-The magic-trifle stages overview (`public/games/magic-trifle/overview/foreground.mustache`) draws a stepping stone per stage. Each stone's id matches the display's `clickIdToStageId`:
+The magic-trifle stages overview (`public/games/magic-trifle/overview/foreground.hbs`) draws a stepping stone per stage. Each stone's id matches the display's `clickIdToStageId`:
 
 ```json
 {
@@ -128,7 +183,7 @@ The magic-trifle stages overview (`public/games/magic-trifle/overview/foreground
     "type": "template",
     "foregroundTemplate": {
       "sourceType": "relative",
-      "templateSource": "games/magic-trifle/overview/foreground.mustache"
+      "templateSource": "games/magic-trifle/overview/foreground.hbs"
     },
     "backgroundStyle": { "backgroundImage": "url('{{resources.blank-river}}')" },
     "data": {}
@@ -137,11 +192,17 @@ The magic-trifle stages overview (`public/games/magic-trifle/overview/foreground
 }
 ```
 
-```mustache
+```handlebars
 {{#gameState.stages}}
   {{#showUnlocked}}
-  <img id="stages-link-{{stage.id}}" src="{{resources.stepping-stone}}" role="button" tabindex="0"
-       alt="Stage {{oneIndex}}: play" style="width: calc( 75vw / {{gameState.totalStages}} )" />
+    <img
+      id="stages-link-{{stage.id}}"
+      src="{{@root.resources.stepping-stone}}"
+      role="button"
+      tabindex="0"
+      alt="Stage {{oneIndex}}: play"
+      style="width: calc( 75vw / {{@root.gameState.totalStages}} )"
+    />
   {{/showUnlocked}}
 {{/gameState.stages}}
 ```

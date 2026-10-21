@@ -1,15 +1,25 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { GameData } from "../src/entities/data/GameData";
 import Game from "../src/components/core/Game";
-import { SMALL_GAME_ID, smallRepository } from "./data/SmallGame";
+import { SMALL_GAME_ID, smallGame, smallRepository } from "./data/SmallGame";
 import GameProviders from "./helpers/GameProviders";
 import { stubMediaPlayback } from "./helpers/media";
 
+const { rewardSpy, useRewardSpy } = vi.hoisted(() => {
+  const rewardSpy = vi.fn(() => Promise.resolve());
+  return { rewardSpy, useRewardSpy: vi.fn(() => ({ reward: rewardSpy, isAnimating: false })) };
+});
+vi.mock("partycles", () => ({ useReward: useRewardSpy }));
+
+let playback: ReturnType<typeof stubMediaPlayback>;
 beforeEach(() => {
-  stubMediaPlayback();
+  playback = stubMediaPlayback();
+  rewardSpy.mockClear();
 });
 afterEach(() => {
   vi.restoreAllMocks();
+  document.head.querySelectorAll('link[rel="stylesheet"]').forEach((link) => link.remove());
 });
 
 const renderGame = () =>
@@ -74,5 +84,118 @@ describe("Game", () => {
     answer("custard");
     fireEvent.click(await screen.findByText("Stage 1"));
     expect(screen.queryByText("Question for stage-1")).toBeNull();
+  });
+});
+
+describe("Game stylesheets", () => {
+  const FONT_URL = "https://fonts.example/font.css";
+  const gameLink = (href: string) => document.head.querySelector(`link[rel="stylesheet"][href="${href}"]`);
+
+  const renderWithStylesheet = (target?: string) =>
+    render(
+      <GameProviders
+        repository={{
+          games: {
+            [SMALL_GAME_ID]: {
+              ...smallGame,
+              resources: { ...smallGame.resources, ...(target && { "the-css": { type: "url", target } }) },
+              stylesheets: target ? ["the-css"] : undefined,
+            },
+          },
+        }}
+        gameId={SMALL_GAME_ID}
+      >
+        <Game />
+      </GameProviders>,
+    );
+
+  it("loads an https stylesheet named by the game into the document head", async () => {
+    renderWithStylesheet(FONT_URL);
+    await vi.waitFor(() => expect(gameLink(FONT_URL)).not.toBeNull());
+  });
+
+  it("adds no stylesheet when the game names none", async () => {
+    renderWithStylesheet();
+    await screen.findByText("Small Game");
+    expect(gameLink(FONT_URL)).toBeNull();
+  });
+
+  it("skips, with a warning, a stylesheet that is neither https nor same-site", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    renderWithStylesheet("http://other.example/x.css");
+    await screen.findByText("Small Game");
+    expect(gameLink("http://other.example/x.css")).toBeNull();
+    expect(warn).toHaveBeenCalled();
+  });
+});
+
+describe("Game sounds and reward", () => {
+  const sounds = {
+    openingMusicResource: "opening",
+    stageOpenedSoundResource: "opened",
+    stageCompletedSoundResource: "completed",
+  };
+  const withAudio: GameData = {
+    ...smallGame,
+    resources: {
+      ...smallGame.resources,
+      opening: { type: "url", target: "https://sounds.example/opening.mp3" },
+      opened: { type: "url", target: "https://sounds.example/opened.mp3" },
+      completed: { type: "url", target: "https://sounds.example/completed.mp3" },
+    },
+  };
+
+  const renderVariant = (game: GameData) =>
+    render(
+      <GameProviders repository={{ games: { [SMALL_GAME_ID]: game } }} gameId={SMALL_GAME_ID}>
+        <Game />
+      </GameProviders>,
+    );
+
+  /** The src of every media element that has been played. */
+  const playedSources = () =>
+    playback.play.mock.contexts.map((audio) => (audio instanceof HTMLMediaElement ? audio.src : ""));
+
+  it("plays the opening music on the stages overview", async () => {
+    renderVariant({ ...withAudio, sounds });
+    await screen.findByText("Small Game");
+    await vi.waitFor(() => expect(playedSources()).toContain("https://sounds.example/opening.mp3"));
+  });
+
+  it("plays the stage opened sound when a stage opens", async () => {
+    renderVariant({ ...withAudio, sounds });
+    await enterStage(1);
+    await vi.waitFor(() => expect(playedSources()).toContain("https://sounds.example/opened.mp3"));
+  });
+
+  it("plays the stage completed sound when a stage is completed", async () => {
+    renderVariant({ ...withAudio, sounds });
+    await enterStage(1);
+    answer("custard");
+    await vi.waitFor(() => expect(playedSources()).toContain("https://sounds.example/completed.mp3"));
+  });
+
+  it("plays nothing when the game has no sounds", async () => {
+    renderVariant(withAudio);
+    await enterStage(1);
+    answer("custard");
+    await screen.findByText("Stage 2");
+    expect(playedSources()).toEqual([]);
+  });
+
+  it("triggers no reward when the game has none", async () => {
+    renderVariant(withAudio);
+    await enterStage(1);
+    answer("custard");
+    await screen.findByText("Stage 2");
+    expect(rewardSpy).not.toHaveBeenCalled();
+  });
+
+  it("triggers the configured reward once when a stage is completed", async () => {
+    renderVariant({ ...withAudio, reward: { animation: "confetti", particleCount: 50 } });
+    await enterStage(1);
+    answer("custard");
+    await vi.waitFor(() => expect(rewardSpy).toHaveBeenCalledTimes(1));
+    expect(useRewardSpy).toHaveBeenCalledWith("reward-element", "confetti", { particleCount: 50 });
   });
 });

@@ -14,3 +14,4 @@
 ## Type Aliases
 
 - [GameId](type-aliases/GameId.md)
+- [RewardAnimation](type-aliases/RewardAnimation.md)

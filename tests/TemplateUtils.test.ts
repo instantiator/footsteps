@@ -9,9 +9,7 @@ describe("summariseTemplateSource", () => {
   });
 
   it("names a sourced template by its type and location", () => {
-    expect(summariseTemplateSource({ sourceType: "relative", templateSource: "t.mustache" }, "r1")).toBe(
-      "relative:t.mustache",
-    );
+    expect(summariseTemplateSource({ sourceType: "relative", templateSource: "t.hbs" }, "r1")).toBe("relative:t.hbs");
   });
 
   it("uses the given fallback id, so it is stable across renders, for a template with no location", () => {

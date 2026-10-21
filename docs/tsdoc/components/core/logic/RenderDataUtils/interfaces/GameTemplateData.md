@@ -8,7 +8,7 @@
 
 Defined in: [components/core/logic/RenderDataUtils.ts:46](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/logic/RenderDataUtils.ts#L46)
 
-Data to provide to game challenge Mustache templates.
+Data to provide to game challenge templates.
 
 ## Properties
 

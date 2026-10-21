@@ -1,10 +1,6 @@
 import _ from "lodash";
 import { useReward } from "partycles";
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
-import sfxMagicalEvent from "../../assets/resources/magical-event.m4a";
-import musicOpening from "../../assets/resources/music-1.mp3";
-import musicClosing from "../../assets/resources/music-2.mp3";
-import sfxSuccess from "../../assets/resources/win-sound.mp3";
 import type { GameOverviewDisplayPurpose } from "../../entities/data/displays/GameDisplayData";
 import type { GameChallengeId } from "../../entities/data/GameChallengeData";
 import type { GameChallengeAnswerValidation } from "../../entities/data/GameChallengeSolution";
@@ -37,11 +33,19 @@ export type GameAnswerFunction = (
   answer: string,
 ) => GameChallengeAnswerValidation[] | true;
 
-/** Rewards completed stages, and plays music and sound effects as the player moves around the game. */
+/** The URL of a named resource, or undefined if the game doesn't name one or it doesn't resolve. */
+const resourceUrl = (resources: Record<string, string>, key: string | undefined) =>
+  isDefined(key) ? resources[key] : undefined;
+
+/** Rewards completed stages, and plays music and sound effects as the player moves around the game, as the game data says. */
 function useGameFeedback() {
   const { gameState } = useGameState();
+  const { resources } = useGameData();
   const { playMusic } = useGameMusic();
-  const { reward } = useReward("reward-element", "fireworks", { particleCount: 200 });
+  const { sounds, reward: rewardData } = gameState.gameData;
+  const { reward } = useReward("reward-element", rewardData?.animation ?? "fireworks", {
+    particleCount: rewardData?.particleCount ?? 200,
+  });
 
   // Previous values, to react only to changes; refs because nothing renders from them
   const progressTracker = useRef<GameStageId[]>([]);
@@ -51,26 +55,30 @@ function useGameFeedback() {
   useEffect(() => {
     const newProgress = gameState.stages.filter((s) => s.completion === "completed").map((s) => s.stage.id);
     if (!_.isEqual(newProgress, progressTracker.current)) {
-      reward();
-      playAudio(sfxSuccess);
+      if (isDefined(rewardData)) reward();
+      const completed = resourceUrl(resources, sounds?.stageCompletedSoundResource);
+      if (isDefined(completed)) playAudio(completed);
       progressTracker.current = newProgress;
     }
-  }, [gameState, reward]);
+  }, [gameState, reward, rewardData, resources, sounds]);
 
   useEffect(() => {
     const overviewDisplay = gameState.current.overviewDisplay;
     if (overviewDisplay === overviewTracker.current) return;
-    if (overviewDisplay === "game-overview-stages") playMusic(musicOpening);
-    if (overviewDisplay === "game-overview-complete") playMusic(musicClosing);
+    const opening = resourceUrl(resources, sounds?.openingMusicResource);
+    const closing = resourceUrl(resources, sounds?.closingMusicResource);
+    if (overviewDisplay === "game-overview-stages" && isDefined(opening)) playMusic(opening);
+    if (overviewDisplay === "game-overview-complete" && isDefined(closing)) playMusic(closing);
     overviewTracker.current = overviewDisplay;
-  }, [gameState, playMusic]);
+  }, [gameState, playMusic, resources, sounds]);
 
   useEffect(() => {
     const stageId = gameState.current.stageId;
     if (stageId === stageIdTracker.current) return;
-    if (isDefined(stageId)) playAudio(sfxMagicalEvent);
+    const opened = resourceUrl(resources, sounds?.stageOpenedSoundResource);
+    if (isDefined(stageId) && isDefined(opened)) playAudio(opened);
     stageIdTracker.current = stageId;
-  }, [gameState]);
+  }, [gameState, resources, sounds]);
 }
 
 /**
@@ -121,6 +129,26 @@ const createLayers = (renderData: LayeredGameDisplayRenderData, onAnswer: GameAn
     challenges: layer(renderData.challengesRenderData),
   };
 };
+
+/** Whether a stylesheet URL is safe to load: `https:`, or on this site. */
+function isAllowedStylesheet(href: string): boolean {
+  const url = new URL(href, location.href);
+  return url.protocol === "https:" || url.origin === location.origin;
+}
+
+/** Loads the stylesheets the game names, skipping (with a warning) any that are missing or not allowed. */
+function GameStylesheets() {
+  const { resources } = useGameData();
+  const { gameState } = useGameState();
+  return (gameState.gameData.stylesheets ?? []).flatMap((key) => {
+    const href = resources[key];
+    if (!isDefined(href) || !isAllowedStylesheet(href)) {
+      console.warn(`Skipping stylesheet "${key}": ${href ?? "no such resource"}`);
+      return [];
+    }
+    return <link key={key} rel="stylesheet" href={href} precedence="game" />;
+  });
+}
 
 /**
  * The game itself: builds layered render data from the game state, and hands it to {@link GameLayersLayout}
@@ -183,6 +211,7 @@ export default function Game() {
         ...gameState.gameData.gameContainerStyle,
       }}
     >
+      <GameStylesheets />
       <div
         id="reward-element"
         style={{ position: "absolute", top: "50vh", left: "50vw", width: 0, height: 0, pointerEvents: "none" }}

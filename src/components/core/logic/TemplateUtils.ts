@@ -2,7 +2,7 @@ import type { GameDisplayTemplateSourceData } from "../../../entities/data/displ
 import type { GameStageState } from "../../../entities/state/GameStageState";
 import type { GameState } from "../../../entities/state/GameState";
 
-/** The game state plus derived values, for Mustache templates (which can't compute them). */
+/** The game state plus derived values, for templates, which can only look values up. */
 export type DecoratedGameState = Omit<GameState, "stages"> & {
   /** Each stage's state, with its template values. */
   stages: DecoratedStageState[];
@@ -10,7 +10,7 @@ export type DecoratedGameState = Omit<GameState, "stages"> & {
   totalStages: number;
 };
 
-/** A stage's state plus derived values, for Mustache templates. */
+/** A stage's state plus derived values, for templates. */
 export type DecoratedStageState = GameStageState & {
   /** Zero-based position in the game's stages. */
   index: number;

@@ -8,7 +8,7 @@
 
 > **GameAnswerFunction** = (`stageId`, `challengeId`, `answer`) => [`GameChallengeAnswerValidation`](../../../../entities/data/GameChallengeSolution/type-aliases/GameChallengeAnswerValidation.md)[] \| `true`
 
-Defined in: [components/core/Game.tsx:34](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/Game.tsx#L34)
+Defined in: [components/core/Game.tsx:30](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/Game.tsx#L30)
 
 Submits an answer to a challenge.
 

@@ -116,6 +116,26 @@
                     ],
                     "type": "object"
                 },
+                "credits": {
+                    "description": "Credits for the third-party media this game uses, listed with the game on the landing page.",
+                    "items": {
+                        "properties": {
+                            "text": {
+                                "description": "What to show, e.g. the work's title and author.",
+                                "type": "string"
+                            },
+                            "url": {
+                                "description": "Where to link the text to, if anywhere.",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "text"
+                        ],
+                        "type": "object"
+                    },
+                    "type": "array"
+                },
                 "displays": {
                     "description": "Overview displays (title, stages, complete), shown when no stage is active.",
                     "items": {
@@ -141,10 +161,56 @@
                     "$ref": "#/definitions/GameResourceDefinitions",
                     "description": "Named media resources, referenced by `*Resource` keys and passed to templates as `resources`."
                 },
+                "reward": {
+                    "description": "The celebration shown when a stage is completed. Unset means none.",
+                    "properties": {
+                        "animation": {
+                            "$ref": "#/definitions/RewardAnimation",
+                            "description": "Which partycles animation to show."
+                        },
+                        "particleCount": {
+                            "description": "How many particles to launch (default 200).",
+                            "type": "number"
+                        }
+                    },
+                    "required": [
+                        "animation"
+                    ],
+                    "type": "object"
+                },
+                "sounds": {
+                    "description": "Music and sound effects, as resource names (keys of `resources`). Any left unset is silent.",
+                    "properties": {
+                        "closingMusicResource": {
+                            "description": "Music played on the game-complete overview.",
+                            "type": "string"
+                        },
+                        "openingMusicResource": {
+                            "description": "Music played when the stages overview shows.",
+                            "type": "string"
+                        },
+                        "stageCompletedSoundResource": {
+                            "description": "Sound effect played when a stage is completed.",
+                            "type": "string"
+                        },
+                        "stageOpenedSoundResource": {
+                            "description": "Sound effect played when a stage opens.",
+                            "type": "string"
+                        }
+                    },
+                    "type": "object"
+                },
                 "stages": {
                     "description": "The stages of the game, in order.",
                     "items": {
                         "$ref": "#/definitions/GameStageData"
+                    },
+                    "type": "array"
+                },
+                "stylesheets": {
+                    "description": "Names of resources (keys of `resources`) that are CSS stylesheets the game needs, such as a web font;\nloaded while the game is shown. Only `https:` or same-site URLs are used.",
+                    "items": {
+                        "type": "string"
                     },
                     "type": "array"
                 },
@@ -167,10 +233,94 @@
                     "$ref": "#/definitions/GameDisplayTemplateComponentData"
                 },
                 {
+                    "$ref": "#/definitions/GameDisplayDialogComponentData"
+                },
+                {
                     "$ref": "#/definitions/GameDisplayScrollComponentData"
                 }
             ],
             "description": "The rendering definition of a display, discriminated by `type`."
+        },
+        "GameDisplayDialogComponentData": {
+            "description": "A paged display on a background image of the game's choosing, scaled to fit, with the text kept inside its margins.",
+            "properties": {
+                "backgroundStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the background layer's container."
+                },
+                "backgroundTemplate": {
+                    "$ref": "#/definitions/GameDisplayTemplateSourceData",
+                    "description": "Template for the background layer, drawn behind the game's other content."
+                },
+                "backgroundTemplateStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the element wrapping the rendered background template."
+                },
+                "contents": {
+                    "description": "The pages, shown one at a time in order.",
+                    "items": {
+                        "$ref": "#/definitions/GameDisplayPageData"
+                    },
+                    "type": "array"
+                },
+                "data": {
+                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
+                    "description": "Extra values for this display, passed through to its templates as `componentData`."
+                },
+                "foregroundStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the foreground layer's container: the column the pages are shown in."
+                },
+                "foregroundTemplate": {
+                    "$ref": "#/definitions/GameDisplayTemplateSourceData",
+                    "description": "Template for each page in the foreground layer, drawn in front of the game's other content."
+                },
+                "foregroundTemplateStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the element wrapping the rendered foreground template."
+                },
+                "imageMargins": {
+                    "$ref": "#/definitions/GameDisplayDialogMargins",
+                    "description": "Where the text sits on the image. Defaults to no margin."
+                },
+                "imageResource": {
+                    "description": "Resource name of the background image. Without one, the dialog fills its display.",
+                    "type": "string"
+                },
+                "type": {
+                    "const": "dialog",
+                    "description": "Which kind of component this is.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "contents",
+                "data",
+                "type"
+            ],
+            "type": "object"
+        },
+        "GameDisplayDialogMargins": {
+            "description": "Space to leave between each edge of a dialog's image and its text, as CSS percentages of the image's\nheight (top, bottom) or width (left, right), e.g. `\"12%\"`. Use it to keep text off transparent or decorative edges.",
+            "properties": {
+                "bottom": {
+                    "description": "From the image's bottom edge, as a percentage of its height.",
+                    "type": "string"
+                },
+                "left": {
+                    "description": "From the image's left edge, as a percentage of its width.",
+                    "type": "string"
+                },
+                "right": {
+                    "description": "From the image's right edge, as a percentage of its width.",
+                    "type": "string"
+                },
+                "top": {
+                    "description": "From the image's top edge, as a percentage of its height.",
+                    "type": "string"
+                }
+            },
+            "type": "object"
         },
         "GameDisplayMediaData": {
             "description": "Media played with a display. Resources are names defined in the game's `resources`.",
@@ -203,59 +353,8 @@
             ],
             "type": "object"
         },
-        "GameDisplayScrollComponentData": {
-            "description": "A display of paged text on a paper image, with optional audio and answer input per page.",
-            "properties": {
-                "backgroundStyle": {
-                    "$ref": "#/definitions/React.CSSProperties",
-                    "description": "CSS for the background layer's container."
-                },
-                "backgroundTemplate": {
-                    "$ref": "#/definitions/GameDisplayTemplateSourceData",
-                    "description": "Template for the background layer, drawn behind the game's other content."
-                },
-                "backgroundTemplateStyle": {
-                    "$ref": "#/definitions/React.CSSProperties",
-                    "description": "CSS for the element wrapping the rendered background template."
-                },
-                "contents": {
-                    "description": "The pages of the scroll, shown one at a time in order.",
-                    "items": {
-                        "$ref": "#/definitions/GameDisplayScrollComponentDataContent"
-                    },
-                    "type": "array"
-                },
-                "data": {
-                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
-                    "description": "Extra values for this display, passed through to its templates as `componentData`."
-                },
-                "foregroundStyle": {
-                    "$ref": "#/definitions/React.CSSProperties",
-                    "description": "CSS for the foreground layer's container."
-                },
-                "foregroundTemplate": {
-                    "$ref": "#/definitions/GameDisplayTemplateSourceData",
-                    "description": "Template for the foreground layer, drawn in front of the game's other content."
-                },
-                "foregroundTemplateStyle": {
-                    "$ref": "#/definitions/React.CSSProperties",
-                    "description": "CSS for the element wrapping the rendered foreground template."
-                },
-                "type": {
-                    "const": "scroll",
-                    "description": "Which kind of component this is.",
-                    "type": "string"
-                }
-            },
-            "required": [
-                "contents",
-                "data",
-                "type"
-            ],
-            "type": "object"
-        },
-        "GameDisplayScrollComponentDataContent": {
-            "description": "One page of a scroll.",
+        "GameDisplayPageData": {
+            "description": "One page of a paged display.",
             "properties": {
                 "label": {
                     "description": "Label for the answer input. Used only when `showInput` is true.",
@@ -276,8 +375,59 @@
             },
             "type": "object"
         },
+        "GameDisplayScrollComponentData": {
+            "description": "A dialog on the app's old-paper image: see {@link GameDisplayPagedComponentBase} for its fields.",
+            "properties": {
+                "backgroundStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the background layer's container."
+                },
+                "backgroundTemplate": {
+                    "$ref": "#/definitions/GameDisplayTemplateSourceData",
+                    "description": "Template for the background layer, drawn behind the game's other content."
+                },
+                "backgroundTemplateStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the element wrapping the rendered background template."
+                },
+                "contents": {
+                    "description": "The pages, shown one at a time in order.",
+                    "items": {
+                        "$ref": "#/definitions/GameDisplayPageData"
+                    },
+                    "type": "array"
+                },
+                "data": {
+                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
+                    "description": "Extra values for this display, passed through to its templates as `componentData`."
+                },
+                "foregroundStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the foreground layer's container: the column the pages are shown in."
+                },
+                "foregroundTemplate": {
+                    "$ref": "#/definitions/GameDisplayTemplateSourceData",
+                    "description": "Template for each page in the foreground layer, drawn in front of the game's other content."
+                },
+                "foregroundTemplateStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the element wrapping the rendered foreground template."
+                },
+                "type": {
+                    "const": "scroll",
+                    "description": "Which kind of component this is.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "contents",
+                "data",
+                "type"
+            ],
+            "type": "object"
+        },
         "GameDisplayTemplateComponentData": {
-            "description": "A display built from Mustache templates, drawn as a background layer and a foreground layer.",
+            "description": "A display built from Handlebars templates, drawn as a background layer and a foreground layer.",
             "properties": {
                 "backgroundStyle": {
                     "$ref": "#/definitions/React.CSSProperties",
@@ -456,6 +606,35 @@
         },
         "Record<string,unknown>": {
             "type": "object"
+        },
+        "RewardAnimation": {
+            "description": "The partycles animations a reward can use. Declared here rather than imported from partycles\nbecause the schema generator can't resolve that package; keep in step with its `AnimationType`.",
+            "enum": [
+                "aurora",
+                "balloons",
+                "bokeh",
+                "bubbles",
+                "coins",
+                "confetti",
+                "crystals",
+                "emoji",
+                "fireflies",
+                "fireworks",
+                "galaxy",
+                "geometric",
+                "glitch",
+                "hearts",
+                "leaves",
+                "magicdust",
+                "mortar",
+                "paint",
+                "petals",
+                "ribbons",
+                "snow",
+                "sparkles",
+                "stars"
+            ],
+            "type": "string"
         },
         "TemplateSourceType": {
             "description": "Where a template is read from: `local` (path on this site), `relative` (relative to the repository's location),\n`url` (absolute URL, fetched as-is) or `embedded` (text inline in `content`).",
