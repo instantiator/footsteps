@@ -7,9 +7,10 @@ SCHEMA_PATH="./public/schemas/game-repository-schema.json"
 DATA_FILE="$1"
 
 if [ -z "$DATA_FILE" ]; then
-  echo "Usage: $0 <path-to-game-repository-json>"
+  echo "Usage: $0 <path-to-game-repository-json> [--skip-urls]"
   exit 1
 fi
+shift
 
 if [ ! -f "$DATA_FILE" ]; then
   echo "Error: Data file '$DATA_FILE' not found."
@@ -26,5 +27,8 @@ fi
 
 echo "Validating $DATA_FILE against $SCHEMA_PATH..."
 npx --yes ajv-cli validate -s "$SCHEMA_PATH" -d "$DATA_FILE" --verbose
+
+echo "Checking the repository's resource paths, templates and names..."
+node scripts/validate-resources.ts repository "$DATA_FILE" "$@"
 
 echo "Validation successful for $DATA_FILE."
