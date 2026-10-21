@@ -10,7 +10,7 @@ describe("Home", () => {
         <Home />
       </MemoryRouter>,
     );
-    const heading = screen.getByText(/Footsteps/i);
+    const heading = screen.getByRole("heading", { level: 1, name: /Footsteps/i });
     expect(heading).toBeInTheDocument();
   });
 });

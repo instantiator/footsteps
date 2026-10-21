@@ -12,9 +12,9 @@ export default function Home() {
       <h2>Local repository</h2>
       <GameRepositoryProvider source={{ type: "LocalRepository", path: "game-repository.json" }}>
         <LocalListing />
+        <h2>Attributions</h2>
+        <Attributions />
       </GameRepositoryProvider>
-      <h2>Attributions</h2>
-      <Attributions />
       <h2>Dependencies</h2>
       <Dependencies />
     </div>

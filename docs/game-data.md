@@ -131,7 +131,7 @@ For example, magic-trifle sets `"openingMusicResource": "music-opening"`, where 
 
 ## Credits
 
-`credits` lists the third-party media the game uses. The landing page shows them under the game: each `text` is a link when `url` is set, and plain text otherwise. The app's own media is credited in `src/components/landing/Attributions.tsx`. Magic-trifle credits its music, sound effect and bubble text this way.
+`credits` lists the third-party media the game uses. The landing page shows each game's credits under that game's heading in the Attributions section: each `text` is a link when `url` is set, and plain text otherwise. The app's own media is credited under the `Footsteps` heading there, in `src/components/landing/Attributions.tsx`. Magic-trifle credits its music, sound effect and bubble text this way.
 
 ## Stylesheets
 
