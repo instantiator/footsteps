@@ -28,18 +28,19 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 | `npm run build`          | Typecheck, then prerender every page to a static site in `dist/client/`                                                 |
 | `npm run build:gh-pages` | As `build`, under the GitHub Pages base path: `$BASE_URL`, or `/footsteps/` if unset (see: [deployment](deployment.md)) |
 | `npm run preview`        | Serve `dist/client/` locally                                                                                            |
-| `npm test`               | Run the tests once                                                                                                      |
-| `npm run test:run`       | Validate `public/game-repository.json`, then run the tests                                                              |
+| `npm test`               | Validate the game data, then run the tests once                                                                         |
+| `npm run test:run`       | The same: validate `public/game-repository.json`, then run the tests                                                    |
+| `npm run validate`       | Validate `public/game-repository.json`: schema, resource files and URLs, and resource names                             |
 | `npm run lint:check`     | ESLint, failing on any warning                                                                                          |
 | `npm run typecheck`      | TypeScript, no output                                                                                                   |
 | `npm run docs:api`       | Regenerate the API reference in `docs/tsdoc/` from the TSDoc comments, failing on any undocumented export               |
 | `npm run format`         | Prettier, rewriting files (`format:check` only reports)                                                                 |
 
-`dev`, `build`, `lint`, `preview`, and `test` first run `pre-build.sh`, which regenerates `src/assets/license-report.json` and the JSON schemas.
+`dev`, `build`, `lint`, `preview`, and `test` first run `pre-build.sh`, which regenerates `src/assets/license-report.json` and the JSON schemas. `test` also validates the game data.
 
 ## Quality gate
 
-`dev-qual/scripts/check.sh` runs formatting, lint, typecheck, build, tests, shell/workflow/markdown linters, and an [aislop](https://www.npmjs.com/package/aislop) scan. `--fast` (format, lint, typecheck only) runs as the git pre-commit hook; the full gate runs as the pre-push hook, and in CI on every pull request and push to `main` (`.github/workflows/check.yaml`), which shows test results as annotations and a job summary, with the JUnit file as a downloadable artefact. Before committing, the hook also runs `scripts/pre-commit-fixups.sh`, which regenerates `docs/tsdoc/` whenever `src/`, `typedoc.json` or `package.json` is staged, and the JSON schemas whenever `src/entities/` is staged, and adds them to the commit. An export without a TSDoc comment fails the commit. aislop compares against `.aislop/ci-baseline.json` (accepted findings) and `ci.failBelow` in `.aislop/config.yml`.
+`dev-qual/scripts/check.sh` runs formatting, lint, typecheck, build, tests, shell/workflow/markdown linters, and an [aislop](https://www.npmjs.com/package/aislop) scan. `--fast` (format, lint, typecheck only) runs as the git pre-commit hook; the full gate runs as the pre-push hook, and in CI on every pull request and push to `main` (`.github/workflows/check.yaml`), which shows test results as annotations and a job summary, with the JUnit file as a downloadable artefact. Before committing, the hook also runs `scripts/pre-commit-fixups.sh`, which runs `scripts/pre-commit-checks.sh` (the data validator's unit tests, and an advisory data check), regenerates `docs/tsdoc/` whenever `src/`, `typedoc.json` or `package.json` is staged, and the JSON schemas whenever `src/entities/` is staged, and adds them to the commit. An export without a TSDoc comment fails the commit. aislop compares against `.aislop/ci-baseline.json` (accepted findings) and `ci.failBelow` in `.aislop/config.yml`.
 
 ## Sample games
 
@@ -66,6 +67,13 @@ Overview templates make elements clickable by giving them an `id` that the displ
 
 ### Validate data
 
+Both scripts check a data file against its JSON schema, then check that everything it names can load:
+
+- every `resources` target and display template source: `local` paths under the site root (`public/`), `relative` paths beside the repository, and `url`s with an HTTP request (10 second timeout);
+- every resource name used by `sounds`, `stylesheets`, a dialog's `imageResource` and page `media` is defined in `resources`.
+
+Problems are printed with the field's JSON path and the resolved file or URL, and the script exits non-zero. Add `--skip-urls` to check local files only, for offline use.
+
 ```bash
 ./validate-repository.sh public/game-repository.json
 ```
@@ -73,3 +81,5 @@ Overview templates make elements clickable by giving them an `id` that the displ
 ```bash
 ./validate-game.sh path/to/some-game.json
 ```
+
+A standalone game has no repository file, so its `relative` targets resolve against the site root too; pass `--repository-root <dir>` to resolve them elsewhere. `npm run validate` checks the site's own repository, and `npm test` runs it first, so the pre-push hook and CI block on invalid data. At pre-commit, `scripts/pre-commit-checks.sh` runs the validator's unit tests (blocking) and the data check with `--skip-urls` (advisory).
