@@ -34,3 +34,8 @@ dist-ssr
 
 # Test reports written in CI
 test-results/
+
+# Documentation site build output and VitePress cache
+docs-static/
+docs/.vitepress/cache/
+docs/.vitepress/dist/

@@ -11,7 +11,7 @@
     "dev": "react-router dev",
     "prebuild": "bash pre-build.sh",
     "build": "tsc -b && react-router build && bash finish-static-build.sh",
-    "build:gh-pages": "BASE_URL=${BASE_URL:-/footsteps/} npm run build",
+    "build:gh-pages": "BASE_URL=${BASE_URL:-/footsteps/} npm run build && BASE_URL=${BASE_URL:-/footsteps/} bash build-docs-site.sh",
     "prelint": "bash pre-build.sh",
     "lint": "eslint .",
     "prepreview": "bash pre-build.sh",
@@ -24,7 +24,9 @@
     "typecheck": "tsc -b",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "docs:api": "typedoc"
+    "docs:api": "typedoc",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -65,10 +67,10 @@
     "msw": "^3.0.3",
     "prettier": "^3.6.2",
     "typedoc": "^0.28.20",
-    "typedoc-plugin-markdown": "^4.14.1",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.46.4",
     "vite": "^8.3.4",
+    "vitepress": "^2.0.0-alpha.20",
     "vitest": "^5.0.5"
   },
   "allowScripts": {

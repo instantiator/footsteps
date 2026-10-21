@@ -4,7 +4,6 @@
   "entryPointStrategy": "expand",
   "exclude": ["**/*.css"],
   "tsconfig": "tsconfig.app.json",
-  "plugin": ["typedoc-plugin-markdown"],
   "out": "docs/tsdoc",
   "readme": "none",
   "name": "Footsteps API",

@@ -49,3 +49,9 @@ The validation scripts request each `url` resource (currently the game's Google 
 A repository checked out from someone else may use `local` paths, which mean "on the viewer's site". The validator resolves them against `--site-root` and cannot know whether that repository's host serves them.
 
 **Act when:** remote repositories become first-class content. Then validate `local` targets against the site that will host the repository, rather than against this checkout.
+
+## Documentation site runs on a VitePress pre-release
+
+`docs/` is rendered by `vitepress@2.0.0-alpha.20`. VitePress 1.6.4 is the latest stable release, but it pins Vite 5, whose bundled esbuild carries two dev-server advisories ([GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99)), which failed the dependency audit. The 2.0 line uses the project's Vite 8, so `npm audit` reports only the accepted sprintf-js advisory. Its config and default theme match 1.x, but it may change between pre-releases.
+
+**Act when:** VitePress 2.0 is released stable. Then bump `vitepress`, run `dev-qual/scripts/check.sh --comprehensive` and `npm run build:gh-pages`, and remove this entry.
