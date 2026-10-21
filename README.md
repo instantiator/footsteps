@@ -28,7 +28,3 @@ Footsteps is a React application written in Typescript and built with Vite.
 
 - [Documentation](https://instantiator.dev/footsteps/docs/)
 - [API reference](https://instantiator.dev/footsteps/docs/tsdoc/)
-
-To read the documentation locally, with live reload, run: `npm run docs:dev`
-
-Regenerate the API reference with: `npm run docs:api`

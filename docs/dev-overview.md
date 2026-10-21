@@ -42,7 +42,12 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 
 ## Documentation
 
-`docs/` is published as a static site at `/docs/` on GitHub Pages. VitePress renders the Markdown pages with its default theme (sidebar, page outline, and local search), and TypeDoc renders the TSDoc comments in `src/` to HTML in `docs/tsdoc/`. `build-docs-site.sh` builds both and assembles them into `dist/client/docs/`; `npm run build:gh-pages` runs it after the app build, so the docs deploy with the app. Use `npm run docs:dev` for the Markdown pages locally, and `npm run docs:api` to regenerate the API reference after changing `src/`.
+- [Documentation](https://instantiator.dev/footsteps/docs/)
+- [API reference](https://instantiator.dev/footsteps/docs/tsdoc/)
+
+`docs/` is published as a static site at `/docs/` on GitHub Pages. VitePress renders the Markdown pages with its default theme (sidebar, page outline, and local search), and TypeDoc renders the TSDoc comments in `src/` to HTML in `docs/tsdoc/`. `build-docs-site.sh` builds both and assembles them into `dist/client/docs/`; `npm run build:gh-pages` runs it after the app build, so the docs deploy with the app.
+
+Use `npm run docs:dev` for the Markdown pages locally, and `npm run docs:api` to regenerate the API reference after changing `src/`.
 
 ## Quality gate
 
