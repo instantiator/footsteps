@@ -40,6 +40,7 @@ export const game = (
   config?: GameData["config"],
 ): GameData => ({
   title: "Test Game",
+  description: "A game for tests.",
   displays: overviews.map((p) => display(p)),
   stages,
   config,

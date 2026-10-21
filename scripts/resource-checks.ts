@@ -128,6 +128,8 @@ function collectReferences(game: GameData): GameReferences {
 
   game.stylesheets?.forEach((name, index) => names.push({ path: `stylesheets[${index}]`, name }));
 
+  if (isDefined(game.tileGraphic)) names.push({ path: "tileGraphic", name: game.tileGraphic });
+
   const sounds = game.sounds;
   if (isDefined(sounds)) {
     const soundFields = [

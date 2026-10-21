@@ -555,6 +555,10 @@
             },
             "type": "array"
         },
+        "description": {
+            "description": "One-line description, shown on the game's tile on the landing page.",
+            "type": "string"
+        },
         "displays": {
             "description": "Overview displays (title, stages, complete), shown when no stage is active.",
             "items": {
@@ -633,12 +637,17 @@
             },
             "type": "array"
         },
+        "tileGraphic": {
+            "description": "Resource name (a key of `resources`) of the image shown behind the game's landing-page tile.",
+            "type": "string"
+        },
         "title": {
             "description": "Name of the game, shown to players when choosing a game.",
             "type": "string"
         }
     },
     "required": [
+        "description",
         "displays",
         "gameContainerStyle",
         "stages",

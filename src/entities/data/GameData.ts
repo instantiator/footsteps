@@ -39,6 +39,10 @@ export type RewardAnimation =
 export interface GameData {
   /** Name of the game, shown to players when choosing a game. */
   title: string;
+  /** One-line description, shown on the game's tile on the landing page. */
+  description: string;
+  /** Resource name (a key of `resources`) of the image shown behind the game's landing-page tile. */
+  tileGraphic?: string;
   /** Overview displays (title, stages, complete), shown when no stage is active. */
   displays: GameOverviewDisplay[];
   /** The stages of the game, in order. */

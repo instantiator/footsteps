@@ -10,6 +10,7 @@ export const SMALL_GAME_ID = "small-game";
  */
 export const smallGame: GameData = {
   title: "Small Game",
+  description: "A small game for tests.",
   config: { sequential: true, autoAdvanceStages: false },
   gameContainerStyle: {},
   resources: {
