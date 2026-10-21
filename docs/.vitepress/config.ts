@@ -34,7 +34,9 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: "Guide", link: "/" },
-      { text: "API reference", link: "/tsdoc/" },
+      // TypeDoc's pages are plain HTML outside VitePress's router, which would otherwise render its 404:
+      // `target` makes the browser load them itself (appending index.html is not enough; .html is routed too)
+      { text: "API reference", link: "/tsdoc/", target: "_blank" },
     ],
     sidebar: [
       {
@@ -66,7 +68,7 @@ export default defineConfig({
       },
       {
         text: "Reference",
-        items: [{ text: "API reference", link: "/tsdoc/" }],
+        items: [{ text: "API reference", link: "/tsdoc/", target: "_blank" }],
       },
     ],
     outline: { level: [2, 3], label: "On this page" },
