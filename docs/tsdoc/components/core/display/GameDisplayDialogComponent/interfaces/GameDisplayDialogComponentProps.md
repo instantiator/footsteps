@@ -6,7 +6,7 @@
 
 # Interface: GameDisplayDialogComponentProps
 
-Defined in: [components/core/display/GameDisplayDialogComponent.tsx:23](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L23)
+Defined in: [components/core/display/GameDisplayDialogComponent.tsx:22](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L22)
 
 Props for [GameDisplayDialogComponent](../functions/default.md).
 
@@ -16,7 +16,7 @@ Props for [GameDisplayDialogComponent](../functions/default.md).
 
 > `optional` **challengeId?**: `string`
 
-Defined in: [components/core/display/GameDisplayDialogComponent.tsx:43](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L43)
+Defined in: [components/core/display/GameDisplayDialogComponent.tsx:42](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L42)
 
 Challenge that answers are submitted to.
 
@@ -26,7 +26,7 @@ Challenge that answers are submitted to.
 
 > `optional` **containerStyle?**: `CSSProperties`
 
-Defined in: [components/core/display/GameDisplayDialogComponent.tsx:31](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L31)
+Defined in: [components/core/display/GameDisplayDialogComponent.tsx:30](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L30)
 
 Style for the layer's container: the image (background) or the text column (foreground).
 
@@ -36,7 +36,7 @@ Style for the layer's container: the image (background) or the text column (fore
 
 > **contents**: [`GameDisplayPageData`](../../../../../entities/data/displays/GameDisplayDialogComponentData/interfaces/GameDisplayPageData.md)[]
 
-Defined in: [components/core/display/GameDisplayDialogComponent.tsx:37](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L37)
+Defined in: [components/core/display/GameDisplayDialogComponent.tsx:36](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L36)
 
 The pages of text, with their optional audio and answer input.
 
@@ -46,7 +46,7 @@ The pages of text, with their optional audio and answer input.
 
 > `optional` **image?**: `string`
 
-Defined in: [components/core/display/GameDisplayDialogComponent.tsx:25](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L25)
+Defined in: [components/core/display/GameDisplayDialogComponent.tsx:24](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L24)
 
 URL of the background image. Without one, the dialog fills its display.
 
@@ -56,7 +56,7 @@ URL of the background image. Without one, the dialog fills its display.
 
 > **layerHint**: [`LayerHint`](../../GameDisplayComponent/type-aliases/LayerHint.md)
 
-Defined in: [components/core/display/GameDisplayDialogComponent.tsx:39](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L39)
+Defined in: [components/core/display/GameDisplayDialogComponent.tsx:38](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L38)
 
 Whether to render the image (background) or the text and controls (foreground).
 
@@ -66,7 +66,7 @@ Whether to render the image (background) or the text and controls (foreground).
 
 > `optional` **margins?**: [`GameDisplayDialogMargins`](../../../../../entities/data/displays/GameDisplayDialogComponentData/interfaces/GameDisplayDialogMargins.md)
 
-Defined in: [components/core/display/GameDisplayDialogComponent.tsx:27](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L27)
+Defined in: [components/core/display/GameDisplayDialogComponent.tsx:26](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L26)
 
 Where the text sits on the image.
 
@@ -76,19 +76,9 @@ Where the text sits on the image.
 
 > `optional` **onAnswer?**: [`GameAnswerFunction`](../../../Game/type-aliases/GameAnswerFunction.md)
 
-Defined in: [components/core/display/GameDisplayDialogComponent.tsx:47](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L47)
+Defined in: [components/core/display/GameDisplayDialogComponent.tsx:44](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L44)
 
 Called when the player submits an answer on a page.
-
-***
-
-### solution?
-
-> `optional` **solution?**: [`GameChallengeSolution`](../../../../../entities/data/GameChallengeSolution/interfaces/GameChallengeSolution.md)
-
-Defined in: [components/core/display/GameDisplayDialogComponent.tsx:45](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L45)
-
-The challenge's solution.
 
 ***
 
@@ -96,7 +86,7 @@ The challenge's solution.
 
 > `optional` **stageId?**: `string`
 
-Defined in: [components/core/display/GameDisplayDialogComponent.tsx:41](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L41)
+Defined in: [components/core/display/GameDisplayDialogComponent.tsx:40](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L40)
 
 Stage of the challenge that answers are submitted to.
 
@@ -106,7 +96,7 @@ Stage of the challenge that answers are submitted to.
 
 > `optional` **templateData?**: [`GameTemplateData`](../../../logic/RenderDataUtils/interfaces/GameTemplateData.md)
 
-Defined in: [components/core/display/GameDisplayDialogComponent.tsx:35](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L35)
+Defined in: [components/core/display/GameDisplayDialogComponent.tsx:34](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L34)
 
 Extra template data, which takes precedence over the page's `text` and `lines`.
 
@@ -116,7 +106,7 @@ Extra template data, which takes precedence over the page's `text` and `lines`.
 
 > `optional` **templateSource?**: [`GameDisplayTemplateSourceData`](../../../../../entities/data/displays/GameDisplayTemplateComponentData/interfaces/GameDisplayTemplateSourceData.md)
 
-Defined in: [components/core/display/GameDisplayDialogComponent.tsx:29](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L29)
+Defined in: [components/core/display/GameDisplayDialogComponent.tsx:28](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L28)
 
 Overrides the default template, which shows the page's text one paragraph per line.
 
@@ -126,6 +116,6 @@ Overrides the default template, which shows the page's text one paragraph per li
 
 > `optional` **templateStyle?**: `CSSProperties`
 
-Defined in: [components/core/display/GameDisplayDialogComponent.tsx:33](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L33)
+Defined in: [components/core/display/GameDisplayDialogComponent.tsx:32](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayDialogComponent.tsx#L32)
 
 Style for the rendered template.

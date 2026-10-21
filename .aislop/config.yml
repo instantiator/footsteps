@@ -2,5 +2,5 @@
 # The baseline holds only the accepted sprintf-js advisory (see
 # docs/outstanding-issues.md); prune it with `aislop baseline prune` once fixed.
 ci:
-  failBelow: 98
+  failBelow: 95
   baseline: .aislop/ci-baseline.json

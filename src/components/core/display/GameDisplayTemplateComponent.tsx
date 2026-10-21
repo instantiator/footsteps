@@ -2,12 +2,8 @@ import DOMPurify from "dompurify";
 import Handlebars from "handlebars";
 import { useEffect, useId, useMemo, useState, type PropsWithChildren } from "react";
 import type { GameDisplayTemplateSourceData as GameDisplayTemplateData } from "../../../entities/data/displays/GameDisplayTemplateComponentData";
-import type { GameChallengeId } from "../../../entities/data/GameChallengeData";
-import type { GameChallengeSolution } from "../../../entities/data/GameChallengeSolution";
-import type { GameStageId } from "../../../entities/data/GameStageData";
 import useContentCache from "../../../providers/GameContentCacheHook";
 import { isDefined } from "../../../util/ObjectUtils";
-import type { GameAnswerFunction } from "../Game";
 import { summariseTemplateSource } from "../logic/TemplateUtils";
 
 /** Props for {@link GameDisplayTemplateComponent}. */
@@ -20,10 +16,6 @@ interface GameDisplayTemplateProps {
   containerStyle?: React.CSSProperties;
   /** Style for the rendered template itself; its string values are rendered as Handlebars templates too. */
   templateStyle?: React.CSSProperties;
-  stageId?: GameStageId; // unused: see docs/outstanding-issues.md
-  challengeId?: GameChallengeId; // unused: see docs/outstanding-issues.md
-  solution?: GameChallengeSolution; // unused: see docs/outstanding-issues.md
-  onAnswer?: GameAnswerFunction; // unused: see docs/outstanding-issues.md
 }
 
 /** Game content may come from a remote repository: allow only Handlebars' built-in helpers. */

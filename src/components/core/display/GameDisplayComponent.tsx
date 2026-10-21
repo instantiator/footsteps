@@ -29,13 +29,17 @@ export default function GameDisplayComponent({ render, layerHint, onAnswer }: Ga
     containerStyle: background ? component.backgroundStyle : component.foregroundStyle,
     templateStyle: background ? component.backgroundTemplateStyle : component.foregroundTemplateStyle,
     templateData: render.templateData,
-    challengeId: render.challengeId,
-    solution: render.solution,
-    onAnswer,
   };
   if (component.type === "template") return <GameDisplayTemplateComponent {...common} />;
 
-  const paged = { ...common, contents: component.contents, layerHint, stageId: render.stageId };
+  const paged = {
+    ...common,
+    contents: component.contents,
+    layerHint,
+    stageId: render.stageId,
+    challengeId: render.challengeId,
+    onAnswer,
+  };
   if (component.type === "scroll") return <GameDisplayScrollComponent {...paged} />;
   return (
     <GameDisplayDialogComponent

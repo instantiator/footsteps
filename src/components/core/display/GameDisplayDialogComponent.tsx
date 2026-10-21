@@ -7,7 +7,6 @@ import type {
 } from "../../../entities/data/displays/GameDisplayDialogComponentData";
 import type { GameDisplayTemplateSourceData } from "../../../entities/data/displays/GameDisplayTemplateComponentData";
 import type { GameChallengeId } from "../../../entities/data/GameChallengeData";
-import type { GameChallengeSolution } from "../../../entities/data/GameChallengeSolution";
 import type { GameStageId } from "../../../entities/data/GameStageData";
 import { isDefined } from "../../../util/ObjectUtils";
 import type { GameAnswerFunction } from "../Game";
@@ -41,8 +40,6 @@ export interface GameDisplayDialogComponentProps {
   stageId?: GameStageId;
   /** Challenge that answers are submitted to. */
   challengeId?: GameChallengeId;
-  /** The challenge's solution. */
-  solution?: GameChallengeSolution;
   /** Called when the player submits an answer on a page. */
   onAnswer?: GameAnswerFunction;
 }
@@ -184,7 +181,6 @@ export default function GameDisplayDialogComponent({
   layerHint,
   stageId,
   challengeId,
-  solution,
   onAnswer,
 }: GameDisplayDialogComponentProps) {
   const [solved, setSolved] = useState<boolean>(false);
@@ -200,8 +196,6 @@ export default function GameDisplayDialogComponent({
           containerStyle={layerStyle(layerHint, image, margins, containerStyle)}
           templateStyle={{ ...(layerHint === "foreground" && SCROLLING_TEXT_STYLE), ...templateStyle }}
           templateData={{ text: content?.text, lines: parseLines(content?.text), ...templateData }}
-          solution={solution}
-          onAnswer={onAnswer}
         >
           {layerHint === "foreground" && (
             <PageControls

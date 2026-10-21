@@ -8,7 +8,7 @@
 
 > **default**(`__namedParameters`): `Element`
 
-Defined in: [components/core/display/GameDisplayTemplateComponent.tsx:69](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayTemplateComponent.tsx#L69)
+Defined in: [components/core/display/GameDisplayTemplateComponent.tsx:61](https://github.com/instantiator/2025-xmas-game/blob/main/src/components/core/display/GameDisplayTemplateComponent.tsx#L61)
 
 Fetches a Handlebars template (via the content cache) and renders it with the template data,
 inside a container. Both styles' string values are rendered too. Children follow the rendered template.
