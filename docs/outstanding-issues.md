@@ -50,6 +50,18 @@ A repository checked out from someone else may use `local` paths, which mean "on
 
 **Act when:** remote repositories become first-class content. Then validate `local` targets against the site that will host the repository, rather than against this checkout.
 
+## No fullscreen on iPhone Safari
+
+The HUD's fullscreen toggle (`src/components/core/FullscreenHook.ts`) uses the Fullscreen API's `requestFullscreen` on the document element. iPhone Safari has no element fullscreen (`document.fullscreenEnabled` is false), so the button only logs a console warning there.
+
+**Act when:** a game is expected to run fullscreen on an iPhone. Then hide the button when `document.fullscreenEnabled` is false, and consider a CSS-only "fill the viewport" layout as the fallback.
+
+## Landing tile grid sizes chosen without a device check
+
+The grid uses `repeat(auto-fill, minmax(14rem, 1fr))` with square tiles, which gives about five per row on a 1280px monitor and one or two on a phone, as the prompt asks. That has been verified in the browser at desktop and narrow widths, not on physical phones.
+
+**Act when:** the landing page is reviewed on a phone and shows more than two tiles per row, or on a desktop monitor and shows more than six. Then adjust the `minmax` size in `src/components/landing/LocalListing.tsx`.
+
 ## Documentation site runs on a VitePress pre-release
 
 `docs/` is rendered by `vitepress@2.0.0-alpha.20`. VitePress 1.6.4 is the latest stable release, but it pins Vite 5, whose bundled esbuild carries two dev-server advisories ([GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99)), which failed the dependency audit. The 2.0 line uses the project's Vite 8, so `npm audit` reports only the accepted sprintf-js advisory. Its config and default theme match 1.x, but it may change between pre-releases.

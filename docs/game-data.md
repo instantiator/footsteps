@@ -96,7 +96,7 @@ A **`scroll`** is a dialog on the app's own old-paper image, with margins set to
 
 ## Resources
 
-`resources` names the files a game uses. Each one is `{ type, target }`. `GameDataProvider` resolves each to an absolute URL when the game loads (`resolveResources` in `src/providers/GameDataProvider.tsx`):
+`resources` names the files a game uses. Each one is `{ type, target }`. `GameDataProvider` resolves each to an absolute URL when the game loads, and the landing page resolves a game's `tileGraphic` the same way (`resolveResources` in `src/util/ResourceUtils.ts`):
 
 | `type`     | `target` is resolved against                                                                                                                                                      |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
