@@ -93,6 +93,7 @@ const getOverviewRenderData = (
     return {
       purpose: overviewDisplay.purpose,
       component: overviewDisplay.component,
+      camera: overviewDisplay.camera,
       templateData: overviewTemplateData,
       stageId: undefined,
       challengeId: undefined,
@@ -155,6 +156,7 @@ const getChallengesRenderData = (
         return {
           purpose: challengeDisplay.purpose,
           component: challengeDisplay.component,
+          camera: challengeDisplay.camera,
           templateData: challengeTemplateData,
           stageId: stageState.stage.id,
           challengeId: challengeState.challenge.id,

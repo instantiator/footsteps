@@ -1,7 +1,7 @@
 import { useCallback, useState, type ReactNode } from "react";
-import type { CameraModuleData } from "../../../entities/data/GameModuleData";
 import { isDefined } from "../../../util/ObjectUtils";
 import type { FeetPositions } from "../../camera/CameraSupport";
+import type { ResolvedCameraMode } from "../logic/CameraModeUtils";
 import "./GameLayersLayout.css";
 import {
   CharacterCameraLayerWrapper,
@@ -15,8 +15,8 @@ import {
 interface GameLayersLayoutProps {
   /** The nodes to show in each display layer. */
   gameLayers?: GameLayers;
-  /** The game's camera module settings; the camera is used only if enabled. */
-  cameraLayer: CameraModuleData | undefined;
+  /** The game's camera settings, already resolved for the displays currently shown. */
+  camera: ResolvedCameraMode;
   /** Shows the debug overlay and the camera's colour key. */
   debug?: boolean;
   /** Called when an element in a layer is clicked; returns whether the click was handled. */
@@ -112,20 +112,27 @@ function UpperDisplayLayers({
 }
 
 /** Stacks the game's display layers, the optional camera character, debug overlay, and HUD. */
-export default function GameLayersLayout({
-  gameLayers = {},
-  cameraLayer,
-  debug,
-  onElementClick,
-}: GameLayersLayoutProps) {
+export default function GameLayersLayout({ gameLayers = {}, camera, debug, onElementClick }: GameLayersLayoutProps) {
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
   const [characterStream, setCharacterStream] = useState<MediaStream | undefined>(undefined);
   const [feetPositions, setFeetPositions] = useState<FeetPositions>({});
   const [aspectRatio, setAspectRatio] = useState<number>();
 
-  const cameraEnabled = cameraLayer?.enabled === true;
+  const cameraEnabled = camera.enabled;
   // With a camera, wait for its aspect ratio so the layers line up with the video
   const show = !cameraEnabled || isDefined(aspectRatio);
+
+  // Forget a disabled camera's video and stream, so re-enabling asks for a fresh stream instead of
+  // reusing one whose tracks the camera stopped when it unmounted (see the React note on adjusting
+  // state when a prop changes)
+  const [wasCameraEnabled, setWasCameraEnabled] = useState(cameraEnabled);
+  if (wasCameraEnabled !== cameraEnabled) {
+    setWasCameraEnabled(cameraEnabled);
+    if (!cameraEnabled) {
+      setVideo(null);
+      setCharacterStream(undefined);
+    }
+  }
 
   const clickHandler: LayerClickHandler = useCallback(
     (event, layerIdOverride) => {
@@ -156,6 +163,7 @@ export default function GameLayersLayout({
           characterStream={characterStream}
           setCharacterStream={setCharacterStream}
           setAspectRatio={setAspectRatio}
+          showPreview={camera.preview}
           debug={debug}
         />
       )}

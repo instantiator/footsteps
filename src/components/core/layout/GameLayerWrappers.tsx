@@ -29,6 +29,8 @@ export interface LayerNodeProps {
   characterStream?: MediaStream | undefined;
   /** Lets the camera share its stream once the player allows it. */
   setCharacterStream?: React.Dispatch<React.SetStateAction<MediaStream | undefined>>;
+  /** Whether the camera preview shows; defaults to true. */
+  showPreview?: boolean;
   /** Where the player's feet were last seen, for the debug overlay. */
   feetPositions?: FeetPositions;
   /** Lets the character canvas report the feet positions. */
@@ -91,9 +93,14 @@ export const CharacterCameraLayerWrapper = ({
   characterStream,
   setCharacterStream,
   setAspectRatio: onAspectChange,
+  showPreview = true,
   debug,
 }: LayerNodeProps) => (
-  <div id="character-camera-layer" className="characterCamera" style={{ ...style, zIndex: zIndex }}>
+  <div
+    id="character-camera-layer"
+    className="characterCamera"
+    style={{ ...style, zIndex: zIndex, visibility: showPreview ? "visible" : "hidden" }}
+  >
     <CharacterCamera
       video={video ?? null}
       setVideo={setVideo!}

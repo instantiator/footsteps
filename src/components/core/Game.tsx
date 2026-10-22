@@ -13,6 +13,7 @@ import { isDefined } from "../../util/ObjectUtils";
 import GameDisplayComponent, { type LayerHint } from "./display/GameDisplayComponent";
 import "./Game.css";
 import GameLayersLayout, { type GameLayers } from "./layout/GameLayersLayout";
+import { resolveCameraMode } from "./logic/CameraModeUtils";
 import { getNewGameStateForClick, leaveTitleScreen } from "./logic/GameClickUtils";
 import { findChallengeState } from "./logic/GameDataUtils";
 import { completeChallenge, validateAnswer } from "./logic/GameStateUtils";
@@ -186,10 +187,9 @@ export default function Game() {
     [gameState, setGameState],
   );
 
-  const layers = useMemo(
-    () => createLayers(getLayeredRenderData(gameState, resources), onAnswer),
-    [gameState, onAnswer, resources],
-  );
+  const renderData = useMemo(() => getLayeredRenderData(gameState, resources), [gameState, resources]);
+  const layers = useMemo(() => createLayers(renderData, onAnswer), [renderData, onAnswer]);
+  const camera = useMemo(() => resolveCameraMode(gameState.gameData, renderData), [gameState.gameData, renderData]);
 
   const handleElementClick = (_layerId: string, elementId: string) => {
     const newState = getNewGameStateForClick(gameState, elementId);
@@ -216,12 +216,7 @@ export default function Game() {
         id="reward-element"
         style={{ position: "absolute", top: "50vh", left: "50vw", width: 0, height: 0, pointerEvents: "none" }}
       />
-      <GameLayersLayout
-        debug={debug}
-        gameLayers={layers}
-        cameraLayer={gameState.gameData.modules?.camera}
-        onElementClick={handleElementClick}
-      />
+      <GameLayersLayout debug={debug} gameLayers={layers} camera={camera} onElementClick={handleElementClick} />
     </div>
   );
 }
