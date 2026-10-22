@@ -5,5 +5,7 @@ export interface GameModuleData {
 }
 
 /** Settings for the camera module, which layers the player's camera view into the game. */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface CameraModuleData extends GameModuleData {}
+export interface CameraModuleData extends GameModuleData {
+  /** Whether the webcam preview shows. Defaults to `true`. */
+  preview?: boolean;
+}
