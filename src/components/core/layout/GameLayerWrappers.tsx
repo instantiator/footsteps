@@ -143,7 +143,8 @@ export const CharacterCanvasLayerWrapper = ({
   onPlayersChange,
   debug,
 }: LayerNodeProps) => (
-  <div id="character-canvas-container" className="outerStyle">
+  // Clicks pass through to the game layers beneath; the silhouette is decoration
+  <div id="character-canvas-container" className="outerStyle noClicks">
     <CharacterCanvas
       video={video ?? null}
       mediaStream={characterStream}

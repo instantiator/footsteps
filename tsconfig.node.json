@@ -22,5 +22,11 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["vite.config.ts", "react-router.config.ts", "scripts/**/*.ts", "docs/.vitepress/config.ts"]
+  "include": [
+    "vite.config.ts",
+    "react-router.config.ts",
+    "playwright.config.ts",
+    "scripts/**/*.ts",
+    "docs/.vitepress/config.ts"
+  ]
 }
