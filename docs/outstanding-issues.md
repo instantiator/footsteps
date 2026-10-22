@@ -20,11 +20,47 @@ TypeScript 7.0.2 is the latest release, but typescript-eslint 8.71.2 (latest) ac
 
 **Act when:** a game ships audio containing speech. Add an optional `captionsResource` (WebVTT) to `GameDisplayMediaData` and render it as a `<track kind="captions">`.
 
-## Camera segmentation loop fix is untested on a real camera
+## Camera mode is not proven on a physical camera
 
-Bug #16 in [`docs/prompts/000.00.02.feedback - fixes from identified bugs and tests.md`](prompts/000.00.02.feedback%20-%20fixes%20from%20identified%20bugs%20and%20tests.md) was fixed in `CharacterCanvas`: the segmentation loop is cancelled on cleanup, and the webcam tracks are left to `CharacterCamera`. jsdom has no camera, WebGL or TensorFlow, so no automated test covers it.
+The Playwright suite runs the real TensorFlow pipeline, but against a fake canvas stream. It does
+not prove that a real webcam works, that a real player is segmented accurately, or that the camera
+permission and preview behave the same in every browser. The manual script in
+[`docs/testing/manual-testing.md`](testing/manual-testing.md) covers those checks.
 
-**Act when:** a game with `modules.camera.enabled: true` is next run, at the latest during the camera-mode work (prompt 000.02.00). With `?debug=true`, check that the silhouette keeps tracking after toggling debug or changing the camera layout, and that the browser console shows no errors about a disposed model.
+**Act when:** a game ships with camera mode on, or a tester reports the silhouette or interactions
+behaving differently from the fake-camera suite. Run the manual script on at least two machines, with
+different lighting and a second player, and record the results.
+
+## Browser suite depends on the TensorFlow model download
+
+The first browser run downloads the BodyPix ResNet50 weights (about 90 MB) from the network, and
+headless Chromium needs hardware WebGL to segment fast enough; the config enables Metal on macOS.
+The suite is therefore local only, and a slow or offline network makes it fail before any assertion.
+
+**Act when:** the suite should run in CI, or a first run fails only because the model download timed
+out. Then cache or vendor the model files for the tests, and add a CI job with a GPU or a longer
+timeout.
+
+## Players are identified by segmentation index
+
+`usePlayerInteractions` keys monitors by the player's index in the segmentation. If two players
+cross and the model swaps their order, the held and jump state can follow the index rather than the
+person, so one player may inherit the other's state.
+
+**Act when:** a game supports two players interacting at the same time, or a tester sees an
+interaction fire for the wrong player after they cross. Then track players across frames (for
+example by matching feet positions) and key the monitors by that identity.
+
+## Camera interactions are only available on overview displays
+
+`getInteractionTargets` returns the current overview display's targets, and an empty map while a
+stage is open. Stage and challenge displays can set their own camera mode, but their elements cannot
+yet be interaction targets.
+
+**Act when:** a game needs an interaction inside a stage or challenge. Then extend
+`getInteractionTargets` to the active stage and challenge displays, add their elements to the
+target map, and cover the stage case in `tests/GameClickUtils.test.ts` and
+`tests/GameLayersLayout.test.tsx`.
 
 ## No strict script-src Content-Security-Policy
 
