@@ -1,6 +1,8 @@
 import { useCallback, useState, type ReactNode } from "react";
+import type { GameInteractionTarget } from "../../../entities/data/displays/GameDisplayData";
 import { isDefined } from "../../../util/ObjectUtils";
 import type { FeetPositions } from "../../camera/CameraSupport";
+import type { PlayerMonitorEvent } from "../../camera/PlayerMonitor";
 import type { ResolvedCameraMode } from "../logic/CameraModeUtils";
 import "./GameLayersLayout.css";
 import {
@@ -10,6 +12,7 @@ import {
   GameLayerWrapper,
   HudLayerWrapper,
 } from "./GameLayerWrappers";
+import { usePlayerInteractions } from "./PlayerInteractionHook";
 
 /** Props for {@link GameLayersLayout}. */
 interface GameLayersLayoutProps {
@@ -21,6 +24,10 @@ interface GameLayersLayoutProps {
   debug?: boolean;
   /** Called when an element in a layer is clicked; returns whether the click was handled. */
   onElementClick?: (layerId: string, targetId: string) => boolean;
+  /** The elements the camera can interact with, by element id. */
+  interactionTargets?: Record<string, GameInteractionTarget>;
+  /** Called when a player interacts with an element through the camera. */
+  onPlayerInteraction?: (event: PlayerMonitorEvent) => void;
 }
 
 /** The nodes for the background and foreground of the overview, the stage, and its challenges. */
@@ -111,20 +118,13 @@ function UpperDisplayLayers({
   );
 }
 
-/** Stacks the game's display layers, the optional camera character, debug overlay, and HUD. */
-export default function GameLayersLayout({ gameLayers = {}, camera, debug, onElementClick }: GameLayersLayoutProps) {
+/** The webcam's video and stream, forgotten when the camera is disabled so re-enabling starts fresh. */
+function useCameraMedia(cameraEnabled: boolean) {
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
   const [characterStream, setCharacterStream] = useState<MediaStream | undefined>(undefined);
-  const [feetPositions, setFeetPositions] = useState<FeetPositions>({});
-  const [aspectRatio, setAspectRatio] = useState<number>();
 
-  const cameraEnabled = camera.enabled;
-  // With a camera, wait for its aspect ratio so the layers line up with the video
-  const show = !cameraEnabled || isDefined(aspectRatio);
-
-  // Forget a disabled camera's video and stream, so re-enabling asks for a fresh stream instead of
-  // reusing one whose tracks the camera stopped when it unmounted (see the React note on adjusting
-  // state when a prop changes)
+  // The camera stops a disabled stream's tracks when it unmounts, so keep no reference to them
+  // (see the React note on adjusting state when a prop changes)
   const [wasCameraEnabled, setWasCameraEnabled] = useState(cameraEnabled);
   if (wasCameraEnabled !== cameraEnabled) {
     setWasCameraEnabled(cameraEnabled);
@@ -134,6 +134,25 @@ export default function GameLayersLayout({ gameLayers = {}, camera, debug, onEle
     }
   }
 
+  return { video, setVideo, characterStream, setCharacterStream };
+}
+
+/** Stacks the game's display layers, the optional camera character, debug overlay, and HUD. */
+export default function GameLayersLayout({
+  gameLayers = {},
+  camera,
+  debug,
+  onElementClick,
+  interactionTargets,
+  onPlayerInteraction,
+}: GameLayersLayoutProps) {
+  const { video, setVideo, characterStream, setCharacterStream } = useCameraMedia(camera.enabled);
+  const [feetPositions, setFeetPositions] = useState<FeetPositions>({});
+  const [aspectRatio, setAspectRatio] = useState<number>();
+
+  // With a camera, wait for its aspect ratio so the layers line up with the video
+  const show = !camera.enabled || isDefined(aspectRatio);
+
   const clickHandler: LayerClickHandler = useCallback(
     (event, layerIdOverride) => {
       const targetId = (event.target as HTMLElement)?.id;
@@ -142,20 +161,24 @@ export default function GameLayersLayout({ gameLayers = {}, camera, debug, onEle
     [onElementClick],
   );
 
+  const { canvasRef, handlePlayers } = usePlayerInteractions(interactionTargets, onPlayerInteraction, camera.enabled);
+
   return (
     <>
       {show && <LowerDisplayLayers layers={gameLayers} clickHandler={clickHandler} />}
-      {show && cameraEnabled && (
+      {show && camera.enabled && (
         <CharacterCanvasLayerWrapper
           zIndex={6}
           video={video}
           characterStream={characterStream}
           aspectRatio={aspectRatio}
           setFeetPositions={setFeetPositions}
+          canvasRef={canvasRef}
+          onPlayersChange={handlePlayers}
           debug={debug}
         />
       )}
-      {cameraEnabled && (
+      {camera.enabled && (
         <CharacterCameraLayerWrapper
           zIndex={7}
           video={video}
@@ -173,7 +196,7 @@ export default function GameLayersLayout({ gameLayers = {}, camera, debug, onEle
           clickHandler={clickHandler}
           debug={debug}
           feetPositions={feetPositions}
-          cameraEnabled={cameraEnabled}
+          cameraEnabled={camera.enabled}
         />
       )}
       <HudLayerWrapper zIndex={10} />

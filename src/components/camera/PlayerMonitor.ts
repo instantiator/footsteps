@@ -29,7 +29,7 @@ export interface MonitorTarget {
   /** The element's bounds in mask pixels. */
   rect: MaskRect;
   /** The interactions the element accepts; unknown values are ignored when the monitor runs. */
-  interactions: string[];
+  interactions: readonly string[];
   /** Fraction of the body part that must be inside the element (0–1). */
   threshold: number;
 }

@@ -4,6 +4,7 @@ import CameraDebugOverlay from "../../camera/CameraDebugOverlay";
 import type { FeetPositions } from "../../camera/CameraSupport";
 import CharacterCamera from "../../camera/CharacterCamera";
 import CharacterCanvas from "../../camera/CharacterCanvas";
+import type { PlayerFrame } from "../../camera/PlayerMonitor";
 import HeadsUpDisplay from "../HeadsUpDisplay";
 import type { LayerHint } from "../display/GameDisplayComponent";
 import GameChallengeGrid from "./GameChallengeGrid";
@@ -35,6 +36,10 @@ export interface LayerNodeProps {
   feetPositions?: FeetPositions;
   /** Lets the character canvas report the feet positions. */
   setFeetPositions?: React.Dispatch<React.SetStateAction<FeetPositions>>;
+  /** The character canvas's element, for converting element positions into mask positions. */
+  canvasRef?: React.RefObject<HTMLCanvasElement | null>;
+  /** Called every frame with the people the camera found, and when the frame was taken. */
+  onPlayersChange?: (players: PlayerFrame[], timestamp: number) => void;
   /** Whether debug aids (colour key, coloured mask) are shown. */
   debug?: boolean;
   /** Called with clicks on elements in the layer; `layerIdOverride` replaces the layer's own id as the source. */
@@ -134,6 +139,8 @@ export const CharacterCanvasLayerWrapper = ({
   characterStream,
   aspectRatio,
   setFeetPositions,
+  canvasRef,
+  onPlayersChange,
   debug,
 }: LayerNodeProps) => (
   <div id="character-canvas-container" className="outerStyle">
@@ -143,6 +150,8 @@ export const CharacterCanvasLayerWrapper = ({
       className="innerStyle"
       style={{ ...style, transform: "scaleX(-1)", aspectRatio: aspectRatio, zIndex }}
       onFeetPositionsChange={setFeetPositions}
+      onPlayersChange={onPlayersChange}
+      canvasRef={canvasRef}
       maskType={debug ? "colored" : "binary"}
     />
   </div>

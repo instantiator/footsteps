@@ -1,8 +1,10 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import bodyParts from "../src/assets/body-seg-parts.json";
 import type CharacterCamera from "../src/components/camera/CharacterCamera";
 import type CharacterCanvas from "../src/components/camera/CharacterCanvas";
+import type { PlayerFrame } from "../src/components/camera/PlayerMonitor";
 import GameLayersLayout from "../src/components/core/layout/GameLayersLayout";
 import { SMALL_GAME_ID, smallRepository } from "./data/SmallGame";
 import GameProviders from "./helpers/GameProviders";
@@ -19,7 +21,7 @@ const settings = vi.hoisted(() => ({ reportAspect: true }));
 vi.mock("../src/components/camera/CharacterCanvas", () => ({
   default: (props: CanvasProps) => {
     received.canvas.push(props);
-    return <canvas data-testid="canvas" />;
+    return <canvas data-testid="canvas" ref={props.canvasRef} />;
   },
 }));
 
@@ -58,6 +60,26 @@ const layout = (props: Partial<ComponentProps<typeof GameLayersLayout>> = {}) =>
 );
 
 const renderLayout = (props: Partial<ComponentProps<typeof GameLayersLayout>> = {}) => render(layout(props));
+
+/** An 8px mask with one opaque body part at the given pixel. */
+const maskWithPart = (value: number, x: number, y: number): PlayerFrame["mask"] => {
+  const width = 8;
+  const height = 8;
+  const data = new Uint8ClampedArray(width * height * 4);
+  const i = (y * width + x) * 4;
+  data[i] = value;
+  data[i + 3] = 255;
+  return { data, width, height };
+};
+
+/** A player whose hand is at the given mask pixel, and whose feet are out of view. */
+const playerWithHandAt = (x: number, y: number): PlayerFrame => ({
+  id: 0,
+  mask: maskWithPart(bodyParts.LEFT_HAND.maskValue, x, y),
+  feet: null,
+});
+
+const stubRect = (element: Element, rect: DOMRect) => vi.spyOn(element, "getBoundingClientRect").mockReturnValue(rect);
 
 describe("GameLayersLayout", () => {
   it.each([
@@ -129,5 +151,84 @@ describe("GameLayersLayout", () => {
     const { container } = renderLayout({ camera: { enabled: true, preview: true } });
     expect(container.querySelector("#overview-foreground-container")).toBeNull();
     expect(screen.queryByTestId("canvas")).toBeNull();
+  });
+});
+
+describe("GameLayersLayout camera interactions", () => {
+  /** Renders the layout with the camera on and the given targets, and returns its canvas. */
+  const renderWithCamera = async (
+    props: Partial<ComponentProps<typeof GameLayersLayout>> = {},
+  ): Promise<{ container: HTMLElement; canvas: HTMLCanvasElement }> => {
+    const { container } = renderLayout({ camera: { enabled: true, preview: true }, ...props });
+    await screen.findByTestId("canvas");
+    return { container, canvas: container.querySelector("canvas")! };
+  };
+
+  /** Sends one camera frame to the layout. */
+  const sendPlayers = (players: PlayerFrame[], timestamp = 1000) => {
+    act(() => received.canvas.at(-1)!.onPlayersChange!(players, timestamp));
+  };
+
+  it("reports a camera interaction when a body part covers an element", async () => {
+    const onPlayerInteraction = vi.fn();
+    const { container, canvas } = await renderWithCamera({
+      interactionTargets: { "overview-thing": { stage: "stage-1", interactions: ["hand"] } },
+      onPlayerInteraction,
+    });
+    stubRect(canvas, new DOMRect(0, 0, 100, 100));
+    // The element covers the screen's left half, so the mask's right half, after mirroring
+    stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 50, 50));
+
+    sendPlayers([playerWithHandAt(6, 1)]);
+
+    expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith({ elementId: "overview-thing", interaction: "hand" });
+  });
+
+  it("reports nothing when the target's element is not in the document", async () => {
+    const onPlayerInteraction = vi.fn();
+    const { container, canvas } = await renderWithCamera({
+      interactionTargets: { "not-on-screen": { stage: "stage-1", interactions: ["hand"] } },
+      onPlayerInteraction,
+    });
+    stubRect(canvas, new DOMRect(0, 0, 100, 100));
+
+    sendPlayers([playerWithHandAt(1, 1)]);
+
+    expect(onPlayerInteraction).not.toHaveBeenCalled();
+    expect(container.querySelector("#not-on-screen")).toBeNull();
+  });
+
+  it("fires again when a player leaves and comes back", async () => {
+    const onPlayerInteraction = vi.fn();
+    const { container, canvas } = await renderWithCamera({
+      interactionTargets: { "overview-thing": { stage: "stage-1", interactions: ["hand"] } },
+      onPlayerInteraction,
+    });
+    stubRect(canvas, new DOMRect(0, 0, 100, 100));
+    stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 100, 100));
+
+    sendPlayers([playerWithHandAt(1, 1)]);
+    sendPlayers([], 1100); // the player is gone, so the monitor is dropped
+    sendPlayers([playerWithHandAt(1, 1)], 1200);
+
+    expect(onPlayerInteraction).toHaveBeenCalledTimes(2);
+  });
+
+  it("maps element bounds using the canvas's position on the page", async () => {
+    const onPlayerInteraction = vi.fn();
+    const { container, canvas } = await renderWithCamera({
+      interactionTargets: { "overview-thing": { stage: "stage-1", interactions: ["hand"] } },
+      onPlayerInteraction,
+    });
+    // The canvas sits away from the origin; the element covers its top-left quarter
+    stubRect(canvas, new DOMRect(100, 100, 100, 100));
+    stubRect(container.querySelector("#overview-thing")!, new DOMRect(100, 100, 50, 50));
+
+    sendPlayers([playerWithHandAt(6, 1)]);
+    expect(onPlayerInteraction).toHaveBeenCalledOnce();
+
+    // The same hand lower down is outside the element, so it does not fire
+    sendPlayers([playerWithHandAt(6, 6)], 1100);
+    expect(onPlayerInteraction).toHaveBeenCalledOnce();
   });
 });

@@ -1,7 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameData } from "../src/entities/data/GameData";
 import Game from "../src/components/core/Game";
+import type GameLayersLayout from "../src/components/core/layout/GameLayersLayout";
 import { SMALL_GAME_ID, smallGame, smallRepository } from "./data/SmallGame";
 import GameProviders from "./helpers/GameProviders";
 import { stubMediaPlayback } from "./helpers/media";
@@ -12,10 +14,29 @@ const { rewardSpy, useRewardSpy } = vi.hoisted(() => {
 });
 vi.mock("partycles", () => ({ useReward: useRewardSpy }));
 
+/** The props each render gave the layout, so tests can drive its callbacks. */
+const { receivedLayout } = vi.hoisted(() => ({
+  receivedLayout: [] as ComponentProps<typeof GameLayersLayout>[],
+}));
+
+// Records the layout's props while rendering the real layout, leaving its behaviour intact
+vi.mock("../src/components/core/layout/GameLayersLayout", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../src/components/core/layout/GameLayersLayout")>();
+  const ActualLayout = actual.default;
+  return {
+    ...actual,
+    default: (props: ComponentProps<typeof ActualLayout>) => {
+      receivedLayout.push(props);
+      return <ActualLayout {...props} />;
+    },
+  };
+});
+
 let playback: ReturnType<typeof stubMediaPlayback>;
 beforeEach(() => {
   playback = stubMediaPlayback();
   rewardSpy.mockClear();
+  receivedLayout.length = 0;
 });
 afterEach(() => {
   vi.restoreAllMocks();
@@ -84,6 +105,53 @@ describe("Game", () => {
     answer("custard");
     fireEvent.click(await screen.findByText("Stage 1"));
     expect(screen.queryByText("Question for stage-1")).toBeNull();
+  });
+});
+
+describe("Game camera interactions", () => {
+  /** A variant of the small game whose first stage opens on a hand wave instead of a click. */
+  const handGame: GameData = {
+    ...smallGame,
+    displays: smallGame.displays.map((display) =>
+      display.purpose === "game-overview-stages"
+        ? {
+            ...display,
+            clickIdToStageId: {
+              ...display.clickIdToStageId,
+              "stage-link-stage-1": { stage: "stage-1", interactions: ["hand"] },
+            },
+          }
+        : display,
+    ),
+  };
+
+  const renderVariant = (game: GameData) =>
+    render(
+      <GameProviders repository={{ games: { [SMALL_GAME_ID]: game } }} gameId={SMALL_GAME_ID}>
+        <Game />
+      </GameProviders>,
+    );
+
+  /** The interaction callback the layout was last given. */
+  const layoutInteraction = () => receivedLayout.at(-1)!.onPlayerInteraction!;
+
+  it("enters the stage a camera interaction names", async () => {
+    renderVariant(handGame);
+    await screen.findByText("Small Game");
+
+    act(() => layoutInteraction()({ elementId: "stage-link-stage-1", interaction: "hand" }));
+
+    expect(await screen.findByText("Question for stage-1")).toBeInTheDocument();
+  });
+
+  it("ignores a camera interaction on an element that only accepts clicks", async () => {
+    renderGame();
+    await screen.findByText("Small Game");
+
+    act(() => layoutInteraction()({ elementId: "stage-link-stage-1", interaction: "hand" }));
+
+    expect(screen.queryByText("Question for stage-1")).toBeNull();
+    expect(screen.getByText("Stage 1")).toBeInTheDocument();
   });
 });
 
