@@ -40,6 +40,17 @@ Camera mode is resolved separately for each setting, most specific first:
 The preview is always off while camera mode is off. The code is `resolveCameraMode` in
 `src/components/core/logic/CameraModeUtils.ts`.
 
+## Permission
+
+A game that enables camera mode anywhere needs the camera permission before it starts. Its landing
+page scans the game data, asks the browser for the permission, and shows a Grant button until it is
+granted. New game and Continue stay disabled until then. See [Playing a game](game-play.md#permissions)
+for the full flow.
+
+A direct visit to `/game/:id/play` repeats the check and returns to the landing page when the
+permission is `prompt` or `denied`. If the browser cannot report the permission, the play page allows
+the game to open and lets the browser enforce camera access when the stream is requested.
+
 ## What the player sees
 
 - **Their own silhouette.** The player is cut out of the webcam picture and shown in the game,

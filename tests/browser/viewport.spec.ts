@@ -2,8 +2,9 @@ import { expect, test } from "@playwright/test";
 import { installFakeCamera } from "./fixtures/fakeCamera";
 
 test("eases the game viewport into the camera's shape, then fades the overview in", async ({ page }) => {
+  await page.context().grantPermissions(["camera"]);
   await installFakeCamera(page);
-  await page.goto("/game/magic-trifle");
+  await page.goto("/game/magic-trifle/play");
 
   const viewport = page.locator("#game-viewport");
   const scene = page.locator(".gameScene");

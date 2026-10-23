@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameData } from "../src/entities/data/GameData";
@@ -7,6 +7,7 @@ import type GameLayersLayout from "../src/components/core/layout/GameLayersLayou
 import { SMALL_GAME_ID, smallGame, smallRepository } from "./data/SmallGame";
 import GameProviders from "./helpers/GameProviders";
 import { stubMediaPlayback } from "./helpers/media";
+import { FakeWakeLockSentinel, stubWakeLock } from "./helpers/wakeLock";
 
 const { rewardSpy, useRewardSpy } = vi.hoisted(() => {
   const rewardSpy = vi.fn(() => Promise.resolve());
@@ -33,12 +34,15 @@ vi.mock("../src/components/core/layout/GameLayersLayout", async (importOriginal)
 });
 
 let playback: ReturnType<typeof stubMediaPlayback>;
+const wakeLockRestores: (() => void)[] = [];
 beforeEach(() => {
   playback = stubMediaPlayback();
   rewardSpy.mockClear();
   receivedLayout.length = 0;
 });
 afterEach(() => {
+  wakeLockRestores.forEach((restore) => restore());
+  wakeLockRestores.length = 0;
   vi.restoreAllMocks();
   document.head.querySelectorAll('link[rel="stylesheet"]').forEach((link) => link.remove());
 });
@@ -273,5 +277,22 @@ describe("Game sounds and reward", () => {
     answer("custard");
     await vi.waitFor(() => expect(rewardSpy).toHaveBeenCalledTimes(1));
     expect(useRewardSpy).toHaveBeenCalledWith("reward-element", "confetti", { particleCount: 50 });
+  });
+
+  it("keeps the screen awake until every stage is complete", async () => {
+    const sentinel = new FakeWakeLockSentinel();
+    const { request, restore } = stubWakeLock(async () => sentinel);
+    wakeLockRestores.push(restore);
+    renderGame();
+    await screen.findByText("Small Game");
+    await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+
+    await enterStage(1);
+    answer("custard");
+    await waitFor(() => expect(screen.queryByRole("textbox")).toBeNull());
+    await enterStage(2);
+    answer("trifle");
+
+    await waitFor(() => expect(sentinel.released).toBe(true));
   });
 });

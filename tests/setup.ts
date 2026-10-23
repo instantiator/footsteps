@@ -4,6 +4,9 @@ import { server } from "./mocks/server";
 import { setReducedMotion } from "./helpers/motion";
 
 beforeAll(() => server.listen());
-beforeEach(() => setReducedMotion(true));
+beforeEach(() => {
+  setReducedMotion(true);
+  localStorage.clear();
+});
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());

@@ -44,6 +44,7 @@ export default defineConfig({
         items: [
           { text: "Documentation", link: "/" },
           { text: "Developer overview", link: "/dev-overview" },
+          { text: "Playing a game", link: "/game-play" },
           { text: "Deployment", link: "/deployment" },
           { text: "Game data", link: "/game-data" },
           { text: "Game repository data", link: "/game-repository-data" },
@@ -58,6 +59,11 @@ export default defineConfig({
           {
             text: "0001 Replace vite-react-ssg with React Router",
             link: "/ADRs/0001-replace-vite-react-ssg-with-react-router-framework-mode",
+          },
+          { text: "0002 Camera interactions", link: "/ADRs/0002-camera-interactions" },
+          {
+            text: "0003 Save game progress in local storage",
+            link: "/ADRs/0003-save-progress-in-local-storage",
           },
         ],
       },
