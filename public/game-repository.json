@@ -100,14 +100,15 @@
             },
             "data": {}
           },
+          "camera": { "enabled": true },
           "clickIdToStageId": {
-            "stages-link-stage-1": { "stage": "stage-1" },
-            "stages-link-stage-2": { "stage": "stage-2" },
-            "stages-link-stage-3": { "stage": "stage-3" },
-            "stages-link-stage-4": { "stage": "stage-4" },
-            "stages-link-stage-5": { "stage": "stage-5" },
-            "stages-link-stage-6": { "stage": "stage-6" },
-            "stages-link-stage-7": { "stage": "stage-7" }
+            "stages-link-stage-1": { "stage": "stage-1", "interactions": ["click", "hand", "jump"], "threshold": 0.5 },
+            "stages-link-stage-2": { "stage": "stage-2", "interactions": ["click", "hand", "jump"], "threshold": 0.5 },
+            "stages-link-stage-3": { "stage": "stage-3", "interactions": ["click", "hand", "jump"], "threshold": 0.5 },
+            "stages-link-stage-4": { "stage": "stage-4", "interactions": ["click", "hand", "jump"], "threshold": 0.5 },
+            "stages-link-stage-5": { "stage": "stage-5", "interactions": ["click", "hand", "jump"], "threshold": 0.5 },
+            "stages-link-stage-6": { "stage": "stage-6", "interactions": ["click", "hand", "jump"], "threshold": 0.5 },
+            "stages-link-stage-7": { "stage": "stage-7", "interactions": ["click", "hand", "jump"], "threshold": 0.5 }
           }
         }
       ],
@@ -117,6 +118,7 @@
           "displays": [
             {
               "purpose": "shared",
+              "camera": { "enabled": false },
               "component": {
                 "type": "template",
                 "foregroundTemplate": {
@@ -145,6 +147,7 @@
               "displays": [
                 {
                   "purpose": "challenge-in-progress",
+                  "camera": { "enabled": false },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -175,6 +178,7 @@
               "displays": [
                 {
                   "purpose": "challenge-in-progress",
+                  "camera": { "enabled": false },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -209,6 +213,7 @@
               "displays": [
                 {
                   "purpose": "challenge-in-progress",
+                  "camera": { "enabled": false },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -234,6 +239,7 @@
               "displays": [
                 {
                   "purpose": "challenge-in-progress",
+                  "camera": { "enabled": false },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -264,6 +270,7 @@
               "displays": [
                 {
                   "purpose": "challenge-in-progress",
+                  "camera": { "enabled": false },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -298,6 +305,7 @@
               "displays": [
                 {
                   "purpose": "challenge-in-progress",
+                  "camera": { "enabled": false },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -328,6 +336,7 @@
               "displays": [
                 {
                   "purpose": "challenge-in-progress",
+                  "camera": { "enabled": false },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -358,6 +367,7 @@
               "displays": [
                 {
                   "purpose": "challenge-in-progress",
+                  "camera": { "enabled": false },
                   "component": {
                     "type": "scroll",
                     "data": {},

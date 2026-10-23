@@ -36,8 +36,9 @@ const patchRepository = async (page: Page, options: CameraGameOptions): Promise<
   });
 };
 
-/** Loads the game with a fake camera in place before the page's own scripts run. */
+/** Loads the game with a fake camera, and motion off so transitions are immediate. */
 const openCameraGame = async (page: Page, options: CameraGameOptions = {}): Promise<void> => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await installFakeCamera(page);
   await installCameraDrawCounter(page);
   await patchRepository(page, options);

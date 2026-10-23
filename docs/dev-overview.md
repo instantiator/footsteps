@@ -57,7 +57,8 @@ Use `npm run docs:dev` for the Markdown pages locally, and `npm run docs:api` to
 ## Browser tests
 
 `tests/browser/` runs the real camera pipeline in Chromium against a fake webcam, covering the
-silhouette loop, debug changes, preview visibility, camera-off displays, and image switching. It is
+silhouette loop, debug changes, preview visibility, camera-off displays, image switching, and the
+game view easing into the camera's shape before its display fades in. It is
 local only: the first run downloads the TensorFlow model (about 90 MB), so it is not part of the
 pre-push gate or CI.
 

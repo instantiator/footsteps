@@ -25,6 +25,7 @@ import {
 import { findChallengeState } from "./logic/GameDataUtils";
 import { completeChallenge, validateAnswer } from "./logic/GameStateUtils";
 import {
+  getDisplayKey,
   getLayeredRenderData,
   type GameDisplayRenderData,
   type LayeredGameDisplayRenderData,
@@ -214,6 +215,7 @@ export default function Game() {
   );
 
   const renderData = useMemo(() => getLayeredRenderData(gameState, resources), [gameState, resources]);
+  const displayKey = useMemo(() => getDisplayKey(renderData), [renderData]);
   const layers = useMemo(() => createLayers(renderData, onAnswer), [renderData, onAnswer]);
   const camera = useMemo(() => resolveCameraMode(gameState.gameData, renderData), [gameState.gameData, renderData]);
   const interactionTargets = useMemo(() => getInteractionTargets(gameState), [gameState]);
@@ -240,6 +242,7 @@ export default function Game() {
       <GameLayersLayout
         debug={debug}
         gameLayers={layers}
+        displayKey={displayKey}
         camera={camera}
         onElementClick={handleElementClick}
         interactionTargets={interactionTargets}

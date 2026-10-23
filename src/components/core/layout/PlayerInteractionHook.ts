@@ -50,18 +50,19 @@ interface PlayerInteractions {
  *
  * @param interactionTargets the elements the camera can interact with, by element id
  * @param onPlayerInteraction called for each interaction that begins
- * @param cameraEnabled clears the monitors when the camera is switched off
+ * @param enabled whether interactions are running; switching it off clears the monitors
  * @returns the character canvas's ref, and the stable frame handler to give it
  */
 export function usePlayerInteractions(
   interactionTargets: Record<string, GameInteractionTarget> | undefined,
   onPlayerInteraction: ((event: PlayerMonitorEvent) => void) | undefined,
-  cameraEnabled: boolean,
+  enabled: boolean,
 ): PlayerInteractions {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const monitorsRef = useRef(new Map<number, PlayerMonitor>());
   const targetsRef = useRef(interactionTargets);
   const callbackRef = useRef(onPlayerInteraction);
+  const enabledRef = useRef(enabled);
 
   useEffect(() => {
     targetsRef.current = interactionTargets;
@@ -71,17 +72,18 @@ export function usePlayerInteractions(
     callbackRef.current = onPlayerInteraction;
   }, [onPlayerInteraction]);
 
-  // A fresh monitor cannot report interactions that held while the camera was off
+  // A fresh monitor cannot report interactions that held while interactions were off
   useEffect(() => {
-    if (!cameraEnabled) monitorsRef.current.clear();
-  }, [cameraEnabled]);
+    enabledRef.current = enabled;
+    if (!enabled) monitorsRef.current.clear();
+  }, [enabled]);
 
   const handlePlayers = useCallback(
     (players: PlayerFrame[], timestamp: number) => {
       const canvas = canvasRef.current;
       const emit = callbackRef.current;
       const monitors = monitorsRef.current;
-      if (!canvas || !emit || players.length === 0) {
+      if (!enabledRef.current || !canvas || !emit || players.length === 0) {
         monitors.clear();
         return;
       }

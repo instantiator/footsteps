@@ -74,6 +74,14 @@ describe("Game", () => {
     expect(screen.getByRole("button", { name: "Close challenge" })).toBeInTheDocument();
   });
 
+  it("gives the layout a new display key when the display changes", async () => {
+    renderGame();
+    await screen.findByText("Small Game");
+    const overviewKey = receivedLayout.at(-1)!.displayKey;
+    await enterStage(1);
+    expect(receivedLayout.at(-1)!.displayKey).not.toBe(overviewKey);
+  });
+
   it("does not enter a locked stage", async () => {
     renderGame();
     fireEvent.click(await screen.findByText("Stage 2"));

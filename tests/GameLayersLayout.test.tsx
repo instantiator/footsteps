@@ -1,13 +1,15 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import type { ComponentProps } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ComponentProps, ReactElement } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import bodyParts from "../src/assets/body-seg-parts.json";
 import type CharacterCamera from "../src/components/camera/CharacterCamera";
 import type CharacterCanvas from "../src/components/camera/CharacterCanvas";
 import type { PlayerFrame } from "../src/components/camera/PlayerMonitor";
 import GameLayersLayout from "../src/components/core/layout/GameLayersLayout";
+import type { GameInteractionTarget } from "../src/entities/data/displays/GameDisplayData";
 import { SMALL_GAME_ID, smallRepository } from "./data/SmallGame";
 import GameProviders from "./helpers/GameProviders";
+import { setReducedMotion } from "./helpers/motion";
 
 type CanvasProps = ComponentProps<typeof CharacterCanvas>;
 type CameraProps = ComponentProps<typeof CharacterCamera>;
@@ -45,6 +47,10 @@ beforeEach(() => {
   received.canvas.length = 0;
   received.camera.length = 0;
   settings.reportAspect = true;
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 const layers = {
@@ -123,6 +129,20 @@ describe("GameLayersLayout", () => {
     expect(container.querySelector("#character-camera-layer")).not.toBeNull();
   });
 
+  it("fits the game viewport to the camera's aspect ratio, so the whole display is in view", async () => {
+    const { container, rerender } = renderLayout();
+    const viewport = () => container.querySelector("#game-viewport");
+    expect(viewport()).not.toBeNull();
+    expect(viewport()).not.toHaveStyle({ aspectRatio: "1.5" });
+    expect(viewport()?.querySelector("#overview-foreground-container")).not.toBeNull();
+
+    rerender(layout({ camera: { enabled: true, preview: true } }));
+    await screen.findByTestId("canvas");
+
+    expect(viewport()).toHaveStyle({ aspectRatio: "1.5" });
+    expect(viewport()?.querySelector("#overview-foreground-container")).not.toBeNull();
+  });
+
   it("tints the camera silhouette by body part when debugging", async () => {
     renderLayout({ camera: { enabled: true, preview: true }, debug: true });
     await screen.findByTestId("canvas");
@@ -154,14 +174,242 @@ describe("GameLayersLayout", () => {
   });
 });
 
+describe("GameLayersLayout display transitions", () => {
+  /** A single overview layer, labelled so tests can tell displays apart. */
+  const display = (text: string) => ({
+    overview: { backgroundLayerNodes: undefined, foregroundLayerNodes: [<span key={text}>{text}</span>] },
+  });
+
+  /** The scene wrapper that fades the display and camera layers together. */
+  const sceneOf = (container: HTMLElement) => container.querySelector<HTMLElement>(".gameScene")!;
+
+  it("fades the old display out, swaps, and fades the new display in", async () => {
+    setReducedMotion(false);
+    vi.useFakeTimers();
+    const { container, rerender } = renderLayout({ gameLayers: display("old display"), displayKey: "old" });
+    const scene = () => sceneOf(container);
+
+    rerender(layout({ gameLayers: display("new display"), displayKey: "new" }));
+
+    expect(screen.getByText("old display")).toBeInTheDocument();
+    expect(screen.queryByText("new display")).toBeNull();
+    expect(scene()).toHaveStyle({ opacity: "0", pointerEvents: "none" });
+    expect(scene()).toHaveAttribute("inert");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    expect(screen.queryByText("old display")).toBeNull();
+    expect(screen.getByText("new display")).toBeInTheDocument();
+    expect(scene()).toHaveStyle({ opacity: "1", pointerEvents: "none" });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    expect(scene().style.pointerEvents).toBe("");
+    expect(scene()).not.toHaveAttribute("inert");
+  });
+
+  it("swaps displays immediately when reduced motion is preferred", () => {
+    setReducedMotion(true);
+    const { rerender } = renderLayout({ gameLayers: display("old display"), displayKey: "old" });
+
+    rerender(layout({ gameLayers: display("new display"), displayKey: "new" }));
+
+    expect(screen.getByText("new display")).toBeInTheDocument();
+    expect(screen.queryByText("old display")).toBeNull();
+  });
+
+  it("updates content in the same display without fading", () => {
+    setReducedMotion(false);
+    const { container, rerender } = renderLayout({ gameLayers: display("before"), displayKey: "same" });
+
+    rerender(layout({ gameLayers: display("after"), displayKey: "same" }));
+
+    expect(screen.getByText("after")).toBeInTheDocument();
+    expect(screen.queryByText("before")).toBeNull();
+    expect(sceneOf(container)).toHaveStyle({ opacity: "1" });
+  });
+
+  it("reshapes for the camera over two seconds, holding the old display until the fade", async () => {
+    setReducedMotion(false);
+    vi.useFakeTimers();
+    const { container, rerender } = renderLayout({ gameLayers: display("title"), displayKey: "title" });
+    const viewport = container.querySelector<HTMLElement>("#game-viewport")!;
+    stubRect(viewport, new DOMRect(0, 0, 100, 100));
+    stubRect(viewport.parentElement!, new DOMRect(0, 0, 100, 100));
+
+    rerender(
+      layout({ camera: { enabled: true, preview: true }, gameLayers: display("overview"), displayKey: "overview" }),
+    );
+
+    expect(viewport).toHaveClass("gameViewportReshaping");
+    expect(viewport).toHaveStyle({ aspectRatio: "1.5" });
+    expect(viewport.style.getPropertyValue("--reshape-from")).toBe("1 / 1");
+    expect(viewport.style.getPropertyValue("--reshape-to")).toBe("1.5 / 1");
+    expect(screen.getByText("title")).toBeInTheDocument();
+    expect(screen.queryByText("overview")).toBeNull();
+    expect(container.querySelector("#character-camera-layer")).toHaveStyle({ visibility: "hidden" });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    expect(sceneOf(container)).toHaveStyle({ opacity: "0", pointerEvents: "none" });
+    expect(screen.getByText("title")).toBeInTheDocument();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    expect(screen.queryByText("title")).toBeNull();
+    expect(screen.getByText("overview")).toBeInTheDocument();
+    expect(screen.getByTestId("canvas")).toBeInTheDocument();
+    expect(viewport).not.toHaveClass("gameViewportReshaping");
+    expect(viewport).toHaveStyle({ aspectRatio: "1.5" });
+    expect(container.querySelector("#character-camera-layer")).toHaveStyle({ visibility: "visible" });
+    expect(sceneOf(container)).toHaveStyle({ opacity: "1", pointerEvents: "none" });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    expect(sceneOf(container)).not.toHaveAttribute("inert");
+  });
+
+  it("reshapes back to the container when the camera turns off", async () => {
+    setReducedMotion(false);
+    vi.useFakeTimers();
+    const { container, rerender } = renderLayout({
+      camera: { enabled: true, preview: true },
+      gameLayers: display("overview"),
+      displayKey: "overview",
+    });
+    const viewport = container.querySelector<HTMLElement>("#game-viewport")!;
+    stubRect(viewport, new DOMRect(0, 0, 150, 100));
+    stubRect(viewport.parentElement!, new DOMRect(0, 0, 100, 100));
+    expect(viewport).toHaveStyle({ aspectRatio: "1.5" });
+
+    rerender(layout({ camera: { enabled: false, preview: false }, gameLayers: display("stage"), displayKey: "stage" }));
+
+    expect(viewport).toHaveClass("gameViewportReshaping");
+    expect(viewport).toHaveStyle({ aspectRatio: "1" });
+    expect(viewport.style.getPropertyValue("--reshape-from")).toBe("1.5 / 1");
+    expect(viewport.style.getPropertyValue("--reshape-to")).toBe("1 / 1");
+    expect(screen.getByText("overview")).toBeInTheDocument();
+    expect(received.camera.at(-1)?.stream).toBeDefined();
+    expect(container.querySelector("#character-camera-layer")).toHaveStyle({ visibility: "visible" });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(sceneOf(container)).toHaveStyle({ opacity: "0" });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(screen.getByText("stage")).toBeInTheDocument();
+    expect(viewport).not.toHaveClass("gameViewportReshaping");
+    expect(viewport.style.aspectRatio).toBe("");
+    expect(sceneOf(container)).toHaveStyle({ opacity: "1" });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(sceneOf(container)).not.toHaveAttribute("inert");
+  });
+
+  it("keeps the old display until the camera reports its shape", async () => {
+    setReducedMotion(false);
+    vi.useFakeTimers();
+    settings.reportAspect = false;
+    const { container, rerender } = renderLayout({ gameLayers: display("title"), displayKey: "title" });
+    const viewport = container.querySelector<HTMLElement>("#game-viewport")!;
+    stubRect(viewport, new DOMRect(0, 0, 100, 100));
+    stubRect(viewport.parentElement!, new DOMRect(0, 0, 100, 100));
+
+    rerender(
+      layout({ camera: { enabled: true, preview: true }, gameLayers: display("overview"), displayKey: "overview" }),
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+
+    expect(screen.getByText("title")).toBeInTheDocument();
+    expect(screen.queryByText("overview")).toBeNull();
+    expect(viewport).not.toHaveClass("gameViewportReshaping");
+    expect(viewport.style.aspectRatio).toBe("");
+
+    act(() => received.camera.at(-1)!.onAspectChange!(1.5));
+    expect(viewport).toHaveClass("gameViewportReshaping");
+    expect(viewport).toHaveStyle({ aspectRatio: "1.5" });
+    expect(viewport.style.getPropertyValue("--reshape-from")).toBe("1 / 1");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(screen.getByText("overview")).toBeInTheDocument();
+    expect(viewport).not.toHaveClass("gameViewportReshaping");
+  });
+
+  it("reshapes without fading when the display stays the same", async () => {
+    setReducedMotion(false);
+    vi.useFakeTimers();
+    const { container, rerender } = renderLayout({ gameLayers: display("overview"), displayKey: "overview" });
+    const viewport = container.querySelector<HTMLElement>("#game-viewport")!;
+    stubRect(viewport, new DOMRect(0, 0, 100, 100));
+    stubRect(viewport.parentElement!, new DOMRect(0, 0, 100, 100));
+
+    rerender(
+      layout({ camera: { enabled: true, preview: true }, gameLayers: display("overview"), displayKey: "overview" }),
+    );
+    expect(viewport).toHaveClass("gameViewportReshaping");
+    expect(viewport.style.getPropertyValue("--reshape-from")).toBe("1 / 1");
+    expect(viewport.style.getPropertyValue("--reshape-to")).toBe("1.5 / 1");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(sceneOf(container)).toHaveStyle({ opacity: "1" });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(viewport).not.toHaveClass("gameViewportReshaping");
+    expect(screen.getByText("overview")).toBeInTheDocument();
+    expect(sceneOf(container)).not.toHaveAttribute("inert");
+  });
+
+  it("skips the reshape when reduced motion is preferred", async () => {
+    setReducedMotion(true);
+    const { container, rerender } = renderLayout({ gameLayers: display("title"), displayKey: "title" });
+    const viewport = container.querySelector<HTMLElement>("#game-viewport")!;
+
+    rerender(
+      layout({ camera: { enabled: true, preview: true }, gameLayers: display("overview"), displayKey: "overview" }),
+    );
+
+    expect(await screen.findByTestId("canvas")).toBeInTheDocument();
+    expect(screen.getByText("overview")).toBeInTheDocument();
+    expect(viewport).toHaveStyle({ aspectRatio: "1.5" });
+    expect(viewport).not.toHaveClass("gameViewportReshaping");
+  });
+});
+
 describe("GameLayersLayout camera interactions", () => {
   /** Renders the layout with the camera on and the given targets, and returns its canvas. */
   const renderWithCamera = async (
     props: Partial<ComponentProps<typeof GameLayersLayout>> = {},
-  ): Promise<{ container: HTMLElement; canvas: HTMLCanvasElement }> => {
-    const { container } = renderLayout({ camera: { enabled: true, preview: true }, ...props });
+  ): Promise<{
+    container: HTMLElement;
+    canvas: HTMLCanvasElement;
+    rerender: (ui: ReactElement) => void;
+  }> => {
+    const { container, rerender } = renderLayout({ camera: { enabled: true, preview: true }, ...props });
     await screen.findByTestId("canvas");
-    return { container, canvas: container.querySelector("canvas")! };
+    return { container, canvas: container.querySelector("canvas")!, rerender };
   };
 
   /** Sends one camera frame to the layout. */
@@ -230,5 +478,30 @@ describe("GameLayersLayout camera interactions", () => {
     // The same hand lower down is outside the element, so it does not fire
     sendPlayers([playerWithHandAt(6, 6)], 1100);
     expect(onPlayerInteraction).toHaveBeenCalledOnce();
+  });
+
+  it("ignores camera interactions while a display change is fading", async () => {
+    setReducedMotion(false);
+    const onPlayerInteraction = vi.fn();
+    const interactionTargets: Record<string, GameInteractionTarget> = {
+      "overview-thing": { stage: "stage-1", interactions: ["hand"] },
+    };
+    const props = { interactionTargets, onPlayerInteraction, displayKey: "old" };
+    const { container, canvas, rerender } = await renderWithCamera(props);
+    stubRect(canvas, new DOMRect(0, 0, 100, 100));
+    stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 50, 50));
+
+    vi.useFakeTimers();
+    rerender(layout({ camera: { enabled: true, preview: true }, ...props, displayKey: "new" }));
+
+    sendPlayers([playerWithHandAt(6, 1)], 1000);
+    expect(onPlayerInteraction).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    sendPlayers([playerWithHandAt(6, 1)], 1100);
+    expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith({ elementId: "overview-thing", interaction: "hand" });
   });
 });

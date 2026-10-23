@@ -50,14 +50,29 @@ The preview is always off while camera mode is off. The code is `resolveCameraMo
 - **The game's artwork** behind them, and a challenge's foreground in front of them.
 - **The HUD** in the top-right: "Close challenge", "To title", and the fullscreen button.
 
+An ordinary display change fades the old display out over 1s, swaps, then fades the new one in over
+1s. When camera mode turns on or off, the game view instead eases between the container's shape and
+the camera's over 2s; if the display changes too, it fades out over the final second of the reshape
+and back in over 1s. With `prefers-reduced-motion: reduce`, every change is immediate.
+
 The game waits for the webcam's shape before drawing the display layers, so the silhouette and the
 artwork line up. If the player refuses the camera permission, the layers stay hidden and the error
 is logged in the browser console.
 
 ## How the view is layered
 
-The screen is a stack of full-screen layers. A larger `zIndex` paints later, so it covers the
-smaller ones. `GameLayersLayout` builds the stack and `GameLayerWrappers` makes each layer.
+The game is a stack of layers. A larger `zIndex` paints later, so it covers the smaller ones.
+`GameLayersLayout` builds the stack and `GameLayerWrappers` makes each layer.
+
+Without the camera, the stack fills the game container. With the camera, it is fitted to the
+camera's aspect ratio and centred, so the whole game is inside what the camera can see. The
+container's background shows in the space around it. The game view is a size container, so game
+templates can use `cqw` and `cqh` to follow it; `vw` and `vh` still follow the browser window.
+
+The display and camera layers sit inside one `.gameScene` wrapper, which fades as a whole; the HUD
+sits outside it. For a camera change, `#game-viewport` animates its `aspect-ratio` with a 2s CSS
+keyframe between the current shape and the camera's or container's shape, keeping the old display
+visible until the swap.
 
 | `zIndex` | Layer                 | What it holds                                           |
 | -------- | --------------------- | ------------------------------------------------------- |
@@ -142,6 +157,10 @@ Clicks keep working exactly as before, and remain the keyboard-accessible route.
 interaction is applied through the same state change as a click, and locked or completed stages are
 still ignored; see `getNewGameStateForInteraction` in `GameClickUtils.ts`.
 
+While a display or camera transition is running, clicks and camera interactions are ignored. The
+scene is `inert`, the monitors are cleared, and the camera hook drops frames, so a held hand cannot
+fire as the new display arrives.
+
 ### From frame to event
 
 `CharacterCanvas` calls `onPlayersChange` once per frame with every player's mask and feet, and the
@@ -167,27 +186,31 @@ toggling it.
 
 ## Where the code lives
 
-| Path                                                  | What it does                                                      |
-| ----------------------------------------------------- | ----------------------------------------------------------------- |
-| `src/components/camera/CharacterCamera.tsx`           | webcam stream and the preview video                               |
-| `src/components/camera/CharacterCanvas.tsx`           | segmentation loop; draws the silhouette; reports players and feet |
-| `src/components/camera/PlayerMonitor.ts`              | turns masks and feet into edge-triggered interactions             |
-| `src/components/camera/CameraSupport.ts`              | camera request, feet position, and screen-to-mask rectangles      |
-| `src/components/camera/BodySegSupport.ts`             | draws the mask, and the colours used for body parts               |
-| `src/components/camera/CameraDebugOverlay.tsx`        | green feet markers                                                |
-| `src/components/core/logic/CameraModeUtils.ts`        | per-display camera resolution                                     |
-| `src/components/core/logic/GameClickUtils.ts`         | targets, and the state changes for clicks and interactions        |
-| `src/components/core/layout/GameLayersLayout.tsx`     | the layer stack, shared camera state, and the interaction hook    |
-| `src/components/core/layout/PlayerInteractionHook.ts` | one monitor per player, and mask-space target rectangles          |
-| `src/components/core/layout/GameLayerWrappers.tsx`    | one wrapper component per layer                                   |
+| Path                                                  | What it does                                                                      |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `src/components/camera/CharacterCamera.tsx`           | webcam stream and the preview video                                               |
+| `src/components/camera/CharacterCanvas.tsx`           | segmentation loop; draws the silhouette; reports players and feet                 |
+| `src/components/camera/PlayerMonitor.ts`              | turns masks and feet into edge-triggered interactions                             |
+| `src/components/camera/CameraSupport.ts`              | camera request, feet position, and screen-to-mask rectangles                      |
+| `src/components/camera/BodySegSupport.ts`             | draws the mask, and the colours used for body parts                               |
+| `src/components/camera/CameraDebugOverlay.tsx`        | green feet markers                                                                |
+| `src/components/core/logic/CameraModeUtils.ts`        | per-display camera resolution                                                     |
+| `src/components/core/logic/GameClickUtils.ts`         | targets, and the state changes for clicks and interactions                        |
+| `src/components/core/layout/GameLayersLayout.tsx`     | the layer stack, scene transitions, shared camera state, and the interaction hook |
+| `src/components/core/layout/useSceneTransition.ts`    | fades display changes and times the camera reshape and reduced motion             |
+| `src/components/core/layout/PlayerInteractionHook.ts` | one monitor per player, and mask-space target rectangles                          |
+| `src/components/core/layout/GameLayerWrappers.tsx`    | one wrapper component per layer                                                   |
 
 ## Testing
 
 Unit tests cover the camera resolution (`tests/CameraModeUtils.test.ts`), the monitor and its jump
 sequence (`tests/PlayerMonitor.test.ts`), mask rectangles (`tests/CameraSupport.test.ts`), the
-segmentation loop (`tests/CharacterCanvas.test.tsx`), and the layout and game wiring.
+segmentation loop (`tests/CharacterCanvas.test.tsx`), and the layout and game wiring, including the
+display fades and camera reshape timings, waiting for a camera shape, and reduced motion.
 
-The browser suite runs the real TensorFlow pipeline in Chromium against a fake webcam:
+The browser suite runs the real TensorFlow pipeline in Chromium against a fake webcam. It samples the
+viewport mid-reshape, waits for the new display to fade in, and checks that the fitted game view
+contains every stepping stone:
 
 ```bash
 npx playwright install chromium  # once
