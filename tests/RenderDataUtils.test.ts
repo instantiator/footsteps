@@ -5,6 +5,7 @@ import {
   calcChallengeDisplays,
   calcOverviewDisplay,
   calcStageDisplay,
+  getDisplayKey,
   getLayeredRenderData,
   getRenderMode,
 } from "../src/components/core/logic/RenderDataUtils";
@@ -36,6 +37,41 @@ describe("getRenderMode", () => {
     const state = createBlankGameState(chunkedGame(1));
     expect(getRenderMode(state)).toBe("overview");
     expect(getRenderMode(inStage(state, "s1"))).toBe("stage");
+  });
+});
+
+describe("getDisplayKey", () => {
+  const keyOf = (state: GameState) => getDisplayKey(getLayeredRenderData(state, resources));
+
+  it("stays the same while a display's contents change", () => {
+    const state = inStage(createBlankGameState(chunkedGame(1)), "s1");
+    expect(keyOf({ ...state, current: { ...state.current } })).toBe(keyOf(state));
+  });
+
+  it("changes when the overview cuts to another overview", () => {
+    const state = createBlankGameState(chunkedGame(1));
+    const stages: GameState = { ...state, current: { ...state.current, overviewDisplay: "game-overview-stages" } };
+    expect(keyOf(stages)).not.toBe(keyOf(state));
+  });
+
+  it("changes when a stage opens", () => {
+    const state = createBlankGameState(chunkedGame(1));
+    expect(keyOf(inStage(state, "s1"))).not.toBe(keyOf(state));
+  });
+
+  it("changes when a challenge moves to another display purpose", () => {
+    const withCompleted = game(
+      ["game-overview-title"],
+      [stage("s1", [challenge("c1", ["challenge-in-progress", "challenge-completed"])])],
+    );
+    const state = inStage(createBlankGameState(withCompleted), "s1");
+    expect(keyOf(completeChallenge(state, "s1", "c1"))).not.toBe(keyOf(state));
+  });
+
+  it("changes when the active challenge chunk changes", () => {
+    const state = inStage(createBlankGameState(chunkedGame(2)), "s1");
+    const afterChunk = completeChallenge(completeChallenge(state, "s1", "c1"), "s1", "c2");
+    expect(keyOf(afterChunk)).not.toBe(keyOf(state));
   });
 });
 

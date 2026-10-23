@@ -10,7 +10,7 @@ GameData
 ├── tileGraphic?                       resource name of the tile's background image (see Landing tile)
 ├── gameContainerStyle                 applied to the game's outer container
 ├── config?                            { sequential, autoAdvanceStages }
-├── modules?.camera?                   { enabled }: show the player's camera silhouette
+├── modules?.camera?                   { enabled, preview? }: show the player's camera silhouette
 ├── resources?                         name → { type, target }        (see Resources)
 ├── sounds?                            resource names of music and sound effects (see Sounds)
 ├── reward?                            { animation, particleCount? }: celebration on stage completion
@@ -44,7 +44,70 @@ Every display has a `purpose`, which says when it shows, and a `component`, whic
 
 The selection code is `calcOverviewDisplay`, `calcStageDisplay` and `calcChallengeDisplay` in `src/components/core/logic/RenderDataUtils.ts`. Once every stage is complete, the overview switches to `game-overview-complete`, or falls back to the title, and then to the stages.
 
-An overview display can also have **`clickIdToStageId`**, which maps element ids in its template to the stage a click on that element enters. Locked and completed stages ignore the click. Any click on the title screen moves on to the stages overview. For keyboard access, see [clickable elements in templates](dev-overview.md#clickable-elements-in-templates).
+An overview display can also have **`clickIdToStageId`**, which maps element ids in its template to
+a `GameInteractionTarget`: the stage the element enters, which interactions it accepts, and the
+threshold for camera interactions. A target without `interactions` accepts only `click`, and its
+`threshold` defaults to `1`. Locked and completed stages ignore the interaction. Any click on the
+title screen moves on to the stages overview. Clicks remain the keyboard-accessible route; for
+keyboard access, see [clickable elements in templates](dev-overview.md#clickable-elements-in-templates).
+
+### Camera settings
+
+`modules.camera` switches camera mode on for a whole game:
+
+```json
+"modules": {
+  "camera": { "enabled": true, "preview": true }
+}
+```
+
+`preview` defaults to `true`. Any display can override either setting with
+`"camera": { "enabled": false }` or `{ "preview": false }`; an unset field inherits from broader
+displays.
+
+Camera mode and its preview resolve separately, most specific first:
+
+1. Any active challenge that sets it to `true` wins.
+2. Otherwise, any active challenge that sets it to `false` wins.
+3. Otherwise, the open stage's `shared` display.
+4. Otherwise, the overview display.
+5. Otherwise, the game's `modules.camera`.
+6. Otherwise, the default: camera off, preview on.
+
+The preview is always off while camera mode is off. See [camera mode](camera-mode.md) for what the
+player sees and how the settings behave in practice.
+
+### Interaction targets
+
+A `GameInteractionTarget` names the stage to enter and, optionally, how to enter it:
+
+```json
+"clickIdToStageId": {
+  "stages-link-stage-1": {
+    "stage": "stage-1",
+    "interactions": ["hand"],
+    "threshold": 0.5
+  }
+}
+```
+
+| Interaction | The player does                                           |
+| ----------- | --------------------------------------------------------- |
+| `click`     | Clicks the element, or focuses it and presses Enter/Space |
+| `hand`      | Puts either hand over the element                         |
+| `foot`      | Puts either foot over the element                         |
+| `head`      | Puts either side of their face over the element           |
+| `body`      | Covers the element with their whole silhouette            |
+| `any`       | Covers it with any single body part                       |
+| `jump`      | Jumps with their feet inside the element                  |
+
+`interactions` defaults to `["click"]`, so existing targets keep working as clicks. A target that
+lists `click` still accepts clicks alongside its camera interactions. `threshold` is the fraction
+of the chosen body part that must be inside the element (0–1, default `1`), clamped to that range.
+Interactions fire once per approach, and re-arm when the player moves away.
+
+Camera interactions are currently detected on overview displays only. The monitor and jump sequence
+are described under [how interactions work](camera-mode.md#how-interactions-work).
 
 ### Layers
 
@@ -196,7 +259,7 @@ The magic-trifle stages overview (`public/games/magic-trifle/overview/foreground
     "backgroundStyle": { "backgroundImage": "url('{{resources.blank-river}}')" },
     "data": {}
   },
-  "clickIdToStageId": { "stages-link-stage-1": "stage-1" }
+  "clickIdToStageId": { "stages-link-stage-1": { "stage": "stage-1" } }
 }
 ```
 

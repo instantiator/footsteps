@@ -21,7 +21,7 @@ export const smallGame: GameData = {
   displays: [
     {
       purpose: "game-overview-stages",
-      clickIdToStageId: { "stage-link-stage-1": "stage-1", "stage-link-stage-2": "stage-2" },
+      clickIdToStageId: { "stage-link-stage-1": { stage: "stage-1" }, "stage-link-stage-2": { stage: "stage-2" } },
       component: {
         type: "template",
         data: {},

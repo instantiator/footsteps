@@ -45,3 +45,44 @@
   top: 0;
   right: 0;
 }
+
+/* The display and camera layers, faded together when the game cuts to another display */
+.gameScene {
+  position: absolute;
+  inset: 0;
+  transition: opacity 1s ease-in-out;
+}
+
+/* The game view: fills the container, or fits the camera's shape, centred with the container's background around it */
+.gameViewport {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  container-type: size;
+}
+
+/* While the camera turns on or off, the viewport eases between the container's shape and the camera's */
+.gameViewportReshaping {
+  animation: reshapeGameViewport 2s ease-in-out;
+}
+
+@keyframes reshapeGameViewport {
+  from {
+    aspect-ratio: var(--reshape-from);
+  }
+  to {
+    aspect-ratio: var(--reshape-to);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gameScene {
+    transition: none;
+  }
+  .gameViewportReshaping {
+    animation: none;
+  }
+}

@@ -1,4 +1,9 @@
-import type { GameOverviewDisplayPurpose } from "../../../entities/data/displays/GameDisplayData";
+import {
+  DEFAULT_INTERACTIONS,
+  type GameInteraction,
+  type GameInteractionTarget,
+  type GameOverviewDisplayPurpose,
+} from "../../../entities/data/displays/GameDisplayData";
 import type { GameState } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
 import { calcOverviewDisplay } from "./RenderDataUtils";
@@ -10,21 +15,45 @@ export const GameOverviewPurposeSequence: GameOverviewDisplayPurpose[] = [
 ];
 
 /**
- * Works out the game state after a click on an overview display element.
- * @returns the new state, or undefined if the click changes nothing
+ * The interaction targets of the overview display the player is looking at.
+ *
+ * @returns element id to target, or an empty map while a stage is open
  */
-export const getNewGameStateForClick = (state: GameState, targetId: string): GameState | undefined => {
+export const getInteractionTargets = (state: GameState): Record<string, GameInteractionTarget> => {
+  if (isDefined(state.current.stageId)) return {};
+  return calcOverviewDisplay(state)?.clickIdToStageId ?? {};
+};
+
+/**
+ * Works out the game state after an interaction with an element in an overview display.
+ *
+ * A mapped element responds only to the interactions its target accepts. An element with no
+ * target only responds to a click, which moves on from the title screen.
+ *
+ * @returns the new state, or undefined if the interaction changes nothing
+ */
+export const getNewGameStateForInteraction = (
+  state: GameState,
+  targetId: string,
+  interaction: GameInteraction,
+): GameState | undefined => {
   if (isDefined(state.current.stageId)) return undefined;
 
   const overviewDisplay = calcOverviewDisplay(state);
   if (!isDefined(overviewDisplay)) return undefined;
 
-  const stageId = overviewDisplay.clickIdToStageId?.[targetId];
-  if (isDefined(stageId)) return enterStage(state, stageId);
+  const target = overviewDisplay.clickIdToStageId?.[targetId];
+  if (isDefined(target)) {
+    return acceptsInteraction(target, interaction) ? enterStage(state, target.stage) : undefined;
+  }
 
   // the title screen was clicked - any click moves to the challenges overview
-  return leaveTitleScreen(state);
+  return interaction === "click" ? leaveTitleScreen(state) : undefined;
 };
+
+/** Works out the game state after a click on an overview display element; a click is one interaction among several. */
+export const getNewGameStateForClick = (state: GameState, targetId: string): GameState | undefined =>
+  getNewGameStateForInteraction(state, targetId, "click");
 
 /**
  * Moves from the title screen to the stages overview, as any click (or Enter/Space) on the title does.
@@ -35,6 +64,10 @@ export const leaveTitleScreen = (state: GameState): GameState | undefined => {
     return undefined;
   return { ...state, current: { ...state.current, overviewDisplay: "game-overview-stages" } };
 };
+
+/** Whether a target accepts the interaction; a target that names none accepts only a click. */
+const acceptsInteraction = (target: GameInteractionTarget, interaction: GameInteraction): boolean =>
+  (target.interactions ?? DEFAULT_INTERACTIONS).includes(interaction);
 
 /** Enters the given stage, unless it is locked or already completed. */
 const enterStage = (state: GameState, stageId: string): GameState | undefined => {

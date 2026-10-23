@@ -1,22 +1,31 @@
 import _ from "lodash";
 import { useReward } from "partycles";
-import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import type { GameOverviewDisplayPurpose } from "../../entities/data/displays/GameDisplayData";
 import type { GameChallengeId } from "../../entities/data/GameChallengeData";
 import type { GameChallengeAnswerValidation } from "../../entities/data/GameChallengeSolution";
 import type { GameStageId } from "../../entities/data/GameStageData";
+import type { GameState } from "../../entities/state/GameState";
 import useFeatureFlags from "../../providers/FeatureFlagsHook";
 import { useGameData } from "../../providers/GameDataHook";
 import useGameMusic from "../../providers/GameMusicHook";
 import { useGameState } from "../../providers/GameStateHook";
 import { isDefined } from "../../util/ObjectUtils";
+import type { PlayerMonitorEvent } from "../camera/PlayerMonitor";
 import GameDisplayComponent, { type LayerHint } from "./display/GameDisplayComponent";
 import "./Game.css";
 import GameLayersLayout, { type GameLayers } from "./layout/GameLayersLayout";
-import { getNewGameStateForClick, leaveTitleScreen } from "./logic/GameClickUtils";
+import { resolveCameraMode } from "./logic/CameraModeUtils";
+import {
+  getInteractionTargets,
+  getNewGameStateForClick,
+  getNewGameStateForInteraction,
+  leaveTitleScreen,
+} from "./logic/GameClickUtils";
 import { findChallengeState } from "./logic/GameDataUtils";
 import { completeChallenge, validateAnswer } from "./logic/GameStateUtils";
 import {
+  getDisplayKey,
   getLayeredRenderData,
   type GameDisplayRenderData,
   type LayeredGameDisplayRenderData,
@@ -150,6 +159,25 @@ function GameStylesheets() {
   });
 }
 
+/** Handlers that move the game on when the player interacts with an element, by click or through the camera. */
+function useInteractionHandlers(gameState: GameState, setGameState: Dispatch<SetStateAction<GameState>>) {
+  const handleElementClick = (_layerId: string, elementId: string) => {
+    const newState = getNewGameStateForClick(gameState, elementId);
+    if (!isDefined(newState)) return false;
+    setGameState(newState);
+    return true;
+  };
+
+  /** Applies a camera interaction the same way as a click on the same element. */
+  const handlePlayerInteraction = ({ elementId, interaction }: PlayerMonitorEvent) => {
+    const newState = getNewGameStateForInteraction(gameState, elementId, interaction);
+    if (!isDefined(newState)) return;
+    setGameState(newState);
+  };
+
+  return { handleElementClick, handlePlayerInteraction };
+}
+
 /**
  * The game itself: builds layered render data from the game state, and hands it to {@link GameLayersLayout}
  * along with the click handling, feedback (music, sound effects, rewards) and title screen keys.
@@ -186,17 +214,12 @@ export default function Game() {
     [gameState, setGameState],
   );
 
-  const layers = useMemo(
-    () => createLayers(getLayeredRenderData(gameState, resources), onAnswer),
-    [gameState, onAnswer, resources],
-  );
-
-  const handleElementClick = (_layerId: string, elementId: string) => {
-    const newState = getNewGameStateForClick(gameState, elementId);
-    if (!isDefined(newState)) return false;
-    setGameState(newState);
-    return true;
-  };
+  const renderData = useMemo(() => getLayeredRenderData(gameState, resources), [gameState, resources]);
+  const displayKey = useMemo(() => getDisplayKey(renderData), [renderData]);
+  const layers = useMemo(() => createLayers(renderData, onAnswer), [renderData, onAnswer]);
+  const camera = useMemo(() => resolveCameraMode(gameState.gameData, renderData), [gameState.gameData, renderData]);
+  const interactionTargets = useMemo(() => getInteractionTargets(gameState), [gameState]);
+  const { handleElementClick, handlePlayerInteraction } = useInteractionHandlers(gameState, setGameState);
 
   return (
     <div
@@ -219,8 +242,11 @@ export default function Game() {
       <GameLayersLayout
         debug={debug}
         gameLayers={layers}
-        cameraLayer={gameState.gameData.modules?.camera}
+        displayKey={displayKey}
+        camera={camera}
         onElementClick={handleElementClick}
+        interactionTargets={interactionTargets}
+        onPlayerInteraction={handlePlayerInteraction}
       />
     </div>
   );

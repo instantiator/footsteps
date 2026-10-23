@@ -1,8 +1,9 @@
 import * as bodySeg from "@tensorflow-models/body-segmentation";
 import * as tf from "@tensorflow/tfjs";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { drawMask } from "./BodySegSupport";
 import { findFeet, type FeetPositions } from "./CameraSupport";
+import type { PlayerFrame } from "./PlayerMonitor";
 
 /** The body segmentation model. */
 type BodySegNet = bodySeg.BodySegmenter;
@@ -19,6 +20,14 @@ interface CharacterCanvasProps {
   offScreenThreshold_percent?: number;
   /** Called every frame with the feet of everyone found (empty if nobody is). */
   onFeetPositionsChange?: (feetPositions: FeetPositions) => void;
+  /**
+   * Called every frame with the people found (empty if nobody is) and when the frame was taken, in milliseconds.
+   *
+   * NB. Keep this callback stable: a new one restarts the segmentation loop.
+   */
+  onPlayersChange?: (players: PlayerFrame[], timestamp: number) => void;
+  /** The canvas element, for callers that need its position on the page; an internal ref is used when omitted. */
+  canvasRef?: RefObject<HTMLCanvasElement | null>;
   className?: string;
   style?: React.CSSProperties;
   /** How to draw the silhouette; see {@link drawMask}. Defaults to "binary". */
@@ -53,43 +62,10 @@ const loadBodySegNet = async (): Promise<BodySegNet | null> => {
   }
 };
 
-/**
- * Finds each segmented person's feet, keyed by their index in the segmentation.
- * @param offScreenThreshold_percent feet lower than this (% of height) are not tracked
- */
-const findAllFeet = async (segmentation: Segmentation, offScreenThreshold_percent?: number): Promise<FeetPositions> => {
-  const feetPositions: FeetPositions = {};
-  for (let i = 0; i < segmentation.length; i++) {
-    const personMask = await bodySeg.toBinaryMask(
-      [segmentation[i]],
-      { r: 0, g: 0, b: 0, a: 255 },
-      { r: 0, g: 0, b: 0, a: 0 },
-    );
-    const feet = findFeet(personMask, personMask.width, personMask.height, offScreenThreshold_percent);
-    if (feet) {
-      feetPositions[i] = feet;
-    }
-  }
-  return feetPositions;
-};
-
-/**
- * Runs body segmentation on the webcam video every frame, draws the player's silhouette on a canvas,
- * and reports where each person's feet are.
- */
-export default function CharacterCanvas({
-  video,
-  mediaStream,
-  offScreenThreshold_percent,
-  onFeetPositionsChange,
-  className,
-  style,
-  maskType = "binary",
-}: CharacterCanvasProps) {
+/** Holds the segmentation model while there is a camera stream, and releases it when there isn't. */
+const useBodySegNet = (mediaStream: MediaStream | undefined): BodySegNet | null => {
   const [net, setNet] = useState<BodySegNet | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Load the model while there is a camera stream, and release it when there isn't
   useEffect(() => {
     if (!mediaStream) return;
     let loaded: BodySegNet | null = null;
@@ -106,27 +82,73 @@ export default function CharacterCanvas({
     };
   }, [mediaStream]);
 
-  // Segment each video frame: report feet positions, then draw the mask
+  return net;
+};
+
+/**
+ * Reads each segmented person's mask and feet, once per frame.
+ * @param offScreenThreshold_percent feet lower than this (% of height) are not tracked
+ */
+const readPlayers = async (segmentation: Segmentation, offScreenThreshold_percent?: number): Promise<PlayerFrame[]> => {
+  const players: PlayerFrame[] = [];
+  for (let id = 0; id < segmentation.length; id++) {
+    const mask = await segmentation[id].mask.toImageData();
+    players.push({ id, mask, feet: findFeet(mask, mask.width, mask.height, offScreenThreshold_percent) });
+  }
+  return players;
+};
+
+/** The feet of the players that are on screen, keyed by player id. */
+const feetPositionsOf = (players: PlayerFrame[]): FeetPositions => {
+  const feetPositions: FeetPositions = {};
+  for (const { id, feet } of players) {
+    if (feet) feetPositions[id] = feet;
+  }
+  return feetPositions;
+};
+
+/**
+ * Runs body segmentation on the webcam video every frame, draws the player's silhouette on a canvas,
+ * and reports where each person's feet are.
+ */
+export default function CharacterCanvas({
+  video,
+  mediaStream,
+  offScreenThreshold_percent,
+  onFeetPositionsChange,
+  onPlayersChange,
+  canvasRef,
+  className,
+  style,
+  maskType = "binary",
+}: CharacterCanvasProps) {
+  const net = useBodySegNet(mediaStream);
+  const internalCanvasRef = useRef<HTMLCanvasElement>(null);
+  const canvas = canvasRef ?? internalCanvasRef;
+
+  // Segment each video frame: report players and feet, then draw the mask
   useEffect(() => {
     let cancelled = false;
     let frame = 0;
     const runSegmentationLoop = (net: BodySegNet, video: HTMLVideoElement, canvas: HTMLCanvasElement) => {
       const ctx = canvas.getContext("2d");
-      if (!ctx) return;
 
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
       const segmentFrame = async () => {
         if (cancelled) return;
+        const timestamp = performance.now();
         const segmentation = await net.segmentPeople(video, SEGMENTATION_CONFIG);
         if (cancelled) return; // the model may have been disposed while this frame was segmented
-        if (segmentation.length === 0) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          onFeetPositionsChange?.({});
-        } else {
-          if (onFeetPositionsChange) onFeetPositionsChange(await findAllFeet(segmentation, offScreenThreshold_percent));
-          await drawMask(video, segmentation, ctx, maskType);
+        const players = await readPlayers(segmentation, offScreenThreshold_percent);
+        if (cancelled) return;
+        onPlayersChange?.(players, timestamp);
+        onFeetPositionsChange?.(feetPositionsOf(players));
+        if (ctx) {
+          // The 2D context is missing in some environments (eg. tests); the reports above still happen
+          if (segmentation.length === 0) ctx.clearRect(0, 0, canvas.width, canvas.height);
+          else await drawMask(video, segmentation, ctx, maskType);
         }
         frame = requestAnimationFrame(segmentFrame);
       };
@@ -135,12 +157,13 @@ export default function CharacterCanvas({
     };
 
     // The stream belongs to CharacterCamera, which stops its tracks; this effect only stops its own loop
-    if (net && video && mediaStream) runSegmentationLoop(net, video, canvasRef.current!);
+    const canvasElement = canvas.current;
+    if (net && video && mediaStream && canvasElement) runSegmentationLoop(net, video, canvasElement);
     return () => {
       cancelled = true;
       cancelAnimationFrame(frame);
     };
-  }, [net, mediaStream, video, onFeetPositionsChange, offScreenThreshold_percent, maskType]);
+  }, [net, mediaStream, video, canvas, onFeetPositionsChange, onPlayersChange, offScreenThreshold_percent, maskType]);
 
-  return <canvas ref={canvasRef} className={className} style={style} />;
+  return <canvas ref={canvas} className={className} style={style} />;
 }

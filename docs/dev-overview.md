@@ -22,21 +22,22 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 
 ## Invocations
 
-| Command                  | Does                                                                                                                    |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev`            | Dev server on <http://localhost:5173>                                                                                   |
-| `npm run build`          | Typecheck, then prerender every page to a static site in `dist/client/`                                                 |
-| `npm run build:gh-pages` | As `build`, under the GitHub Pages base path: `$BASE_URL`, or `/footsteps/` if unset (see: [deployment](deployment.md)) |
-| `npm run preview`        | Serve `dist/client/` locally                                                                                            |
-| `npm test`               | Validate the game data, then run the tests once                                                                         |
-| `npm run test:run`       | The same: validate `public/game-repository.json`, then run the tests                                                    |
-| `npm run validate`       | Validate `public/game-repository.json`: schema, resource files and URLs, and resource names                             |
-| `npm run lint:check`     | ESLint, failing on any warning                                                                                          |
-| `npm run typecheck`      | TypeScript, no output                                                                                                   |
-| `npm run docs:api`       | Regenerate the API reference in `docs/tsdoc/` as HTML from the TSDoc comments, failing on any undocumented export       |
-| `npm run docs:dev`       | Documentation site at <http://localhost:5173/docs/>, with live reload (VitePress)                                       |
-| `npm run docs:build`     | Build the documentation site into `docs-static/`                                                                        |
-| `npm run format`         | Prettier, rewriting files (`format:check` only reports)                                                                 |
+| Command                        | Does                                                                                                                    |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`                  | Dev server on <http://localhost:5173>                                                                                   |
+| `npm run build`                | Typecheck, then prerender every page to a static site in `dist/client/`                                                 |
+| `npm run build:gh-pages`       | As `build`, under the GitHub Pages base path: `$BASE_URL`, or `/footsteps/` if unset (see: [deployment](deployment.md)) |
+| `npm run preview`              | Serve `dist/client/` locally                                                                                            |
+| `npm test`                     | Validate the game data, then run the tests once                                                                         |
+| `scripts/run-browser-tests.sh` | Playwright browser tests against a fake webcam, locally only (see [browser tests](#browser-tests))                      |
+| `npm run test:run`             | The same: validate `public/game-repository.json`, then run the tests                                                    |
+| `npm run validate`             | Validate `public/game-repository.json`: schema, resource files and URLs, and resource names                             |
+| `npm run lint:check`           | ESLint, failing on any warning                                                                                          |
+| `npm run typecheck`            | TypeScript, no output                                                                                                   |
+| `npm run docs:api`             | Regenerate the API reference in `docs/tsdoc/` as HTML from the TSDoc comments, failing on any undocumented export       |
+| `npm run docs:dev`             | Documentation site at <http://localhost:5173/docs/>, with live reload (VitePress)                                       |
+| `npm run docs:build`           | Build the documentation site into `docs-static/`                                                                        |
+| `npm run format`               | Prettier, rewriting files (`format:check` only reports)                                                                 |
 
 `dev`, `build`, `lint`, `preview`, and `test` first run `pre-build.sh`, which regenerates `src/assets/license-report.json` and the JSON schemas. `test` also validates the game data.
 
@@ -52,6 +53,23 @@ Use `npm run docs:dev` for the Markdown pages locally, and `npm run docs:api` to
 ## Quality gate
 
 `dev-qual/scripts/check.sh` runs formatting, lint, typecheck, build, tests, shell/workflow/markdown linters, and an [aislop](https://www.npmjs.com/package/aislop) scan. `--fast` (format, lint, typecheck only) runs as the git pre-commit hook; the full gate runs as the pre-push hook, and in CI on every pull request and push to `main` (`.github/workflows/check.yaml`), which shows test results as annotations and a job summary, with the JUnit file as a downloadable artefact. Before committing, the hook also runs `scripts/pre-commit-fixups.sh`, which runs `scripts/pre-commit-checks.sh` (the data validator's unit tests, and an advisory data check), regenerates the HTML API reference in `docs/tsdoc/` whenever `src/`, `typedoc.json` or `package.json` is staged, and the JSON schemas whenever `src/entities/` is staged, and adds them to the commit. An export without a TSDoc comment fails the commit. aislop compares against `.aislop/ci-baseline.json` (accepted findings) and `ci.failBelow` in `.aislop/config.yml`, and skips generated output listed in `.aislopignore`.
+
+## Browser tests
+
+`tests/browser/` runs the real camera pipeline in Chromium against a fake webcam, covering the
+silhouette loop, debug changes, preview visibility, camera-off displays, image switching, and the
+game view easing into the camera's shape before its display fades in. It is
+local only: the first run downloads the TensorFlow model (about 90 MB), so it is not part of the
+pre-push gate or CI.
+
+```bash
+npx playwright install chromium  # once
+scripts/run-browser-tests.sh
+```
+
+The config uses port `5180`, reuses a dev server already running there, and enables Metal on macOS
+so headless segmentation is fast enough to test. See [manual testing](testing/manual-testing.md) for
+the checks it does not replace.
 
 ## Sample games
 
@@ -74,7 +92,15 @@ Every game in the local repository, `public/game-repository.json`, is prerendere
 
 ### Clickable elements in templates
 
-Overview templates make elements clickable by giving them an `id` that the display's `clickIdToStageId` maps to a stage. For keyboard players, also mark each element a player can currently use with `role="button"`, `tabindex="0"`, and a label (`alt` on an image, or `aria-label`): the layer then treats Enter or Space on it as a click. On the title screen, Enter or Space anywhere moves on, as a click does. See `public/games/magic-trifle/overview/foreground.hbs`.
+Overview templates make elements interactive by giving them an `id` that the display's
+`clickIdToStageId` maps to an interaction target. A target without `interactions` accepts clicks, so
+the clickable behaviour is unchanged; a target can also accept hand, foot, head, body, any, and jump
+interactions (see [interaction targets](game-data.md#interaction-targets), and
+[camera mode](camera-mode.md#how-interactions-work) for what the camera detects). For keyboard
+players, also mark each element a player can currently use with `role="button"`, `tabindex="0"`, and
+a label (`alt` on an image, or `aria-label`): the layer then treats Enter or Space on it as a click.
+On the title screen, Enter or Space anywhere moves on, as a click does. See
+`public/games/magic-trifle/overview/foreground.hbs`.
 
 ### Validate data
 

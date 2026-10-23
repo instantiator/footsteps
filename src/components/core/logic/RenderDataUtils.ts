@@ -60,6 +60,25 @@ export interface GameTemplateData {
 export const getRenderMode = (gameState: GameState): GameDisplayMode =>
   isDefined(gameState.current.stageId) ? "stage" : "overview";
 
+/**
+ * Identifies the combination of displays on screen. It changes when the game cuts to another
+ * overview, stage or challenge display, but not when their contents update.
+ */
+export const getDisplayKey = ({
+  overviewRenderData,
+  stageRenderData,
+  challengesRenderData,
+}: LayeredGameDisplayRenderData): string =>
+  JSON.stringify({
+    overview: overviewRenderData?.purpose,
+    stage: stageRenderData?.stageId,
+    challenges: challengesRenderData?.map(({ stageId, challengeId, purpose }) => ({
+      stageId,
+      challengeId,
+      purpose,
+    })),
+  });
+
 /** Gathers the render data for every layer of the current display. */
 export const getLayeredRenderData = (
   state: GameState,
@@ -93,6 +112,7 @@ const getOverviewRenderData = (
     return {
       purpose: overviewDisplay.purpose,
       component: overviewDisplay.component,
+      camera: overviewDisplay.camera,
       templateData: overviewTemplateData,
       stageId: undefined,
       challengeId: undefined,
@@ -155,6 +175,7 @@ const getChallengesRenderData = (
         return {
           purpose: challengeDisplay.purpose,
           component: challengeDisplay.component,
+          camera: challengeDisplay.camera,
           templateData: challengeTemplateData,
           stageId: stageState.stage.id,
           challengeId: challengeState.challenge.id,

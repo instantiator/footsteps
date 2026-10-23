@@ -7,6 +7,10 @@
                 "enabled": {
                     "description": "Whether the module is switched on for this game.",
                     "type": "boolean"
+                },
+                "preview": {
+                    "description": "Whether the webcam preview shows. Defaults to `true`.",
+                    "type": "boolean"
                 }
             },
             "required": [
@@ -43,6 +47,10 @@
         "GameChallengeDisplay": {
             "description": "A display for one stage of a challenge's lifecycle.",
             "properties": {
+                "camera": {
+                    "$ref": "#/definitions/GameDisplayCameraData",
+                    "description": "Camera mode settings for this display, falling back to broader displays."
+                },
                 "component": {
                     "$ref": "#/definitions/GameDisplayComponentData",
                     "description": "How this display is rendered."
@@ -234,6 +242,20 @@
                 "stages",
                 "title"
             ],
+            "type": "object"
+        },
+        "GameDisplayCameraData": {
+            "description": "Camera mode settings for one display; unset fields fall back to broader displays.",
+            "properties": {
+                "enabled": {
+                    "description": "Whether camera mode is on while this display shows.",
+                    "type": "boolean"
+                },
+                "preview": {
+                    "description": "Whether the webcam preview shows while this display shows.",
+                    "type": "boolean"
+                }
+            },
             "type": "object"
         },
         "GameDisplayComponentData": {
@@ -499,12 +521,58 @@
             ],
             "type": "object"
         },
+        "GameInteraction": {
+            "description": "A way a player can interact with an element in a display.",
+            "enum": [
+                "any",
+                "body",
+                "click",
+                "foot",
+                "hand",
+                "head",
+                "jump"
+            ],
+            "type": "string"
+        },
+        "GameInteractionTarget": {
+            "description": "What interacting with an element does, and how the player can do it.",
+            "properties": {
+                "interactions": {
+                    "description": "Accepted interactions. Defaults to `[\"click\"]`.",
+                    "items": {
+                        "$ref": "#/definitions/GameInteraction"
+                    },
+                    "type": "array"
+                },
+                "stage": {
+                    "description": "Stage entered by the interaction.",
+                    "type": "string"
+                },
+                "threshold": {
+                    "description": "Fraction of the body part that must be inside the element (0–1).",
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number"
+                }
+            },
+            "required": [
+                "stage"
+            ],
+            "type": "object"
+        },
         "GameOverviewDisplay": {
             "description": "A display shown when no stage is active.",
             "properties": {
+                "camera": {
+                    "$ref": "#/definitions/GameDisplayCameraData",
+                    "description": "Camera mode settings for this display, falling back to broader displays."
+                },
                 "clickIdToStageId": {
-                    "$ref": "#/definitions/Record%3Cstring%2Cstring%3E",
-                    "description": "Maps ids of elements in the template to the stage id that clicking them enters."
+                    "additionalProperties": {
+                        "$ref": "#/definitions/GameInteractionTarget"
+                    },
+                    "description": "Maps ids of elements in the template to what interacting with them does.\n\nNB. The name predates camera interactions: a target lists which interactions it accepts.",
+                    "type": "object"
                 },
                 "component": {
                     "$ref": "#/definitions/GameDisplayComponentData",
@@ -591,6 +659,10 @@
         "GameStageDisplay": {
             "description": "A display shared by all challenges in a stage.",
             "properties": {
+                "camera": {
+                    "$ref": "#/definitions/GameDisplayCameraData",
+                    "description": "Camera mode settings for this display, falling back to broader displays."
+                },
                 "component": {
                     "$ref": "#/definitions/GameDisplayComponentData",
                     "description": "How this display is rendered."
@@ -608,9 +680,6 @@
             "type": "object"
         },
         "React.CSSProperties": {
-            "type": "object"
-        },
-        "Record<string,string>": {
             "type": "object"
         },
         "Record<string,unknown>": {
