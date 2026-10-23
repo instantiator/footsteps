@@ -116,7 +116,7 @@ describe("GameLanding", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Grant camera" }));
 
-    expect(await screen.findByRole("img", { name: "Granted" })).toBeInTheDocument();
+    expect(await screen.findByText("Granted")).toBeInTheDocument();
     expect(newGame).toBeEnabled();
   });
 
@@ -124,7 +124,7 @@ describe("GameLanding", () => {
     permissionQuery("granted");
     renderLanding(cameraGame);
 
-    expect(await screen.findByRole("img", { name: "Granted" })).toBeInTheDocument();
+    expect(await screen.findByText("Granted")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New game" })).toBeEnabled();
   });
 
@@ -137,7 +137,7 @@ describe("GameLanding", () => {
     expect(await screen.findByText("Not granted")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Grant camera" }));
 
-    expect(await screen.findByRole("img", { name: "Granted" })).toBeInTheDocument();
+    expect(await screen.findByText("Granted")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New game" })).toBeEnabled();
   });
 
@@ -192,7 +192,7 @@ describe("GameLanding", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Grant camera" }));
 
-    expect(await screen.findByRole("img", { name: "Granted" })).toBeInTheDocument();
+    expect(await screen.findByText("Granted")).toBeInTheDocument();
     expect(continueButton).toBeEnabled();
     expect(screen.getByRole("button", { name: "New game" })).toBeEnabled();
   });

@@ -11,12 +11,12 @@ A game repository is a JSON file holding one or more games. Its type is `GameRep
 }
 ```
 
-| Field                       | Authored? | Meaning                                                                                                                                                                   |
-| --------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `games`                     | yes       | `GameId` → `GameData`. The key is the game's id in its URL: `/game/<id>`. Each game is described in [Game data](game-data.md).                                            |
-| `ready`, `loading`, `error` | no        | Set at runtime by `GameRepositoryProvider` while the file loads. A repository being loaded is `LOADING_REPOSITORY`, and a failed one is `FAILED_REPOSITORY` plus `error`. |
+| Field                       | Authored? | Meaning                                                                                                                                                                            |
+| --------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `games`                     | yes       | `GameId` → `GameData`. The key is the game's id in its URLs: `/game/<id>` for the landing page and `/game/<id>/play` to play. Each game is described in [Game data](game-data.md). |
+| `ready`, `loading`, `error` | no        | Set at runtime by `GameRepositoryProvider` while the file loads. A repository being loaded is `LOADING_REPOSITORY`, and a failed one is `FAILED_REPOSITORY` plus `error`.          |
 
-`public/game-repository.json` is the site's own repository. Every game in it is prerendered at `/game/<id>`. `public/test-repository.json` holds test-only games.
+`public/game-repository.json` is the site's own repository. Every game in it is prerendered at `/game/<id>`, `/game/<id>/play`, and `/game/<id>/json`. `public/test-repository.json` holds test-only games.
 
 ## Sources
 

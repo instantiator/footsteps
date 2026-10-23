@@ -15,12 +15,18 @@ this covers what only a person in front of a camera can confirm.
 }
 ```
 
-Revert the change when you have finished: the committed game ships with the camera off.
+Revert the module change when you have finished. The committed game leaves `modules.camera` off, but
+one of its displays turns the camera on, so the landing page still requires camera permission.
 
 ## Camera smoke test
 
-Open <http://localhost:5173/game/magic-trifle> and allow the camera.
+Open <http://localhost:5173/game/magic-trifle>.
 
+- [ ] The landing page fills the viewport with the game's tile graphic and shows its title and
+      description.
+- [ ] The permissions panel lists Camera, with a Grant button, and New game is disabled.
+- [ ] Click Grant and allow the camera. The panel shows a check mark, and New game becomes enabled.
+- [ ] Click New game. The URL changes to `/game/magic-trifle/play`.
 - [ ] A small preview appears in the top right, mirrored like a selfie camera.
 - [ ] The player's silhouette replaces the room around them, as a black cut-out.
 - [ ] Walking around moves the silhouette with you.
@@ -31,6 +37,22 @@ Now add `?debug=true` to the URL and reload.
 - [ ] The silhouette is tinted by body part, and a colour key appears below the preview.
 - [ ] Small markers show where the camera found each foot.
 - [ ] The console still shows no errors.
+
+## Landing, progress, and keep-awake
+
+Turn camera mode off everywhere for this section: set `modules.camera.enabled` to `false` and set
+every display's `camera.enabled` to `false`. The committed game has one display that turns the camera
+on, so changing only the module is not enough.
+
+- [ ] `/game/magic-trifle` says "No permissions needed." and New game is enabled.
+- [ ] Complete a challenge, return to `/game/magic-trifle`, and Continue appears.
+- [ ] Continue opens `/game/magic-trifle/play` at the saved stage.
+- [ ] New game clears the saved progress: after it, Continue is gone on the next landing visit.
+- [ ] Re-enable a camera display, clear the site's camera permission, and visit
+      `/game/magic-trifle/play` directly: it returns to the landing page.
+- [ ] While a game is open and incomplete, the device does not sleep or dim the screen. Completing
+      the last stage releases the wake lock; check the browser console for wake-lock warnings if the
+      device still sleeps.
 
 ## Bug #16: the segmentation loop keeps running
 
@@ -124,6 +146,7 @@ What the suite proves:
 
 | Test                                                | Proves                                                              |
 | --------------------------------------------------- | ------------------------------------------------------------------- |
+| Landing page starts the game at `/play`             | The landing page and route split work in a real browser             |
 | Shows the preview and runs the silhouette loop      | The fake camera reaches the preview, and segmentation draws frames  |
 | Debug changes the mask type                         | The loop survives the mask-type change with no model errors         |
 | Preview off keeps the camera running                | Hiding the preview does not stop segmentation                       |

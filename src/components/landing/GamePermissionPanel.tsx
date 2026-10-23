@@ -37,8 +37,9 @@ export default function GamePermissionPanel({ permissions, states, granting, onG
             <li key={id}>
               <span>{label}</span>
               {state === "granted" ? (
-                <span className="game-permission-granted" role="img" aria-label="Granted">
-                  ✓
+                <span className="game-permission-granted">
+                  <span aria-hidden="true">✓</span>
+                  <span className="game-permission-granted-text">Granted</span>
                 </span>
               ) : state === undefined ? (
                 <span className="game-permission-status">Checking…</span>
