@@ -1,5 +1,6 @@
 import { useMemo, type CSSProperties } from "react";
 import { useNavigate } from "react-router";
+import { clearGameState, loadGameState } from "../../entities/state/GameStateStorage";
 import { useGameData } from "../../providers/GameDataHook";
 import { isDefined } from "../../util/ObjectUtils";
 import GameStylesheets from "../core/GameStylesheets";
@@ -17,6 +18,12 @@ export default function GameLanding() {
     [gameData.tileGraphic, resources],
   );
   const { permissions, states, granting, grant, allGranted } = useGamePermissions(gameData);
+  const savedState = useMemo(() => loadGameState(gameId, gameData), [gameId, gameData]);
+
+  const startNewGame = () => {
+    clearGameState(gameId);
+    navigate(`/game/${gameId}/play`);
+  };
 
   const pageStyle: CSSProperties = {
     backgroundImage: isDefined(graphic) ? `url("${graphic}")` : undefined,
@@ -34,7 +41,12 @@ export default function GameLanding() {
         <GamePermissionPanel permissions={permissions} states={states} granting={granting} onGrant={grant} />
       </div>
       <div className="game-landing-actions">
-        <button type="button" disabled={!allGranted} onClick={() => navigate(`/game/${gameId}/play`)}>
+        {isDefined(savedState) && (
+          <button type="button" disabled={!allGranted} onClick={() => navigate(`/game/${gameId}/play`)}>
+            Continue
+          </button>
+        )}
+        <button type="button" disabled={!allGranted} onClick={startNewGame}>
           New game
         </button>
       </div>

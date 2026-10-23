@@ -2,7 +2,10 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import GameLanding from "../src/components/landing/GameLanding";
+import { completeChallenge } from "../src/components/core/logic/GameStateUtils";
 import type { GameData } from "../src/entities/data/GameData";
+import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
+import { loadGameState, saveGameState } from "../src/entities/state/GameStateStorage";
 import { GameDataProvider } from "../src/providers/GameDataProvider";
 import GameRepositoryProvider from "../src/providers/GameRepositoryProvider";
 import { simpleGameData } from "./data/SampleGameState";
@@ -11,6 +14,12 @@ import { stubGetUserMedia, stubPermissionQuery, type PermissionQueryResult } fro
 const GAME_ID = "simple-game";
 
 const cameraGame: GameData = { ...simpleGameData, modules: { camera: { enabled: true } } };
+
+/** A state with stage 1 complete and stage 2 partly complete. */
+const partlyComplete = (): GameState => {
+  const stageOneComplete = completeChallenge(createBlankGameState(simpleGameData), "stage-1", "stage-1-challenge-1");
+  return completeChallenge(stageOneComplete, "stage-2", "stage-2-challenge-1");
+};
 
 const restores: (() => void)[] = [];
 
@@ -143,5 +152,48 @@ describe("GameLanding", () => {
 
     expect(await screen.findByRole("button", { name: "Grant camera" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New game" })).toBeDisabled();
+  });
+
+  it("hides Continue when no progress is saved", () => {
+    renderLanding();
+
+    expect(screen.queryByRole("button", { name: "Continue" })).not.toBeInTheDocument();
+  });
+
+  it("offers Continue when progress is saved, and starts the saved game", () => {
+    saveGameState(GAME_ID, partlyComplete());
+    renderLanding();
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(screen.getByText("Playing the game")).toBeInTheDocument();
+  });
+
+  it("clears saved progress when starting a new game", () => {
+    saveGameState(GAME_ID, partlyComplete());
+    renderLanding();
+
+    fireEvent.click(screen.getByRole("button", { name: "New game" }));
+
+    expect(screen.getByText("Playing the game")).toBeInTheDocument();
+    expect(loadGameState(GAME_ID, simpleGameData)).toBeUndefined();
+  });
+
+  it("keeps Continue disabled until required permissions are granted", async () => {
+    saveGameState(GAME_ID, partlyComplete());
+    permissionQuery("prompt");
+    getUserMedia();
+    renderLanding(cameraGame);
+
+    expect(await screen.findByText("Not granted")).toBeInTheDocument();
+    const continueButton = screen.getByRole("button", { name: "Continue" });
+    expect(continueButton).toBeDisabled();
+    expect(screen.getByRole("button", { name: "New game" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Grant camera" }));
+
+    expect(await screen.findByRole("img", { name: "Granted" })).toBeInTheDocument();
+    expect(continueButton).toBeEnabled();
+    expect(screen.getByRole("button", { name: "New game" })).toBeEnabled();
   });
 });
