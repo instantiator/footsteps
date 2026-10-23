@@ -32,6 +32,7 @@ import {
   type LayeredGameDisplayRenderData,
 } from "./logic/RenderDataUtils";
 import { playAudio } from "./sfx/AudioUtils";
+import { useWakeLock } from "./WakeLockHook";
 
 /**
  * Submits an answer to a challenge.
@@ -169,6 +170,7 @@ export default function Game() {
   const { gameState, setGameState } = useGameState();
   useGameFeedback();
   useTitleScreenKeys();
+  useWakeLock(!gameState.stages.every((stage) => stage.completion === "completed"));
 
   /**
    * The callback function used when an answer is submitted (or tested) by a display component.
