@@ -14,7 +14,9 @@ afterEach(() => {
 });
 
 const renderAt = (path: string) => {
-  const router = createMemoryRouter([{ path: "/game/:id", element: <LocalGame /> }], { initialEntries: [path] });
+  const router = createMemoryRouter([{ path: "/game/:id/play", element: <LocalGame /> }], {
+    initialEntries: [path],
+  });
   return render(<RouterProvider router={router} />);
 };
 
@@ -28,7 +30,7 @@ const repositoryServed = () =>
 
 describe("LocalGame", () => {
   it("plays the game with the routed id once the local repository loads", async () => {
-    const { container } = renderAt("/game/magic-trifle");
+    const { container } = renderAt("/game/magic-trifle/play");
     // jsdom never loads stylesheets, and React holds the game back until they have
     await waitFor(() => {
       document.head.querySelectorAll("link").forEach((link) => link.dispatchEvent(new Event("load")));
@@ -41,7 +43,7 @@ describe("LocalGame", () => {
 
   it("renders no game for an unknown id", async () => {
     const served = repositoryServed();
-    const { container } = renderAt("/game/unknown");
+    const { container } = renderAt("/game/unknown/play");
     await served;
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(container.querySelector("#game-container")).toBeNull();

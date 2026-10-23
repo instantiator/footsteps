@@ -1,0 +1,64 @@
+/* A full-viewport landing page: the game's tile graphic behind its details and controls. */
+.game-landing {
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  background-color: #dce8f5;
+  background-position: center;
+  background-size: cover;
+  color: #22303c;
+}
+
+.game-landing-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 40rem;
+  padding: 1.5rem 1.5rem 6rem;
+}
+
+.game-landing-panel {
+  max-height: 60vh;
+}
+
+.game-landing-panel h1 {
+  margin: 0 0 0.5rem;
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+.game-landing-panel p {
+  margin: 0;
+}
+
+.game-landing-actions {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.game-landing-actions button {
+  padding: 0.6rem 1.2rem;
+  border: 2px solid #22303c;
+  border-radius: 0.5rem;
+  background: #ffffffe6;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.game-landing-actions button:hover {
+  border-color: #b00020;
+}
+
+.game-landing-actions button:focus-visible {
+  outline: 2px solid #b00020;
+  outline-offset: 2px;
+}
+
+.game-landing-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

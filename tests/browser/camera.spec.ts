@@ -42,7 +42,7 @@ const openCameraGame = async (page: Page, options: CameraGameOptions = {}): Prom
   await installFakeCamera(page);
   await installCameraDrawCounter(page);
   await patchRepository(page, options);
-  await page.goto(`/game/${GAME_ID}`);
+  await page.goto(`/game/${GAME_ID}/play`);
 };
 
 const streamCount = (page: Page) => page.evaluate(() => window.__fakeCamera.streams.length);
