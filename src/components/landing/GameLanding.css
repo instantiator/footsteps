@@ -27,8 +27,62 @@
   line-height: 1.2;
 }
 
+.game-landing-panel h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+}
+
 .game-landing-panel p {
   margin: 0;
+}
+
+.game-permission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.game-permission-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.game-permission-status {
+  margin-left: auto;
+}
+
+.game-permission-granted {
+  margin-left: auto;
+  color: #1b5e20;
+  font-weight: bold;
+}
+
+.game-permission-list button {
+  padding: 0.3rem 0.75rem;
+  border: 2px solid #22303c;
+  border-radius: 0.5rem;
+  background: #ffffffe6;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.game-permission-list button:hover {
+  border-color: #b00020;
+}
+
+.game-permission-list button:focus-visible {
+  outline: 2px solid #b00020;
+  outline-offset: 2px;
+}
+
+.game-permission-list button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .game-landing-actions {

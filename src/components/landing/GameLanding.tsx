@@ -5,6 +5,8 @@ import { isDefined } from "../../util/ObjectUtils";
 import GameStylesheets from "../core/GameStylesheets";
 import "./GamePanel.css";
 import "./GameLanding.css";
+import GamePermissionPanel from "./GamePermissionPanel";
+import { useGamePermissions } from "./useGamePermissions";
 
 /** The game's landing page: its tile graphic behind the game's title, description and controls. */
 export default function GameLanding() {
@@ -14,6 +16,7 @@ export default function GameLanding() {
     () => (isDefined(gameData.tileGraphic) ? resources[gameData.tileGraphic] : undefined),
     [gameData.tileGraphic, resources],
   );
+  const { permissions, states, granting, grant, allGranted } = useGamePermissions(gameData);
 
   const pageStyle: CSSProperties = {
     backgroundImage: isDefined(graphic) ? `url("${graphic}")` : undefined,
@@ -28,9 +31,10 @@ export default function GameLanding() {
           <h1>{gameData.title}</h1>
           <p>{gameData.description}</p>
         </div>
+        <GamePermissionPanel permissions={permissions} states={states} granting={granting} onGrant={grant} />
       </div>
       <div className="game-landing-actions">
-        <button type="button" onClick={() => navigate(`/game/${gameId}/play`)}>
+        <button type="button" disabled={!allGranted} onClick={() => navigate(`/game/${gameId}/play`)}>
           New game
         </button>
       </div>

@@ -1,13 +1,36 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import GameLanding from "../src/components/landing/GameLanding";
 import type { GameData } from "../src/entities/data/GameData";
 import { GameDataProvider } from "../src/providers/GameDataProvider";
 import GameRepositoryProvider from "../src/providers/GameRepositoryProvider";
 import { simpleGameData } from "./data/SampleGameState";
+import { stubGetUserMedia, stubPermissionQuery, type PermissionQueryResult } from "./helpers/permissions";
 
 const GAME_ID = "simple-game";
+
+const cameraGame: GameData = { ...simpleGameData, modules: { camera: { enabled: true } } };
+
+const restores: (() => void)[] = [];
+
+const permissionQuery = (result: PermissionQueryResult) => {
+  const stub = stubPermissionQuery(result);
+  restores.push(stub.restore);
+  return stub;
+};
+
+const getUserMedia = (error?: Error) => {
+  const stub = stubGetUserMedia(error);
+  restores.push(stub.restore);
+  return stub;
+};
+
+afterEach(() => {
+  restores.forEach((restore) => restore());
+  restores.length = 0;
+  vi.restoreAllMocks();
+});
 
 /** Renders the landing page with a play route that stands in for the game. */
 const renderLanding = (game: GameData = simpleGameData) =>
@@ -64,5 +87,61 @@ describe("GameLanding", () => {
     fireEvent.click(screen.getByRole("button", { name: "New game" }));
 
     expect(screen.getByText("Playing the game")).toBeInTheDocument();
+  });
+
+  it("says when the game needs no permissions", () => {
+    renderLanding();
+
+    expect(screen.getByText("No permissions needed.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New game" })).toBeEnabled();
+  });
+
+  it("lists a required camera and enables New game after it is granted", async () => {
+    permissionQuery("prompt");
+    getUserMedia();
+    renderLanding(cameraGame);
+
+    expect(await screen.findByText("Not granted")).toBeInTheDocument();
+    const newGame = screen.getByRole("button", { name: "New game" });
+    expect(newGame).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Grant camera" }));
+
+    expect(await screen.findByRole("img", { name: "Granted" })).toBeInTheDocument();
+    expect(newGame).toBeEnabled();
+  });
+
+  it("enables New game when the camera is already granted", async () => {
+    permissionQuery("granted");
+    renderLanding(cameraGame);
+
+    expect(await screen.findByRole("img", { name: "Granted" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New game" })).toBeEnabled();
+  });
+
+  it("asks for a grant when the browser cannot report the camera permission", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    permissionQuery("error");
+    getUserMedia();
+    renderLanding(cameraGame);
+
+    expect(await screen.findByText("Not granted")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Grant camera" }));
+
+    expect(await screen.findByRole("img", { name: "Granted" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New game" })).toBeEnabled();
+  });
+
+  it("keeps New game disabled when the grant is refused", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    permissionQuery("denied");
+    getUserMedia(new Error("NotAllowedError"));
+    renderLanding(cameraGame);
+
+    expect(await screen.findByText("Not granted")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Grant camera" }));
+
+    expect(await screen.findByRole("button", { name: "Grant camera" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New game" })).toBeDisabled();
   });
 });
