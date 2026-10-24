@@ -1,7 +1,7 @@
 import { useParams } from "react-router";
 import GameJson from "../components/debug/GameJson";
 import type { GameId } from "../entities/data/GameData";
-import FeatureFlagsProvider from "../providers/FeatureFlagsProvider";
+import AppConfigProvider from "../providers/AppConfigProvider";
 import { GameDataProvider } from "../providers/GameDataProvider";
 import GameRepositoryProvider from "../providers/GameRepositoryProvider";
 import GameStateProvider from "../providers/GameStateProvider";
@@ -12,7 +12,7 @@ export default function LocalGameJson() {
 
   return (
     <>
-      <FeatureFlagsProvider>
+      <AppConfigProvider>
         <GameRepositoryProvider source={{ type: "LocalRepository", path: "game-repository.json" }}>
           <GameDataProvider id={id as GameId}>
             <GameStateProvider>
@@ -20,7 +20,7 @@ export default function LocalGameJson() {
             </GameStateProvider>
           </GameDataProvider>
         </GameRepositoryProvider>
-      </FeatureFlagsProvider>
+      </AppConfigProvider>
     </>
   );
 }
