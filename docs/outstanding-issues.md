@@ -2,12 +2,6 @@
 
 Deferred work, each with the condition that says when to act on it.
 
-## Accepted risk: sprintf-js DoS advisory via @tensorflow/tfjs
-
-`@tensorflow/tfjs@4.22.0` (latest) depends on `argparse@1` → `sprintf-js@1.0.3`, which [GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c) covers. Every sprintf-js release (≤1.1.3) is affected, so no override can fix it, and npm's suggested "fix" is a downgrade to tfjs 2.1.0. argparse is only used by tfjs's CLI `bin`, and the browser bundle doesn't include it (`grep` of `dist/` finds no sprintf/argparse code). Moderate severity.
-
-**Act when:** `@tensorflow/tfjs` publishes a release that drops `argparse@1`, or a patched `sprintf-js` is published. Check with `npm audit`.
-
 ## TypeScript 7 upgrade blocked by typescript-eslint
 
 TypeScript 7.0.2 is the latest release, but typescript-eslint 8.71.2 (latest) accepts `typescript >=4.8.4 <6.1.0`, so the project is on TypeScript 6.0.3.
@@ -106,17 +100,13 @@ support it, so the device may sleep during a game there. The hook logs a warning
 **Act when:** a game is expected to run on a device that sleeps mid-game. Add a fallback such as a
 looping muted video or an audio track, and cover it in `tests/WakeLock.test.ts`.
 
-## Permission checks need a Grant click when the browser cannot report camera state
+## Low-battery warning only in Chromium browsers
 
-When `navigator.permissions.query({ name: "camera" })` is missing or rejects, the landing page treats
-the camera as not granted and asks for a Grant click. The play page allows the game when the query is
-unsupported, because the browser still enforces camera access at `getUserMedia`. On browsers with
-no camera permission query, a returning player may have to click Grant on each landing visit even
-though the browser remembers the permission.
+`BatteryWarning` uses the Battery Status API (`navigator.getBattery`), which Firefox and Safari do
+not provide, so players there get no warning before the battery runs out.
 
-**Act when:** a supported browser cannot report camera permissions and players report repeated
-grants. Then remember a successful grant for the browser session (for example in `sessionStorage`)
-and treat it as granted until the tab closes.
+**Act when:** a game is expected to run on Firefox or Safari unattended for long sessions. Then
+consider a reminder to plug in on the landing page for every browser.
 
 ## Saved progress is discarded when a game's stage or challenge ids change
 
@@ -129,6 +119,36 @@ that maps old stage and challenge ids to new ones, or store stable ids separatel
 
 ## Documentation site runs on a VitePress pre-release
 
-`docs/` is rendered by `vitepress@2.0.0-alpha.20`. VitePress 1.6.4 is the latest stable release, but it pins Vite 5, whose bundled esbuild carries two dev-server advisories ([GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99)), which failed the dependency audit. The 2.0 line uses the project's Vite 8, so `npm audit` reports only the accepted sprintf-js advisory. Its config and default theme match 1.x, but it may change between pre-releases.
+`docs/` is rendered by `vitepress@2.0.0-alpha.20`. VitePress 1.6.4 is the latest stable release, but it pins Vite 5, whose bundled esbuild carries two dev-server advisories ([GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99)), which failed the dependency audit. The 2.0 line uses the project's Vite 8, so `npm audit` reports nothing. Its config and default theme match 1.x, but it may change between pre-releases.
 
 **Act when:** VitePress 2.0 is released stable. Then bump `vitepress`, run `dev-qual/scripts/check.sh --comprehensive` and `npm run build:gh-pages`, and remove this entry.
+
+## No error boundary for game data that fails to render
+
+`src/root.tsx` has no `ErrorBoundary`, so game data that throws while rendering (for example a
+challenge with no display) shows React Router's default error page. The validator catches most such
+data before it ships.
+
+**Act when:** the app is released to players, or game repositories come from authors whose data
+isn't validated by this project. Then export an `ErrorBoundary` from `src/root.tsx` with a friendly
+message and a link back to the landing page.
+
+## Camera model and fonts load from third parties at play time
+
+The BodyPix weights (about 90 MB) load from Google's storage when camera mode starts, and the
+game's font from Google Fonts. Offline, or during an outage, the camera shows no silhouette (the
+model fails to load and play continues by clicks) and text falls back to another font. Camera
+frames never leave the device.
+
+**Act when:** a game must work offline or at a venue with poor connectivity, or a player reports a
+missing silhouette with a working camera. Then vendor the model files and the font into `public/` and
+load them from there.
+
+## shellcheck version comes from the CI runner
+
+CI uses the shellcheck that ships with `ubuntu-latest`, so its version changes when GitHub updates
+the runner image, and may disagree with a local install. Every other tool is pinned in
+`package-lock.json`, `.nvmrc` or `check.yaml`.
+
+**Act when:** a shellcheck finding appears in CI but not locally (or the reverse). Then install a
+pinned shellcheck release in `check.yaml`, as actionlint is.

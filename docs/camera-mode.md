@@ -48,8 +48,9 @@ granted. New game and Continue stay disabled until then. See [Playing a game](ga
 for the full flow.
 
 A direct visit to `/game/:id/play` repeats the check and returns to the landing page when the
-permission is `prompt` or `denied`. If the browser cannot report the permission, the play page allows
-the game to open and lets the browser enforce camera access when the stream is requested.
+permission is anything but granted. A grant made on the landing page in the same tab counts, even
+when the browser cannot report it. If the camera still fails to start in play (for example because
+another app is using it), the game carries on without it, playable by clicks.
 
 ## What the player sees
 
@@ -151,7 +152,9 @@ A **threshold** is the fraction of the chosen body part that must be inside the 
 part inside; `0` only needs one pixel. `any` applies the threshold to each body part separately.
 
 Interactions are **edge-triggered**: one fires when the player first meets the condition, not on
-every frame they hold it. Moving away re-arms it, so a second approach fires again.
+every frame they hold it. Moving away re-arms it, so a second approach fires again. A player who already
+meets the condition when their monitor starts (when camera mode starts, after a display change, or on
+coming back into view) must move away and back first.
 
 A **jump** is a short sequence, not a single frame:
 
@@ -169,8 +172,8 @@ interaction is applied through the same state change as a click, and locked or c
 still ignored; see `getNewGameStateForInteraction` in `GameClickUtils.ts`.
 
 While a display or camera transition is running, clicks and camera interactions are ignored. The
-scene is `inert`, the monitors are cleared, and the camera hook drops frames, so a held hand cannot
-fire as the new display arrives.
+scene is `inert`, the monitors are cleared, and the camera hook drops frames. The fresh monitors
+ignore whatever holds on their first frame, so a held hand cannot fire as the new display arrives.
 
 ### From frame to event
 

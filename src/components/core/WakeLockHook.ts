@@ -3,7 +3,8 @@ import { isDefined } from "../../util/ObjectUtils";
 
 /**
  * Keeps the screen awake while `active` is true, when the page is visible and the browser supports
- * the Screen Wake Lock API. The lock is released when the page is hidden or the hook is unmounted.
+ * the Screen Wake Lock API. The lock is released when the page is hidden or the hook is unmounted,
+ * and requested again if the browser releases it while the page is still visible.
  */
 export const useWakeLock = (active: boolean): void => {
   const sentinelRef = useRef<WakeLockSentinel | null>(null);
@@ -33,8 +34,12 @@ export const useWakeLock = (active: boolean): void => {
           return;
         }
         sentinelRef.current = sentinel;
+        // Our own releases clear the ref first; a release the browser makes while still visible is re-requested.
+        // ponytail: one request per release, add a backoff if a browser is seen releasing in a loop
         sentinel.addEventListener("release", () => {
-          if (sentinelRef.current === sentinel) sentinelRef.current = null;
+          if (sentinelRef.current !== sentinel) return;
+          sentinelRef.current = null;
+          void request();
         });
       } catch (error) {
         console.warn("Could not keep the screen awake:", error);

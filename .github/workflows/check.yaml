@@ -29,7 +29,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v7
         with:
-          node-version: 26
+          node-version-file: .nvmrc
           cache: "npm"
           cache-dependency-path: package-lock.json
       - name: Install dependencies
@@ -39,13 +39,14 @@ jobs:
       # pre-push hook and CI agree.
       - name: Validate game data
         run: ./validate-repository.sh public/game-repository.json
-      # check.sh skips linters that aren't installed; install them so CI can't pass by skipping
-      - name: Install actionlint and markdownlint (shellcheck ships with the runner)
+      # check.sh skips linters that aren't installed; put them on the PATH so CI can't pass by skipping.
+      # markdownlint is pinned in package.json; actionlint is a Go binary, pinned here as it only runs in CI.
+      - name: Put actionlint and the project's markdownlint on the PATH (shellcheck ships with the runner)
         run: |
+          echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
           cd "$RUNNER_TEMP"
           bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
-          npm install --global markdownlint-cli@0.49.1
           shellcheck --version
       - name: Run the quality gate
         run: dev-qual/scripts/check.sh

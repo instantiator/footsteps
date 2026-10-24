@@ -28,6 +28,8 @@ export interface LayerNodeProps {
   setVideo?: React.Dispatch<React.SetStateAction<HTMLVideoElement | null>>;
   /** The webcam stream, shared between the camera and the character canvas. */
   characterStream?: MediaStream | undefined;
+  /** Called when the camera can't start. */
+  onCameraError?: () => void;
   /** Lets the camera share its stream once the player allows it. */
   setCharacterStream?: React.Dispatch<React.SetStateAction<MediaStream | undefined>>;
   /** Whether the camera preview shows; defaults to true. */
@@ -98,6 +100,7 @@ export const CharacterCameraLayerWrapper = ({
   characterStream,
   setCharacterStream,
   setAspectRatio: onAspectChange,
+  onCameraError,
   showPreview = true,
   debug,
 }: LayerNodeProps) => (
@@ -113,6 +116,7 @@ export const CharacterCameraLayerWrapper = ({
       setStream={setCharacterStream!}
       onAspectChange={onAspectChange!}
       colorKey={debug!}
+      onError={onCameraError!}
     />
   </div>
 );

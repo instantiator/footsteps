@@ -53,6 +53,7 @@ const cameraGame: GameData = { ...simpleGameData, modules: { camera: { enabled: 
 
 describe("LocalGame", () => {
   it("plays the game with the routed id once the local repository loads", async () => {
+    permissionQuery("granted"); // magic-trifle uses the camera
     const { container } = renderAt("/game/magic-trifle/play");
     // jsdom never loads stylesheets, and React holds the game back until they have
     await waitFor(() => {

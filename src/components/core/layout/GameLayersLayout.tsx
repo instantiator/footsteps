@@ -68,6 +68,9 @@ export interface GameLayers {
   };
 }
 
+/** Camera mode switched off, for when the camera can't start: the game falls back to clicks. */
+const CAMERA_OFF: ResolvedCameraMode = { enabled: false, preview: false };
+
 /** Handles a click or key activation within a layer; `layerIdOverride` replaces the layer's own id as the source. */
 type LayerClickHandler = (event: React.SyntheticEvent<HTMLElement>, layerIdOverride?: string) => void;
 
@@ -170,8 +173,8 @@ interface SceneProps {
   debug?: boolean;
   /** Handles clicks and key activations within a layer. */
   clickHandler: LayerClickHandler;
-  /** The webcam's video and stream. */
-  media: ReturnType<typeof useCameraMedia>;
+  /** The webcam's video and stream, and what to do when the camera can't start. */
+  media: ReturnType<typeof useCameraMedia> & { onCameraError: () => void };
   /** The video's shape, once the camera reports it. */
   aspectRatio: number | undefined;
   /** Receives the players' feet positions for the debug overlay. */
@@ -230,6 +233,7 @@ function Scene({
           characterStream={media.characterStream}
           setCharacterStream={media.setCharacterStream}
           setAspectRatio={setAspectRatio}
+          onCameraError={media.onCameraError}
           showPreview={showPreview}
           debug={debug}
         />
@@ -253,6 +257,16 @@ function useViewportMeasurements() {
   const measureViewport = useCallback(() => aspectRatioOf(viewportRef.current), []);
   const measureContainer = useCallback(() => aspectRatioOf(viewportRef.current?.parentElement), []);
   return { viewportRef, measureViewport, measureContainer };
+}
+
+/**
+ * The camera mode to use: as requested, until the camera fails to start. A camera that can't start
+ * would hold the scene waiting for its shape, so the game plays on without it, by clicks.
+ */
+function useCameraFallback(requested: ResolvedCameraMode) {
+  const [failed, setFailed] = useState(false);
+  const onCameraError = useCallback(() => setFailed(true), []);
+  return { camera: failed ? CAMERA_OFF : requested, onCameraError };
 }
 
 /** Calls the game's click handler for elements inside a layer. */
@@ -282,7 +296,7 @@ const viewportStyle = (scene: SceneTransition<GameLayers>): CSSProperties => {
 export default function GameLayersLayout({
   gameLayers = {},
   displayKey = "default",
-  camera,
+  camera: requestedCamera,
   debug,
   onElementClick,
   interactionTargets,
@@ -292,6 +306,7 @@ export default function GameLayersLayout({
   const [cameraAspectRatio, setCameraAspectRatio] = useState<number>();
   const { viewportRef, measureViewport, measureContainer } = useViewportMeasurements();
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const { camera, onCameraError } = useCameraFallback(requestedCamera);
   const scene = useSceneTransition({
     layers: gameLayers,
     displayKey,
@@ -333,7 +348,7 @@ export default function GameLayersLayout({
         show={show}
         debug={debug}
         clickHandler={clickHandler}
-        media={media}
+        media={{ ...media, onCameraError }}
         aspectRatio={cameraAspectRatio}
         setFeetPositions={setFeetPositions}
         feetPositions={feetPositions}

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Links, Meta, Outlet, Scripts } from "react-router";
+import BatteryWarning from "./components/core/BatteryWarning";
 import "./index.css";
 
 /** The HTML document every page renders into. */
@@ -24,7 +25,12 @@ export function Layout({ children }: { children: ReactNode }) {
   );
 }
 
-/** The root route: renders whichever page the URL matched inside {@link Layout}. */
+/** The root route: renders whichever page the URL matched inside {@link Layout}, with the battery warning over it. */
 export default function Root() {
-  return <Outlet />;
+  return (
+    <>
+      <BatteryWarning />
+      <Outlet />
+    </>
+  );
 }

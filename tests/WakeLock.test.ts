@@ -51,6 +51,18 @@ describe("useWakeLock", () => {
     rerender({ active: false });
 
     await waitFor(() => expect(sentinel.released).toBe(true));
+    expect(request).toHaveBeenCalledTimes(1); // releasing it ourselves doesn't ask again
+  });
+
+  it("asks again when the browser releases the lock while the page is still visible", async () => {
+    const sentinels = [new FakeWakeLockSentinel(), new FakeWakeLockSentinel()];
+    const { request } = wakeLock(async () => sentinels[request.mock.calls.length - 1]);
+    renderWakeLock();
+    await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+
+    await act(() => sentinels[0].release()); // as a browser does, eg. in battery saver
+
+    await waitFor(() => expect(request).toHaveBeenCalledTimes(2));
   });
 
   it("releases the wake lock when unmounted", async () => {

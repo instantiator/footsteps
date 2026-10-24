@@ -17,7 +17,8 @@
 <div class="tsd-signature tsd-anchor-link" id="usewakelock"><span class="tsd-kind-call-signature">useWakeLock</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">active</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#usewakelock" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>Keeps the screen awake while <code>active</code> is true, when the page is visible and the browser supports
-the Screen Wake Lock API. The lock is released when the page is hidden or the hook is unmounted.</p>
+the Screen Wake Lock API. The lock is released when the page is hidden or the hook is unmounted,
+and requested again if the browser releases it while the page is still visible.</p>
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
@@ -25,7 +26,7 @@ the Screen Wake Lock API. The lock is released when the page is hidden or the ho
 <li><span><span class="tsd-kind-parameter">active</span>: <span class="tsd-signature-type">boolean</span></span></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/WakeLockHook.ts#L8">components/core/WakeLockHook.ts:8</a></li></ul></aside></div></li></ul></section></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/WakeLockHook.ts#L9">components/core/WakeLockHook.ts:9</a></li></ul></aside></div></li></ul></section></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

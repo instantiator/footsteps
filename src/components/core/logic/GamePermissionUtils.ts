@@ -31,15 +31,41 @@ const gameUsesCamera = (gameData: GameData): boolean => {
 export const requiredGamePermissions = (gameData: GameData): GamePermissionId[] =>
   gameUsesCamera(gameData) ? ["camera"] : [];
 
-/** Checks a permission with the browser, reporting it as unsupported when the browser cannot answer. */
-export const checkGamePermission = async (id: GamePermissionId): Promise<GamePermissionState> => {
+/** The session storage key that remembers a permission the player granted in this tab. */
+const sessionGrantKey = (id: GamePermissionId): string => `footsteps:permission-granted:${id}`;
+
+/** Whether the player granted the permission in this tab; storage that can't be read counts as not. */
+const wasGrantedThisSession = (id: GamePermissionId): boolean => {
   try {
-    const status = await navigator.permissions.query({ name: id });
-    return status.state;
+    return sessionStorage.getItem(sessionGrantKey(id)) === "true";
+  } catch {
+    return false;
+  }
+};
+
+/** Remembers a grant for this tab, for browsers that can't report it afterwards. */
+const rememberGrant = (id: GamePermissionId): void => {
+  try {
+    sessionStorage.setItem(sessionGrantKey(id), "true");
+  } catch (error) {
+    console.warn(`Could not remember the ${gamePermissionLabel(id)} grant; the player will be asked again:`, error);
+  }
+};
+
+/**
+ * Checks a permission with the browser, reporting it as unsupported when the browser cannot answer.
+ * A grant the player made in this tab counts unless the browser now says it's denied, since some
+ * browsers can't report the camera, or forget a grant they weren't asked to keep.
+ */
+export const checkGamePermission = async (id: GamePermissionId): Promise<GamePermissionState> => {
+  let state: GamePermissionState;
+  try {
+    state = (await navigator.permissions.query({ name: id })).state;
   } catch (error) {
     console.warn(`Could not check the ${gamePermissionLabel(id)} permission:`, error);
-    return "unsupported";
+    state = "unsupported";
   }
+  return state !== "denied" && wasGrantedThisSession(id) ? "granted" : state;
 };
 
 /** Requests a permission from the player, then stops any media stream it opened. */
@@ -47,9 +73,9 @@ export const requestGamePermission = async (id: GamePermissionId): Promise<GameP
   try {
     const stream = await getCameraStream();
     stream.getTracks().forEach((track) => track.stop());
-    // Check again, as the prompt asks; a successful request stands if the browser cannot confirm it
-    return (await checkGamePermission(id)) === "denied" ? "denied" : "granted";
+    rememberGrant(id);
   } catch {
-    return checkGamePermission(id);
+    // Refused or unavailable: the browser's state says which
   }
+  return checkGamePermission(id);
 };

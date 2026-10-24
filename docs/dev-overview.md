@@ -4,7 +4,8 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 
 ## Prerequisites
 
-- `bash`, `git`, and Node 26 (`engines.node` in `package.json`; LTS from 2026-10-28)
+- `bash`, `git`, and Node 26: `.nvmrc` names the version CI and deployment use (`nvm use` picks it up), and `engines.node` in `package.json` the minimum (LTS from 2026-10-28)
+- Tool versions come from `package-lock.json` alone. The scripts run tools with `npx --no-install`, so a missing tool fails rather than downloading the latest. Run `npm ci` first. `dev-qual/scripts/check.sh` runs `markdownlint` from your PATH, so locally either put `node_modules/.bin` on your PATH or install the same version globally (`npm i -g markdownlint-cli@0.49.1`). CI uses the project's copy.
 - [Code formatting configuration](code-formatting.md)
 - The `dev-qual` submodule: `git submodule update --init`
 
@@ -31,7 +32,7 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 | `npm test`                     | Validate the game data, then run the tests once                                                                         |
 | `scripts/run-browser-tests.sh` | Playwright browser tests against a fake webcam, locally only (see [browser tests](#browser-tests))                      |
 | `npm run test:run`             | The same: validate `public/game-repository.json`, then run the tests                                                    |
-| `npm run validate`             | Validate `public/game-repository.json`: schema, resource files and URLs, and resource names                             |
+| `npm run validate`             | Validate `public/game-repository.json`: schema, resource files and URLs, resource names, and stage links                |
 | `npm run lint:check`           | ESLint, failing on any warning                                                                                          |
 | `npm run typecheck`            | TypeScript, no output                                                                                                   |
 | `npm run docs:api`             | Regenerate the API reference in `docs/tsdoc/` as HTML from the TSDoc comments, failing on any undocumented export       |

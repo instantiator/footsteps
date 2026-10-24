@@ -53,6 +53,9 @@ on, so changing only the module is not enough.
 - [ ] While a game is open and incomplete, the device does not sleep or dim the screen. Completing
       the last stage releases the wake lock; check the browser console for wake-lock warnings if the
       device still sleeps.
+- [ ] In Chrome, override the battery to 15% and discharging (DevTools → Sensors, or a stubbed
+      `navigator.getBattery`): the low-battery banner shows on `/`, `/game/magic-trifle` and the
+      play page, and goes when charging.
 
 ## Bug #16: the segmentation loop keeps running
 
@@ -122,6 +125,16 @@ element. Moving outside during the sequence is allowed, but the feet must return
 
 Try each interaction at least twice: once with the default threshold, and once with a low threshold
 such as `0.2`. Confirm that holding still fires only once, and that moving away and back fires again.
+
+- [ ] Complete a stage while standing with a hand over the next stage's link. When the overview
+      fades back in, the stage does not open until you move the hand away and back.
+
+## Without a working camera
+
+- [ ] Open another app that holds the camera (a video call), then New game or Continue into a camera
+      display: the game shows without the preview or silhouette, the console warns once that the camera
+      could not start, and clicking a stage link still enters the stage.
+- [ ] With the camera free again, reload: camera mode works as before.
 
 ## Running the automated browser suite
 

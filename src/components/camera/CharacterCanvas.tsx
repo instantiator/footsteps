@@ -136,8 +136,7 @@ export default function CharacterCanvas({
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
-      const segmentFrame = async () => {
-        if (cancelled) return;
+      const segmentOnce = async () => {
         const timestamp = performance.now();
         const segmentation = await net.segmentPeople(video, SEGMENTATION_CONFIG);
         if (cancelled) return; // the model may have been disposed while this frame was segmented
@@ -150,7 +149,19 @@ export default function CharacterCanvas({
           if (segmentation.length === 0) ctx.clearRect(0, 0, canvas.width, canvas.height);
           else await drawMask(video, segmentation, ctx, maskType);
         }
-        frame = requestAnimationFrame(segmentFrame);
+      };
+
+      // A failed frame is skipped rather than ending the loop; only the first failure is logged, as it may repeat every frame
+      let warned = false;
+      const segmentFrame = async () => {
+        if (cancelled) return;
+        try {
+          await segmentOnce();
+        } catch (error) {
+          if (!warned) console.warn("Skipped a camera frame that could not be segmented:", error);
+          warned = true;
+        }
+        if (!cancelled) frame = requestAnimationFrame(segmentFrame);
       };
 
       segmentFrame();

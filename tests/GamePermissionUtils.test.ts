@@ -7,7 +7,12 @@ import {
 } from "../src/components/core/logic/GamePermissionUtils";
 import type { GameData } from "../src/entities/data/GameData";
 import { smallGame } from "./data/SmallGame";
-import { stubGetUserMedia, stubPermissionQuery, type PermissionQueryResult } from "./helpers/permissions";
+import {
+  FakePermissionStatus,
+  stubGetUserMedia,
+  stubPermissionQuery,
+  type PermissionQueryResult,
+} from "./helpers/permissions";
 
 const restores: (() => void)[] = [];
 
@@ -116,6 +121,24 @@ describe("requestGamePermission", () => {
     getUserMedia();
 
     await expect(requestGamePermission("camera")).resolves.toBe("granted");
+  });
+
+  it("reports a successful request granted later, when the browser cannot query", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    permissionQuery("error");
+    getUserMedia();
+
+    await expect(requestGamePermission("camera")).resolves.toBe("granted");
+    await expect(checkGamePermission("camera")).resolves.toBe("granted");
+  });
+
+  it("reports a later denial even after a grant in this tab", async () => {
+    const query = permissionQuery("granted");
+    getUserMedia();
+    await requestGamePermission("camera");
+
+    query.query.mockResolvedValue(new FakePermissionStatus("camera", "denied"));
+    await expect(checkGamePermission("camera")).resolves.toBe("denied");
   });
 
   it("reports the browser state when the request fails", async () => {

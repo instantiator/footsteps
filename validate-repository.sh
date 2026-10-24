@@ -26,7 +26,7 @@ fi
 ./generate-schemas.sh
 
 echo "Validating $DATA_FILE against $SCHEMA_PATH..."
-npx --yes ajv-cli validate -s "$SCHEMA_PATH" -d "$DATA_FILE" --verbose
+node scripts/validate-schema.ts "$SCHEMA_PATH" "$DATA_FILE"
 
 echo "Checking the repository's resource paths, templates and names..."
 node scripts/validate-resources.ts repository "$DATA_FILE" "$@"
