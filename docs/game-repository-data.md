@@ -1,6 +1,6 @@
 # Game repository data
 
-A game repository is a JSON file holding one or more games. Its type is `GameRepository` (`src/entities/GameRepository.ts`) and its schema is `public/schemas/game-repository-schema.json`. Check a repository with `./validate-repository.sh path/to/repository.json`, which validates its schema and that every game's resource files, templates and resource names can load.
+A game repository is a JSON file holding one or more games. Its type is `GameRepository` (`src/entities/GameRepository.ts`) and its schema is `public/schemas/game-repository-schema.json`. Check a repository with `./validate-repository.sh path/to/repository.json`, which validates its schema, that every game's resource files, templates and resource names can load, and that its stage links name real stages.
 
 ```json
 {

@@ -31,7 +31,7 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 | `npm test`                     | Validate the game data, then run the tests once                                                                         |
 | `scripts/run-browser-tests.sh` | Playwright browser tests against a fake webcam, locally only (see [browser tests](#browser-tests))                      |
 | `npm run test:run`             | The same: validate `public/game-repository.json`, then run the tests                                                    |
-| `npm run validate`             | Validate `public/game-repository.json`: schema, resource files and URLs, and resource names                             |
+| `npm run validate`             | Validate `public/game-repository.json`: schema, resource files and URLs, resource names, and stage links                |
 | `npm run lint:check`           | ESLint, failing on any warning                                                                                          |
 | `npm run typecheck`            | TypeScript, no output                                                                                                   |
 | `npm run docs:api`             | Regenerate the API reference in `docs/tsdoc/` as HTML from the TSDoc comments, failing on any undocumented export       |
