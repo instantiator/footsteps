@@ -346,3 +346,42 @@ describe("PlayerMonitor jumps", () => {
     expect(run([[50], [40], [30], [40], [40], [50], [40], [50], [50]])).toHaveLength(2);
   });
 });
+
+describe("PlayerMonitor stable frames", () => {
+  const handTarget = { "the-element": target(["hand"], 0) };
+  const inside = handFrame([[1, 1]]);
+  const outside = handFrame([[8, 8]]);
+
+  /** A monitor needing three frames, armed by an empty frame, and the events it reports. */
+  const stableMonitor = () => {
+    const events: PlayerMonitorEvent[] = [];
+    const monitor = new PlayerMonitor((event) => events.push(event), 3);
+    monitor.update(frame([]), {}, 0);
+    return { events, monitor };
+  };
+
+  it("ignores an interaction that flickers for fewer frames than it needs", () => {
+    const { events, monitor } = stableMonitor();
+    [inside, inside, outside, inside, outside].forEach((f, i) => monitor.update(f, handTarget, i * 16));
+    expect(events).toEqual([]);
+  });
+
+  it("fires once, on the frame the interaction has held long enough", () => {
+    const { events, monitor } = stableMonitor();
+    monitor.update(inside, handTarget, 0);
+    monitor.update(inside, handTarget, 16);
+    expect(events).toEqual([]);
+    monitor.update(inside, handTarget, 32);
+    monitor.update(inside, handTarget, 48);
+    expect(events).toEqual([{ elementId: "the-element", interaction: "hand" }]);
+  });
+
+  it("never fires for an interaction already holding when it started, until it lets go", () => {
+    const events: PlayerMonitorEvent[] = [];
+    const monitor = new PlayerMonitor((event) => events.push(event), 2);
+    [inside, inside, inside].forEach((f, i) => monitor.update(f, handTarget, i * 16));
+    expect(events).toEqual([]);
+    [outside, inside, inside].forEach((f, i) => monitor.update(f, handTarget, 100 + i * 16));
+    expect(events).toHaveLength(1);
+  });
+});

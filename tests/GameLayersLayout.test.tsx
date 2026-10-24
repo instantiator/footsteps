@@ -5,6 +5,7 @@ import type CharacterCamera from "../src/components/camera/CharacterCamera";
 import type CharacterCanvas from "../src/components/camera/CharacterCanvas";
 import type { PlayerFrame } from "../src/components/camera/PlayerMonitor";
 import GameLayersLayout from "../src/components/core/layout/GameLayersLayout";
+import type { AppConfig } from "../src/config/AppConfig";
 import type { GameInteractionTarget } from "../src/entities/data/displays/GameDisplayData";
 import { noKeyPoints } from "../src/vision/VisionTypes";
 import { SMALL_GAME_ID, smallRepository } from "./data/SmallGame";
@@ -64,13 +65,14 @@ const layers = {
 };
 
 /** The layout under test, in the provider stack a game supplies. */
-const layout = (props: Partial<ComponentProps<typeof GameLayersLayout>> = {}) => (
-  <GameProviders repository={smallRepository} gameId={SMALL_GAME_ID}>
+const layout = (props: Partial<ComponentProps<typeof GameLayersLayout>> = {}, config: Partial<AppConfig> = {}) => (
+  <GameProviders repository={smallRepository} gameId={SMALL_GAME_ID} config={config}>
     <GameLayersLayout gameLayers={layers} camera={{ enabled: false, preview: false }} {...props} />
   </GameProviders>
 );
 
-const renderLayout = (props: Partial<ComponentProps<typeof GameLayersLayout>> = {}) => render(layout(props));
+const renderLayout = (props: Partial<ComponentProps<typeof GameLayersLayout>> = {}, config: Partial<AppConfig> = {}) =>
+  render(layout(props, config));
 
 /** A player in an 8px mask whose only pixel is their left hand, at the given pixel; their feet are out of view. */
 const playerWithHandAt = (x: number, y: number): PlayerFrame => {
@@ -424,12 +426,13 @@ describe("GameLayersLayout camera interactions", () => {
   /** Renders the layout with the camera on and the given targets, and returns its canvas. */
   const renderWithCamera = async (
     props: Partial<ComponentProps<typeof GameLayersLayout>> = {},
+    config: Partial<AppConfig> = {},
   ): Promise<{
     container: HTMLElement;
     canvas: HTMLCanvasElement;
     rerender: (ui: ReactElement) => void;
   }> => {
-    const { container, rerender } = renderLayout({ camera: { enabled: true, preview: true }, ...props });
+    const { container, rerender } = renderLayout({ camera: { enabled: true, preview: true }, ...props }, config);
     await screen.findByTestId("canvas");
     return { container, canvas: container.querySelector("canvas")!, rerender };
   };
@@ -452,6 +455,23 @@ describe("GameLayersLayout camera interactions", () => {
     sendPlayers([playerWithHandAt(0, 7)], 900); // outside the element, so the hand then moves in
     sendPlayers([playerWithHandAt(6, 1)]);
 
+    expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith({ elementId: "overview-thing", interaction: "hand" });
+  });
+
+  it("waits for the configured number of frames before reporting an interaction", async () => {
+    const onPlayerInteraction = vi.fn();
+    const { container, canvas } = await renderWithCamera(
+      { interactionTargets: { "overview-thing": { stage: "stage-1", interactions: ["hand"] } }, onPlayerInteraction },
+      { visionSmoothing: true, visionStableFrames: 2 },
+    );
+    stubRect(canvas, new DOMRect(0, 0, 100, 100));
+    stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 50, 50));
+
+    sendPlayers([playerWithHandAt(0, 7)], 900);
+    sendPlayers([playerWithHandAt(6, 1)]);
+    expect(onPlayerInteraction).not.toHaveBeenCalled(); // one frame could be a flicker
+
+    sendPlayers([playerWithHandAt(6, 1)], 1100);
     expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith({ elementId: "overview-thing", interaction: "hand" });
   });
 

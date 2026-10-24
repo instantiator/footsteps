@@ -4,6 +4,7 @@ import {
   DEFAULT_INTERACTION_THRESHOLD,
   type GameInteractionTarget,
 } from "../../../entities/data/displays/GameDisplayData";
+import useAppConfig from "../../../providers/AppConfigHook";
 import { maskRectForElement } from "../../camera/CameraSupport";
 import {
   PlayerMonitor,
@@ -58,6 +59,9 @@ export function usePlayerInteractions(
   onPlayerInteraction: ((event: PlayerMonitorEvent) => void) | undefined,
   enabled: boolean,
 ): PlayerInteractions {
+  const { visionSmoothing, visionStableFrames } = useAppConfig();
+  const stableFrames = visionSmoothing ? visionStableFrames : 1;
+  const stableFramesRef = useRef(stableFrames);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const monitorsRef = useRef(new Map<number, PlayerMonitor>());
   const targetsRef = useRef(interactionTargets);
@@ -71,6 +75,10 @@ export function usePlayerInteractions(
   useEffect(() => {
     callbackRef.current = onPlayerInteraction;
   }, [onPlayerInteraction]);
+
+  useEffect(() => {
+    stableFramesRef.current = stableFrames;
+  }, [stableFrames]);
 
   // Interactions pause during display changes; fresh monitors afterwards ignore whatever already holds
   useEffect(() => {
@@ -94,7 +102,7 @@ export function usePlayerInteractions(
         seen.add(player.id);
         let monitor = monitors.get(player.id);
         if (!monitor) {
-          monitor = new PlayerMonitor((event) => callbackRef.current?.(event));
+          monitor = new PlayerMonitor((event) => callbackRef.current?.(event), stableFramesRef.current);
           monitors.set(player.id, monitor);
         }
         monitor.update(player, targets, timestamp);

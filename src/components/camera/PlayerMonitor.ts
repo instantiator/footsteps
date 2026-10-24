@@ -87,6 +87,9 @@ const isCovered = (interaction: CoverageInteraction, { proportions, threshold }:
     return proportion !== undefined && proportion >= threshold;
   });
 
+/** Marks an interaction that already held when the monitor was armed: it can't fire until it lets go. */
+const ALREADY_HELD = -1;
+
 /** Whether a jump sequence has been running too long to complete. */
 const jumpExpired = (state: JumpState, timestamp: number): boolean =>
   state.phase !== "ready" && timestamp - state.since > JUMP_SEQUENCE_WINDOW_MS;
@@ -109,8 +112,13 @@ const nextJumpPhase = (phase: JumpPhase, velocity: number): { phase: JumpPhase; 
  */
 export class PlayerMonitor {
   private readonly onEvent: (event: PlayerMonitorEvent) => void;
-  /** Interactions that held on the previous frame, keyed `${elementId}:${interaction}`. */
-  private held = new Set<string>();
+  /** Frames an interaction must hold before it fires. */
+  private readonly stableFrames: number;
+  /**
+   * How many frames in a row each interaction has held, keyed `${elementId}:${interaction}`;
+   * {@link ALREADY_HELD} for one that held before the monitor was armed.
+   */
+  private held = new Map<string, number>();
   /** Whether a frame has been seen, so coverage on later frames can count as beginning. */
   private armed = false;
   /** Jump sequences in progress, by element id. */
@@ -118,9 +126,13 @@ export class PlayerMonitor {
   /** The feet position and time of the previous frame, for measuring vertical speed. */
   private previousFeet: { percentY: number; timestamp: number } | undefined;
 
-  /** @param onEvent called for each interaction that begins */
-  constructor(onEvent: (event: PlayerMonitorEvent) => void) {
+  /**
+   * @param onEvent called for each interaction that begins
+   * @param stableFrames frames an interaction must hold before it fires, so a one-frame flicker doesn't count
+   */
+  constructor(onEvent: (event: PlayerMonitorEvent) => void, stableFrames = 1) {
     this.onEvent = onEvent;
+    this.stableFrames = Math.max(1, stableFrames);
   }
 
   /**
@@ -132,7 +144,7 @@ export class PlayerMonitor {
    */
   update(frame: PlayerFrame, targets: Record<string, MonitorTarget>, timestamp: number): void {
     const velocity = this.verticalVelocity(frame.feet, timestamp);
-    const held = new Set<string>();
+    const held = new Map<string, number>();
     const jumpIds = new Set<string>();
 
     for (const [elementId, target] of Object.entries(targets)) {
@@ -159,15 +171,22 @@ export class PlayerMonitor {
     }
   }
 
-  /** Reports each coverage interaction that has just begun (once armed), and remembers those that are holding. */
-  private reportCovered(elementId: string, target: MonitorTarget, coverage: TargetCoverage, held: Set<string>): void {
+  /** Reports each coverage interaction that has held for long enough (once armed), and counts those that are holding. */
+  private reportCovered(
+    elementId: string,
+    target: MonitorTarget,
+    coverage: TargetCoverage,
+    held: Map<string, number>,
+  ): void {
     for (const interaction of target.interactions) {
       if (!isCameraInteraction(interaction) || interaction === "jump") continue;
       if (!isCovered(interaction, coverage)) continue;
 
       const key = `${elementId}:${interaction}`;
-      held.add(key);
-      if (this.armed && !this.held.has(key)) this.onEvent({ elementId, interaction });
+      const previous = this.held.get(key) ?? 0;
+      const streak = !this.armed || previous === ALREADY_HELD ? ALREADY_HELD : previous + 1;
+      held.set(key, streak);
+      if (streak === this.stableFrames) this.onEvent({ elementId, interaction });
     }
   }
 
