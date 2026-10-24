@@ -122,3 +122,33 @@ that maps old stage and challenge ids to new ones, or store stable ids separatel
 `docs/` is rendered by `vitepress@2.0.0-alpha.20`. VitePress 1.6.4 is the latest stable release, but it pins Vite 5, whose bundled esbuild carries two dev-server advisories ([GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99)), which failed the dependency audit. The 2.0 line uses the project's Vite 8, so `npm audit` reports nothing. Its config and default theme match 1.x, but it may change between pre-releases.
 
 **Act when:** VitePress 2.0 is released stable. Then bump `vitepress`, run `dev-qual/scripts/check.sh --comprehensive` and `npm run build:gh-pages`, and remove this entry.
+
+## No error boundary for game data that fails to render
+
+`src/root.tsx` has no `ErrorBoundary`, so game data that throws while rendering (for example a
+challenge with no display) shows React Router's default error page. The validator catches most such
+data before it ships.
+
+**Act when:** the app is released to players, or game repositories come from authors whose data
+isn't validated by this project. Then export an `ErrorBoundary` from `src/root.tsx` with a friendly
+message and a link back to the landing page.
+
+## Camera model and fonts load from third parties at play time
+
+The BodyPix weights (about 90 MB) load from Google's storage when camera mode starts, and the
+game's font from Google Fonts. Offline, or during an outage, the camera shows no silhouette (the
+model fails to load and play continues by clicks) and text falls back to another font. Camera
+frames never leave the device.
+
+**Act when:** a game must work offline or at a venue with poor connectivity, or a player reports a
+missing silhouette with a working camera. Then vendor the model files and the font into `public/` and
+load them from there.
+
+## shellcheck version comes from the CI runner
+
+CI uses the shellcheck that ships with `ubuntu-latest`, so its version changes when GitHub updates
+the runner image, and may disagree with a local install. Every other tool is pinned in
+`package-lock.json`, `.nvmrc` or `check.yaml`.
+
+**Act when:** a shellcheck finding appears in CI but not locally (or the reverse). Then install a
+pinned shellcheck release in `check.yaml`, as actionlint is.
