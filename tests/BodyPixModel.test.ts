@@ -91,7 +91,8 @@ describe("BodyPixModel", () => {
   Object.defineProperties(video, { videoWidth: { value: 3 }, videoHeight: { value: 1 } });
 
   it("loads ResNet50 with the configured stride and weights", async () => {
-    await new BodyPixModel({ ...DEFAULT_APP_CONFIG, bodypixOutputStride: 32, bodypixQuantBytes: 4 }).load();
+    const config = { ...DEFAULT_APP_CONFIG, bodypixArchitecture: "ResNet50" as const };
+    await new BodyPixModel({ ...config, bodypixOutputStride: 32, bodypixQuantBytes: 4 }).load();
     expect(bodyPix.load).toHaveBeenCalledWith({
       architecture: "ResNet50",
       outputStride: 32,
@@ -101,7 +102,7 @@ describe("BodyPixModel", () => {
   });
 
   it("uses stride 16 for ResNet50 when 8 is asked for, as ResNet50 has no stride 8", async () => {
-    await new BodyPixModel({ ...DEFAULT_APP_CONFIG, bodypixOutputStride: 8 }).load();
+    await new BodyPixModel({ ...DEFAULT_APP_CONFIG, bodypixArchitecture: "ResNet50", bodypixOutputStride: 8 }).load();
     expect(bodyPix.load).toHaveBeenCalledWith(expect.objectContaining({ outputStride: 16 }));
   });
 
