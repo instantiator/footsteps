@@ -12,7 +12,8 @@ const bodyPix = vi.hoisted(() => {
 });
 
 vi.mock("@tensorflow-models/body-pix", () => ({ load: bodyPix.load }));
-vi.mock("@tensorflow/tfjs", () => ({ ready: vi.fn(async () => undefined), Tensor: class {}, browser: {} }));
+vi.mock("@tensorflow/tfjs", () => ({ Tensor: class {}, browser: {} }));
+vi.mock("../src/vision/models/TfBackend", () => ({ selectTfBackend: vi.fn(async () => "webgl") }));
 
 /** BodyPix's ids for the parts used here. */
 const LEFT_FACE = 0;
@@ -101,6 +102,15 @@ describe("BodyPixModel", () => {
 
   it("uses stride 16 for ResNet50 when 8 is asked for, as ResNet50 has no stride 8", async () => {
     await new BodyPixModel({ ...DEFAULT_APP_CONFIG, bodypixOutputStride: 8 }).load();
+    expect(bodyPix.load).toHaveBeenCalledWith(expect.objectContaining({ outputStride: 16 }));
+  });
+
+  it("uses stride 16 for MobileNetV1 when 32 is asked for, as MobileNetV1 has no stride 32", async () => {
+    await new BodyPixModel({
+      ...DEFAULT_APP_CONFIG,
+      bodypixArchitecture: "MobileNetV1",
+      bodypixOutputStride: 32,
+    }).load();
     expect(bodyPix.load).toHaveBeenCalledWith(expect.objectContaining({ outputStride: 16 }));
   });
 

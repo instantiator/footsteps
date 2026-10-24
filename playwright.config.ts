@@ -23,7 +23,8 @@ export default defineConfig({
         // The preview plays a stream without audio; let it start without a user gesture
         "--autoplay-policy=no-user-gesture-required",
         // Headless Chromium defaults to software WebGL; Metal makes segmentation fast enough to test
-        ...(process.platform === "darwin" ? ["--use-angle=metal"] : []),
+        // ...and WebGPU is off unless enabled, which the vision benchmark compares against WebGL
+        ...(process.platform === "darwin" ? ["--use-angle=metal", "--enable-unsafe-webgpu"] : []),
       ],
     },
   },

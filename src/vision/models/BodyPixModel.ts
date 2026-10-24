@@ -3,6 +3,7 @@ import * as tf from "@tensorflow/tfjs";
 import type { AppConfig } from "../../config/AppConfig";
 import { FootstepsVisionModelImplementation } from "../FootstepsVisionModelImplementation";
 import { noKeyPoints, type KeyPoints, type VisionFrame, type VisionPerson, type VisionSource } from "../VisionTypes";
+import { selectTfBackend } from "./TfBackend";
 
 /** BodyPix's part ids (see its `PART_CHANNELS`) for the parts we find key points from. */
 const PART_IDS = { leftFace: 0, rightFace: 1, leftHand: 10, rightHand: 11, leftFoot: 22, rightFoot: 23 } as const;
@@ -105,10 +106,11 @@ export class BodyPixModel extends FootstepsVisionModelImplementation {
   }
 
   async load(): Promise<void> {
-    await tf.ready();
+    await selectTfBackend(this.config.visionBackend);
     const { bodypixArchitecture: architecture, bodypixOutputStride, bodypixQuantBytes: quantBytes } = this.config;
-    // ResNet50 only has strides 16 and 32, and only a multiplier of 1
-    const outputStride = architecture === "ResNet50" && bodypixOutputStride === 8 ? 16 : bodypixOutputStride;
+    // ResNet50 only has strides 16 and 32, and only a multiplier of 1; MobileNetV1 only has strides 8 and 16
+    const unsupported = architecture === "ResNet50" ? 8 : 32;
+    const outputStride = bodypixOutputStride === unsupported ? 16 : bodypixOutputStride;
     const multiplier = architecture === "ResNet50" ? 1 : 0.75;
     this.net = await bodyPix.load({ architecture, outputStride, multiplier, quantBytes });
   }

@@ -23,7 +23,7 @@ export interface AppConfig {
   cameraHeight: number;
   /** BodyPix's backbone: ResNet50 is more accurate, MobileNetV1 faster. */
   bodypixArchitecture: "ResNet50" | "MobileNetV1";
-  /** BodyPix's output stride: smaller is finer and slower. ResNet50 supports 16 and 32 only. */
+  /** BodyPix's output stride: smaller is finer and slower. ResNet50 has 16 and 32, MobileNetV1 8 and 16; else 16. */
   bodypixOutputStride: 8 | 16 | 32;
   /** Bytes per BodyPix weight: fewer is smaller and faster, at a little accuracy. */
   bodypixQuantBytes: 1 | 2 | 4;
