@@ -4,6 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameData } from "../src/entities/data/GameData";
 import Game from "../src/components/core/Game";
 import type GameLayersLayout from "../src/components/core/layout/GameLayersLayout";
+import { completeChallenge } from "../src/components/core/logic/GameStateUtils";
+import { createBlankGameState } from "../src/entities/state/GameState";
+import { saveGameState } from "../src/entities/state/GameStateStorage";
 import { SMALL_GAME_ID, smallGame, smallRepository } from "./data/SmallGame";
 import GameProviders from "./helpers/GameProviders";
 import { stubMediaPlayback } from "./helpers/media";
@@ -277,6 +280,17 @@ describe("Game sounds and reward", () => {
     answer("custard");
     await vi.waitFor(() => expect(rewardSpy).toHaveBeenCalledTimes(1));
     expect(useRewardSpy).toHaveBeenCalledWith("reward-element", "confetti", { particleCount: 50 });
+  });
+
+  it("doesn't replay the reward or sound for stages completed before the game was continued", async () => {
+    const game = { ...withAudio, sounds, reward: { animation: "confetti", particleCount: 50 } } satisfies GameData;
+    saveGameState(SMALL_GAME_ID, completeChallenge(createBlankGameState(game), "stage-1", "stage-1-challenge"));
+    renderVariant(game);
+
+    await screen.findByText("Stage 2");
+    await vi.waitFor(() => expect(playedSources()).toContain("https://sounds.example/opening.mp3"));
+    expect(rewardSpy).not.toHaveBeenCalled();
+    expect(playedSources()).not.toContain("https://sounds.example/completed.mp3");
   });
 
   it("keeps the screen awake until every stage is complete", async () => {

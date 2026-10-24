@@ -48,6 +48,10 @@ export type GameAnswerFunction = (
 const resourceUrl = (resources: Record<string, string>, key: string | undefined) =>
   isDefined(key) ? resources[key] : undefined;
 
+/** The ids of the stages the player has completed. */
+const completedStageIds = (gameState: GameState): GameStageId[] =>
+  gameState.stages.filter((s) => s.completion === "completed").map((s) => s.stage.id);
+
 /** Rewards completed stages, and plays music and sound effects as the player moves around the game, as the game data says. */
 function useGameFeedback() {
   const { gameState } = useGameState();
@@ -58,13 +62,14 @@ function useGameFeedback() {
     particleCount: rewardData?.particleCount ?? 200,
   });
 
-  // Previous values, to react only to changes; refs because nothing renders from them
-  const progressTracker = useRef<GameStageId[]>([]);
+  // Previous values, to react only to changes; refs because nothing renders from them.
+  // Progress starts from the loaded state, so continuing a saved game doesn't replay its rewards.
+  const progressTracker = useRef(completedStageIds(gameState));
   const overviewTracker = useRef<GameOverviewDisplayPurpose | null>(null);
   const stageIdTracker = useRef<GameStageId | null>(null);
 
   useEffect(() => {
-    const newProgress = gameState.stages.filter((s) => s.completion === "completed").map((s) => s.stage.id);
+    const newProgress = completedStageIds(gameState);
     if (!_.isEqual(newProgress, progressTracker.current)) {
       if (isDefined(rewardData)) reward();
       const completed = resourceUrl(resources, sounds?.stageCompletedSoundResource);

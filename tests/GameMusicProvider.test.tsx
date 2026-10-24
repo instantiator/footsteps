@@ -120,6 +120,28 @@ describe("GameMusicProvider", () => {
     expect(playback.pause).not.toHaveBeenCalled();
   });
 
+  it("stops the music when the game unmounts", async () => {
+    const { unmount } = renderControls();
+    await startTrack();
+
+    unmount();
+    expect(playback.pause).toHaveBeenCalledOnce();
+    expect(playback.pause.mock.contexts[0]).toBe(playedAudio(0));
+  });
+
+  it("plays only the latest of two tracks asked for during a fade", async () => {
+    renderControls();
+    await startTrack();
+    vi.useFakeTimers();
+    fireEvent.click(screen.getByRole("button", { name: "play" }));
+    fireEvent.click(screen.getByRole("button", { name: "play next" }));
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+    vi.useRealTimers();
+
+    await screen.findByText("now playing: next.mp3");
+    expect(playback.play).toHaveBeenCalledTimes(2); // the first track, then only the latest request
+  });
+
   it("does not record a track that fails to play", async () => {
     playback.play.mockRejectedValue(new Error("blocked"));
     vi.spyOn(console, "error").mockImplementation(() => undefined);
