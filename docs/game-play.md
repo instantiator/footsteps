@@ -2,7 +2,7 @@
 
 A game has a landing page, a play page, and a JSON debug page. The landing page checks permissions
 and offers New game or Continue; the play page runs the game, saves progress, and keeps the screen
-awake while the game is incomplete.
+awake while the game is incomplete, with a warning on every page when the battery is low.
 
 ## Routes
 
@@ -76,9 +76,17 @@ The full rationale is in [ADR 0003](ADRs/0003-save-progress-in-local-storage.md)
 
 While a game is open, visible, and not complete, `useWakeLock` requests a screen wake lock with the
 Screen Wake Lock API. It releases the lock when the game completes, the tab is hidden, or the game
-unmounts, and reacquires it when the tab becomes visible again. The API is not available in every
-browser; when it is missing or refuses the request, the game logs a warning and carries on without a
-lock.
+unmounts, and reacquires it when the tab becomes visible again, or when the browser releases it
+while the tab is still visible (for example on entering a battery saver mode). The API is not
+available in every browser; when it is missing or refuses the request, the game logs a warning and
+carries on without a lock.
+
+## Low battery warning
+
+`BatteryWarning`, rendered by the root route, shows a banner on every page when the battery is at or
+below 20% and not charging, so a game isn't cut short by the device shutting down. It uses the
+Battery Status API, which only Chromium browsers (Chrome, Edge, Android) provide; elsewhere it shows
+nothing.
 
 ## Where the code lives
 
@@ -93,3 +101,4 @@ lock.
 | `src/entities/state/GameStateStorage.ts`           | Versioned local-storage projection, validation, and clearing |
 | `src/providers/GameStateProvider.tsx`              | Loads saved progress and saves each change                   |
 | `src/components/core/WakeLockHook.ts`              | Screen wake lock lifecycle                                   |
+| `src/components/core/BatteryWarning.tsx`           | Low-battery banner on every page                             |

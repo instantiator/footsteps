@@ -106,6 +106,14 @@ support it, so the device may sleep during a game there. The hook logs a warning
 **Act when:** a game is expected to run on a device that sleeps mid-game. Add a fallback such as a
 looping muted video or an audio track, and cover it in `tests/WakeLock.test.ts`.
 
+## Low-battery warning only in Chromium browsers
+
+`BatteryWarning` uses the Battery Status API (`navigator.getBattery`), which Firefox and Safari do
+not provide, so players there get no warning before the battery runs out.
+
+**Act when:** a game is expected to run on Firefox or Safari unattended for long sessions. Then
+consider a reminder to plug in on the landing page for every browser.
+
 ## Saved progress is discarded when a game's stage or challenge ids change
 
 The stored projection is validated against the current game. If an author renames or removes a stage

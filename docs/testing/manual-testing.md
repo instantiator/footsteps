@@ -53,6 +53,9 @@ on, so changing only the module is not enough.
 - [ ] While a game is open and incomplete, the device does not sleep or dim the screen. Completing
       the last stage releases the wake lock; check the browser console for wake-lock warnings if the
       device still sleeps.
+- [ ] In Chrome, override the battery to 15% and discharging (DevTools → Sensors, or a stubbed
+      `navigator.getBattery`): the low-battery banner shows on `/`, `/game/magic-trifle` and the
+      play page, and goes when charging.
 
 ## Bug #16: the segmentation loop keeps running
 
