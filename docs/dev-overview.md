@@ -18,7 +18,9 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 | `src/routes.ts`              | Route config: `/`, `/game/:id`, `/game/:id/play`, `/game/:id/json`            |
 | `src/pages/`, `src/Home.tsx` | Route modules (one page each)                                                 |
 | `src/components/`            | Game engine UI: layers, displays, camera, and the game logic in `core/logic/` |
-| `src/providers/`             | React contexts: repository, game data, game state, music, feature flags       |
+| `src/config/`                | App config: settings from the `.env*` files, overridable by URL query         |
+| `src/vision/`                | Vision models behind one interface, body-part queries, tracking, the worker   |
+| `src/providers/`             | React contexts: repository, game data, game state, music, app config          |
 | `tests/`                     | Vitest unit and component tests                                               |
 
 ## Invocations
@@ -60,8 +62,9 @@ Use `npm run docs:dev` for the Markdown pages locally, and `npm run docs:api` to
 `tests/browser/` runs the real camera pipeline in Chromium against a fake webcam, covering the
 landing page and route split, the silhouette loop, debug changes, preview visibility, camera-off
 displays, image switching, and the game view easing into the camera's shape before its display fades
-in. It is local only: the first run downloads the TensorFlow model (about 90 MB), so it is not part of
-the pre-push gate or CI.
+in. It is local only: it downloads the vision model, and needs the GPU to track fast enough, so it is not
+part of the pre-push gate or CI. An opt-in benchmark compares models on photos of people; see
+[camera mode](camera-mode.md#testing).
 
 ```bash
 npx playwright install chromium  # once

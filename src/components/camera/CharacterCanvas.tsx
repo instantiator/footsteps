@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { AppConfig } from "../../config/AppConfig";
 import useAppConfig from "../../providers/AppConfigHook";
 import { createVisionModel } from "../../vision/createVisionModel";
@@ -122,7 +122,7 @@ const startTrackingLoop = (
   { offScreenThreshold_percent, onFeetPositionsChange, onPlayersChange, maskType, smoothing, onStats }: LoopHandlers,
 ): (() => void) => {
   let cancelled = false;
-  let cancelFrame = () => {};
+  let cancelFrame: (() => void) | undefined;
   const ctx = canvas.getContext("2d");
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
@@ -156,7 +156,8 @@ const startTrackingLoop = (
     try {
       await trackOnce();
     } catch (error) {
-      if (!warned) console.warn("Skipped a camera frame that could not be tracked:", error);
+      // A frame cut short by the loop stopping (eg. the model disposed) is expected, not a failure
+      if (!warned && !cancelled) console.warn("Skipped a camera frame that could not be tracked:", error);
       warned = true;
     }
     if (!cancelled) cancelFrame = onNextFrame(video, trackFrame);
@@ -165,7 +166,7 @@ const startTrackingLoop = (
   trackFrame();
   return () => {
     cancelled = true;
-    cancelFrame();
+    cancelFrame?.();
   };
 };
 
@@ -200,7 +201,10 @@ export default function CharacterCanvas({
   ...loopProps
 }: CharacterCanvasProps) {
   const config = useAppConfig();
-  const model = useVisionModel(loopProps.mediaStream, config);
+  // Debug only changes how players are drawn, so toggling it keeps the loaded model
+  const modelKey = JSON.stringify({ ...config, debug: false });
+  const modelConfig = useMemo(() => JSON.parse(modelKey) as AppConfig, [modelKey]);
+  const model = useVisionModel(loopProps.mediaStream, modelConfig);
   const smoothing = config.visionSmoothing;
   const [stats, setStats] = useState<FrameStats | null>(null);
   const internalCanvasRef = useRef<HTMLCanvasElement>(null);

@@ -107,18 +107,44 @@ game's elements underneath. Each element's `id` says what a click or camera inte
 
 ## How the silhouette is made
 
-1. `CharacterCamera` asks for the webcam with `navigator.mediaDevices.getUserMedia`, puts the stream
-   in a `<video>`, and shares the video and stream with the rest of the layout.
-2. `CharacterCanvas` loads TensorFlow's BodyPix model with the ResNet50 backbone, once while there is
-   a stream. It segments each video frame with the camera flipped to match the mirror.
-3. For each person, it reads the mask once as image data. That mask gives both the pixels to draw and
-   the person's feet position (`findFeet` in `CameraSupport`).
-4. `drawMask` in `BodySegSupport` draws the video onto a canvas and keeps only the person-shaped
-   part. `binary` keeps the player's own colours; `colored` and `extremities` tint the mask.
-5. The canvas is mirrored with a CSS transform. The segmentation is flipped to match, so the player's
-   left is their left on screen.
-6. When the stream goes away, the model is disposed and the segmentation loop is cancelled. Starting
-   a new stream loads a fresh model.
+1. `CharacterCamera` asks for the webcam (1280×720 by default) with `navigator.mediaDevices.getUserMedia`, puts
+   the stream in a `<video>`, and shares the video and stream with the rest of the layout.
+2. `CharacterCanvas` creates the configured vision model with `createVisionModel` (see
+   [configuration](#configuration)), once while there is a stream. By default this is BodyPix MobileNetV1 on
+   WebGPU, run in a web worker. Every model implements `FootstepsVisionModelImplementation` (`src/vision/`).
+3. Once per new camera frame (`requestVideoFrameCallback`), the model returns a `VisionFrame`: for each person, a
+   silhouette mask and key points for their hands, feet and head. A `PersonTracker` keeps each person's id
+   stable between frames and smooths their key points.
+4. `drawPeople` (`DrawPeople.ts`) draws the video onto a canvas and keeps only the people. `binary` keeps the
+   players' own colours; `colored` tints each person and their head, hands and feet; `extremities` tints only
+   the hands and feet.
+5. The canvas is mirrored with a CSS transform, so the player's left is their left on screen. The masks are in
+   the camera's own (unmirrored) orientation.
+6. When the stream goes away, the model is disposed and the loop is cancelled. Starting a new stream loads a
+   fresh model.
+
+## Configuration
+
+Camera and vision settings are app config: set per environment in the committed `.env` files (`.env`, then
+`.env.development`, `.env.test` or `.env.production`), or for one visit by a URL query named after the setting.
+An untracked `.env.local` holds personal overrides. `src/config/AppConfig.ts` documents every setting.
+
+| Setting (`.env` / query)                           | Default       | What it does                                                         |
+| -------------------------------------------------- | ------------- | -------------------------------------------------------------------- |
+| `VITE_DEBUG` / `debug`                             | `false`       | Debugging aids; see [debugging](#debugging)                          |
+| `VITE_VISION_MODEL` / `visionModel`                | `bodypix`     | `bodypix`, `mediapipe` or `movenet`; see ADR 0005                    |
+| `VITE_VISION_BACKEND` / `visionBackend`            | `webgpu`      | tfjs backend for BodyPix and MoveNet; WebGPU falls back to WebGL     |
+| `VITE_VISION_WORKER` / `visionWorker`              | `true`        | Runs the model in a web worker                                       |
+| `VITE_VISION_MAX_PEOPLE` / `visionMaxPeople`       | `4`           | The most players a model looks for                                   |
+| `VITE_VISION_SMOOTHING` / `visionSmoothing`        | `true`        | Stable player ids, smoothed key points, and the stable-frames rule   |
+| `VITE_VISION_STABLE_FRAMES` / `visionStableFrames` | `2`           | Frames an interaction must hold before it fires                      |
+| `VITE_CAMERA_WIDTH`, `VITE_CAMERA_HEIGHT`          | `1280`, `720` | The camera resolution asked for                                      |
+| `VITE_BODYPIX_*` / `bodypix*`                      | MobileNetV1   | Architecture, output stride, weight bytes, resolution, and threshold |
+| `VITE_MEDIAPIPE_VARIANT` / `mediapipeVariant`      | `full`        | MediaPipe Pose's model size: `lite`, `full` or `heavy`               |
+
+For example, `?visionModel=mediapipe&visionWorker=false` tries MediaPipe Pose on the main thread. An invalid
+value is ignored with a console warning. [ADR 0004](ADRs/0004-vision-optimisations.md) and
+[ADR 0005](ADRs/0005-vision-models.md) explain the choices and measurements.
 
 ## How interactions work
 
@@ -142,17 +168,20 @@ body part must be inside the element. `interactions` defaults to `["click"]` and
 | `click`     | A mouse click, or Enter/Space on a focused element |
 | `hand`      | Either hand                                        |
 | `foot`      | Either foot                                        |
-| `head`      | Either side of the face                            |
+| `head`      | The head                                           |
 | `body`      | The whole silhouette                               |
-| `any`       | Any single body part                               |
+| `any`       | Any single body part, or the whole silhouette      |
 | `jump`      | The feet's vertical motion, in the sequence below  |
 
-A **threshold** is the fraction of the chosen body part that must be inside the element's rectangle:
-`inside pixels / total pixels of that part`. It is clamped to 0–1. The default, `1`, needs the whole
-part inside; `0` only needs one pixel. `any` applies the threshold to each body part separately.
+A **body part** is a region of the player's silhouette. A hand or foot is a disc around its key point, scaled to
+the player's head; the head is the box its top, bottom and sides span; the body is the whole silhouette. A
+**threshold** is the fraction of a body part that must be inside the element's rectangle: `inside pixels / total
+pixels of that part`. It is clamped to 0–1. The default, `1`, needs the whole part inside; `0` only needs one
+pixel. `hand`, `foot` and `any` fire when any one of their parts meets the threshold.
 
-Interactions are **edge-triggered**: one fires when the player first meets the condition, not on
-every frame they hold it. Moving away re-arms it, so a second approach fires again. A player who already
+Interactions are **edge-triggered**: one fires when the player has met the condition for
+`visionStableFrames` frames in a row (2 by default, so a one-frame flicker doesn't count), not on every frame
+they hold it. Moving away re-arms it, so a second approach fires again. A player who already
 meets the condition when their monitor starts (when camera mode starts, after a display change, or on
 coming back into view) must move away and back first.
 
@@ -177,8 +206,8 @@ ignore whatever holds on their first frame, so a held hand cannot fire as the ne
 
 ### From frame to event
 
-`CharacterCanvas` calls `onPlayersChange` once per frame with every player's mask and feet, and the
-frame's timestamp. `usePlayerInteractions` builds a mask-space rectangle for each target element
+`CharacterCanvas` calls `onPlayersChange` once per frame with every player's mask, key points and feet,
+and the frame's timestamp. `usePlayerInteractions` builds a mask-space rectangle for each target element
 that is on screen, keeps one `PlayerMonitor` per player, and turns the monitors' events into game
 state changes in `Game`. The rectangle conversion mirrors the x axis to match the canvas.
 
@@ -187,27 +216,36 @@ overview's targets and an empty map while a stage is open.
 
 ## Debugging
 
-Add `?debug=true` to the URL to turn on the `debug` feature flag. In camera mode that:
+Add `?debug=true` to the URL to turn on the `debug` setting. In camera mode that:
 
-- tints the silhouette by body part;
-- shows a colour key under the preview, with each part's mask value;
+- tints each player differently, with their head, hands and feet in their own colours;
+- shows a colour key under the preview;
+- shows the frame rate, inference time, and the people, hands and feet found, over the silhouette;
 - draws a green dot where each person's feet were found.
 
 Lower a target's `threshold` when testing interactions, and use the feet dots to see where the
-camera thinks the player is. Changing the debug flag restarts the segmentation loop with the new
-mask type, and cancels the old one; check the console for TensorFlow or "disposed" errors after
+camera thinks the player is. Changing the debug setting restarts the tracking loop with the new
+mask type, and cancels the old one; check the console for model or "disposed" errors after
 toggling it.
 
 ## Where the code lives
 
 | Path                                                  | What it does                                                                      |
 | ----------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `src/config/AppConfig.ts`                             | the settings, their defaults, and reading them from `.env` and the URL            |
 | `src/components/camera/CharacterCamera.tsx`           | webcam stream and the preview video                                               |
-| `src/components/camera/CharacterCanvas.tsx`           | segmentation loop; draws the silhouette; reports players and feet                 |
-| `src/components/camera/PlayerMonitor.ts`              | turns masks and feet into edge-triggered interactions                             |
+| `src/components/camera/CharacterCanvas.tsx`           | tracking loop; draws the silhouettes; reports players and feet; the stats readout |
+| `src/components/camera/DrawPeople.ts`                 | cuts the people out of the video, and tints them for debugging                    |
+| `src/components/camera/PlayerMonitor.ts`              | turns body-part coverage and feet into edge-triggered interactions                |
 | `src/components/camera/CameraSupport.ts`              | camera request, feet position, and screen-to-mask rectangles                      |
-| `src/components/camera/BodySegSupport.ts`             | draws the mask, and the colours used for body parts                               |
+| `src/components/camera/FrameStats.ts`                 | frame rate, inference time, and what each frame found                             |
 | `src/components/camera/CameraDebugOverlay.tsx`        | green feet markers                                                                |
+| `src/vision/FootstepsVisionModelImplementation.ts`    | the base class every vision model implements, with the body-part queries          |
+| `src/vision/BodyPart.ts`, `VisionTypes.ts`            | our body parts, and the frames models return                                      |
+| `src/vision/VisionQueries.ts`                         | body parts at a point or in an area; splitting one silhouette between people      |
+| `src/vision/Tracking.ts`                              | stable player ids and key-point smoothing                                         |
+| `src/vision/models/`                                  | BodyPix, MediaPipe Pose and MoveNet, and the tfjs backend choice                  |
+| `src/vision/VisionWorkerProxy.ts`, `vision.worker.ts` | runs a model in a web worker                                                      |
 | `src/components/core/logic/CameraModeUtils.ts`        | per-display camera resolution                                                     |
 | `src/components/core/logic/GameClickUtils.ts`         | targets, and the state changes for clicks and interactions                        |
 | `src/components/core/layout/GameLayersLayout.tsx`     | the layer stack, scene transitions, shared camera state, and the interaction hook |
@@ -218,11 +256,14 @@ toggling it.
 ## Testing
 
 Unit tests cover the camera resolution (`tests/CameraModeUtils.test.ts`), the monitor and its jump
-sequence (`tests/PlayerMonitor.test.ts`), mask rectangles (`tests/CameraSupport.test.ts`), the
-segmentation loop (`tests/CharacterCanvas.test.tsx`), and the layout and game wiring, including the
-display fades and camera reshape timings, waiting for a camera shape, and reduced motion.
+sequence (`tests/PlayerMonitor.test.ts`), mask rectangles and feet (`tests/CameraSupport.test.ts`), the
+tracking loop (`tests/CharacterCanvas.test.tsx`), the config (`tests/AppConfig*.test.ts*`), each vision
+model and the worker proxy (`tests/*Model.test.ts`, `tests/VisionWorkerProxy.test.ts`), the body-part
+queries and tracking (`tests/VisionQueries.test.ts`, `tests/Tracking.test.ts`), and the layout and game
+wiring, including the display fades and camera reshape timings, waiting for a camera shape, and reduced
+motion.
 
-The browser suite runs the real TensorFlow pipeline in Chromium against a fake webcam. It samples the
+The browser suite runs the real vision pipeline in Chromium against a fake webcam. It samples the
 viewport mid-reshape, waits for the new display to fade in, and checks that the fitted game view
 contains every stepping stone:
 
@@ -231,6 +272,14 @@ npx playwright install chromium  # once
 scripts/run-browser-tests.sh
 ```
 
-It is local only, needs network access on its first run to download the model, and takes about 3–4
-minutes on Apple Silicon. See [manual testing](testing/manual-testing.md) for what it proves, the
+It is local only, needs network access to download the model, and takes about 2–3 minutes on Apple
+Silicon. The opt-in vision benchmark shows the fake webcam 25 photos of people and reports, for each, the frame
+rate, inference time, and the people, hands and feet found:
+
+```bash
+VISION_BENCH=1 scripts/run-browser-tests.sh vision-bench
+VISION_BENCH=1 VISION_BENCH_QUERY="&visionModel=mediapipe" scripts/run-browser-tests.sh vision-bench
+```
+
+`VISION_BENCH_SHOTS=<folder>` also saves each scene's debug view, named `VISION_BENCH_LABEL-<scene>.png`. See [manual testing](testing/manual-testing.md) for what it proves, the
 manual checks with a real camera, and how to debug a failure.

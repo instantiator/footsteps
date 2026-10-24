@@ -206,4 +206,22 @@ describe("CharacterCanvas", () => {
     expect(model.dispose).toHaveBeenCalledTimes(1);
     expect(model.detect).not.toHaveBeenCalled();
   });
+
+  it("keeps the loaded model when only the debug setting changes", async () => {
+    const onPlayersChange = vi.fn();
+    const withDebug = (debug: boolean) => (
+      <MemoryRouter>
+        <AppConfigProvider debug={debug}>
+          <CharacterCanvas video={video} mediaStream={mediaStream} onPlayersChange={onPlayersChange} />
+        </AppConfigProvider>
+      </MemoryRouter>
+    );
+    const { rerender } = render(withDebug(false));
+    await waitFor(() => expect(onPlayersChange).toHaveBeenCalled());
+
+    rerender(withDebug(true));
+
+    expect(model.createVisionModel).toHaveBeenCalledTimes(1);
+    expect(model.dispose).not.toHaveBeenCalled();
+  });
 });

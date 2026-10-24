@@ -6,8 +6,8 @@ const PORT = 5180;
 /**
  * Browser tests run the real camera pipeline in Chromium, against a fake webcam feed.
  *
- * They need the Chromium browser (`npx playwright install chromium`) and, on the first run,
- * network access to download the TensorFlow body-segmentation model (about 90 MB).
+ * They need the Chromium browser (`npx playwright install chromium`) and, each run,
+ * network access to download the vision model.
  */
 export default defineConfig({
   testDir: "./tests/browser",

@@ -15,9 +15,9 @@ import { increasing, mediapipeWasm, SELFIE_SEGMENTER_MODEL_URL, silhouetteOf } f
 import { headFromLandmarks, meanOf, partScale } from "./PoseGeometry";
 import { selectTfBackend } from "./TfBackend";
 
-// ponytail: loads from TF Hub (via Kaggle), as BodyPix's model does; self-host it if the game must run offline
+// ponytail: loads from Kaggle (TF Hub's successor), as BodyPix's model loads from Google; self-host it for offline play
 /** MoveNet MultiPose Lightning, which finds up to 6 people. */
-const MOVENET_URL = "https://tfhub.dev/google/tfjs-model/movenet/multipose/lightning/1";
+const MOVENET_URL = "https://www.kaggle.com/models/google/movenet/tfJs/multipose-lightning/1";
 
 /** MoveNet's input: the longest side, in pixels, and the multiple both sides must be. */
 const INPUT_SIZE = 256;
