@@ -119,6 +119,20 @@ describe("CharacterCanvas", () => {
     expect(Object.keys(onFeetPositionsChange.mock.calls[0][0])).toEqual(["0", "1"]);
   });
 
+  it("skips a frame that fails to segment, and carries on with the next", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    model.segmentPeople.mockRejectedValueOnce(new Error("WebGL context lost"));
+    const onPlayersChange = vi.fn();
+    renderCanvas({ onPlayersChange });
+
+    await waitFor(() => expect(queuedFrames.size).toBe(1));
+    expect(onPlayersChange).not.toHaveBeenCalled();
+    expect(console.warn).toHaveBeenCalledTimes(1);
+
+    await act(async () => runNextFrame());
+    await waitFor(() => expect(onPlayersChange).toHaveBeenCalledTimes(1));
+  });
+
   it("stops segmenting and disposes the model once on unmount", async () => {
     const onPlayersChange = vi.fn();
     const { unmount } = renderCanvas({ onPlayersChange });

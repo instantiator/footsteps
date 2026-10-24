@@ -148,3 +148,22 @@ test("switching the fake camera image changes the preview, proving the harness",
 
   await expect.poll(samplePreview, { timeout: MODEL_TIMEOUT }).not.toBe(before);
 });
+
+test("plays on by clicks when the camera is busy", async ({ page }) => {
+  await openCameraGame(page);
+  // Another app holding the camera: the permission is granted, but the device won't start
+  await page.addInitScript(() => {
+    navigator.mediaDevices.getUserMedia = async () => {
+      throw new DOMException("Could not start video source", "NotReadableError");
+    };
+  });
+  await page.reload();
+
+  await page.locator("#magic-trifle-title").click({ force: true });
+  const stageLink = page.locator("#stages-link-stage-1");
+  await expect(stageLink).toBeVisible();
+  await expect(page.locator("#character-camera-layer")).toHaveCount(0);
+  await stageLink.click({ force: true });
+
+  await expect(page.getByRole("button", { name: "Close challenge" })).toBeVisible();
+});

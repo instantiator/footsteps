@@ -17,8 +17,11 @@ type CameraProps = ComponentProps<typeof CharacterCamera>;
 /** The props the layout gave the (mocked) camera and canvas. */
 const received = vi.hoisted(() => ({ canvas: [] as CanvasProps[], camera: [] as CameraProps[] }));
 
-/** What the mocked camera does; `reportAspect` off leaves the layers waiting for a video shape. */
-const settings = vi.hoisted(() => ({ reportAspect: true }));
+/**
+ * What the mocked camera does: `reportAspect` off leaves the layers waiting for a video shape,
+ * and `fail` reports that the camera couldn't start.
+ */
+const settings = vi.hoisted(() => ({ reportAspect: true, fail: false }));
 
 vi.mock("../src/components/camera/CharacterCanvas", () => ({
   default: (props: CanvasProps) => {
@@ -33,11 +36,12 @@ vi.mock("../src/components/camera/CharacterCamera", async () => {
   const { FakeMediaStream } = await import("./helpers/media");
   const MockCamera = (props: CameraProps) => {
     received.camera.push(props);
-    const { onAspectChange, setStream } = props;
+    const { onAspectChange, setStream, onError } = props;
     useEffect(() => {
+      if (settings.fail) return onError();
       if (settings.reportAspect) onAspectChange(1.5);
       setStream(new FakeMediaStream());
-    }, [onAspectChange, setStream]);
+    }, [onAspectChange, setStream, onError]);
     return null;
   };
   return { default: MockCamera };
@@ -47,6 +51,7 @@ beforeEach(() => {
   received.canvas.length = 0;
   received.camera.length = 0;
   settings.reportAspect = true;
+  settings.fail = false;
 });
 
 afterEach(() => {
@@ -171,6 +176,32 @@ describe("GameLayersLayout", () => {
     const { container } = renderLayout({ camera: { enabled: true, preview: true } });
     expect(container.querySelector("#overview-foreground-container")).toBeNull();
     expect(screen.queryByTestId("canvas")).toBeNull();
+  });
+});
+
+describe("GameLayersLayout without a working camera", () => {
+  it("shows the display without the camera when it can't start", async () => {
+    settings.fail = true;
+    const { container } = renderLayout({ camera: { enabled: true, preview: true } });
+
+    await vi.waitFor(() => expect(container.querySelector("#overview-foreground-container")).not.toBeNull());
+    expect(container.querySelector("#character-camera-layer")).toBeNull();
+    expect(screen.queryByTestId("canvas")).toBeNull();
+  });
+
+  it("moves on to a camera display, without the camera, when it can't start", () => {
+    setReducedMotion(true);
+    settings.fail = true;
+    const title = { overview: { backgroundLayerNodes: undefined, foregroundLayerNodes: [<span key="t">title</span>] } };
+    const stages = {
+      overview: { backgroundLayerNodes: undefined, foregroundLayerNodes: [<span key="s">stages</span>] },
+    };
+    const { rerender } = renderLayout({ gameLayers: title, displayKey: "title" });
+
+    rerender(layout({ camera: { enabled: true, preview: true }, gameLayers: stages, displayKey: "stages" }));
+
+    expect(screen.getByText("stages")).toBeInTheDocument();
+    expect(screen.queryByText("title")).toBeNull();
   });
 });
 
