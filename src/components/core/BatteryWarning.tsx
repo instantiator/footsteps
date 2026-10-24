@@ -68,9 +68,5 @@ function useLowBattery(): number | undefined {
 export default function BatteryWarning() {
   const level = useLowBattery();
   if (level === undefined) return null;
-  return (
-    <div role="status" style={WARNING_STYLE}>
-      Battery low ({Math.round(level * 100)}%). Plug in to keep playing.
-    </div>
-  );
+  return <output style={WARNING_STYLE}>Battery low ({Math.round(level * 100)}%). Plug in to keep playing.</output>;
 }
