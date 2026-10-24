@@ -18,10 +18,8 @@ export default function GamePermissionGuard({ children }: { children: ReactNode 
     let cancelled = false;
     Promise.all(permissions.map(checkGamePermission)).then((states) => {
       if (cancelled) return;
-      // An unsupported query cannot block play: the browser still enforces the permission when the camera starts.
-      setState(
-        states.every((permission) => permission === "granted" || permission === "unsupported") ? "allowed" : "blocked",
-      );
+      // Only a known grant lets play start; anything else goes back to the landing page to grant it
+      setState(states.every((permission) => permission === "granted") ? "allowed" : "blocked");
     });
     return () => {
       cancelled = true;

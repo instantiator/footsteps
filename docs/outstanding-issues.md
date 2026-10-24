@@ -106,18 +106,6 @@ support it, so the device may sleep during a game there. The hook logs a warning
 **Act when:** a game is expected to run on a device that sleeps mid-game. Add a fallback such as a
 looping muted video or an audio track, and cover it in `tests/WakeLock.test.ts`.
 
-## Permission checks need a Grant click when the browser cannot report camera state
-
-When `navigator.permissions.query({ name: "camera" })` is missing or rejects, the landing page treats
-the camera as not granted and asks for a Grant click. The play page allows the game when the query is
-unsupported, because the browser still enforces camera access at `getUserMedia`. On browsers with
-no camera permission query, a returning player may have to click Grant on each landing visit even
-though the browser remembers the permission.
-
-**Act when:** a supported browser cannot report camera permissions and players report repeated
-grants. Then remember a successful grant for the browser session (for example in `sessionStorage`)
-and treat it as granted until the tab closes.
-
 ## Saved progress is discarded when a game's stage or challenge ids change
 
 The stored projection is validated against the current game. If an author renames or removes a stage

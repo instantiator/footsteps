@@ -48,8 +48,9 @@ granted. New game and Continue stay disabled until then. See [Playing a game](ga
 for the full flow.
 
 A direct visit to `/game/:id/play` repeats the check and returns to the landing page when the
-permission is `prompt` or `denied`. If the browser cannot report the permission, the play page allows
-the game to open and lets the browser enforce camera access when the stream is requested.
+permission is anything but granted. A grant made on the landing page in the same tab counts, even
+when the browser cannot report it. If the camera still fails to start in play (for example because
+another app is using it), the game carries on without it, playable by clicks.
 
 ## What the player sees
 

@@ -7,6 +7,7 @@ beforeAll(() => server.listen());
 beforeEach(() => {
   setReducedMotion(true);
   localStorage.clear();
+  sessionStorage.clear();
 });
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());

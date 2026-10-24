@@ -44,14 +44,13 @@ The landing page asks the browser for each required permission with
 checked, anything else gets a Grant button.
 
 Granting calls `getUserMedia({ video: true })`, stops the returned tracks immediately, and checks
-again. If the browser cannot report the camera permission (the Permissions API is missing or rejects
-the name), the landing page still requires the Grant click. A successful request counts as granted
-unless the browser reports it as denied.
+again. A successful request is remembered for the tab in `sessionStorage`, and counts as granted
+unless the browser later reports it as denied. So a browser that cannot report the camera permission
+(the Permissions API is missing or rejects the name) needs one Grant click per tab.
 
 The play route repeats the check so a bookmark or typed URL cannot skip the landing page. It allows
-play when the permission is granted, and also when the browser cannot report the permission: in that
-case the browser still enforces camera access when the game opens the camera. It redirects to the
-landing page for `prompt` and `denied`.
+play only when the permission is granted (including a grant remembered for the tab), and redirects to
+the landing page otherwise.
 
 ## Saved progress
 
