@@ -2,7 +2,14 @@ import * as bodyPix from "@tensorflow-models/body-pix";
 import * as tf from "@tensorflow/tfjs";
 import type { AppConfig } from "../../config/AppConfig";
 import { FootstepsVisionModelImplementation } from "../FootstepsVisionModelImplementation";
-import { noKeyPoints, type KeyPoints, type VisionFrame, type VisionPerson, type VisionSource } from "../VisionTypes";
+import {
+  noKeyPoints,
+  sourceSize,
+  type KeyPoints,
+  type VisionFrame,
+  type VisionPerson,
+  type VisionSource,
+} from "../VisionTypes";
 import { selectTfBackend } from "./TfBackend";
 
 /** BodyPix's part ids (see its `PART_CHANNELS`) for the parts we find key points from. */
@@ -127,9 +134,7 @@ export class BodyPixModel extends FootstepsVisionModelImplementation {
         maxDetections: this.config.visionMaxPeople,
       });
       const people = segmentations.map((segmentation, id) => personFromParts(id, segmentation));
-      return isVideo
-        ? { width: source.videoWidth, height: source.videoHeight, timestamp, people }
-        : { width: source.width, height: source.height, timestamp, people };
+      return { ...sourceSize(source), timestamp, people };
     } finally {
       if (input instanceof tf.Tensor) input.dispose();
     }

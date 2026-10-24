@@ -56,6 +56,12 @@ export interface VisionFrame {
 /** A camera frame for a model: the live video on the main thread, or a captured bitmap in a worker. */
 export type VisionSource = HTMLVideoElement | ImageBitmap;
 
+/** A source's size in pixels. */
+export const sourceSize = (source: VisionSource): Pick<VisionFrame, "width" | "height"> =>
+  "videoWidth" in source
+    ? { width: source.videoWidth, height: source.videoHeight }
+    : { width: source.width, height: source.height };
+
 /** A key points record with nothing placed, for models to fill in. */
 export const noKeyPoints = (): KeyPoints => ({
   leftFoot: null,
