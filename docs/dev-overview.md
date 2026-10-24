@@ -4,7 +4,8 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 
 ## Prerequisites
 
-- `bash`, `git`, and Node 26 (`engines.node` in `package.json`; LTS from 2026-10-28)
+- `bash`, `git`, and Node 26: `.nvmrc` names the version CI and deployment use (`nvm use` picks it up), and `engines.node` in `package.json` the minimum (LTS from 2026-10-28)
+- Tool versions come from `package-lock.json` alone. The scripts run tools with `npx --no-install`, so a missing tool fails rather than downloading the latest. Run `npm ci` first. `dev-qual/scripts/check.sh` runs `markdownlint` from your PATH, so locally either put `node_modules/.bin` on your PATH or install the same version globally (`npm i -g markdownlint-cli@0.49.1`). CI uses the project's copy.
 - [Code formatting configuration](code-formatting.md)
 - The `dev-qual` submodule: `git submodule update --init`
 
