@@ -34,4 +34,22 @@ must run locally in a browser on an M1 MacBook Pro. Models were surveyed in Octo
 | Sapiens (body-part segmentation)            | PyTorch / ONNX                        | many     | 28 parts   | 308                   | CC BY-NC   | not chosen          |
 | SAM 2 / EfficientSAM                        | ONNX / WebGPU                         | prompted | yes        | none                  | Apache-2.0 | not chosen          |
 
-To be completed in stage 11, with each option's pros, cons, measurements, and sources.
+## Measurements
+
+`VISION_BENCH=1 scripts/run-browser-tests.sh vision-bench` shows each scene to the fake camera (640×480,
+30 fps) in headless Chromium on an M1 MacBook Pro. The scenes are an empty room, and seven CC0 photos of 1–3
+people (`tests/browser/fixtures/people/`). Each cell gives the people found / expected, then the median inference
+time in ms.
+
+| Scene            | BodyPix ResNet50 s32, WebGL | BodyPix ResNet50 s32, WebGPU | BodyPix MobileNetV1 s16, WebGPU | MediaPipe Pose full |
+| ---------------- | --------------------------- | ---------------------------- | ------------------------------- | ------------------- |
+| empty room       | 0/0 · 138                   | 0/0 · 67                     | 0/0 · 23                        | 0/0 · 15            |
+| jumping, arms up | 1/1 · 144                   | 1/1 · 68                     | 0/1 · 25                        | 0/1 · 14            |
+| jumping, side-on | 1/1 · 144                   | 1/1 · 76                     | 1/1 · 40                        | 1/1 · 27            |
+| two facing       | 2/2 · 152                   | 2/2 · 87                     | 2/2 · 49                        | 1/2 · 24            |
+| three friends    | 3/3 · 152                   | 3/3 · 120                    | 3/3 · 86                        | 2/3 · 39            |
+| two from behind  | 2/2 · 153                   | 2/2 · 124                    | 2/2 · 86                        | 1/2 · 25            |
+| busy street      | 2/2 · 146                   | 2/2 · 84                     | 2/2 · 44                        | 1/2 · 26            |
+| backlit three    | 1/3 · 149                   | 1/3 · 124                    | 1/3 · 57                        | 1/3 · 28            |
+
+To be completed in stage 11, with each option's pros, cons and sources.

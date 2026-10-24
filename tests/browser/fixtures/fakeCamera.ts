@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 
-/** The scenes the fake webcam can show. */
-export type FakeCameraImage = "room" | "person";
+/** The scenes the fake webcam can show: drawn ones, or a photo the camera was installed with. */
+export type FakeCameraImage = "room" | "person" | `photo:${string}`;
 
 /** What the fake webcam exposes to the page, and so to tests. */
 export interface FakeCameraState {
@@ -22,9 +22,10 @@ declare global {
  *
  * `getUserMedia` returns a stream captured from a canvas, so the real camera pipeline runs
  * without a physical camera. `window.__fakeCamera` switches the scene and exposes the streams.
+ * @param photos image URLs by name, shown by `setImage("photo:<name>")`, letterboxed to the camera's shape
  */
-export const installFakeCamera = async (page: Page): Promise<void> => {
-  await page.addInitScript(() => {
+export const installFakeCamera = async (page: Page, photos: Record<string, string> = {}): Promise<void> => {
+  await page.addInitScript((photoUrls: Record<string, string>) => {
     const width = 640;
     const height = 480;
     const canvas = document.createElement("canvas");
@@ -33,8 +34,21 @@ export const installFakeCamera = async (page: Page): Promise<void> => {
     const context = canvas.getContext("2d");
     if (!context) throw new Error("the fake camera needs a 2D canvas");
 
-    /** Paints a plain room, optionally with a simple person standing in it. */
+    const photos = new Map(Object.entries(photoUrls).map(([name, src]) => [name, Object.assign(new Image(), { src })]));
+
+    /** Paints a photo, scaled to fit, on black; it paints once the photo has loaded. */
+    const paintPhoto = (photo: HTMLImageElement | undefined) => {
+      context.fillStyle = "#000";
+      context.fillRect(0, 0, width, height);
+      if (!photo?.complete || photo.naturalWidth === 0) return;
+      const scale = Math.min(width / photo.naturalWidth, height / photo.naturalHeight);
+      const [w, h] = [photo.naturalWidth * scale, photo.naturalHeight * scale];
+      context.drawImage(photo, (width - w) / 2, (height - h) / 2, w, h);
+    };
+
+    /** Paints a photo, or a plain room, optionally with a simple person standing in it. */
     const paint = (image: FakeCameraImage) => {
+      if (image.startsWith("photo:")) return paintPhoto(photos.get(image.slice("photo:".length)));
       context.fillStyle = "#d9d4c7";
       context.fillRect(0, 0, width, height);
       context.fillStyle = "#b9b09a";
@@ -76,5 +90,5 @@ export const installFakeCamera = async (page: Page): Promise<void> => {
         },
       },
     });
-  });
+  }, photos);
 };

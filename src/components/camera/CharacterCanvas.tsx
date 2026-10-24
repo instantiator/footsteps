@@ -134,7 +134,7 @@ const startTrackingLoop = (
     const detected = await model.detect(video, timestamp);
     if (cancelled) return; // the model may have been disposed while this frame was tracked
     const inferenceEnd = performance.now();
-    recorder.record(timestamp, inferenceEnd);
+    recorder.record(timestamp, inferenceEnd, detected.people.length);
     const current = recorder.stats();
     if (onStats && current && inferenceEnd - statsShownAt >= STATS_INTERVAL_MS) {
       statsShownAt = inferenceEnd;
@@ -174,9 +174,10 @@ const FrameStatsReadout = ({ stats }: { stats: FrameStats }) => (
     className="vision-stats"
     data-fps={stats.fps.toFixed(1)}
     data-inference-ms={stats.inferenceMs.toFixed(1)}
+    data-people={stats.people}
     style={{ position: "absolute", top: 0, left: 0, padding: "2px 6px", background: "#000a", color: "#fff" }}
   >
-    {stats.fps.toFixed(1)} fps · {stats.inferenceMs.toFixed(0)} ms
+    {stats.fps.toFixed(1)} fps · {stats.inferenceMs.toFixed(0)} ms · {stats.people} people
   </output>
 );
 

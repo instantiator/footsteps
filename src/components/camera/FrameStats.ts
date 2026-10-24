@@ -4,6 +4,8 @@ export interface FrameStats {
   fps: number;
   /** Median time the model took per frame, in milliseconds. */
   inferenceMs: number;
+  /** How many people the latest frame found. */
+  people: number;
 }
 
 /** How many recent frames the stats cover. */
@@ -20,13 +22,16 @@ const median = (values: number[]): number => {
 export class FrameStatsRecorder {
   private readonly ends: number[] = [];
   private readonly inference: number[] = [];
+  private people = 0;
 
   /**
    * Records one completed frame.
    * @param start when the model was given the frame, in milliseconds
    * @param inferenceEnd when the model returned
+   * @param people how many people it found
    */
-  record(start: number, inferenceEnd: number): void {
+  record(start: number, inferenceEnd: number, people: number): void {
+    this.people = people;
     this.ends.push(inferenceEnd);
     this.inference.push(inferenceEnd - start);
     if (this.ends.length > WINDOW) {
@@ -39,6 +44,7 @@ export class FrameStatsRecorder {
   stats(): FrameStats | null {
     if (this.ends.length < 2) return null;
     const seconds = (this.ends[this.ends.length - 1] - this.ends[0]) / 1000;
-    return { fps: seconds > 0 ? (this.ends.length - 1) / seconds : 0, inferenceMs: median(this.inference) };
+    const fps = seconds > 0 ? (this.ends.length - 1) / seconds : 0;
+    return { fps, inferenceMs: median(this.inference), people: this.people };
   }
 }
