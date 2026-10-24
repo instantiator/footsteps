@@ -5,6 +5,7 @@ import type { GameSource } from "../../entities/GameSource";
 import { GameRepositoryContext } from "../../providers/GameRepositoryContext";
 import { isDefined } from "../../util/ObjectUtils";
 import { resolveResources } from "../../util/ResourceUtils";
+import "./GamePanel.css";
 import "./GameTile.css";
 
 /** Props for {@link GameTile}. */
@@ -43,7 +44,7 @@ export default function GameTile({ gameId, gameData }: GameTileProps) {
       aria-label={`Play ${gameData.title}`}
       style={isDefined(graphic) ? { backgroundImage: `url("${graphic}")` } : undefined}
     >
-      <div className="game-tile-panel">
+      <div className="game-tile-panel game-panel">
         <h3>{gameData.title}</h3>
         <p className="game-tile-id">{gameId}</p>
         <p>{gameData.description}</p>

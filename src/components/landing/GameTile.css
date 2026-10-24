@@ -28,11 +28,6 @@
 .game-tile-panel {
   max-height: 60%;
   margin: 0.5rem;
-  padding: 0.5rem;
-  overflow-y: auto;
-  border: 1px solid #22303c55;
-  border-radius: 0.5rem;
-  background: #ffffffe6;
 }
 
 .game-tile-panel h3 {

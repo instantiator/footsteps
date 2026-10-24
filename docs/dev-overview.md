@@ -14,7 +14,7 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 | ---------------------------- | ----------------------------------------------------------------------------- |
 | `react-router.config.ts`     | Static build settings: no server, the routes to prerender, the base path      |
 | `src/root.tsx`               | The HTML document every page renders into (head tags, security policy)        |
-| `src/routes.ts`              | Route config: `/`, `/game/:id`, `/game/:id/json`                              |
+| `src/routes.ts`              | Route config: `/`, `/game/:id`, `/game/:id/play`, `/game/:id/json`            |
 | `src/pages/`, `src/Home.tsx` | Route modules (one page each)                                                 |
 | `src/components/`            | Game engine UI: layers, displays, camera, and the game logic in `core/logic/` |
 | `src/providers/`             | React contexts: repository, game data, game state, music, feature flags       |
@@ -57,10 +57,10 @@ Use `npm run docs:dev` for the Markdown pages locally, and `npm run docs:api` to
 ## Browser tests
 
 `tests/browser/` runs the real camera pipeline in Chromium against a fake webcam, covering the
-silhouette loop, debug changes, preview visibility, camera-off displays, image switching, and the
-game view easing into the camera's shape before its display fades in. It is
-local only: the first run downloads the TensorFlow model (about 90 MB), so it is not part of the
-pre-push gate or CI.
+landing page and route split, the silhouette loop, debug changes, preview visibility, camera-off
+displays, image switching, and the game view easing into the camera's shape before its display fades
+in. It is local only: the first run downloads the TensorFlow model (about 90 MB), so it is not part of
+the pre-push gate or CI.
 
 ```bash
 npx playwright install chromium  # once
@@ -75,11 +75,12 @@ the checks it does not replace.
 
 Every game in the local repository, `public/game-repository.json`, is prerendered at its own URL:
 
-| Game           | Game URL                                  | Game data URL                                  |
-| -------------- | ----------------------------------------- | ---------------------------------------------- |
-| `magic-trifle` | <http://localhost:5173/game/magic-trifle> | <http://localhost:5173/game/magic-trifle/json> |
+| Game           | Landing page                              | Play page                                      | Game data URL                                  |
+| -------------- | ----------------------------------------- | ---------------------------------------------- | ---------------------------------------------- |
+| `magic-trifle` | <http://localhost:5173/game/magic-trifle> | <http://localhost:5173/game/magic-trifle/play> | <http://localhost:5173/game/magic-trifle/json> |
 
-`public/test-repository.json` holds `test-game`, which isn't in the local repository, so `/game/test-game` shows "not found".
+`public/test-repository.json` holds `test-game`, which isn't in the local repository, so
+`/game/test-game` shows "not found".
 
 ## Schemas
 

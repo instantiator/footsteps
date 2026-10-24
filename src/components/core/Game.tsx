@@ -14,6 +14,7 @@ import { isDefined } from "../../util/ObjectUtils";
 import type { PlayerMonitorEvent } from "../camera/PlayerMonitor";
 import GameDisplayComponent, { type LayerHint } from "./display/GameDisplayComponent";
 import "./Game.css";
+import GameStylesheets from "./GameStylesheets";
 import GameLayersLayout, { type GameLayers } from "./layout/GameLayersLayout";
 import { resolveCameraMode } from "./logic/CameraModeUtils";
 import {
@@ -31,6 +32,7 @@ import {
   type LayeredGameDisplayRenderData,
 } from "./logic/RenderDataUtils";
 import { playAudio } from "./sfx/AudioUtils";
+import { useWakeLock } from "./WakeLockHook";
 
 /**
  * Submits an answer to a challenge.
@@ -139,26 +141,6 @@ const createLayers = (renderData: LayeredGameDisplayRenderData, onAnswer: GameAn
   };
 };
 
-/** Whether a stylesheet URL is safe to load: `https:`, or on this site. */
-function isAllowedStylesheet(href: string): boolean {
-  const url = new URL(href, location.href);
-  return url.protocol === "https:" || url.origin === location.origin;
-}
-
-/** Loads the stylesheets the game names, skipping (with a warning) any that are missing or not allowed. */
-function GameStylesheets() {
-  const { resources } = useGameData();
-  const { gameState } = useGameState();
-  return (gameState.gameData.stylesheets ?? []).flatMap((key) => {
-    const href = resources[key];
-    if (!isDefined(href) || !isAllowedStylesheet(href)) {
-      console.warn(`Skipping stylesheet "${key}": ${href ?? "no such resource"}`);
-      return [];
-    }
-    return <link key={key} rel="stylesheet" href={href} precedence="game" />;
-  });
-}
-
 /** Handlers that move the game on when the player interacts with an element, by click or through the camera. */
 function useInteractionHandlers(gameState: GameState, setGameState: Dispatch<SetStateAction<GameState>>) {
   const handleElementClick = (_layerId: string, elementId: string) => {
@@ -188,6 +170,7 @@ export default function Game() {
   const { gameState, setGameState } = useGameState();
   useGameFeedback();
   useTitleScreenKeys();
+  useWakeLock(!gameState.stages.every((stage) => stage.completion === "completed"));
 
   /**
    * The callback function used when an answer is submitted (or tested) by a display component.

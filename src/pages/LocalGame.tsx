@@ -1,5 +1,6 @@
 import { useParams } from "react-router";
 import Game from "../components/core/Game";
+import GamePermissionGuard from "../components/core/GamePermissionGuard";
 import type { GameId } from "../entities/data/GameData";
 import FeatureFlagsProvider from "../providers/FeatureFlagsProvider";
 import { GameDataProvider } from "../providers/GameDataProvider";
@@ -16,11 +17,13 @@ export default function LocalGame() {
       <FeatureFlagsProvider>
         <GameRepositoryProvider source={{ type: "LocalRepository", path: "game-repository.json" }}>
           <GameDataProvider id={id as GameId}>
-            <GameStateProvider>
-              <GameMusicProvider>
-                <Game />
-              </GameMusicProvider>
-            </GameStateProvider>
+            <GamePermissionGuard>
+              <GameStateProvider>
+                <GameMusicProvider>
+                  <Game />
+                </GameMusicProvider>
+              </GameStateProvider>
+            </GamePermissionGuard>
           </GameDataProvider>
         </GameRepositoryProvider>
       </FeatureFlagsProvider>

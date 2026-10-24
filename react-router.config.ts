@@ -7,5 +7,8 @@ export default {
   buildDirectory: "dist",
   ssr: false,
   basename: process.env.BASE_URL ?? "/",
-  prerender: ["/", ...Object.keys(localRepository.games).flatMap((id) => [`/game/${id}`, `/game/${id}/json`])],
+  prerender: [
+    "/",
+    ...Object.keys(localRepository.games).flatMap((id) => [`/game/${id}`, `/game/${id}/play`, `/game/${id}/json`]),
+  ],
 } satisfies Config;

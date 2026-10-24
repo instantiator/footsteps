@@ -98,6 +98,35 @@ The grid uses `repeat(auto-fill, minmax(14rem, 1fr))` with square tiles, which g
 
 **Act when:** the landing page is reviewed on a phone and shows more than two tiles per row, or on a desktop monitor and shows more than six. Then adjust the `minmax` size in `src/components/landing/LocalListing.tsx`.
 
+## No fallback when the Screen Wake Lock API is unavailable
+
+`useWakeLock` uses the Screen Wake Lock API only. Safari on iOS, and some older browsers, do not
+support it, so the device may sleep during a game there. The hook logs a warning and play continues.
+
+**Act when:** a game is expected to run on a device that sleeps mid-game. Add a fallback such as a
+looping muted video or an audio track, and cover it in `tests/WakeLock.test.ts`.
+
+## Permission checks need a Grant click when the browser cannot report camera state
+
+When `navigator.permissions.query({ name: "camera" })` is missing or rejects, the landing page treats
+the camera as not granted and asks for a Grant click. The play page allows the game when the query is
+unsupported, because the browser still enforces camera access at `getUserMedia`. On browsers with
+no camera permission query, a returning player may have to click Grant on each landing visit even
+though the browser remembers the permission.
+
+**Act when:** a supported browser cannot report camera permissions and players report repeated
+grants. Then remember a successful grant for the browser session (for example in `sessionStorage`)
+and treat it as granted until the tab closes.
+
+## Saved progress is discarded when a game's stage or challenge ids change
+
+The stored projection is validated against the current game. If an author renames or removes a stage
+or challenge, the saved value no longer matches and Continue disappears. This avoids applying
+progress to a different structure, but authors cannot keep progress across content edits.
+
+**Act when:** a game is updated while players have progress that should survive. Add a migration step
+that maps old stage and challenge ids to new ones, or store stable ids separately from display names.
+
 ## Documentation site runs on a VitePress pre-release
 
 `docs/` is rendered by `vitepress@2.0.0-alpha.20`. VitePress 1.6.4 is the latest stable release, but it pins Vite 5, whose bundled esbuild carries two dev-server advisories ([GHSA-67mh-4wv8-2f99](https://github.com/advisories/GHSA-67mh-4wv8-2f99)), which failed the dependency audit. The 2.0 line uses the project's Vite 8, so `npm audit` reports only the accepted sprintf-js advisory. Its config and default theme match 1.x, but it may change between pre-releases.
