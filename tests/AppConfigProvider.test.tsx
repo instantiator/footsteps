@@ -32,8 +32,8 @@ describe("AppConfigProvider", () => {
   });
 
   it("lets the query choose the vision model", () => {
-    renderConfig("/?visionModel=movenet");
-    expect(screen.getByText("debug: false, model: movenet")).toBeInTheDocument();
+    renderConfig("/?visionModel=mediapipe");
+    expect(screen.getByText("debug: false, model: mediapipe")).toBeInTheDocument();
   });
 
   it("ignores query parameters that are not settings", () => {

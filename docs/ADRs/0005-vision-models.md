@@ -28,41 +28,84 @@ leading options were measured.
    - `mediapipe`: MediaPipe Pose Landmarker (`@mediapipe/tasks-vision`), with 33 landmarks and a mask per person.
    - `movenet`: MoveNet MultiPose Lightning for the key points, with MediaPipe's selfie segmenter for the
      silhouette, divided between people by whose skeleton each pixel is nearest.
-3. **BodyPix MobileNetV1 is the default** because it found everyone in every photo except the backlit one, and it
-   gave the cleanest separate silhouettes, at 9–20 fps for one to three people.
+3. **BodyPix MobileNetV1 is the default** because it gave the most usable cut-outs across 25 photos: it separated
+   groups into distinct people with their legs and feet, and placed the most hands and feet. It slows with large
+   groups (100–200 ms for five or more people).
 
 ## Measurements
 
 `VISION_BENCH=1 scripts/run-browser-tests.sh vision-bench` shows each scene to a fake camera (640×480, 30 fps)
-in headless Chromium on an M1 MacBook Pro. The scenes are an empty room, and seven CC0 photos of one to three
-people from Wikimedia Commons (`tests/browser/fixtures/people/`, with credits). Each cell gives the people found
-out of those expected, then the median inference time in ms. "s16" and "s32" are output strides; all BodyPix
-columns use 2-byte weights.
+in headless Chromium on an M1 MacBook Pro, with up to ten people allowed. The scenes are an empty room and 25
+photos: indoor rooms, groups of 2–10, children, varied clothing, active poses, busy backgrounds, backlighting
+and motion blur. They are CC0 or US-government public-domain photos from Wikimedia Commons
+(`tests/browser/fixtures/people/`, with credits).
 
-| Scene            | BodyPix ResNet50 s32, WebGL | BodyPix ResNet50 s32, WebGPU | BodyPix ResNet50 s16, WebGPU | BodyPix MobileNetV1 s16, WebGPU | MediaPipe Pose lite | MediaPipe Pose full | MediaPipe Pose heavy | MoveNet + selfie, WebGL | MoveNet + selfie, WebGPU |
-| ---------------- | --------------------------- | ---------------------------- | ---------------------------- | ------------------------------- | ------------------- | ------------------- | -------------------- | ----------------------- | ------------------------ |
-| empty room       | 0/0 · 138                   | 0/0 · 67                     | 0/0 · 98                     | 0/0 · 23                        | 0/0 · 15            | 0/0 · 15            | 0/0 · 16             | 0/0 · 40                | 0/0 · 20                 |
-| jumping, arms up | 1/1 · 144                   | 1/1 · 68                     | 1/1 · 100                    | 0/1 · 25                        | 0/1 · 15            | 0/1 · 14            | 0/1 · 15             | 0/1 · 39                | 0/1 · 20                 |
-| jumping, side-on | 1/1 · 144                   | 1/1 · 76                     | 1/1 · 114                    | 1/1 · 40                        | 1/1 · 28            | 1/1 · 27            | 1/1 · 43             | 1/1 · 40                | 1/1 · 20                 |
-| two facing       | 2/2 · 152                   | 2/2 · 87                     | 2/2 · 122                    | 2/2 · 49                        | 1/2 · 27            | 1/2 · 24            | 0/2 · 39             | 2/2 · 42                | 2/2 · 23                 |
-| three friends    | 3/3 · 152                   | 3/3 · 120                    | 3/3 · 143                    | 3/3 · 86                        | 2/3 · 37            | 2/3 · 39            | 2/3 · 74             | 3/3 · 45                | 3/3 · 27                 |
-| two from behind  | 2/2 · 153                   | 2/2 · 124                    | 2/2 · 158                    | 2/2 · 86                        | 2/2 · 38            | 1/2 · 25            | 2/2 · 73             | 2/2 · 42                | 2/2 · 25                 |
-| busy street      | 2/2 · 146                   | 2/2 · 84                     | 2/2 · 117                    | 2/2 · 44                        | 1/2 · 27            | 1/2 · 26            | 1/2 · 44             | 2/2 · 40                | 2/2 · 20                 |
-| backlit three    | 1/3 · 149                   | 1/3 · 124                    | 2/3 · 153                    | 1/3 · 57                        | 0/3 · 21            | 1/3 · 28            | 1/3 · 44             | 1/3 · 39                | 1/3 · 20                 |
+For each photo, the bench reports the people found, and the hands and feet placed, against the foreground people
+in it. Feet are expected only in full-length photos. It also reports how far down the frame the silhouettes reach.
+Found counts above the expected number (background people) count as the expected number in the totals.
 
-The coloured debug view of "three friends" (each person tinted; head red, hands green and blue):
+| Setup (WebGPU, in the worker) | people found / expected | people exact | hands / expected | feet / expected (full length) | median fps | median ms |
+| ----------------------------- | ----------------------- | ------------ | ---------------- | ----------------------------- | ---------- | --------- |
+| bodypix-mobilenet-s16         | 48/63                   | 15/25        | 66/126           | 60/108                        | 10.1       | 72        |
+| bodypix-resnet50-s32          | 50/63                   | 16/25        | 39/126           | 52/108                        | 7.4        | 111       |
+| mediapipe-full                | 31/63                   | 13/25        | 51/126           | 45/108                        | 18.9       | 28        |
+| movenet-selfie                | 45/63                   | 17/25        | 56/126           | 60/108                        | 28.5       | 20        |
 
-| BodyPix MobileNetV1 s16 (default)                                           | BodyPix ResNet50 s16                                                              | BodyPix ResNet50 s32                                                              |
-| --------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| ![BodyPix MobileNetV1](images/0005-three-friends-bodypix-mobilenet-s16.png) | ![BodyPix ResNet50 stride 16](images/0005-three-friends-bodypix-resnet50-s16.png) | ![BodyPix ResNet50 stride 32](images/0005-three-friends-bodypix-resnet50-s32.png) |
-| **MediaPipe Pose full**                                                     | **MoveNet + selfie segmenter**                                                    |                                                                                   |
-| ![MediaPipe Pose](images/0005-three-friends-mediapipe-full.png)             | ![MoveNet and selfie segmenter](images/0005-three-friends-movenet-selfie.png)     |                                                                                   |
+Per photo: people · hands · feet (found/expected), silhouette reach (% of frame height), inference ms:
 
-- BodyPix MobileNetV1 separates all three people cleanly.
-- ResNet50 at stride 16 loses most of the left-hand person; at stride 32 its masks are coarse blocks.
-- MediaPipe Pose's masks are crisp, but it misses the middle person.
-- MoveNet places all three, but the selfie segmenter, made for close-up selfies, barely masks the right-hand
-  person, and lets stray background through.
+| Scene                      | bodypix-mobilenet-s16          | bodypix-resnet50-s32           | mediapipe-full                | movenet-selfie                 |
+| -------------------------- | ------------------------------ | ------------------------------ | ----------------------------- | ------------------------------ |
+| empty-room                 | 0/0 · 0/0 · 0/0 · 0% · 23      | 0/0 · 0/0 · 0/0 · 0% · 67      | 0/0 · 0/0 · 0/0 · 0% · 14     | 0/0 · 0/0 · 0/0 · 0% · 19      |
+| jumping-arms-up            | 0/1 · 0/2 · 0/2 · 0% · 24      | 1/1 · 0/2 · 0/2 · 0% · 67      | 1/1 · 1/2 · 0/2 · 58% · 28    | 0/1 · 0/2 · 0/2 · 0% · 19      |
+| jumping-side-on            | 1/1 · 2/2 · 2/2 · 69% · 42     | 1/1 · 1/2 · 1/2 · 61% · 76     | 1/1 · 2/2 · 2/2 · 69% · 29    | 1/1 · 2/2 · 2/2 · 68% · 19     |
+| two-facing                 | 2/2 · 3/4 · 3/4 · 80% · 50     | 2/2 · 2/4 · 0/4 · 71% · 87     | 1/2 · 2/4 · 1/4 · 61% · 26    | 2/2 · 4/4 · 4/4 · 78% · 22     |
+| three-friends              | 3/3 · 5/6 · 0/– · 94% · 89     | 3/3 · 3/6 · 0/– · 95% · 120    | 2/3 · 2/6 · 2/– · 95% · 40    | 3/3 · 3/6 · 0/– · 95% · 25     |
+| two-from-behind            | 2/2 · 4/4 · 0/4 · 93% · 88     | 2/2 · 3/4 · 0/4 · 92% · 124    | 1/2 · 2/4 · 0/4 · 94% · 29    | 2/2 · 3/4 · 0/4 · 92% · 24     |
+| busy-street                | 2/2 · 3/4 · 4/4 · 92% · 43     | 2/2 · 2/4 · 3/4 · 91% · 84     | 1/2 · 2/4 · 2/4 · 92% · 28    | 2/2 · 3/4 · 4/4 · 82% · 23     |
+| backlit-three              | 1/3 · 1/6 · 0/– · 69% · 60     | 1/3 · 2/6 · 1/– · 74% · 126    | 0/3 · 0/6 · 0/– · 0% · 22     | 1/3 · 0/6 · 0/– · 67% · 20     |
+| indoor-skateboarder-couch  | 1/1 · 1/2 · 1/2 · 64% · 66     | 1/1 · 0/2 · 1/2 · 65% · 98     | 1/1 · 2/2 · 2/2 · 66% · 26    | 1/1 · 2/2 · 2/2 · 88% · 20     |
+| indoor-artistic-room       | 1/1 · 0/2 · 0/2 · 83% · 38     | 1/1 · 0/2 · 0/2 · 83% · 75     | 1/1 · 1/2 · 2/2 · 88% · 27    | 1/1 · 1/2 · 2/2 · 94% · 20     |
+| indoor-kitchen-motion-blur | 0/1 · 0/2 · 0/– · 0% · 47      | 0/1 · 0/2 · 0/– · 0% · 107     | 0/1 · 0/2 · 0/– · 0% · 16     | 0/1 · 0/2 · 0/– · 0% · 19      |
+| indoor-dance-studio        | 1/1 · 1/2 · 1/2 · 100% · 75    | 1/1 · 1/2 · 1/2 · 100% · 111   | 1/1 · 2/2 · 1/2 · 100% · 28   | 1/1 · 1/2 · 2/2 · 100% · 20    |
+| indoor-aerobathon          | 2/2 · 2/4 · 3/4 · 88% · 102    | 3/2 · 1/4 · 5/4 · 90% · 137    | 1/2 · 2/4 · 2/4 · 98% · 27    | 2/2 · 4/4 · 3/4 · 82% · 29     |
+| group-zumba-class          | 7/6 · 9/12 · 11/12 · 73% · 162 | 6/6 · 3/12 · 11/12 · 74% · 185 | 2/6 · 4/12 · 4/12 · 86% · 40  | 5/6 · 5/12 · 5/12 · 80% · 31   |
+| group-step-aerobics        | 5/4 · 6/8 · 6/8 · 61% · 106    | 6/4 · 2/8 · 3/8 · 59% · 140    | 2/4 · 4/8 · 4/8 · 77% · 41    | 4/4 · 2/8 · 6/8 · 68% · 25     |
+| group-navy-fitness         | 5/2 · 6/4 · 7/4 · 74% · 105    | 7/2 · 2/4 · 10/4 · 70% · 144   | 2/2 · 4/4 · 4/4 · 82% · 41    | 3/2 · 6/4 · 5/4 · 74% · 24     |
+| group-rugby-team           | 6/10 · 6/20 · 9/20 · 74% · 131 | 6/10 · 2/20 · 6/20 · 72% · 161 | 2/10 · 2/20 · 4/20 · 83% · 40 | 6/10 · 5/20 · 11/20 · 76% · 27 |
+| group-rugby-scrum          | 3/10 · 3/20 · 4/20 · 65% · 137 | 4/10 · 2/20 · 5/20 · 65% · 180 | 2/10 · 3/20 · 4/20 · 75% · 40 | 1/10 · 1/20 · 2/20 · 76% · 20  |
+| group-zumba-youths         | 4/2 · 4/4 · 5/– · 93% · 208    | 4/2 · 4/4 · 3/– · 89% · 237    | 2/2 · 4/4 · 0/– · 100% · 40   | 3/2 · 3/4 · 2/– · 93% · 32     |
+| child-girl-dress           | 1/1 · 2/2 · 2/2 · 86% · 67     | 1/1 · 1/2 · 2/2 · 84% · 103    | 1/1 · 1/2 · 2/2 · 85% · 27    | 1/1 · 2/2 · 2/2 · 86% · 20     |
+| child-backyard             | 2/2 · 3/4 · 0/4 · 60% · 72     | 2/2 · 1/4 · 2/4 · 75% · 132    | 1/2 · 2/4 · 0/4 · 78% · 26    | 2/2 · 2/4 · 0/4 · 72% · 24     |
+| child-skate-park           | 1/1 · 2/2 · 0/2 · 62% · 37     | 1/1 · 1/2 · 1/2 · 63% · 76     | 1/1 · 2/2 · 2/2 · 64% · 28    | 1/1 · 2/2 · 2/2 · 55% · 20     |
+| child-gym-jumping          | 5/2 · 2/4 · 7/4 · 72% · 74     | 5/2 · 2/4 · 3/4 · 63% · 108    | 2/2 · 2/4 · 4/4 · 79% · 40    | 2/2 · 2/4 · 4/4 · 82% · 25     |
+| active-skateboard-trick    | 1/1 · 1/2 · 2/2 · 82% · 73     | 1/1 · 2/2 · 2/2 · 82% · 113    | 1/1 · 2/2 · 2/2 · 88% · 28    | 1/1 · 1/2 · 2/2 · 86% · 20     |
+| active-runner-forest       | 1/1 · 0/2 · 2/2 · 88% · 63     | 1/1 · 0/2 · 1/2 · 87% · 94     | 1/1 · 1/2 · 2/2 · 94% · 28    | 1/1 · 2/2 · 2/2 · 85% · 20     |
+| active-sprint-start        | 1/1 · 2/2 · 2/2 · 62% · 58     | 1/1 · 2/2 · 2/2 · 64% · 95     | 1/1 · 2/2 · 1/2 · 65% · 28    | 1/1 · 2/2 · 1/2 · 66% · 20     |
+
+The counts don't show whether a person was actually cut out, so the debug view of every scene was compared too.
+Each person is tinted; the head is red, the hands green and blue, the feet yellow and pink:
+
+- [Comparison 1](images/0005-compare-1.jpg): empty room, jumps, two facing, three friends, from behind, busy street,
+  backlit, skateboarder indoors.
+- [Comparison 2](images/0005-compare-2.jpg): room, motion blur, dance studio, aerobics, zumba, step, navy, rugby.
+- [Comparison 3](images/0005-compare-3.jpg): youths, children, skateboard trick, runner, sprint start.
+
+What the views show:
+
+- **BodyPix MobileNetV1** gives the most usable cut-outs. It separates groups (zumba, step aerobics, rugby team)
+  into distinct people, mostly down to their feet. It also picks up people in the background, and sometimes lends
+  one person's limb to their neighbour.
+- **MoveNet + selfie** places key points well, but the selfie segmenter, made for close-up selfies, often fails to cut
+  out anyone not close to the camera: in "busy street", "artistic room" and "child skate park" almost nothing is
+  masked. It merged the rugby scrum into one blob. Its people and feet counts come from key points, not cut-outs.
+- **MediaPipe Pose** gives crisp masks, but it found only one or two people in every group.
+- **BodyPix ResNet50 s32** is slower, with coarse, fragmented masks, and it placed the fewest hands.
+- Every model missed the motion-blurred person, the small greyscale jumper (bar ResNet50 and MediaPipe), and most
+  of the backlit silhouettes.
+
+An earlier round on the first seven photos also measured BodyPix ResNet50 at stride 16 (slower than stride 32, and
+it lost most of one person), MediaPipe lite and heavy (no better at finding people than full), and MoveNet on WebGL
+(about twice as slow as on WebGPU).
 
 ## Options considered
 
@@ -79,11 +122,12 @@ The coloured debug view of "three friends" (each person tinted; head red, hands 
 
 ### BodyPix (kept, default)
 
-- **For:** it is the only real-time model that segments each person in a browser out of the box. It found
-  everyone in the photos except the backlit three. MobileNetV1 at stride 16 on WebGPU is fast enough, at 9–20 fps
-  for one to three people.
+- **For:** it is the only real-time model that segments each person in a browser out of the box, and its cut-outs
+  were the most usable across 25 photos. MobileNetV1 at stride 16 on WebGPU runs at 10–20 fps for one to three
+  people.
 - **Against:** deprecated by Google since 2023, and loaded from Google's storage. Its per-person split runs on the
-  CPU, so time grows with the number of people. It lost the small greyscale jumper (as did MediaPipe and MoveNet;
+  CPU, so time grows with the number of people: 100–200 ms (5–10 fps) for groups of five or more. It also finds
+  background people, which a game may not want as players. It lost the small greyscale jumper (as did MediaPipe and MoveNet;
   ResNet50 found them). It ignores `flipHorizontal` for masks, which is fine here because the canvas is mirrored
   with CSS.
 
@@ -91,16 +135,16 @@ The coloured debug view of "three friends" (each person tinted; head red, hands 
 
 - **For:** the fastest (15–40 ms), crisp masks, maintained (1.x in 2026), and 33 landmarks including heels and toes
   for precise feet. The wasm runtime is bundled from the package, so it always matches the library.
-- **Against:** it regularly missed people in groups (1 of 2 facing, 2 of 3 friends). Its detector favours one
+- **Against:** it found only one or two people in every group, and 31 of 63 people overall. Its detector favours one
   prominent person, so it suits single-player games. Its model files load from Google's storage.
 
 ### MoveNet MultiPose with the selfie segmenter (implemented)
 
-- **For:** the fastest option that still counted people correctly (20–27 ms on WebGPU, 20–30 fps), at a steady cost
-  as people are added. It is loaded as a plain tfjs graph model, with our own decoding, so it needs no new
+- **For:** the fastest option (20 ms on WebGPU, 28 fps), at a steady cost as people are added, with the most exact
+  people counts. It is loaded as a plain tfjs graph model, with our own decoding, so it needs no new
   dependency.
-- **Against:** no silhouette of its own. The selfie segmenter is made for close-up selfies: it masks people far from
-  the centre poorly and lets background through. Hands and feet are estimated beyond the wrists and ankles. The
+- **Against:** no silhouette of its own. The selfie segmenter is made for close-up selfies: it often fails to cut out
+  people further from the camera, and lets background through. Hands and feet are estimated beyond the wrists and ankles. The
   official `@tensorflow-models/pose-detection` package was avoided, because it imports `@mediapipe/pose`, which
   can't be bundled.
 

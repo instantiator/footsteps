@@ -7,7 +7,7 @@ import { PersonTracker } from "../../vision/Tracking";
 import type { VisionFrame } from "../../vision/VisionTypes";
 import { feetOf, type FeetPositions } from "./CameraSupport";
 import { drawPeople, type MaskType } from "./DrawPeople";
-import { FrameStatsRecorder, type FrameStats } from "./FrameStats";
+import { frameQuality, FrameStatsRecorder, type FrameStats } from "./FrameStats";
 import type { PlayerFrame } from "./PlayerMonitor";
 
 /** Props for {@link CharacterCanvas}. */
@@ -135,13 +135,13 @@ const startTrackingLoop = (
     const detected = await model.detect(video, timestamp);
     if (cancelled) return; // the model may have been disposed while this frame was tracked
     const inferenceEnd = performance.now();
-    recorder.record(timestamp, inferenceEnd, detected.people.length);
-    const current = recorder.stats();
-    if (onStats && current && inferenceEnd - statsShownAt >= STATS_INTERVAL_MS) {
-      statsShownAt = inferenceEnd;
-      onStats(current);
-    }
+    recorder.record(timestamp, inferenceEnd);
     const frame = tracker ? tracker.update(detected) : detected;
+    const timing = recorder.timing();
+    if (onStats && timing && inferenceEnd - statsShownAt >= STATS_INTERVAL_MS) {
+      statsShownAt = inferenceEnd;
+      onStats({ ...timing, ...frameQuality(frame) });
+    }
     const players = playersOf(frame, offScreenThreshold_percent);
     onPlayersChange?.(players, timestamp);
     onFeetPositionsChange?.(feetPositionsOf(players));
@@ -176,9 +176,14 @@ const FrameStatsReadout = ({ stats }: { stats: FrameStats }) => (
     data-fps={stats.fps.toFixed(1)}
     data-inference-ms={stats.inferenceMs.toFixed(1)}
     data-people={stats.people}
+    data-hands={stats.hands}
+    data-feet={stats.feet}
+    data-coverage={stats.coverage.toFixed(1)}
+    data-reach={stats.reach.toFixed(1)}
     style={{ position: "absolute", top: 0, left: 0, padding: "2px 6px", background: "#000a", color: "#fff" }}
   >
-    {stats.fps.toFixed(1)} fps · {stats.inferenceMs.toFixed(0)} ms · {stats.people} people
+    {stats.fps.toFixed(1)} fps · {stats.inferenceMs.toFixed(0)} ms · {stats.people} people · {stats.hands} hands ·{" "}
+    {stats.feet} feet
   </output>
 );
 

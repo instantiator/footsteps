@@ -1,4 +1,4 @@
-import { expect, test, type Locator } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { MODEL_TIMEOUT, openCameraGame } from "./fixtures/cameraGame";
 import type { FakeCameraImage } from "./fixtures/fakeCamera";
 import { PEOPLE_PHOTOS, peoplePhotoUrls } from "./fixtures/people/people";
@@ -9,37 +9,67 @@ const SETTLE_MS = 2000;
 /** How many one-second samples to take of each scene. */
 const SAMPLES = 5;
 
+/** The readout's numbers, sampled. */
+const MEASURES = ["fps", "inference-ms", "people", "hands", "feet", "coverage", "reach"] as const;
+
+/**
+ * Lets models find everyone in the group photos (up to ten); the game's own default may be lower.
+ * A query in `VISION_BENCH_QUERY` comes after this, so it can set a different number.
+ */
+const BENCH_QUERY = "&visionMaxPeople=10";
+
 /** The median of a non-empty list. */
 const median = (values: number[]): number => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
 
 /** The readout's medians over {@link SAMPLES} seconds. */
-const sample = async (page: { waitForTimeout: (ms: number) => Promise<void> }, readout: Locator) => {
-  const readings = { fps: [] as number[], inferenceMs: [] as number[], people: [] as number[] };
+const sample = async (page: Page, readout: Locator): Promise<Record<(typeof MEASURES)[number], number>> => {
+  const readings = MEASURES.map(() => [] as number[]);
   for (let i = 0; i < SAMPLES; i++) {
     await page.waitForTimeout(1000);
-    readings.fps.push(Number(await readout.getAttribute("data-fps")));
-    readings.inferenceMs.push(Number(await readout.getAttribute("data-inference-ms")));
-    readings.people.push(Number(await readout.getAttribute("data-people")));
+    for (const [index, measure] of MEASURES.entries()) {
+      readings[index].push(Number(await readout.getAttribute(`data-${measure}`)));
+    }
   }
-  return { fps: median(readings.fps), inferenceMs: median(readings.inferenceMs), people: median(readings.people) };
+  return Object.fromEntries(MEASURES.map((measure, index) => [measure, median(readings[index])])) as Record<
+    (typeof MEASURES)[number],
+    number
+  >;
 };
 
 // Only runs when asked, as it measures rather than checks: VISION_BENCH=1 scripts/run-browser-tests.sh vision-bench
+// VISION_BENCH_QUERY adds config (eg. "&visionModel=mediapipe"); VISION_BENCH_SHOTS saves each scene's debug view
+// to that folder, named VISION_BENCH_LABEL-<scene>.png
 test.skip(!process.env.VISION_BENCH, "set VISION_BENCH=1 to run the vision benchmark");
 
 test("measures the vision loop on an empty room and on photos of people", async ({ page }) => {
-  test.setTimeout(MODEL_TIMEOUT + (PEOPLE_PHOTOS.length + 1) * (SETTLE_MS + SAMPLES * 1000 + 5000));
+  const scenes = [{ name: "empty-room", people: 0, fullLength: true }, ...PEOPLE_PHOTOS];
+  test.setTimeout(MODEL_TIMEOUT + scenes.length * (SETTLE_MS + SAMPLES * 1000 + 5000));
   const query = process.env.VISION_BENCH_QUERY ?? "";
-  await openCameraGame(page, {}, `?debug=true${query}`, peoplePhotoUrls());
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openCameraGame(page, {}, `?debug=true${BENCH_QUERY}${query}`, peoplePhotoUrls());
   const readout = page.locator("output.vision-stats");
   await expect(readout).toBeVisible({ timeout: MODEL_TIMEOUT });
 
   const results = [];
-  for (const scene of [{ name: "empty-room", people: 0 }, ...PEOPLE_PHOTOS]) {
+  for (const scene of scenes) {
     const image: FakeCameraImage = scene.name === "empty-room" ? "room" : `photo:${scene.name}`;
     await page.evaluate((next) => window.__fakeCamera.setImage(next), image);
     await page.waitForTimeout(SETTLE_MS);
-    results.push({ scene: scene.name, expected: scene.people, ...(await sample(page, readout)) });
+    const measured = await sample(page, readout);
+    const shots = process.env.VISION_BENCH_SHOTS;
+    if (shots) {
+      const label = process.env.VISION_BENCH_LABEL ?? "bench";
+      await page
+        .locator("#character-canvas-container canvas")
+        .screenshot({ path: `${shots}/${label}-${scene.name}.png` });
+    }
+    // Hands are expected whatever the framing; feet only when the people are in shot to their feet
+    const expected = {
+      people: scene.people,
+      hands: 2 * scene.people,
+      feet: scene.fullLength ? 2 * scene.people : null,
+    };
+    results.push({ scene: scene.name, expected, ...measured });
   }
 
   for (const result of results) console.log(`vision-bench ${JSON.stringify({ query, ...result })}`);

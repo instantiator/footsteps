@@ -58,9 +58,9 @@ show the cost with nobody in shot. [ADR 0005](0005-vision-models.md) has the mea
 | WebGPU: ResNet50, stride 16, 2-byte, per-person                       |  7.7 |             97 |
 | WebGPU: MobileNetV1 (0.75), stride 16, 2-byte, per-person             | 22.9 |             23 |
 
-With people in shot, the chosen default (MobileNetV1, stride 16, WebGPU, in the worker) runs at 9–20 fps
-(27–89 ms) for one to three people, against the baseline's 5–6 fps (144–153 ms), and it finds each person
-separately.
+With people in shot, the chosen default (MobileNetV1, stride 16, WebGPU, in the worker) runs at 10–20 fps
+(40–90 ms) for one to three people, and 5–10 fps (100–200 ms) for groups of five or more. The baseline managed
+5–6 fps (144–153 ms) with anyone in shot, and found only one person.
 
 Where fps × inference falls well short of a second (MobileNetV1 on WebGL: 16.6 × 32 ms ≈ 0.5 s), the rest of each
 frame went to JavaScript pixel loops on the main thread. The worker moves those off it. In the headless bench
@@ -74,7 +74,7 @@ numbers.
 | Per-person segmentation                | adopted      | Fixes multiple players. Costs CPU time per person (BodyPix's `refineSteps`), so inference grows with the number of people.                                                                                |
 | Output stride                          | in config    | Smaller is finer but slower. ResNet50 has only 16/32; MobileNetV1 only 8/16. ResNet50 at stride 16 was 30–45% slower than at 32, and no better in the photos.                                             |
 | Weight bytes (`quantBytes`)            | 2, in config | Smaller downloads and faster; no visible loss at 2.                                                                                                                                                       |
-| Architecture                           | MobileNetV1  | 3–6× faster than ResNet50 here, and its masks of the three-person photo were the cleanest of any option ([ADR 0005](0005-vision-models.md)).                                                              |
+| Architecture                           | MobileNetV1  | 3–6× faster than ResNet50 here, and the most usable cut-outs across 25 photos ([ADR 0005](0005-vision-models.md)).                                                                                        |
 | Internal resolution                    | in config    | `medium` nearly doubled ResNet50's speed; kept at `high` for mask quality.                                                                                                                                |
 | Camera resolution                      | 1280×720     | More pixels for the mask. Models scale frames down internally, so the cost is mostly in the per-pixel loops.                                                                                              |
 | WebGL vs WebGPU                        | WebGPU       | About 2× faster. The backend must be imported statically: a dynamic import bundled its own `tfjs-core`, which broke the shared engine. Backend switches are serialised, because two loading models raced. |

@@ -15,7 +15,7 @@
 <div class="tsd-comment tsd-typography"><p>Collects per-frame timings over a rolling window.</p>
 </div></section><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/FrameStats.ts#L22">components/camera/FrameStats.ts:22</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/FrameStats.ts#L39">components/camera/FrameStats.ts:39</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -28,7 +28,7 @@
 <section class="tsd-index-section">
 <h3 class="tsd-index-heading tsd-anchor-link" id="methods">Methods<a href="#methods" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-index-list"><a href="#record" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>record</span></a>
-<a href="#stats" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>stats</span></a>
+<a href="#timing" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>timing</span></a>
 </div></section></div></details></section></section>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Constructors"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="constructors-1">Constructors<a href="#constructors-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
@@ -47,7 +47,7 @@
 <h3 class="tsd-anchor-link" id="record"><span>record</span><a href="#record" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="">
-<div class="tsd-signature tsd-anchor-link" id="record-1"><span class="tsd-kind-call-signature">record</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">start</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">inferenceEnd</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">people</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#record-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-signature tsd-anchor-link" id="record-1"><span class="tsd-kind-call-signature">record</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">start</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">inferenceEnd</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#record-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>Records one completed frame.</p>
 </div>
@@ -59,24 +59,21 @@
 </div></li>
 <li><span><span class="tsd-kind-parameter">inferenceEnd</span>: <span class="tsd-signature-type">number</span></span>
 <div class="tsd-comment tsd-typography"><p>when the model returned</p>
-</div></li>
-<li><span><span class="tsd-kind-parameter">people</span>: <span class="tsd-signature-type">number</span></span>
-<div class="tsd-comment tsd-typography"><p>how many people it found</p>
 </div></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/FrameStats.ts#L33">components/camera/FrameStats.ts:33</a></li></ul></aside></div></li></ul></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/FrameStats.ts#L48">components/camera/FrameStats.ts:48</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
-<h3 class="tsd-anchor-link" id="stats"><span>stats</span><a href="#stats" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<h3 class="tsd-anchor-link" id="timing"><span>timing</span><a href="#timing" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="">
-<div class="tsd-signature tsd-anchor-link" id="stats-1"><span class="tsd-kind-call-signature">stats</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/components_camera_FrameStats.FrameStats.html" class="tsd-signature-type tsd-kind-interface">FrameStats</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">null</span><a href="#stats-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-signature tsd-anchor-link" id="timing-1"><span class="tsd-kind-call-signature">timing</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/components_camera_FrameStats.FrameTiming.html" class="tsd-signature-type tsd-kind-interface">FrameTiming</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">null</span><a href="#timing-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>The stats over the window, or null until there are two frames to measure between.</p>
+<div class="tsd-comment tsd-typography"><p>The timings over the window, or null until there are two frames to measure between.</p>
 </div>
-<h4 class="tsd-returns-title">Returns <a href="../interfaces/components_camera_FrameStats.FrameStats.html" class="tsd-signature-type tsd-kind-interface">FrameStats</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">null</span></h4><aside class="tsd-sources">
+<h4 class="tsd-returns-title">Returns <a href="../interfaces/components_camera_FrameStats.FrameTiming.html" class="tsd-signature-type tsd-kind-interface">FrameTiming</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">null</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/FrameStats.ts#L44">components/camera/FrameStats.ts:44</a></li></ul></aside></div></li></ul></section></section></details></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/FrameStats.ts#L58">components/camera/FrameStats.ts:58</a></li></ul></aside></div></li></ul></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -95,7 +92,7 @@
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Constructors"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Constructors</summary>
 <div><a href="#constructor"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Constructor"><use href="../assets/icons.svg#icon-512"></use></svg><span>constructor</span></a></div></details>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Methods</summary>
-<div><a href="#record"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>record</span></a><a href="#stats"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>stats</span></a></div></details></div></details></div>
+<div><a href="#record"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>record</span></a><a href="#timing"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>timing</span></a></div></details></div></details></div>
 <div class="site-menu">
 <nav class="tsd-navigation"><a href="../index.html">Footsteps API</a>
 <ul class="tsd-small-nested-navigation" id="tsd-nav-container">
