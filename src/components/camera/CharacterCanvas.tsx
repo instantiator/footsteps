@@ -55,7 +55,8 @@ const useVisionModel = (
       .then(() => {
         if (!cancelled) setModel(created);
       })
-      .catch((error: unknown) => console.error("Failed to load the vision model:", error));
+      // A model disposed while loading (eg. by React's development double mount) fails to load on purpose
+      .catch((error: unknown) => cancelled || console.error("Failed to load the vision model:", error));
     return () => {
       cancelled = true;
       created.dispose();

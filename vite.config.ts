@@ -6,6 +6,8 @@ export default defineConfig({
   base: process.env.BASE_URL ?? "/",
   // The React Router plugin builds the app; vitest compiles JSX itself and must not load it
   plugins: [!process.env.VITEST && reactRouter()],
+  // The vision worker is a module worker that loads MediaPipe's runtime with a dynamic import
+  worker: { format: "es" },
   test: {
     globals: true,
     environment: "jsdom",
