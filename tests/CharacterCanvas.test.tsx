@@ -103,6 +103,16 @@ describe("CharacterCanvas", () => {
     expect(model.decode).toHaveBeenCalledTimes(2);
   });
 
+  it.each([true, false])("shows the frame-rate readout only when asked (%s)", async (showStats) => {
+    const onPlayersChange = vi.fn();
+    const { container } = renderCanvas({ onPlayersChange, showStats });
+    await waitFor(() => expect(onPlayersChange).toHaveBeenCalled());
+    await act(async () => runNextFrame()); // a second frame, so there is an interval to measure
+
+    await waitFor(() => expect(onPlayersChange).toHaveBeenCalledTimes(2));
+    expect(container.querySelector("output.vision-stats") !== null).toBe(showStats);
+  });
+
   it("reports an empty list when nobody is found", async () => {
     model.people = 0;
     const onPlayersChange = vi.fn<(players: PlayerFrame[], timestamp: number) => void>();

@@ -158,6 +158,7 @@ export const CharacterCanvasLayerWrapper = ({
       onPlayersChange={onPlayersChange}
       canvasRef={canvasRef}
       maskType={debug ? "colored" : "binary"}
+      showStats={debug}
     />
   </div>
 );
