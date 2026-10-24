@@ -458,9 +458,25 @@ describe("GameLayersLayout camera interactions", () => {
     // The element covers the screen's left half, so the mask's right half, after mirroring
     stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 50, 50));
 
+    sendPlayers([playerWithHandAt(0, 7)], 900); // outside the element, so the hand then moves in
     sendPlayers([playerWithHandAt(6, 1)]);
 
     expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith({ elementId: "overview-thing", interaction: "hand" });
+  });
+
+  it("ignores a hand that is already inside the element when the camera starts", async () => {
+    const onPlayerInteraction = vi.fn();
+    const { container, canvas } = await renderWithCamera({
+      interactionTargets: { "overview-thing": { stage: "stage-1", interactions: ["hand"] } },
+      onPlayerInteraction,
+    });
+    stubRect(canvas, new DOMRect(0, 0, 100, 100));
+    stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 50, 50));
+
+    sendPlayers([playerWithHandAt(6, 1)]);
+    sendPlayers([playerWithHandAt(6, 1)], 1100);
+
+    expect(onPlayerInteraction).not.toHaveBeenCalled();
   });
 
   it("reports nothing when the target's element is not in the document", async () => {
@@ -484,11 +500,13 @@ describe("GameLayersLayout camera interactions", () => {
       onPlayerInteraction,
     });
     stubRect(canvas, new DOMRect(0, 0, 100, 100));
-    stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 100, 100));
+    stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 50, 50));
 
-    sendPlayers([playerWithHandAt(1, 1)]);
+    sendPlayers([playerWithHandAt(0, 7)], 900);
+    sendPlayers([playerWithHandAt(6, 1)]);
     sendPlayers([], 1100); // the player is gone, so the monitor is dropped
-    sendPlayers([playerWithHandAt(1, 1)], 1200);
+    sendPlayers([playerWithHandAt(0, 7)], 1200);
+    sendPlayers([playerWithHandAt(6, 1)], 1300);
 
     expect(onPlayerInteraction).toHaveBeenCalledTimes(2);
   });
@@ -503,6 +521,7 @@ describe("GameLayersLayout camera interactions", () => {
     stubRect(canvas, new DOMRect(100, 100, 100, 100));
     stubRect(container.querySelector("#overview-thing")!, new DOMRect(100, 100, 50, 50));
 
+    sendPlayers([playerWithHandAt(0, 7)], 900);
     sendPlayers([playerWithHandAt(6, 1)]);
     expect(onPlayerInteraction).toHaveBeenCalledOnce();
 
@@ -532,7 +551,8 @@ describe("GameLayersLayout camera interactions", () => {
       await vi.advanceTimersByTimeAsync(2000);
     });
 
-    sendPlayers([playerWithHandAt(6, 1)], 1100);
+    sendPlayers([playerWithHandAt(0, 7)], 1100);
+    sendPlayers([playerWithHandAt(6, 1)], 1200);
     expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith({ elementId: "overview-thing", interaction: "hand" });
   });
 });

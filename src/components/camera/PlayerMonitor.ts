@@ -153,6 +153,8 @@ const nextJumpPhase = (phase: JumpPhase, velocity: number): { phase: JumpPhase; 
  * Turns one player's segmentation frames into interaction events.
  *
  * Events are edge-triggered: an interaction fires when it begins, not on every frame it holds.
+ * The first frame only records what already holds, so a player who is already inside an element
+ * when the monitor starts (as a display fades in) must move into it again.
  * The monitor also follows the player's vertical motion, so a complete rise, fall and rest
  * inside an element counts as a jump.
  */
@@ -160,6 +162,8 @@ export class PlayerMonitor {
   private readonly onEvent: (event: PlayerMonitorEvent) => void;
   /** Interactions that held on the previous frame, keyed `${elementId}:${interaction}`. */
   private held = new Set<string>();
+  /** Whether a frame has been seen, so coverage on later frames can count as beginning. */
+  private armed = false;
   /** Jump sequences in progress, by element id. */
   private readonly jumps = new Map<string, JumpState>();
   /** The feet position and time of the previous frame, for measuring vertical speed. */
@@ -201,12 +205,13 @@ export class PlayerMonitor {
     }
 
     this.held = held;
+    this.armed = true;
     for (const elementId of Array.from(this.jumps.keys())) {
       if (!jumpIds.has(elementId)) this.jumps.delete(elementId);
     }
   }
 
-  /** Reports each coverage interaction that has just begun, and remembers those that are holding. */
+  /** Reports each coverage interaction that has just begun (once armed), and remembers those that are holding. */
   private reportCovered(elementId: string, target: MonitorTarget, coverage: TargetCoverage, held: Set<string>): void {
     for (const interaction of target.interactions) {
       if (!isCameraInteraction(interaction) || interaction === "jump") continue;
@@ -214,7 +219,7 @@ export class PlayerMonitor {
 
       const key = `${elementId}:${interaction}`;
       held.add(key);
-      if (!this.held.has(key)) this.onEvent({ elementId, interaction });
+      if (this.armed && !this.held.has(key)) this.onEvent({ elementId, interaction });
     }
   }
 

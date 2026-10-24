@@ -72,7 +72,7 @@ export function usePlayerInteractions(
     callbackRef.current = onPlayerInteraction;
   }, [onPlayerInteraction]);
 
-  // A fresh monitor cannot report interactions that held while interactions were off
+  // Interactions pause during display changes; fresh monitors afterwards ignore whatever already holds
   useEffect(() => {
     enabledRef.current = enabled;
     if (!enabled) monitorsRef.current.clear();

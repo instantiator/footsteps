@@ -54,11 +54,29 @@ const target = (interactions: string[], threshold = 1, rect: MaskRect = LEFT_HAL
   threshold,
 });
 
-/** A fresh monitor and the events it reports. */
+/** A monitor that has seen one empty frame, so it reports what begins from now, and the events it reports. */
 const monitorWithEvents = () => {
   const events: PlayerMonitorEvent[] = [];
-  return { events, monitor: new PlayerMonitor((event) => events.push(event)) };
+  const monitor = new PlayerMonitor((event) => events.push(event));
+  monitor.update(frame([]), {}, 0);
+  return { events, monitor };
 };
+
+describe("PlayerMonitor first frame", () => {
+  it("ignores what already holds on its first frame, and fires once it begins again", () => {
+    const events: PlayerMonitorEvent[] = [];
+    const monitor = new PlayerMonitor((event) => events.push(event));
+    const targets = { "the-element": target(["hand"], 0) };
+
+    monitor.update(frame([[1, 1, HAND]]), targets, 0);
+    monitor.update(frame([[1, 1, HAND]]), targets, 100);
+    expect(events).toEqual([]);
+
+    monitor.update(frame([[8, 8, HAND]]), targets, 200);
+    monitor.update(frame([[1, 1, HAND]]), targets, 300);
+    expect(events).toEqual([{ elementId: "the-element", interaction: "hand" }]);
+  });
+});
 
 describe("PlayerMonitor coverage", () => {
   it.each([

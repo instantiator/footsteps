@@ -151,7 +151,9 @@ A **threshold** is the fraction of the chosen body part that must be inside the 
 part inside; `0` only needs one pixel. `any` applies the threshold to each body part separately.
 
 Interactions are **edge-triggered**: one fires when the player first meets the condition, not on
-every frame they hold it. Moving away re-arms it, so a second approach fires again.
+every frame they hold it. Moving away re-arms it, so a second approach fires again. A player who already
+meets the condition when their monitor starts (when camera mode starts, after a display change, or on
+coming back into view) must move away and back first.
 
 A **jump** is a short sequence, not a single frame:
 
@@ -169,8 +171,8 @@ interaction is applied through the same state change as a click, and locked or c
 still ignored; see `getNewGameStateForInteraction` in `GameClickUtils.ts`.
 
 While a display or camera transition is running, clicks and camera interactions are ignored. The
-scene is `inert`, the monitors are cleared, and the camera hook drops frames, so a held hand cannot
-fire as the new display arrives.
+scene is `inert`, the monitors are cleared, and the camera hook drops frames. The fresh monitors
+ignore whatever holds on their first frame, so a held hand cannot fire as the new display arrives.
 
 ### From frame to event
 
