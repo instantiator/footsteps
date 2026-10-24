@@ -1,63 +1,36 @@
 import { describe, expect, it } from "vitest";
-import { findFeet, maskRectForElement, type Rect } from "../src/components/camera/CameraSupport";
+import { feetOf, maskRectForElement, type Rect } from "../src/components/camera/CameraSupport";
+import { noKeyPoints, type Point } from "../src/vision/VisionTypes";
 
 const WIDTH = 10;
 const HEIGHT = 100;
 
-/** A transparent RGBA mask with the given (x, y) pixels made opaque. */
-const mask = (pixels: [number, number][]) => {
-  const data = new Uint8ClampedArray(WIDTH * HEIGHT * 4);
-  for (const [x, y] of pixels) data[(y * WIDTH + x) * 4 + 3] = 255;
-  return { data };
-};
+/** A person with only the given feet placed. */
+const withFeet = (leftFoot: Point | null, rightFoot: Point | null) => ({
+  keyPoints: { ...noKeyPoints(), leftFoot, rightFoot },
+});
 
-describe("findFeet", () => {
-  it("returns null for an empty mask", () => {
-    expect(findFeet(mask([]), WIDTH, HEIGHT)).toBeNull();
+describe("feetOf", () => {
+  it("returns null when neither foot was placed", () => {
+    expect(feetOf(withFeet(null, null), WIDTH, HEIGHT)).toBeNull();
   });
 
-  it("finds the lowest opaque row and the centre of the pixels there", () => {
-    const feet = findFeet(
-      mask([
-        [2, 50],
-        [6, 50],
-      ]),
-      WIDTH,
-      HEIGHT,
-    );
+  it("is midway between the feet, at the lower foot's height", () => {
+    const feet = feetOf(withFeet({ x: 2, y: 48 }, { x: 6, y: 50 }), WIDTH, HEIGHT);
     expect(feet).toEqual({ absolute: { x: 4, y: 50 }, percent: { x: 40, y: 50 } });
   });
 
-  it("averages x over the 20-row band above the lowest row, ignoring pixels higher up", () => {
-    const feet = findFeet(
-      mask([
-        [0, 80],
-        [8, 70],
-        [9, 40],
-      ]),
-      WIDTH,
-      HEIGHT,
-    );
-    expect(feet?.absolute).toEqual({ x: 4, y: 80 });
+  it("uses the one foot that was placed", () => {
+    expect(feetOf(withFeet(null, { x: 5, y: 0 }), WIDTH, HEIGHT)?.absolute).toEqual({ x: 5, y: 0 });
   });
 
   it("returns null when the feet are below the off-screen threshold", () => {
-    expect(findFeet(mask([[5, 95]]), WIDTH, HEIGHT, 90)).toBeNull();
-    expect(findFeet(mask([[5, 85]]), WIDTH, HEIGHT, 90)?.absolute.y).toBe(85);
+    expect(feetOf(withFeet({ x: 5, y: 95 }, null), WIDTH, HEIGHT, 90)).toBeNull();
+    expect(feetOf(withFeet({ x: 5, y: 85 }, null), WIDTH, HEIGHT, 90)?.absolute.y).toBe(85);
   });
-});
 
-describe("findFeet at the top of the frame", () => {
-  it("finds feet when the only opaque pixels are in the top row", () => {
-    const feet = findFeet(
-      mask([
-        [2, 0],
-        [6, 0],
-      ]),
-      WIDTH,
-      HEIGHT,
-    );
-    expect(feet?.absolute).toEqual({ x: 4, y: 0 });
+  it("returns null for a frame with no size", () => {
+    expect(feetOf(withFeet({ x: 0, y: 0 }, null), 0, 0)).toBeNull();
   });
 });
 

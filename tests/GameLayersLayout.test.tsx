@@ -1,12 +1,12 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentProps, ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import bodyParts from "../src/assets/body-seg-parts.json";
 import type CharacterCamera from "../src/components/camera/CharacterCamera";
 import type CharacterCanvas from "../src/components/camera/CharacterCanvas";
 import type { PlayerFrame } from "../src/components/camera/PlayerMonitor";
 import GameLayersLayout from "../src/components/core/layout/GameLayersLayout";
 import type { GameInteractionTarget } from "../src/entities/data/displays/GameDisplayData";
+import { noKeyPoints } from "../src/vision/VisionTypes";
 import { SMALL_GAME_ID, smallRepository } from "./data/SmallGame";
 import GameProviders from "./helpers/GameProviders";
 import { setReducedMotion } from "./helpers/motion";
@@ -72,23 +72,14 @@ const layout = (props: Partial<ComponentProps<typeof GameLayersLayout>> = {}) =>
 
 const renderLayout = (props: Partial<ComponentProps<typeof GameLayersLayout>> = {}) => render(layout(props));
 
-/** An 8px mask with one opaque body part at the given pixel. */
-const maskWithPart = (value: number, x: number, y: number): PlayerFrame["mask"] => {
+/** A player in an 8px mask whose only pixel is their left hand, at the given pixel; their feet are out of view. */
+const playerWithHandAt = (x: number, y: number): PlayerFrame => {
   const width = 8;
   const height = 8;
-  const data = new Uint8ClampedArray(width * height * 4);
-  const i = (y * width + x) * 4;
-  data[i] = value;
-  data[i + 3] = 255;
-  return { data, width, height };
+  const mask = new Uint8Array(width * height);
+  mask[y * width + x] = 1;
+  return { id: 0, mask, keyPoints: { ...noKeyPoints(), leftHand: { x, y } }, scale: 0, width, height, feet: null };
 };
-
-/** A player whose hand is at the given mask pixel, and whose feet are out of view. */
-const playerWithHandAt = (x: number, y: number): PlayerFrame => ({
-  id: 0,
-  mask: maskWithPart(bodyParts.LEFT_HAND.maskValue, x, y),
-  feet: null,
-});
 
 const stubRect = (element: Element, rect: DOMRect) => vi.spyOn(element, "getBoundingClientRect").mockReturnValue(rect);
 

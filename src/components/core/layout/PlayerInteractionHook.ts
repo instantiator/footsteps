@@ -19,7 +19,7 @@ const monitorTargets = (
   interactionTargets: Record<string, GameInteractionTarget>,
 ): Record<string, MonitorTarget> => {
   const canvasRect = canvas.getBoundingClientRect();
-  const { width, height } = players[0].mask;
+  const { width, height } = players[0];
   const targets: Record<string, MonitorTarget> = {};
   for (const [elementId, target] of Object.entries(interactionTargets)) {
     const element = document.getElementById(elementId);

@@ -1,42 +1,46 @@
-import { describe, expect, it, vi } from "vitest";
-
-vi.mock("@tensorflow-models/body-segmentation", () => ({}));
-
+import { describe, expect, it } from "vitest";
+import type { FootPosition, MaskRect } from "../src/components/camera/CameraSupport";
 import {
   PlayerMonitor,
   type MonitorTarget,
   type PlayerFrame,
   type PlayerMonitorEvent,
 } from "../src/components/camera/PlayerMonitor";
-import { BODY_PARTS } from "../src/components/camera/BodySegSupport";
-import type { FootPosition, MaskRect } from "../src/components/camera/CameraSupport";
+import { noKeyPoints, type KeyPoints } from "../src/vision/VisionTypes";
 
 const WIDTH = 10;
 const HEIGHT = 10;
 
-const HAND = BODY_PARTS.LEFT_HAND.maskValue;
-const OTHER_HAND = BODY_PARTS.RIGHT_HAND.maskValue;
-const FOOT = BODY_PARTS.LEFT_FOOT.maskValue;
-const FACE = BODY_PARTS.LEFT_FACE.maskValue;
-const ARM = BODY_PARTS.LEFT_UPPER_ARM_FRONT.maskValue;
+/** A part's key point at the centre, with a radius that reaches every pixel: its pixels are the mask's. */
+const WHOLE_FRAME_SCALE = 10;
 
-/** A transparent mask with the given mask value at each (x, y) pixel. */
-const mask = (pixels: [x: number, y: number, part: number][]) => {
-  const data = new Uint8ClampedArray(WIDTH * HEIGHT * 4);
-  for (const [x, y, part] of pixels) {
-    const i = (y * WIDTH + x) * 4;
-    data[i] = part;
-    data[i + 3] = 255;
-  }
-  return { data, width: WIDTH, height: HEIGHT };
+/** The parts a test can place. */
+type Part = "leftHand" | "rightHand" | "leftFoot" | "head";
+
+/** Key points that place the part over the whole frame. */
+const placed = (part: Part): Partial<KeyPoints> =>
+  part === "head"
+    ? { headTop: { x: 0, y: 0 }, headBottom: { x: 9, y: 9 }, headLeft: { x: 0, y: 0 }, headRight: { x: 9, y: 9 } }
+    : { [part]: { x: 5, y: 5 } };
+
+/** A frame whose player's silhouette is the given pixels, with the given key points and feet. */
+const frame = (
+  pixels: [x: number, y: number][],
+  keyPoints: Partial<KeyPoints> = {},
+  feet: FootPosition | null = null,
+  scale = WHOLE_FRAME_SCALE,
+): PlayerFrame => {
+  const mask = new Uint8Array(WIDTH * HEIGHT);
+  for (const [x, y] of pixels) mask[y * WIDTH + x] = 1;
+  return { id: 1, mask, keyPoints: { ...noKeyPoints(), ...keyPoints }, scale, width: WIDTH, height: HEIGHT, feet };
 };
 
-/** A frame whose player has the given pixels, with their feet wherever the test puts them. */
-const frame = (pixels: [x: number, y: number, part: number][], feet: FootPosition | null = null): PlayerFrame => ({
-  id: 1,
-  mask: mask(pixels),
-  feet,
-});
+/** A frame whose silhouette is the given pixels, all of them the given part. */
+const partFrame = (part: Part, pixels: [x: number, y: number][], feet: FootPosition | null = null) =>
+  frame(pixels, placed(part), feet);
+
+/** A frame whose silhouette is the given pixels, all of them a hand. */
+const handFrame = (pixels: [x: number, y: number][]) => partFrame("leftHand", pixels);
 
 /** A feet position at the given height (% of the frame). */
 const feetAt = (percentY: number): FootPosition => ({
@@ -68,36 +72,36 @@ describe("PlayerMonitor first frame", () => {
     const monitor = new PlayerMonitor((event) => events.push(event));
     const targets = { "the-element": target(["hand"], 0) };
 
-    monitor.update(frame([[1, 1, HAND]]), targets, 0);
-    monitor.update(frame([[1, 1, HAND]]), targets, 100);
+    monitor.update(handFrame([[1, 1]]), targets, 0);
+    monitor.update(handFrame([[1, 1]]), targets, 100);
     expect(events).toEqual([]);
 
-    monitor.update(frame([[8, 8, HAND]]), targets, 200);
-    monitor.update(frame([[1, 1, HAND]]), targets, 300);
+    monitor.update(handFrame([[8, 8]]), targets, 200);
+    monitor.update(handFrame([[1, 1]]), targets, 300);
     expect(events).toEqual([{ elementId: "the-element", interaction: "hand" }]);
   });
 });
 
 describe("PlayerMonitor coverage", () => {
   it.each([
-    ["hand", HAND],
-    ["hand", OTHER_HAND],
-    ["foot", FOOT],
-    ["head", FACE],
-  ] as const)("fires a %s interaction when that body part is inside", (interaction, part) => {
+    ["hand", "leftHand"],
+    ["hand", "rightHand"],
+    ["foot", "leftFoot"],
+    ["head", "head"],
+  ] as const)("fires a %s interaction when the %s is inside", (interaction, part) => {
     const { events, monitor } = monitorWithEvents();
-    monitor.update(frame([[1, 1, part]]), { "the-element": target([interaction], 0) }, 0);
+    monitor.update(partFrame(part, [[1, 1]]), { "the-element": target([interaction], 0) }, 0);
     expect(events).toEqual([{ elementId: "the-element", interaction }]);
   });
 
-  it("counts every body part for a body interaction", () => {
+  it("counts the whole silhouette for a body interaction, with no key points placed", () => {
     const { events, monitor } = monitorWithEvents();
     monitor.update(
       frame([
-        [1, 1, ARM],
-        [2, 2, FACE],
+        [1, 1],
+        [2, 2],
       ]),
-      { "the-element": target(["body"], 0) },
+      { "the-element": target(["body"], 1) },
       0,
     );
     expect(events).toEqual([{ elementId: "the-element", interaction: "body" }]);
@@ -105,34 +109,53 @@ describe("PlayerMonitor coverage", () => {
 
   it("applies the threshold to each part separately for an any interaction", () => {
     const { events, monitor } = monitorWithEvents();
-    // The hand is only half inside, but the foot is entirely inside
-    monitor.update(
-      frame([
-        [1, 1, HAND],
-        [8, 8, HAND],
-        [2, 2, FOOT],
-      ]),
-      { "the-element": target(["any"], 1) },
+    // The hand (a small disc at (4, 1)) is only half inside, and so is the body, but the foot is entirely inside
+    const handAndFoot = frame(
+      [
+        [4, 1],
+        [5, 1],
+        [2, 8],
+      ],
+      { leftHand: { x: 4, y: 1 }, leftFoot: { x: 2, y: 8 } },
+      null,
+      1,
+    );
+    monitor.update(handAndFoot, { "the-element": target(["any"], 1) }, 0);
+    expect(events).toEqual([{ elementId: "the-element", interaction: "any" }]);
+  });
+});
+
+describe("PlayerMonitor part groups", () => {
+  it("fires a hand interaction at threshold 1 when one hand is wholly inside and the other is outside", () => {
+    const { events, monitor } = monitorWithEvents();
+    const hands = frame(
+      [
+        [1, 1],
+        [8, 8],
+      ],
+      { leftHand: { x: 1, y: 1 }, rightHand: { x: 8, y: 8 } },
+      null,
       0,
     );
-    expect(events).toEqual([{ elementId: "the-element", interaction: "any" }]);
+    monitor.update(hands, { "the-element": target(["hand"], 1) }, 0);
+    expect(events).toEqual([{ elementId: "the-element", interaction: "hand" }]);
   });
 });
 
 describe("PlayerMonitor thresholds", () => {
   /** Whether a hand pixel inside and another outside fires at the given threshold. */
-  const firesAt = (threshold: number, pixels: [number, number, number][]) => {
+  const firesAt = (threshold: number, pixels: [number, number][]) => {
     const { events, monitor } = monitorWithEvents();
-    monitor.update(frame(pixels), { "the-element": target(["hand"], threshold) }, 0);
+    monitor.update(handFrame(pixels), { "the-element": target(["hand"], threshold) }, 0);
     return events.length === 1;
   };
 
   it("fires at threshold 0 with a single pixel inside, even with the rest outside", () => {
     expect(
       firesAt(0, [
-        [1, 1, HAND],
-        [8, 8, HAND],
-        [9, 9, HAND],
+        [1, 1],
+        [8, 8],
+        [9, 9],
       ]),
     ).toBe(true);
   });
@@ -140,15 +163,15 @@ describe("PlayerMonitor thresholds", () => {
   it("fires at threshold 0.5 when half of the part is inside", () => {
     expect(
       firesAt(0.5, [
-        [1, 1, HAND],
-        [8, 8, HAND],
+        [1, 1],
+        [8, 8],
       ]),
     ).toBe(true);
     expect(
       firesAt(0.5, [
-        [1, 1, HAND],
-        [8, 8, HAND],
-        [9, 9, HAND],
+        [1, 1],
+        [8, 8],
+        [9, 9],
       ]),
     ).toBe(false);
   });
@@ -156,14 +179,14 @@ describe("PlayerMonitor thresholds", () => {
   it("fires at threshold 1 only when the whole part is inside", () => {
     expect(
       firesAt(1, [
-        [1, 1, HAND],
-        [2, 2, HAND],
+        [1, 1],
+        [2, 2],
       ]),
     ).toBe(true);
     expect(
       firesAt(1, [
-        [1, 1, HAND],
-        [8, 8, HAND],
+        [1, 1],
+        [8, 8],
       ]),
     ).toBe(false);
   });
@@ -171,21 +194,21 @@ describe("PlayerMonitor thresholds", () => {
   it("clamps a threshold above 1 to a whole part", () => {
     expect(
       firesAt(1.01, [
-        [1, 1, HAND],
-        [2, 2, HAND],
+        [1, 1],
+        [2, 2],
       ]),
     ).toBe(true);
   });
 
   it("does not fire when nothing is inside", () => {
-    expect(firesAt(0, [[8, 8, HAND]])).toBe(false);
+    expect(firesAt(0, [[8, 8]])).toBe(false);
   });
 });
 
 describe("PlayerMonitor edge triggering", () => {
   const handTarget = { "the-element": target(["hand"], 0) };
-  const inside = frame([[1, 1, HAND]]);
-  const outside = frame([[8, 8, HAND]]);
+  const inside = handFrame([[1, 1]]);
+  const outside = handFrame([[8, 8]]);
 
   it("fires once while the interaction holds", () => {
     const { events, monitor } = monitorWithEvents();
@@ -210,9 +233,9 @@ describe("PlayerMonitor edge triggering", () => {
       "right-element": target(["hand"], 0, { left: 5, top: 0, right: 10, bottom: 10 }),
     };
     monitor.update(
-      frame([
-        [1, 1, HAND],
-        [8, 8, HAND],
+      handFrame([
+        [1, 1],
+        [8, 8],
       ]),
       targets,
       0,
@@ -244,7 +267,7 @@ describe("PlayerMonitor jumps", () => {
 
   /** A jump frame: the feet are at the given height, inside the element unless `inside` is false. */
   const jumpFrame = (percentY: number, inside = true): PlayerFrame =>
-    frame([[inside ? 1 : 8, inside ? 1 : 8, FOOT]], feetAt(percentY));
+    partFrame("leftFoot", [inside ? [1, 1] : [8, 8]], feetAt(percentY));
 
   /** Feeds a sequence of (height, inside) samples, 100 ms apart, and returns the reported events. */
   const run = (samples: [percentY: number, inside?: boolean][]) => {
@@ -303,7 +326,7 @@ describe("PlayerMonitor jumps", () => {
     const { events, monitor } = monitorWithEvents();
     monitor.update(jumpFrame(50), jumpTargets, 0);
     monitor.update(jumpFrame(40), jumpTargets, 100);
-    monitor.update(frame([[1, 1, FOOT]], null), jumpTargets, 200);
+    monitor.update(partFrame("leftFoot", [[1, 1]]), jumpTargets, 200);
     monitor.update(jumpFrame(40), jumpTargets, 300);
     monitor.update(jumpFrame(40), jumpTargets, 400);
     expect(events).toEqual([]);

@@ -63,14 +63,14 @@ export const installFakeCamera = async (page: Page): Promise<void> => {
     };
     window.__fakeCamera = state;
     paint(image);
+    // A canvas only sends frames when it is painted, so repaint at a webcam's rate to keep frames coming
+    setInterval(() => paint(image), 1000 / 30);
 
     Object.defineProperty(navigator, "mediaDevices", {
       configurable: true,
       value: {
         getUserMedia: async () => {
-          const stream = canvas.captureStream(10);
-          // A canvas only sends frames for changes made after its capture stream starts
-          paint(image);
+          const stream = canvas.captureStream(30);
           streams.push(stream);
           return stream;
         },

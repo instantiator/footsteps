@@ -1,28 +1,27 @@
 import { act, render, waitFor } from "@testing-library/react";
 import type { ComponentProps } from "react";
+import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CharacterCanvas from "../src/components/camera/CharacterCanvas";
 import type { FeetPositions } from "../src/components/camera/CameraSupport";
 import type { PlayerFrame } from "../src/components/camera/PlayerMonitor";
+import type { AppConfig } from "../src/config/AppConfig";
+import AppConfigProvider from "../src/providers/AppConfigProvider";
+import { noKeyPoints, type VisionFrame } from "../src/vision/VisionTypes";
 import { FakeMediaStream } from "./helpers/media";
 
-/** The mocked segmentation model: how many people it finds, and what it was asked to do. */
+/** The mocked vision model: how many people it finds, and what it was asked to do. */
 const model = vi.hoisted(() => {
-  const segmentPeople = vi.fn();
+  const load = vi.fn(async () => undefined);
+  const detect = vi.fn();
   const dispose = vi.fn();
-  const createSegmenter = vi.fn(async () => ({ segmentPeople, dispose }));
-  const decode = vi.fn();
-  return { people: 2, segmentPeople, dispose, createSegmenter, decode };
+  const createVisionModel = vi.fn<(config: AppConfig) => object>(() => ({ load, detect, dispose }));
+  return { people: 2, load, detect, dispose, createVisionModel };
 });
 
-vi.mock("@tensorflow-models/body-segmentation", () => ({
-  SupportedModels: { BodyPix: "BodyPix" },
-  createSegmenter: model.createSegmenter,
-}));
+vi.mock("../src/vision/createVisionModel", () => ({ createVisionModel: model.createVisionModel }));
 
-vi.mock("@tensorflow/tfjs", () => ({ ready: vi.fn(async () => undefined) }));
-
-vi.mock("../src/components/camera/BodySegSupport", () => ({ drawMask: vi.fn(async () => undefined) }));
+vi.mock("../src/components/camera/DrawPeople", () => ({ drawPeople: vi.fn(async () => undefined) }));
 
 /** Segmented frames waiting for the next animation frame, run by hand so each pass is controlled. */
 const queuedFrames = new Map<number, FrameRequestCallback>();
@@ -35,18 +34,18 @@ const runNextFrame = () => {
   callback(performance.now());
 };
 
-/** An 8px mask with an opaque bottom row, so it has feet, and a body part at its centre. */
-const fakeMask = (): PlayerFrame["mask"] => {
-  const width = 8;
-  const height = 8;
-  const data = new Uint8ClampedArray(width * height * 4);
-  for (let x = 0; x < width; x++) {
-    const bottom = ((height - 1) * width + x) * 4;
-    data[bottom] = 12; // torso
-    data[bottom + 3] = 255;
-  }
-  return { data, width, height };
-};
+/** A frame of 8px masks: each person is a bottom row with their left foot in the middle of it. */
+const fakeFrame = (people: number, timestamp: number): VisionFrame => ({
+  width: 8,
+  height: 8,
+  timestamp,
+  people: Array.from({ length: people }, (_, id) => ({
+    id,
+    mask: new Uint8Array(64).fill(1, 56),
+    keyPoints: { ...noKeyPoints(), leftFoot: { x: 4, y: 7 } },
+    scale: 1,
+  })),
+});
 
 const video = document.createElement("video");
 const mediaStream = new FakeMediaStream();
@@ -56,14 +55,11 @@ const renderCanvas = (props: Partial<ComponentProps<typeof CharacterCanvas>> = {
 
 beforeEach(() => {
   model.people = 2;
-  model.segmentPeople.mockReset();
-  model.segmentPeople.mockImplementation(async () =>
-    Array.from({ length: model.people }, () => ({ mask: { toImageData: model.decode } })),
-  );
+  model.detect.mockReset();
+  model.detect.mockImplementation(async (_source: unknown, timestamp: number) => fakeFrame(model.people, timestamp));
   model.dispose.mockReset();
-  model.createSegmenter.mockClear();
-  model.decode.mockReset();
-  model.decode.mockImplementation(async () => fakeMask());
+  model.load.mockClear();
+  model.createVisionModel.mockClear();
 
   queuedFrames.clear();
   nextFrameId = 0;
@@ -89,7 +85,7 @@ afterEach(() => {
 });
 
 describe("CharacterCanvas", () => {
-  it("reports one player per segmented person, with a decoded mask and feet", async () => {
+  it("reports one player per person found, with their mask and feet", async () => {
     const onPlayersChange = vi.fn<(players: PlayerFrame[], timestamp: number) => void>();
     renderCanvas({ onPlayersChange });
 
@@ -97,10 +93,11 @@ describe("CharacterCanvas", () => {
 
     const [players, timestamp] = onPlayersChange.mock.calls[0];
     expect(players.map((player) => player.id)).toEqual([0, 1]);
-    expect(players[0].mask).toMatchObject({ width: 8, height: 8 });
+    expect(players[0]).toMatchObject({ width: 8, height: 8 });
+    expect(players[0].mask).toHaveLength(64);
     expect(players[0].feet?.percent.y).toBeCloseTo(87.5); // the lowest of eight rows
     expect(typeof timestamp).toBe("number");
-    expect(model.decode).toHaveBeenCalledTimes(2);
+    expect(model.detect).toHaveBeenCalledTimes(1);
   });
 
   it.each([true, false])("shows the frame-rate readout only when asked (%s)", async (showStats) => {
@@ -129,9 +126,9 @@ describe("CharacterCanvas", () => {
     expect(Object.keys(onFeetPositionsChange.mock.calls[0][0])).toEqual(["0", "1"]);
   });
 
-  it("skips a frame that fails to segment, and carries on with the next", async () => {
+  it("skips a frame that fails to be tracked, and carries on with the next", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    model.segmentPeople.mockRejectedValueOnce(new Error("WebGL context lost"));
+    model.detect.mockRejectedValueOnce(new Error("WebGL context lost"));
     const onPlayersChange = vi.fn();
     renderCanvas({ onPlayersChange });
 
@@ -143,20 +140,18 @@ describe("CharacterCanvas", () => {
     await waitFor(() => expect(onPlayersChange).toHaveBeenCalledTimes(1));
   });
 
-  it("stops segmenting and disposes the model once on unmount", async () => {
+  it("stops tracking and disposes the model once on unmount", async () => {
     const onPlayersChange = vi.fn();
     const { unmount } = renderCanvas({ onPlayersChange });
     await waitFor(() => expect(onPlayersChange).toHaveBeenCalled());
-    const segmentedFrames = model.segmentPeople.mock.calls.length;
-    const decodedMasks = model.decode.mock.calls.length;
+    const trackedFrames = model.detect.mock.calls.length;
     expect(queuedFrames.size).toBe(1);
 
     unmount();
 
     expect(model.dispose).toHaveBeenCalledTimes(1);
     expect(queuedFrames.size).toBe(0); // the pending frame was cancelled
-    expect(model.segmentPeople).toHaveBeenCalledTimes(segmentedFrames);
-    expect(model.decode).toHaveBeenCalledTimes(decodedMasks);
+    expect(model.detect).toHaveBeenCalledTimes(trackedFrames);
   });
 
   it("cancels the old loop and starts exactly one new one when the mask type changes", async () => {
@@ -170,7 +165,7 @@ describe("CharacterCanvas", () => {
     );
     await waitFor(() => expect(onPlayersChange).toHaveBeenCalledTimes(2));
 
-    expect(model.createSegmenter).toHaveBeenCalledTimes(1); // the model is not reloaded
+    expect(model.createVisionModel).toHaveBeenCalledTimes(1); // the model is not reloaded
     expect(model.dispose).not.toHaveBeenCalled();
     expect(queuedFrames.size).toBe(1); // only the new loop is waiting
 
@@ -179,8 +174,36 @@ describe("CharacterCanvas", () => {
     });
     await waitFor(() => expect(onPlayersChange).toHaveBeenCalledTimes(3));
 
-    // One loop, so one frame's worth of segmentation, not two
-    expect(model.segmentPeople).toHaveBeenCalledTimes(3);
+    // One loop, so one frame's worth of tracking, not two
+    expect(model.detect).toHaveBeenCalledTimes(3);
     expect(queuedFrames.size).toBe(1);
+  });
+
+  it("creates the model the app config chooses", async () => {
+    const onPlayersChange = vi.fn();
+    render(
+      <MemoryRouter initialEntries={["/?visionModel=movenet"]}>
+        <AppConfigProvider>
+          <CharacterCanvas video={video} mediaStream={mediaStream} onPlayersChange={onPlayersChange} />
+        </AppConfigProvider>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(onPlayersChange).toHaveBeenCalled());
+    expect(model.createVisionModel).toHaveBeenCalledWith(expect.objectContaining({ visionModel: "movenet" }));
+  });
+
+  it("does not use a model that is disposed before it finishes loading", async () => {
+    let finishLoading = () => {};
+    model.load.mockImplementationOnce(
+      () => new Promise<undefined>((resolve) => (finishLoading = () => resolve(undefined))),
+    );
+    const { unmount } = renderCanvas({ onPlayersChange: vi.fn() });
+    await waitFor(() => expect(model.load).toHaveBeenCalled());
+
+    unmount();
+    await act(async () => finishLoading());
+
+    expect(model.dispose).toHaveBeenCalledTimes(1);
+    expect(model.detect).not.toHaveBeenCalled();
   });
 });

@@ -1,5 +1,5 @@
 import { bodyPartsAt, bodyPartsIn, type BodyPartAtPoint, type BodyPartInArea } from "./VisionQueries";
-import type { PixelRect, Point, VisionFrame } from "./VisionTypes";
+import type { PixelRect, Point, VisionFrame, VisionSource } from "./VisionTypes";
 
 /**
  * A vision model that finds players in camera frames, whatever library runs it.
@@ -16,7 +16,7 @@ export abstract class FootstepsVisionModelImplementation {
    * @param source the camera frame
    * @param timestamp when the frame was taken, in milliseconds
    */
-  abstract detect(source: TexImageSource, timestamp: number): Promise<VisionFrame>;
+  abstract detect(source: VisionSource, timestamp: number): Promise<VisionFrame>;
 
   /** Releases the model and anything it holds on the GPU. */
   abstract dispose(): void;

@@ -1,19 +1,17 @@
-import * as bodySeg from "@tensorflow-models/body-segmentation";
-import * as tf from "@tensorflow/tfjs";
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { drawMask } from "./BodySegSupport";
-import { findFeet, type FeetPositions } from "./CameraSupport";
+import type { AppConfig } from "../../config/AppConfig";
+import useAppConfig from "../../providers/AppConfigHook";
+import { createVisionModel } from "../../vision/createVisionModel";
+import type { FootstepsVisionModelImplementation } from "../../vision/FootstepsVisionModelImplementation";
+import type { VisionFrame } from "../../vision/VisionTypes";
+import { feetOf, type FeetPositions } from "./CameraSupport";
+import { drawPeople, type MaskType } from "./DrawPeople";
 import { FrameStatsRecorder, type FrameStats } from "./FrameStats";
 import type { PlayerFrame } from "./PlayerMonitor";
 
-/** The body segmentation model. */
-type BodySegNet = bodySeg.BodySegmenter;
-/** The model's result for one frame: one segmentation per person. */
-type Segmentation = Awaited<ReturnType<BodySegNet["segmentPeople"]>>;
-
 /** Props for {@link CharacterCanvas}. */
 interface CharacterCanvasProps {
-  /** The webcam video to segment. */
+  /** The webcam video to track players in. */
   video: HTMLVideoElement | null;
   /** The webcam stream; the model is only loaded while there is one. */
   mediaStream: MediaStream | undefined;
@@ -24,15 +22,15 @@ interface CharacterCanvasProps {
   /**
    * Called every frame with the people found (empty if nobody is) and when the frame was taken, in milliseconds.
    *
-   * NB. Keep this callback stable: a new one restarts the segmentation loop.
+   * NB. Keep this callback stable: a new one restarts the tracking loop.
    */
   onPlayersChange?: (players: PlayerFrame[], timestamp: number) => void;
   /** The canvas element, for callers that need its position on the page; an internal ref is used when omitted. */
   canvasRef?: RefObject<HTMLCanvasElement | null>;
   className?: string;
   style?: React.CSSProperties;
-  /** How to draw the silhouette; see {@link drawMask}. Defaults to "binary". */
-  maskType?: "binary" | "colored" | "extremities";
+  /** How to draw the silhouette; see {@link drawPeople}. Defaults to "binary". */
+  maskType?: MaskType;
   /** Shows the loop's frame rate and inference time, which benchmarks also read from its data attributes. */
   showStats?: boolean;
 }
@@ -40,69 +38,41 @@ interface CharacterCanvasProps {
 /** How often the stats readout updates, in milliseconds; every frame would re-render too often. */
 const STATS_INTERVAL_MS = 500;
 
-/** BodyPix on ResNet50, for accuracy over speed. */
-const MODEL_CONFIG: bodySeg.BodyPixModelConfig = {
-  architecture: "ResNet50",
-  outputStride: 32,
-  multiplier: 1.0, // Use 1.0 for ResNet50
-  quantBytes: 4,
-};
-
-/** Per-frame segmentation settings: high resolution and body parts, mirrored to match the preview. */
-const SEGMENTATION_CONFIG = {
-  internalResolution: "high", // Adjust resolution for performance
-  flipHorizontal: true, // Often needed for webcams
-  segmentationThreshold: 0.65, // Confidence threshold
-  segmentBodyParts: true,
-} as const;
-
-/** Loads the segmentation model, or resolves to null if it fails to load. */
-const loadBodySegNet = async (): Promise<BodySegNet | null> => {
-  await tf.ready();
-  try {
-    const bodySegNet = await bodySeg.createSegmenter(bodySeg.SupportedModels.BodyPix, MODEL_CONFIG);
-    return bodySegNet;
-  } catch (error) {
-    console.error("Failed to load BodySeg model:", error);
-    return null;
-  }
-};
-
-/** Holds the segmentation model while there is a camera stream, and releases it when there isn't. */
-const useBodySegNet = (mediaStream: MediaStream | undefined): BodySegNet | null => {
-  const [net, setNet] = useState<BodySegNet | null>(null);
+/** Holds the configured vision model while there is a camera stream, and releases it when there isn't. */
+const useVisionModel = (
+  mediaStream: MediaStream | undefined,
+  config: AppConfig,
+): FootstepsVisionModelImplementation | null => {
+  const [model, setModel] = useState<FootstepsVisionModelImplementation | null>(null);
 
   useEffect(() => {
     if (!mediaStream) return;
-    let loaded: BodySegNet | null = null;
+    const created = createVisionModel(config);
     let cancelled = false;
-    loadBodySegNet().then((bodySegNet) => {
-      if (cancelled) return bodySegNet?.dispose();
-      loaded = bodySegNet;
-      setNet(bodySegNet);
-    });
+    created
+      .load()
+      .then(() => {
+        if (!cancelled) setModel(created);
+      })
+      .catch((error: unknown) => console.error("Failed to load the vision model:", error));
     return () => {
       cancelled = true;
-      loaded?.dispose();
-      setNet(null);
+      created.dispose();
+      setModel(null);
     };
-  }, [mediaStream]);
+  }, [mediaStream, config]);
 
-  return net;
+  return model;
 };
 
-/**
- * Reads each segmented person's mask and feet, once per frame.
- * @param offScreenThreshold_percent feet lower than this (% of height) are not tracked
- */
-const readPlayers = async (segmentation: Segmentation, offScreenThreshold_percent?: number): Promise<PlayerFrame[]> => {
-  const players: PlayerFrame[] = [];
-  for (let id = 0; id < segmentation.length; id++) {
-    const mask = await segmentation[id].mask.toImageData();
-    players.push({ id, mask, feet: findFeet(mask, mask.width, mask.height, offScreenThreshold_percent) });
-  }
-  return players;
-};
+/** Each person in the frame, with their feet, for the interaction monitors. */
+const playersOf = ({ width, height, people }: VisionFrame, offScreenThreshold_percent?: number): PlayerFrame[] =>
+  people.map((person) => ({
+    ...person,
+    width,
+    height,
+    feet: feetOf(person, width, height, offScreenThreshold_percent),
+  }));
 
 /** The feet of the players that are on screen, keyed by player id. */
 const feetPositionsOf = (players: PlayerFrame[]): FeetPositions => {
@@ -113,38 +83,52 @@ const feetPositionsOf = (players: PlayerFrame[]): FeetPositions => {
   return feetPositions;
 };
 
-/** What the segmentation loop reports to, and how it draws. */
+/**
+ * Calls back once per new video frame where the browser supports it, so a 30fps camera isn't tracked twice per
+ * frame on a 60–120Hz display; otherwise once per animation frame.
+ * @returns a function that cancels the pending callback
+ */
+const onNextFrame = (video: HTMLVideoElement, callback: () => void): (() => void) => {
+  if ("requestVideoFrameCallback" in video) {
+    const handle = video.requestVideoFrameCallback(callback);
+    return () => video.cancelVideoFrameCallback(handle);
+  }
+  const handle = requestAnimationFrame(callback);
+  return () => cancelAnimationFrame(handle);
+};
+
+/** What the tracking loop reports to, and how it draws. */
 type LoopHandlers = Pick<
   CharacterCanvasProps,
   "offScreenThreshold_percent" | "onFeetPositionsChange" | "onPlayersChange"
 > & {
-  maskType: NonNullable<CharacterCanvasProps["maskType"]>;
+  maskType: MaskType;
   /** Called at most every {@link STATS_INTERVAL_MS} with the loop's speed; omitted when nobody is looking. */
   onStats?: (stats: FrameStats) => void;
 };
 
 /**
- * Segments each video frame: reports players and feet, then draws the mask.
+ * Tracks the people in each video frame: reports players and feet, then draws their silhouettes.
  * @returns a function that stops the loop
  */
-const startSegmentationLoop = (
-  net: BodySegNet,
+const startTrackingLoop = (
+  model: FootstepsVisionModelImplementation,
   video: HTMLVideoElement,
   canvas: HTMLCanvasElement,
   { offScreenThreshold_percent, onFeetPositionsChange, onPlayersChange, maskType, onStats }: LoopHandlers,
 ): (() => void) => {
   let cancelled = false;
-  let frame = 0;
+  let cancelFrame = () => {};
   const ctx = canvas.getContext("2d");
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   const recorder = new FrameStatsRecorder();
   let statsShownAt = 0;
 
-  const segmentOnce = async () => {
+  const trackOnce = async () => {
     const timestamp = performance.now();
-    const segmentation = await net.segmentPeople(video, SEGMENTATION_CONFIG);
-    if (cancelled) return; // the model may have been disposed while this frame was segmented
+    const frame = await model.detect(video, timestamp);
+    if (cancelled) return; // the model may have been disposed while this frame was tracked
     const inferenceEnd = performance.now();
     recorder.record(timestamp, inferenceEnd);
     const current = recorder.stats();
@@ -152,34 +136,30 @@ const startSegmentationLoop = (
       statsShownAt = inferenceEnd;
       onStats(current);
     }
-    const players = await readPlayers(segmentation, offScreenThreshold_percent);
-    if (cancelled) return;
+    const players = playersOf(frame, offScreenThreshold_percent);
     onPlayersChange?.(players, timestamp);
     onFeetPositionsChange?.(feetPositionsOf(players));
-    if (ctx) {
-      // The 2D context is missing in some environments (eg. tests); the reports above still happen
-      if (segmentation.length === 0) ctx.clearRect(0, 0, canvas.width, canvas.height);
-      else await drawMask(video, segmentation, ctx, maskType);
-    }
+    // The 2D context is missing in some environments (eg. tests); the reports above still happen
+    if (ctx) await drawPeople(video, frame, ctx, maskType);
   };
 
   // A failed frame is skipped rather than ending the loop; only the first failure is logged, as it may repeat every frame
   let warned = false;
-  const segmentFrame = async () => {
+  const trackFrame = async () => {
     if (cancelled) return;
     try {
-      await segmentOnce();
+      await trackOnce();
     } catch (error) {
-      if (!warned) console.warn("Skipped a camera frame that could not be segmented:", error);
+      if (!warned) console.warn("Skipped a camera frame that could not be tracked:", error);
       warned = true;
     }
-    if (!cancelled) frame = requestAnimationFrame(segmentFrame);
+    if (!cancelled) cancelFrame = onNextFrame(video, trackFrame);
   };
 
-  segmentFrame();
+  trackFrame();
   return () => {
     cancelled = true;
-    cancelAnimationFrame(frame);
+    cancelFrame();
   };
 };
 
@@ -196,8 +176,8 @@ const FrameStatsReadout = ({ stats }: { stats: FrameStats }) => (
 );
 
 /**
- * Runs body segmentation on the webcam video every frame, draws the player's silhouette on a canvas,
- * and reports where each person's feet are.
+ * Runs the configured vision model on the webcam video every frame, draws the players' silhouettes on a canvas,
+ * and reports where each person is.
  */
 export default function CharacterCanvas({
   canvasRef,
@@ -207,7 +187,7 @@ export default function CharacterCanvas({
   showStats = false,
   ...loopProps
 }: CharacterCanvasProps) {
-  const net = useBodySegNet(loopProps.mediaStream);
+  const model = useVisionModel(loopProps.mediaStream, useAppConfig());
   const [stats, setStats] = useState<FrameStats | null>(null);
   const internalCanvasRef = useRef<HTMLCanvasElement>(null);
   const canvas = canvasRef ?? internalCanvasRef;
@@ -216,12 +196,12 @@ export default function CharacterCanvas({
   // The stream belongs to CharacterCamera, which stops its tracks; this effect only stops its own loop
   useEffect(() => {
     const canvasElement = canvas.current;
-    if (!net || !video || !mediaStream || !canvasElement) return;
+    if (!model || !video || !mediaStream || !canvasElement) return;
     const onStats = showStats ? setStats : undefined;
     const handlers = { offScreenThreshold_percent, onFeetPositionsChange, onPlayersChange, maskType, onStats };
-    return startSegmentationLoop(net, video, canvasElement, handlers);
+    return startTrackingLoop(model, video, canvasElement, handlers);
   }, [
-    net,
+    model,
     mediaStream,
     video,
     canvas,

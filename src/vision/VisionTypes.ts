@@ -53,6 +53,9 @@ export interface VisionFrame {
   people: VisionPerson[];
 }
 
+/** A camera frame for a model: the live video on the main thread, or a captured bitmap in a worker. */
+export type VisionSource = HTMLVideoElement | ImageBitmap;
+
 /** A key points record with nothing placed, for models to fill in. */
 export const noKeyPoints = (): KeyPoints => ({
   leftFoot: null,
