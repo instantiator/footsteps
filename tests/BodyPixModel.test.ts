@@ -138,6 +138,7 @@ describe("BodyPixModel", () => {
       internalResolution: DEFAULT_APP_CONFIG.bodypixInternalResolution,
       segmentationThreshold: DEFAULT_APP_CONFIG.bodypixThreshold,
       maxDetections: 3,
+      refineSteps: DEFAULT_APP_CONFIG.bodypixRefineSteps,
     });
     expect(frame).toMatchObject({ width: 3, height: 1, timestamp: 42 });
     expect(frame.people.map(({ id, mask }) => [id, Array.from(mask)])).toEqual([

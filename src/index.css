@@ -1,9 +1,14 @@
+/* The application's own font, as opposed to a game's, which a game sets on its container */
+:root {
+  --app-font: Avenir, Helvetica, Arial, sans-serif;
+}
+
 html,
 body {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: Avenir, Helvetica, Arial, sans-serif;
+  font-family: var(--app-font);
   line-height: 140%;
   font-size: 3vh;
 }

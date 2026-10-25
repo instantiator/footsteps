@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CharacterCanvas from "../src/components/camera/CharacterCanvas";
 import type { FeetPositions } from "../src/components/camera/CameraSupport";
 import type { PlayerFrame } from "../src/components/camera/PlayerMonitor";
+import * as fpsStore from "../src/components/camera/TrackingFpsStore";
 import type { AppConfig } from "../src/config/AppConfig";
 import AppConfigProvider from "../src/providers/AppConfigProvider";
 import { noKeyPoints, type VisionFrame } from "../src/vision/VisionTypes";
@@ -108,6 +109,21 @@ describe("CharacterCanvas", () => {
 
     await waitFor(() => expect(onPlayersChange).toHaveBeenCalledTimes(2));
     expect(container.querySelector("output.vision-stats") !== null).toBe(showStats);
+  });
+
+  it("publishes the tracking frame rate for the HUD, and clears it when tracking stops", async () => {
+    const seen: (number | null)[] = [];
+    const publish = vi.spyOn(fpsStore, "setTrackingFps").mockImplementation((fps) => void seen.push(fps));
+    const onPlayersChange = vi.fn();
+    const { unmount } = renderCanvas({ onPlayersChange });
+    await waitFor(() => expect(onPlayersChange).toHaveBeenCalled());
+    await act(async () => runNextFrame()); // a second frame, so there is an interval to measure
+    await waitFor(() => expect(seen.some((fps) => typeof fps === "number")).toBe(true));
+
+    unmount();
+
+    expect(seen.at(-1)).toBeNull();
+    publish.mockRestore();
   });
 
   it("reports an empty list when nobody is found", async () => {
@@ -223,5 +239,46 @@ describe("CharacterCanvas", () => {
 
     expect(model.createVisionModel).toHaveBeenCalledTimes(1);
     expect(model.dispose).not.toHaveBeenCalled();
+  });
+
+  describe("with the model's input width capped", () => {
+    const bitmap = { close: vi.fn() };
+    const wideVideo = document.createElement("video");
+    Object.defineProperties(wideVideo, { videoWidth: { value: 1280 }, videoHeight: { value: 720 } });
+
+    beforeEach(() => {
+      bitmap.close.mockClear();
+      vi.stubGlobal(
+        "createImageBitmap",
+        vi.fn(async () => bitmap),
+      );
+    });
+
+    const renderWithInputWidth = (video: HTMLVideoElement, visionInputWidth: number) =>
+      render(
+        <MemoryRouter>
+          <AppConfigProvider visionInputWidth={visionInputWidth}>
+            <CharacterCanvas video={video} mediaStream={mediaStream} onPlayersChange={vi.fn()} />
+          </AppConfigProvider>
+        </MemoryRouter>,
+      );
+
+    it("gives the model a copy scaled to that width, keeping the video's shape, and closes it", async () => {
+      renderWithInputWidth(wideVideo, 640);
+      await waitFor(() => expect(model.detect).toHaveBeenCalled());
+
+      expect(createImageBitmap).toHaveBeenCalledWith(
+        wideVideo,
+        expect.objectContaining({ resizeWidth: 640, resizeHeight: 360 }),
+      );
+      expect(model.detect).toHaveBeenCalledWith(bitmap, expect.any(Number));
+      await waitFor(() => expect(bitmap.close).toHaveBeenCalled());
+    });
+
+    it("gives the model the video itself when it is no wider than the cap, or the cap is 0", async () => {
+      renderWithInputWidth(wideVideo, 0);
+      await waitFor(() => expect(model.detect).toHaveBeenCalledWith(wideVideo, expect.any(Number)));
+      expect(createImageBitmap).not.toHaveBeenCalled();
+    });
   });
 });

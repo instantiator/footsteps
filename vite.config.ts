@@ -8,6 +8,9 @@ export default defineConfig({
   plugins: [!process.env.VITEST && reactRouter()],
   // The vision worker is a module worker that loads MediaPipe's runtime with a dynamic import
   worker: { format: "es" },
+  // Scan every source file when the dev server starts: dependencies reached only from routes or the vision worker
+  // were otherwise found mid-page-load, and the re-bundle that followed failed that page's imports
+  optimizeDeps: { entries: ["src/**/*.{ts,tsx}"] },
   test: {
     globals: true,
     environment: "jsdom",

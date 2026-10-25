@@ -8,6 +8,7 @@ import type { VisionFrame } from "../../vision/VisionTypes";
 import { feetOf, type FeetPositions } from "./CameraSupport";
 import { drawPeople, type MaskType } from "./DrawPeople";
 import { frameQuality, FrameStatsRecorder, type FrameStats } from "./FrameStats";
+import { setTrackingFps } from "./TrackingFpsStore";
 import type { PlayerFrame } from "./PlayerMonitor";
 
 /** Props for {@link CharacterCanvas}. */
@@ -99,6 +100,27 @@ const onNextFrame = (video: HTMLVideoElement, callback: () => void): (() => void
   return () => cancelAnimationFrame(handle);
 };
 
+/**
+ * Tracks the people in a video frame, giving the model a scaled-down copy when the video is wider than `inputWidth`.
+ * Masks come back at the size of the frame given, so a smaller frame makes every per-pixel step after the model
+ * cheaper too; the silhouettes are scaled back up when drawn.
+ */
+const detectFrame = async (
+  model: FootstepsVisionModelImplementation,
+  video: HTMLVideoElement,
+  inputWidth: number,
+  timestamp: number,
+): Promise<VisionFrame> => {
+  if (inputWidth <= 0 || video.videoWidth <= inputWidth) return model.detect(video, timestamp);
+  const resizeHeight = Math.round((video.videoHeight * inputWidth) / video.videoWidth);
+  const bitmap = await createImageBitmap(video, { resizeWidth: inputWidth, resizeHeight, resizeQuality: "medium" });
+  try {
+    return await model.detect(bitmap, timestamp);
+  } finally {
+    bitmap.close(); // harmless if the bitmap was handed to a worker
+  }
+};
+
 /** What the tracking loop reports to, and how it draws. */
 type LoopHandlers = Pick<
   CharacterCanvasProps,
@@ -107,6 +129,8 @@ type LoopHandlers = Pick<
   maskType: MaskType;
   /** Keeps player ids stable and smooths key points between frames. */
   smoothing: boolean;
+  /** The widest frame the model is given; see {@link detectFrame}. */
+  inputWidth: number;
   /** Called at most every {@link STATS_INTERVAL_MS} with the loop's speed; omitted when nobody is looking. */
   onStats?: (stats: FrameStats) => void;
 };
@@ -119,7 +143,15 @@ const startTrackingLoop = (
   model: FootstepsVisionModelImplementation,
   video: HTMLVideoElement,
   canvas: HTMLCanvasElement,
-  { offScreenThreshold_percent, onFeetPositionsChange, onPlayersChange, maskType, smoothing, onStats }: LoopHandlers,
+  {
+    offScreenThreshold_percent,
+    onFeetPositionsChange,
+    onPlayersChange,
+    maskType,
+    smoothing,
+    inputWidth,
+    onStats,
+  }: LoopHandlers,
 ): (() => void) => {
   let cancelled = false;
   let cancelFrame: (() => void) | undefined;
@@ -132,15 +164,16 @@ const startTrackingLoop = (
 
   const trackOnce = async () => {
     const timestamp = performance.now();
-    const detected = await model.detect(video, timestamp);
+    const detected = await detectFrame(model, video, inputWidth, timestamp);
     if (cancelled) return; // the model may have been disposed while this frame was tracked
     const inferenceEnd = performance.now();
     recorder.record(timestamp, inferenceEnd);
     const frame = tracker ? tracker.update(detected) : detected;
     const timing = recorder.timing();
-    if (onStats && timing && inferenceEnd - statsShownAt >= STATS_INTERVAL_MS) {
+    if (timing && inferenceEnd - statsShownAt >= STATS_INTERVAL_MS) {
       statsShownAt = inferenceEnd;
-      onStats({ ...timing, ...frameQuality(frame) });
+      setTrackingFps(timing.fps);
+      onStats?.({ ...timing, ...frameQuality(frame) });
     }
     const players = playersOf(frame, offScreenThreshold_percent);
     onPlayersChange?.(players, timestamp);
@@ -166,6 +199,7 @@ const startTrackingLoop = (
   trackFrame();
   return () => {
     cancelled = true;
+    setTrackingFps(null);
     cancelFrame?.();
   };
 };
@@ -206,6 +240,7 @@ export default function CharacterCanvas({
   const modelConfig = useMemo(() => JSON.parse(modelKey) as AppConfig, [modelKey]);
   const model = useVisionModel(loopProps.mediaStream, modelConfig);
   const smoothing = config.visionSmoothing;
+  const inputWidth = config.visionInputWidth;
   const [stats, setStats] = useState<FrameStats | null>(null);
   const internalCanvasRef = useRef<HTMLCanvasElement>(null);
   const canvas = canvasRef ?? internalCanvasRef;
@@ -222,6 +257,7 @@ export default function CharacterCanvas({
       onPlayersChange,
       maskType,
       smoothing,
+      inputWidth,
       onStats,
     };
     return startTrackingLoop(model, video, canvasElement, handlers);
@@ -235,6 +271,7 @@ export default function CharacterCanvas({
     offScreenThreshold_percent,
     maskType,
     smoothing,
+    inputWidth,
     showStats,
   ]);
 

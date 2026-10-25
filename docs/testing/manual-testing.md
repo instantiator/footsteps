@@ -38,7 +38,7 @@ Now add `?debug=true` to the URL and reload.
       appears below the preview.
 - [ ] A readout over the silhouette shows the frame rate, inference time, and the people, hands and
       feet found. With one player standing full length in a lit room, it shows 1 person, 2 hands and
-      2 feet, at 15 fps or more.
+      2 feet, at 10 fps or more.
 - [ ] Small markers show where the camera found each foot.
 - [ ] The console still shows no errors.
 

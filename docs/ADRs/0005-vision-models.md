@@ -30,11 +30,12 @@ leading options were measured.
      silhouette, divided between people by whose skeleton each pixel is nearest.
 3. **BodyPix MobileNetV1 is the default** because it gave the most usable cut-outs across 25 photos: it separated
    groups into distinct people with their legs and feet, and placed the most hands and feet. It slows with large
-   groups (100–200 ms for five or more people).
+   groups. [ADR 0004](0004-vision-optimisations.md) tunes it for the real camera's 720p: 10 fps for one or two
+   people, 5–7 fps for groups.
 
 ## Measurements
 
-`VISION_BENCH=1 scripts/run-browser-tests.sh vision-bench` shows each scene to a fake camera (640×480, 30 fps)
+`VISION_BENCH=1 scripts/run-browser-tests.sh vision-bench` showed each scene to a fake camera (640×480, 30 fps)
 in headless Chromium on an M1 MacBook Pro, with up to ten people allowed. The scenes are an empty room and 25
 photos: indoor rooms, groups of 2–10, children, varied clothing, active poses, busy backgrounds, backlighting
 and motion blur. They are CC0 or US-government public-domain photos from Wikimedia Commons
@@ -123,10 +124,11 @@ it lost most of one person), MediaPipe lite and heavy (no better at finding peop
 ### BodyPix (kept, default)
 
 - **For:** it is the only real-time model that segments each person in a browser out of the box, and its cut-outs
-  were the most usable across 25 photos. MobileNetV1 at stride 16 on WebGPU runs at 10–20 fps for one to three
+  were the most usable across 25 photos. Tuned for a 720p camera (ADR 0004), it runs at 10–13 fps for one or two
   people.
 - **Against:** deprecated by Google since 2023, and loaded from Google's storage. Its per-person split runs on the
-  CPU, so time grows with the number of people: 100–200 ms (5–10 fps) for groups of five or more. It also finds
+  GPU, and each person adds a full-size mask to read back and process, so time grows with the number of people:
+  5–7 fps for groups of four or more at 720p. It also finds
   background people, which a game may not want as players. It lost the small greyscale jumper (as did MediaPipe and MoveNet;
   ResNet50 found them). It ignores `flipHorizontal` for masks, which is fine here because the canvas is mirrored
   with CSS.

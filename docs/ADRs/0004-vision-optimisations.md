@@ -29,12 +29,17 @@ The game adopts these, all set through app config (`.env*`, overridable by URL q
 4. **One frame per camera frame.** The loop follows `requestVideoFrameCallback`, not `requestAnimationFrame`,
    so a 30 fps camera isn't tracked two to four times per frame on a 60–120 Hz display.
 5. **The camera asks for 1280×720** (`VITE_CAMERA_WIDTH`/`HEIGHT`), not the browser's default, usually 640×480.
-6. **A web worker** (`VITE_VISION_WORKER`). Frames go to it as transferred `ImageBitmap`s, and masks come back
+   **The model is given a copy scaled to 960 wide** (`VITE_VISION_INPUT_WIDTH`). Masks come back at the size of the
+   frame given, so this makes every per-pixel step after the model cheaper too. The silhouettes are scaled back up
+   when drawn.
+6. **BodyPix makes 3 passes, not 10, to assign pixels to people** (`VITE_BODYPIX_REFINE_STEPS`). This made no
+   difference to the people, hands and feet found.
+7. **A web worker** (`VITE_VISION_WORKER`). Frames go to it as transferred `ImageBitmap`s, and masks come back
    without copying, so inference and mask building no longer hold up React rendering.
-7. **Temporal smoothing** (`VITE_VISION_SMOOTHING`, `VITE_VISION_STABLE_FRAMES`). A tracker matches people to
+8. **Temporal smoothing** (`VITE_VISION_SMOOTHING`, `VITE_VISION_STABLE_FRAMES`). A tracker matches people to
    the previous frame by silhouette centre, so ids stay stable. A One Euro filter smooths each key point, and an
    interaction must hold for 2 frames before it fires.
-8. **Model settings in config**: architecture, output stride, weight bytes, internal resolution and threshold
+9. **Model settings in config**: architecture, output stride, weight bytes, internal resolution and threshold
    for BodyPix, and the model size for MediaPipe.
 
 ## Measurements
@@ -58,9 +63,33 @@ show the cost with nobody in shot. [ADR 0005](0005-vision-models.md) has the mea
 | WebGPU: ResNet50, stride 16, 2-byte, per-person                       |  7.7 |             97 |
 | WebGPU: MobileNetV1 (0.75), stride 16, 2-byte, per-person             | 22.9 |             23 |
 
-With people in shot, the chosen default (MobileNetV1, stride 16, WebGPU, in the worker) runs at 10–20 fps
-(40–90 ms) for one to three people, and 5–10 fps (100–200 ms) for groups of five or more. The baseline managed
-5–6 fps (144–153 ms) with anyone in shot, and found only one person.
+### At the real camera's resolution
+
+The rows above, and ADR 0005's comparison, used a 640×480 fake camera, but the game asks a real camera for
+1280×720. At 720p, with the 25 photos of people, the default as first chosen (full frame, 10 refinement steps) slowed
+to 4.3 fps (208 ms), and 1.6–2.6 fps for groups of four or more. Options were then benched at 720p
+(`VISION_BENCH_CAMERA` defaults to `1280x720`):
+
+| Setup (BodyPix MobileNetV1 s16, WebGPU, worker, 720p camera) | Hands found | Feet found | Median fps | Median ms |
+| ------------------------------------------------------------ | ----------: | ---------: | ---------: | --------: |
+| Full frame, high internal resolution, 10 refinement steps    |      83/126 |     76/108 |        4.3 |       208 |
+| Input 640 wide                                               |      52/126 |     55/108 |       10.7 |        63 |
+| Medium internal resolution                                   |      71/126 |     68/108 |        4.8 |       182 |
+| 5 refinement steps                                           |      83/126 |     77/108 |        5.6 |       140 |
+| 3 refinement steps                                           |      86/126 |     77/108 |        6.8 |       115 |
+| Input 640 wide, 5 refinement steps                           |      54/126 |     55/108 |       14.9 |        41 |
+| Input 640 wide, medium, 5 refinement steps                   |      18/126 |     40/108 |       15.1 |        40 |
+| Input 960 wide, 5 refinement steps                           |      80/126 |     75/108 |        9.6 |        81 |
+| **Input 960 wide, 3 refinement steps (the default)**         |  **80/126** | **75/108** |   **10.0** |    **68** |
+
+- Fewer refinement steps cost nothing measurable: hands and feet held, and the group screenshots showed no limbs
+  given to the wrong person.
+- A smaller input is the big lever, but 640 wide lost about a third of the hands and feet and merged people in
+  groups. 960 wide kept 96–99% of them.
+- Medium internal resolution was barely faster, and lost hands and feet.
+
+With the default, an empty room runs at 15 fps (38 ms), one or two people at 10–13 fps (50–65 ms), and groups of
+four to ten at 4.6–7.3 fps (100–180 ms).
 
 Where fps × inference falls well short of a second (MobileNetV1 on WebGL: 16.6 × 32 ms ≈ 0.5 s), the rest of each
 frame went to JavaScript pixel loops on the main thread. The worker moves those off it. In the headless bench
@@ -71,12 +100,12 @@ numbers.
 
 | Option                                 | Outcome      | Notes                                                                                                                                                                                                     |
 | -------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Per-person segmentation                | adopted      | Fixes multiple players. Costs CPU time per person (BodyPix's `refineSteps`), so inference grows with the number of people.                                                                                |
+| Per-person segmentation                | adopted      | Fixes multiple players. Each extra person costs another full-size mask to read back and process, so time grows with the number of people.                                                                 |
 | Output stride                          | in config    | Smaller is finer but slower. ResNet50 has only 16/32; MobileNetV1 only 8/16. ResNet50 at stride 16 was 30–45% slower than at 32, and no better in the photos.                                             |
 | Weight bytes (`quantBytes`)            | 2, in config | Smaller downloads and faster; no visible loss at 2.                                                                                                                                                       |
 | Architecture                           | MobileNetV1  | 3–6× faster than ResNet50 here, and the most usable cut-outs across 25 photos ([ADR 0005](0005-vision-models.md)).                                                                                        |
 | Internal resolution                    | in config    | `medium` nearly doubled ResNet50's speed; kept at `high` for mask quality.                                                                                                                                |
-| Camera resolution                      | 1280×720     | More pixels for the mask. Models scale frames down internally, so the cost is mostly in the per-pixel loops.                                                                                              |
+| Camera resolution and model input      | 720p, 960    | More pixels place more hands and feet, but each costs time in every per-pixel step. Scaling the model's copy to 960 wide kept 96–99% of them, at a third of the time.                                     |
 | WebGL vs WebGPU                        | WebGPU       | About 2× faster. The backend must be imported statically: a dynamic import bundled its own `tfjs-core`, which broke the shared engine. Backend switches are serialised, because two loading models raced. |
 | WebNN / Apple Neural Engine            | not adopted  | WebNN is a Chrome origin trial (146–147), and its ONNX Runtime path is Windows-only. Nothing reaches the Neural Engine from a browser yet. Revisit when WebNN ships with a Core ML backend.               |
 | Integer arithmetic                     | already used | Masks are `Uint8Array`s and loops use integer indices. JavaScript JITs already use integers for these, so there is little to gain.                                                                        |
@@ -87,12 +116,12 @@ numbers.
 | Lighting and background                | advice only  | Light players from the front; avoid a bright window behind them. Every model lost backlit people in the photos (1 of 3 found). Plain, contrasting clothing helps the masks.                               |
 | USB accelerators (Coral, Hailo, NCS2)  | not adopted  | Browsers can't reach them (they need native runtimes; WebUSB can't run their drivers). They're also slower than the M1's GPU, and the Intel NCS2 is discontinued.                                         |
 | Remote inference                       | not adopted  | A round trip costs more than a frame, needs a network at the venue, and costs money per frame. None of the "compelling" conditions were met.                                                              |
-| Fewer refinement steps (`refineSteps`) | future       | BodyPix's per-person assignment runs on the CPU and grows with the number of people. Lowering `refineSteps` from 10, or `maxDetections`, would trade mask accuracy for speed with groups.                 |
+| Fewer refinement steps (`refineSteps`) | 3            | BodyPix refines its pixel-to-person assignment on the GPU, 10 times by default. 3 was 45% faster at 720p, with no loss in the bench.                                                                      |
 
 ## Consequences
 
-- The defaults, in `.env`: BodyPix MobileNetV1, stride 16, 2-byte weights, WebGPU, in a worker, with smoothing and
-  2 stable frames. Every setting can be changed per environment, or per visit by URL query, eg.
+- The defaults, in `.env`: BodyPix MobileNetV1, stride 16, 2-byte weights, 3 refinement steps, given frames 960 wide,
+  on WebGPU, in a worker, with smoothing and 2 stable frames. Every setting can be changed per environment, or per visit by URL query, eg.
   `?visionModel=movenet&visionWorker=false`.
 - `?debug=true` shows the frame rate, inference time and people found, over the silhouette.
 - The bench can be repeated for any configuration: set `VISION_BENCH_QUERY` (eg. `&visionModel=mediapipe`).

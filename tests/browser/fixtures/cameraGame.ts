@@ -3,7 +3,7 @@ import type { GameRepository } from "../../../src/entities/GameRepository";
 import { installCameraDrawCounter } from "./cameraDraws";
 import { installFakeCamera } from "./fakeCamera";
 
-/** How long the TensorFlow model may take to download, start, and draw its first frames. */
+/** How long the vision model may take to download, start, and draw its first frames. */
 export const MODEL_TIMEOUT = 120_000;
 
 /** The only game in the repository, patched to switch camera mode on for a test. */
@@ -15,6 +15,12 @@ export interface CameraGameOptions {
   preview?: boolean;
   /** A stage whose shared display turns the camera off. */
   cameraOffStage?: string;
+  /** Appended to the game's URL, eg. "?debug=true". */
+  query?: string;
+  /** Photos for the fake camera to show; see {@link installFakeCamera}. */
+  photos?: Record<string, string>;
+  /** The fake camera's resolution; see {@link installFakeCamera}. */
+  cameraSize?: { width: number; height: number };
 }
 
 /** Intercepts the repository and switches camera mode on, with the options the test needs. */
@@ -36,21 +42,12 @@ const patchRepository = async (page: Page, options: CameraGameOptions): Promise<
   });
 };
 
-/**
- * Loads the game with a fake camera, and motion off so transitions are immediate.
- * @param query appended to the game's URL, eg. "?debug=true"
- * @param photos for the fake camera to show; see {@link installFakeCamera}
- */
-export const openCameraGame = async (
-  page: Page,
-  options: CameraGameOptions = {},
-  query = "",
-  photos: Record<string, string> = {},
-): Promise<void> => {
+/** Loads the game with a fake camera, and motion off so transitions are immediate. */
+export const openCameraGame = async (page: Page, options: CameraGameOptions = {}): Promise<void> => {
   await page.context().grantPermissions(["camera"]);
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await installFakeCamera(page, photos);
+  await installFakeCamera(page, options.photos, options.cameraSize);
   await installCameraDrawCounter(page);
   await patchRepository(page, options);
-  await page.goto(`/game/${GAME_ID}/play${query}`);
+  await page.goto(`/game/${GAME_ID}/play${options.query ?? ""}`);
 };

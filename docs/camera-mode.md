@@ -129,18 +129,21 @@ Camera and vision settings are app config: set per environment in the committed 
 `.env.development`, `.env.test` or `.env.production`), or for one visit by a URL query named after the setting.
 An untracked `.env.local` holds personal overrides. `src/config/AppConfig.ts` documents every setting.
 
-| Setting (`.env` / query)                           | Default       | What it does                                                         |
-| -------------------------------------------------- | ------------- | -------------------------------------------------------------------- |
-| `VITE_DEBUG` / `debug`                             | `false`       | Debugging aids; see [debugging](#debugging)                          |
-| `VITE_VISION_MODEL` / `visionModel`                | `bodypix`     | `bodypix`, `mediapipe` or `movenet`; see ADR 0005                    |
-| `VITE_VISION_BACKEND` / `visionBackend`            | `webgpu`      | tfjs backend for BodyPix and MoveNet; WebGPU falls back to WebGL     |
-| `VITE_VISION_WORKER` / `visionWorker`              | `true`        | Runs the model in a web worker                                       |
-| `VITE_VISION_MAX_PEOPLE` / `visionMaxPeople`       | `4`           | The most players a model looks for                                   |
-| `VITE_VISION_SMOOTHING` / `visionSmoothing`        | `true`        | Stable player ids, smoothed key points, and the stable-frames rule   |
-| `VITE_VISION_STABLE_FRAMES` / `visionStableFrames` | `2`           | Frames an interaction must hold before it fires                      |
-| `VITE_CAMERA_WIDTH`, `VITE_CAMERA_HEIGHT`          | `1280`, `720` | The camera resolution asked for                                      |
-| `VITE_BODYPIX_*` / `bodypix*`                      | MobileNetV1   | Architecture, output stride, weight bytes, resolution, and threshold |
-| `VITE_MEDIAPIPE_VARIANT` / `mediapipeVariant`      | `full`        | MediaPipe Pose's model size: `lite`, `full` or `heavy`               |
+| Setting (`.env` / query)                           | Default                             | What it does                                                           |
+| -------------------------------------------------- | ----------------------------------- | ---------------------------------------------------------------------- |
+| `VITE_DEBUG` / `debug`                             | `false`                             | Debugging aids; see [debugging](#debugging)                            |
+| `VITE_SHOW_FPS` / `showFps`                        | on in development, off in the build | The camera tracking's frame rate in the HUD, while a camera is tracked |
+| `VITE_VISION_MODEL` / `visionModel`                | `bodypix`                           | `bodypix`, `mediapipe` or `movenet`; see ADR 0005                      |
+| `VITE_VISION_BACKEND` / `visionBackend`            | `webgpu`                            | tfjs backend for BodyPix and MoveNet; WebGPU falls back to WebGL       |
+| `VITE_VISION_WORKER` / `visionWorker`              | `true`                              | Runs the model in a web worker                                         |
+| `VITE_VISION_MAX_PEOPLE` / `visionMaxPeople`       | `4`                                 | The most players a model looks for                                     |
+| `VITE_VISION_SMOOTHING` / `visionSmoothing`        | `true`                              | Stable player ids, smoothed key points, and the stable-frames rule     |
+| `VITE_VISION_STABLE_FRAMES` / `visionStableFrames` | `2`                                 | Frames an interaction must hold before it fires                        |
+| `VITE_CAMERA_WIDTH`, `VITE_CAMERA_HEIGHT`          | `1280`, `720`                       | The camera resolution asked for                                        |
+| `VITE_VISION_INPUT_WIDTH` / `visionInputWidth`     | `960`                               | The widest frame the model is given; `0` gives it full size            |
+| `VITE_BODYPIX_REFINE_STEPS` / `bodypixRefineSteps` | `3`                                 | Passes BodyPix makes to assign pixels to people                        |
+| `VITE_BODYPIX_*` / `bodypix*`                      | MobileNetV1                         | Architecture, output stride, weight bytes, resolution, and threshold   |
+| `VITE_MEDIAPIPE_VARIANT` / `mediapipeVariant`      | `full`                              | MediaPipe Pose's model size: `lite`, `full` or `heavy`                 |
 
 For example, `?visionModel=mediapipe&visionWorker=false` tries MediaPipe Pose on the main thread. An invalid
 value is ignored with a console warning. [ADR 0004](ADRs/0004-vision-optimisations.md) and
@@ -281,5 +284,6 @@ VISION_BENCH=1 scripts/run-browser-tests.sh vision-bench
 VISION_BENCH=1 VISION_BENCH_QUERY="&visionModel=mediapipe" scripts/run-browser-tests.sh vision-bench
 ```
 
+The fake webcam is 1280×720, like the real camera (`VISION_BENCH_CAMERA=640x480` changes it).
 `VISION_BENCH_SHOTS=<folder>` also saves each scene's debug view, named `VISION_BENCH_LABEL-<scene>.png`. See [manual testing](testing/manual-testing.md) for what it proves, the
 manual checks with a real camera, and how to debug a failure.

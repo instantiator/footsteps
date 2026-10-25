@@ -5,6 +5,8 @@ export const VISION_MODELS = ["bodypix", "mediapipe", "movenet"] as const;
 export interface AppConfig {
   /** Shows debugging aids. */
   debug: boolean;
+  /** Shows the camera tracking's frame rate in the HUD, while a camera is being tracked. */
+  showFps: boolean;
   /** Which vision model tracks the players. */
   visionModel: (typeof VISION_MODELS)[number];
   /** The tfjs backend for tfjs models (BodyPix, MoveNet); WebGPU falls back to WebGL where unsupported. */
@@ -17,6 +19,8 @@ export interface AppConfig {
   visionSmoothing: boolean;
   /** Frames a body part must stay over an element before the interaction counts. */
   visionStableFrames: number;
+  /** The widest frame the model is given, in pixels; wider camera frames are scaled down first. 0 gives every frame at full size. */
+  visionInputWidth: number;
   /** The camera resolution to ask for; the camera may give something else. */
   cameraWidth: number;
   /** See {@link AppConfig.cameraWidth}. */
@@ -31,6 +35,8 @@ export interface AppConfig {
   bodypixInternalResolution: "low" | "medium" | "high" | "full";
   /** How confident BodyPix must be (0–1) that a pixel is a person. */
   bodypixThreshold: number;
+  /** How many passes BodyPix makes to assign pixels to people: fewer is faster, but may give one person's limb to another. */
+  bodypixRefineSteps: number;
   /** MediaPipe Pose Landmarker's model size: lite is fastest, heavy most accurate. */
   mediapipeVariant: "lite" | "full" | "heavy";
 }
@@ -38,12 +44,14 @@ export interface AppConfig {
 /** The settings used when the environment does not give one. */
 export const DEFAULT_APP_CONFIG: AppConfig = {
   debug: false,
+  showFps: false,
   visionModel: "bodypix",
   visionBackend: "webgpu",
   visionWorker: true,
   visionMaxPeople: 4,
   visionSmoothing: true,
   visionStableFrames: 2,
+  visionInputWidth: 960,
   cameraWidth: 1280,
   cameraHeight: 720,
   bodypixArchitecture: "MobileNetV1",
@@ -51,6 +59,7 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   bodypixQuantBytes: 2,
   bodypixInternalResolution: "high",
   bodypixThreshold: 0.65,
+  bodypixRefineSteps: 3,
   mediapipeVariant: "full",
 };
 
@@ -83,12 +92,14 @@ const oneOf =
 /** How each setting is read. */
 const PARSERS: { [K in keyof AppConfig]: Parser<AppConfig[K]> } = {
   debug: bool,
+  showFps: bool,
   visionModel: oneOf(...VISION_MODELS),
   visionBackend: oneOf("webgl", "webgpu"),
   visionWorker: bool,
   visionMaxPeople: int(1),
   visionSmoothing: bool,
   visionStableFrames: int(1),
+  visionInputWidth: int(0),
   cameraWidth: int(1),
   cameraHeight: int(1),
   bodypixArchitecture: oneOf("ResNet50", "MobileNetV1"),
@@ -96,6 +107,7 @@ const PARSERS: { [K in keyof AppConfig]: Parser<AppConfig[K]> } = {
   bodypixQuantBytes: oneOf(1, 2, 4),
   bodypixInternalResolution: oneOf("low", "medium", "high", "full"),
   bodypixThreshold: fraction,
+  bodypixRefineSteps: int(1),
   mediapipeVariant: oneOf("lite", "full", "heavy"),
 };
 

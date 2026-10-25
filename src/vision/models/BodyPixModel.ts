@@ -132,6 +132,7 @@ export class BodyPixModel extends FootstepsVisionModelImplementation {
         internalResolution: this.config.bodypixInternalResolution,
         segmentationThreshold: this.config.bodypixThreshold,
         maxDetections: this.config.visionMaxPeople,
+        refineSteps: this.config.bodypixRefineSteps,
       });
       const people = segmentations.map((segmentation, id) => personFromParts(id, segmentation));
       return { ...sourceSize(source), timestamp, people };

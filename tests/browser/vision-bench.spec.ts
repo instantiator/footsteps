@@ -38,7 +38,8 @@ const sample = async (page: Page, readout: Locator): Promise<Record<(typeof MEAS
 
 // Only runs when asked, as it measures rather than checks: VISION_BENCH=1 scripts/run-browser-tests.sh vision-bench
 // VISION_BENCH_QUERY adds config (eg. "&visionModel=mediapipe"); VISION_BENCH_SHOTS saves each scene's debug view
-// to that folder, named VISION_BENCH_LABEL-<scene>.png
+// to that folder, named VISION_BENCH_LABEL-<scene>.png; VISION_BENCH_CAMERA sets the fake camera's size, eg. 640x480
+// (by default 1280x720, the resolution the game asks a real camera for)
 test.skip(!process.env.VISION_BENCH, "set VISION_BENCH=1 to run the vision benchmark");
 
 test("measures the vision loop on an empty room and on photos of people", async ({ page }) => {
@@ -46,7 +47,12 @@ test("measures the vision loop on an empty room and on photos of people", async 
   test.setTimeout(MODEL_TIMEOUT + scenes.length * (SETTLE_MS + SAMPLES * 1000 + 5000));
   const query = process.env.VISION_BENCH_QUERY ?? "";
   await page.setViewportSize({ width: 1280, height: 800 });
-  await openCameraGame(page, {}, `?debug=true${BENCH_QUERY}${query}`, peoplePhotoUrls());
+  const [width, height] = (process.env.VISION_BENCH_CAMERA ?? "1280x720").split("x").map(Number);
+  await openCameraGame(page, {
+    query: `?debug=true${BENCH_QUERY}${query}`,
+    photos: peoplePhotoUrls(),
+    cameraSize: { width, height },
+  });
   const readout = page.locator("output.vision-stats");
   await expect(readout).toBeVisible({ timeout: MODEL_TIMEOUT });
 

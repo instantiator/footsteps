@@ -24,8 +24,8 @@ permission and preview behave the same in every browser. The manual script in
 **Act when:** a game ships with camera mode on, or a tester reports the silhouette or interactions
 behaving differently from the fake-camera suite. Run the manual script on at least two machines, with
 different lighting and a second player, and record the results. Include the vision defaults chosen in
-ADR 0005 (BodyPix MobileNetV1, WebGPU, in a worker): check the debug readout shows 2 hands and 2 feet per
-full-length player at 15 fps or more, and compare `?visionModel=movenet` in the same room.
+ADRs 0004 and 0005 (BodyPix MobileNetV1, frames 960 wide, 3 refinement steps, WebGPU, in a worker): check the debug readout shows 2 hands and 2 feet per
+full-length player at 10 fps or more, and compare `?visionModel=movenet` in the same room.
 
 ## Browser suite depends on downloading the vision models
 
@@ -37,15 +37,15 @@ makes it fail before any assertion.
 **Act when:** the suite should run in CI, or a run fails only because a model download timed out. Then
 vendor the model files and add a CI job with a GPU or a longer timeout.
 
-## Groups of five or more slow BodyPix down
+## Groups of four or more slow BodyPix down
 
-BodyPix assigns pixels to people on the CPU, so its time grows with the number of people: 40–90 ms for one to
-three, but 100–200 ms (5–10 fps) for five or more in the vision bench. Its `refineSteps` (10 by default) and
-`maxDetections` set how much work that is.
+Each extra person adds a full-size mask for BodyPix to read back and process, so its time grows with the number of
+people. With the 720p tuning (frames 960 wide, 3 refinement steps; ADR 0004), the vision bench runs one or two people
+at 10–13 fps but groups of four to ten at 4.6–7.3 fps.
 
-**Act when:** a game is meant for five or more players at once, or a real-camera session drops below 10 fps.
-Then expose `refineSteps` in the config and bench lower values with
-`VISION_BENCH=1 scripts/run-browser-tests.sh vision-bench`, comparing the people, hands and feet found.
+**Act when:** a game is meant for four or more players at once, or a real-camera session drops below 8 fps with
+a group. Then bench input widths between 640 and 960 with `VISION_BENCH_QUERY="&visionInputWidth=800"`, or cap
+`visionMaxPeople` at the game's player count, comparing the hands and feet found in the group photos.
 
 ## MoveNet key points with BodyPix silhouettes
 
