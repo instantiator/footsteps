@@ -1,8 +1,11 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { setTrackingFps } from "../src/components/camera/TrackingFpsStore";
 import HeadsUpDisplay from "../src/components/core/HeadsUpDisplay";
+import { ENV_APP_CONFIG } from "../src/config/AppConfig";
 import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
+import { AppConfigContext } from "../src/providers/AppConfigContext";
 import { GameStateContext } from "../src/providers/GameStateContext";
 import { simpleGameData } from "./data/SampleGameState";
 import { smallGame } from "./data/SmallGame";
@@ -133,5 +136,36 @@ describe("HeadsUpDisplay", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Full screen" }));
     expect(warn).toHaveBeenCalledOnce();
+  });
+});
+
+describe("HeadsUpDisplay frame rate", () => {
+  afterEach(() => act(() => setTrackingFps(null)));
+
+  /** The HUD over the title screen, with `showFps` as given. */
+  const renderHud = (showFps: boolean) =>
+    render(
+      <AppConfigContext.Provider value={{ ...ENV_APP_CONFIG, showFps }}>
+        <Harness initial={titleState} />
+      </AppConfigContext.Provider>,
+    );
+
+  const indicator = () => screen.queryByLabelText("Camera tracking frame rate");
+
+  it("shows the tracking frame rate, in whole frames, while a camera is tracked", () => {
+    renderHud(true);
+    expect(indicator()).toBeNull(); // no camera yet
+
+    act(() => setTrackingFps(12.4));
+    expect(indicator()).toHaveTextContent("12 fps");
+
+    act(() => setTrackingFps(null));
+    expect(indicator()).toBeNull();
+  });
+
+  it("hides the frame rate when the setting is off", () => {
+    renderHud(false);
+    act(() => setTrackingFps(12));
+    expect(indicator()).toBeNull();
   });
 });

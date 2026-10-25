@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
+import type { AppConfig } from "../../src/config/AppConfig";
 import { MemoryRouter } from "react-router";
 import type { GameId } from "../../src/entities/data/GameData";
 import type { GameRepository } from "../../src/entities/GameRepository";
-import FeatureFlagsProvider from "../../src/providers/FeatureFlagsProvider";
+import AppConfigProvider from "../../src/providers/AppConfigProvider";
 import { GameDataProvider } from "../../src/providers/GameDataProvider";
 import GameMusicProvider from "../../src/providers/GameMusicProvider";
 import GameRepositoryProvider from "../../src/providers/GameRepositoryProvider";
@@ -13,14 +14,16 @@ interface GameProvidersProps {
   repository: GameRepository;
   gameId: GameId;
   debug?: boolean;
+  /** App config overrides, on top of `.env.test`. */
+  config?: Partial<AppConfig>;
   children: ReactNode;
 }
 
 /** The real provider stack a game runs in, over an in-memory repository and a memory router. */
-export default function GameProviders({ repository, gameId, debug, children }: GameProvidersProps) {
+export default function GameProviders({ repository, gameId, debug, config, children }: GameProvidersProps) {
   return (
     <MemoryRouter>
-      <FeatureFlagsProvider debug={debug}>
+      <AppConfigProvider {...config} debug={debug}>
         <GameRepositoryProvider source={{ type: "RawRepository", repository }}>
           <GameDataProvider id={gameId}>
             <GameStateProvider>
@@ -28,7 +31,7 @@ export default function GameProviders({ repository, gameId, debug, children }: G
             </GameStateProvider>
           </GameDataProvider>
         </GameRepositoryProvider>
-      </FeatureFlagsProvider>
+      </AppConfigProvider>
     </MemoryRouter>
   );
 }

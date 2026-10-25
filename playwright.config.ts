@@ -6,8 +6,8 @@ const PORT = 5180;
 /**
  * Browser tests run the real camera pipeline in Chromium, against a fake webcam feed.
  *
- * They need the Chromium browser (`npx playwright install chromium`) and, on the first run,
- * network access to download the TensorFlow body-segmentation model (about 90 MB).
+ * They need the Chromium browser (`npx playwright install chromium`) and, each run,
+ * network access to download the vision model.
  */
 export default defineConfig({
   testDir: "./tests/browser",
@@ -23,7 +23,8 @@ export default defineConfig({
         // The preview plays a stream without audio; let it start without a user gesture
         "--autoplay-policy=no-user-gesture-required",
         // Headless Chromium defaults to software WebGL; Metal makes segmentation fast enough to test
-        ...(process.platform === "darwin" ? ["--use-angle=metal"] : []),
+        // ...and WebGPU is off unless enabled, which the vision benchmark compares against WebGL
+        ...(process.platform === "darwin" ? ["--use-angle=metal", "--enable-unsafe-webgpu"] : []),
       ],
     },
   },

@@ -18,3 +18,5 @@ Published as HTML at <https://instantiator.dev/footsteps/docs/>, with the API re
 - [0001 Replace vite-react-ssg with React Router framework mode](ADRs/0001-replace-vite-react-ssg-with-react-router-framework-mode.md)
 - [0002 Camera interactions](ADRs/0002-camera-interactions.md)
 - [0003 Save game progress in local storage](ADRs/0003-save-progress-in-local-storage.md)
+- [0004 Vision optimisations](ADRs/0004-vision-optimisations.md)
+- [0005 Vision models](ADRs/0005-vision-models.md)

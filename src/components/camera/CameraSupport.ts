@@ -1,9 +1,14 @@
 import { isDefined } from "../../util/ObjectUtils";
+import type { Point, VisionPerson } from "../../vision/VisionTypes";
 
-/** Asks the player for their webcam; rejects (after logging) if it is refused or unavailable. */
-export const getCameraStream = async () => {
+/**
+ * Asks the player for their webcam; rejects (after logging) if it is refused or unavailable.
+ * @param size the resolution to ask for, which the camera may not give; the camera's default if omitted
+ */
+export const getCameraStream = async (size?: { width: number; height: number }) => {
+  const video = size ? { width: { ideal: size.width }, height: { ideal: size.height } } : true;
   try {
-    return await navigator.mediaDevices.getUserMedia({ video: true });
+    return await navigator.mediaDevices.getUserMedia({ video });
   } catch (err) {
     console.error("Error accessing the camera: ", err);
     throw err;
@@ -83,53 +88,23 @@ export const maskRectForElement = (
   return { left, top, right, bottom };
 };
 
-/** Rows above the lowest opaque row that still count as "feet". */
-const FEET_BAND_ROWS = 20;
-
 /**
- * Locates a person's feet in a segmentation mask: the centre of the opaque pixels
- * in the band just above the mask's lowest opaque row.
+ * Where a person's feet are: midway between the feet the model placed, at the lower foot's height.
  * @param offScreenThreshold_percent feet lower than this (% of height) count as off screen
- * @returns the feet position, or null if there is no person or they are off screen
+ * @returns the feet position, or null if neither foot was placed or they are off screen
  */
-export function findFeet(
-  personMask: Pick<ImageData, "data">,
+export function feetOf(
+  { keyPoints }: Pick<VisionPerson, "keyPoints">,
   width: number,
   height: number,
   offScreenThreshold_percent?: number,
 ): FootPosition | null {
-  const isOpaque = (x: number, y: number) => personMask.data[(y * width + x) * 4 + 3] > 0;
-  const rowHasOpaque = (y: number) => {
-    for (let x = 0; x < width; x++) if (isOpaque(x, y)) return true;
-    return false;
-  };
+  const feet = [keyPoints.leftFoot, keyPoints.rightFoot].filter((foot): foot is Point => foot !== null);
+  if (feet.length === 0 || width <= 0 || height <= 0) return null;
 
-  // Runs on every camera frame, so scan with plain loops rather than allocating arrays
-  let lowestY = height - 1;
-  while (lowestY >= 0 && !rowHasOpaque(lowestY)) lowestY--;
-  if (lowestY < 0) return null;
-
-  const lowestY_percent = (100 * lowestY) / height;
-  if (isDefined(offScreenThreshold_percent) && lowestY_percent > offScreenThreshold_percent) {
-    return null;
-  }
-
-  const centerX = bandCentreX(isOpaque, width, lowestY);
-  if (centerX === null) return null;
-  return { absolute: { x: centerX, y: lowestY }, percent: { x: (100 * centerX) / width, y: lowestY_percent } };
+  const x = feet.reduce((total, foot) => total + foot.x, 0) / feet.length;
+  const y = Math.max(...feet.map((foot) => foot.y));
+  const percent = { x: (100 * x) / width, y: (100 * y) / height };
+  if (isDefined(offScreenThreshold_percent) && percent.y > offScreenThreshold_percent) return null;
+  return { absolute: { x, y }, percent };
 }
-
-/** Mean x of the opaque pixels in the feet band ending at lowestY, or null if there are none. */
-const bandCentreX = (isOpaque: (x: number, y: number) => boolean, width: number, lowestY: number): number | null => {
-  let total = 0;
-  let count = 0;
-  for (let y = lowestY; y > lowestY - FEET_BAND_ROWS && y >= 0; y--) {
-    for (let x = 0; x < width; x++) {
-      if (isOpaque(x, y)) {
-        total += x;
-        count++;
-      }
-    }
-  }
-  return count === 0 ? null : total / count;
-};

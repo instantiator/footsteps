@@ -34,7 +34,11 @@ Open <http://localhost:5173/game/magic-trifle>.
 
 Now add `?debug=true` to the URL and reload.
 
-- [ ] The silhouette is tinted by body part, and a colour key appears below the preview.
+- [ ] Each player is tinted, with their head, hands and feet in their own colours, and a colour key
+      appears below the preview.
+- [ ] A readout over the silhouette shows the frame rate, inference time, and the people, hands and
+      feet found. With one player standing full length in a lit room, it shows 1 person, 2 hands and
+      2 feet, at 10 fps or more.
 - [ ] Small markers show where the camera found each foot.
 - [ ] The console still shows no errors.
 
@@ -74,7 +78,7 @@ dispatchEvent(new PopStateEvent("popstate"));
       tracking.
 - [ ] Resizing the window keeps the silhouette tracking, and the layers still line up.
 - [ ] Opening a challenge and returning to the overview keeps the silhouette tracking, and no
-      "disposed" or TensorFlow errors appear.
+      "disposed" or vision-model errors appear.
 
 ## Per-display on, off, and preview
 
@@ -138,7 +142,7 @@ such as `0.2`. Confirm that holding still fires only once, and that moving away 
 
 ## Running the automated browser suite
 
-The suite runs the real TensorFlow pipeline in Chromium against a fake webcam, so it needs no
+The suite runs the real vision pipeline in Chromium against a fake webcam, so it needs no
 physical camera. It is local only, and is not part of CI.
 
 ```bash
@@ -146,12 +150,11 @@ npx playwright install chromium  # once
 scripts/run-browser-tests.sh
 ```
 
-- The first run downloads the BodyPix ResNet50 weights (about 90 MB), so it is slower and needs
-  network access. On Apple Silicon the suite takes about 3–4 minutes; the first test carries most of
-  the model-download cost.
+- Each run downloads the vision model (BodyPix MobileNetV1 by default), so it needs network access.
+  On Apple Silicon the suite takes about 2–3 minutes.
 - The config uses port `5180` and reuses a dev server already running there.
-- On macOS the config enables Metal, because headless Chromium otherwise falls back to software
-  WebGL and segmentation becomes too slow to test.
+- On macOS the config enables Metal and WebGPU, because headless Chromium otherwise falls back to
+  software WebGL and tracking becomes too slow to test.
 - A failure writes a trace under `test-results/`. Open it with
   `npx playwright show-trace test-results/<test>/trace.zip`.
 

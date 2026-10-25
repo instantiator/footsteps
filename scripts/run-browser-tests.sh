@@ -4,7 +4,7 @@
 #
 # Prerequisites:
 #   - Chromium: npx playwright install chromium
-#   - Network access on the first run, for the TensorFlow body-segmentation model (~90 MB)
+#   - Network access, to download the vision model
 #
 # Usage: scripts/run-browser-tests.sh [playwright arguments]
 

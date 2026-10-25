@@ -1,12 +1,13 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentProps, ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import bodyParts from "../src/assets/body-seg-parts.json";
 import type CharacterCamera from "../src/components/camera/CharacterCamera";
 import type CharacterCanvas from "../src/components/camera/CharacterCanvas";
 import type { PlayerFrame } from "../src/components/camera/PlayerMonitor";
 import GameLayersLayout from "../src/components/core/layout/GameLayersLayout";
+import type { AppConfig } from "../src/config/AppConfig";
 import type { GameInteractionTarget } from "../src/entities/data/displays/GameDisplayData";
+import { noKeyPoints } from "../src/vision/VisionTypes";
 import { SMALL_GAME_ID, smallRepository } from "./data/SmallGame";
 import GameProviders from "./helpers/GameProviders";
 import { setReducedMotion } from "./helpers/motion";
@@ -64,31 +65,23 @@ const layers = {
 };
 
 /** The layout under test, in the provider stack a game supplies. */
-const layout = (props: Partial<ComponentProps<typeof GameLayersLayout>> = {}) => (
-  <GameProviders repository={smallRepository} gameId={SMALL_GAME_ID}>
+const layout = (props: Partial<ComponentProps<typeof GameLayersLayout>> = {}, config: Partial<AppConfig> = {}) => (
+  <GameProviders repository={smallRepository} gameId={SMALL_GAME_ID} config={config}>
     <GameLayersLayout gameLayers={layers} camera={{ enabled: false, preview: false }} {...props} />
   </GameProviders>
 );
 
-const renderLayout = (props: Partial<ComponentProps<typeof GameLayersLayout>> = {}) => render(layout(props));
+const renderLayout = (props: Partial<ComponentProps<typeof GameLayersLayout>> = {}, config: Partial<AppConfig> = {}) =>
+  render(layout(props, config));
 
-/** An 8px mask with one opaque body part at the given pixel. */
-const maskWithPart = (value: number, x: number, y: number): PlayerFrame["mask"] => {
+/** A player in an 8px mask whose only pixel is their left hand, at the given pixel; their feet are out of view. */
+const playerWithHandAt = (x: number, y: number): PlayerFrame => {
   const width = 8;
   const height = 8;
-  const data = new Uint8ClampedArray(width * height * 4);
-  const i = (y * width + x) * 4;
-  data[i] = value;
-  data[i + 3] = 255;
-  return { data, width, height };
+  const mask = new Uint8Array(width * height);
+  mask[y * width + x] = 1;
+  return { id: 0, mask, keyPoints: { ...noKeyPoints(), leftHand: { x, y } }, scale: 0, width, height, feet: null };
 };
-
-/** A player whose hand is at the given mask pixel, and whose feet are out of view. */
-const playerWithHandAt = (x: number, y: number): PlayerFrame => ({
-  id: 0,
-  mask: maskWithPart(bodyParts.LEFT_HAND.maskValue, x, y),
-  feet: null,
-});
 
 const stubRect = (element: Element, rect: DOMRect) => vi.spyOn(element, "getBoundingClientRect").mockReturnValue(rect);
 
@@ -433,12 +426,13 @@ describe("GameLayersLayout camera interactions", () => {
   /** Renders the layout with the camera on and the given targets, and returns its canvas. */
   const renderWithCamera = async (
     props: Partial<ComponentProps<typeof GameLayersLayout>> = {},
+    config: Partial<AppConfig> = {},
   ): Promise<{
     container: HTMLElement;
     canvas: HTMLCanvasElement;
     rerender: (ui: ReactElement) => void;
   }> => {
-    const { container, rerender } = renderLayout({ camera: { enabled: true, preview: true }, ...props });
+    const { container, rerender } = renderLayout({ camera: { enabled: true, preview: true }, ...props }, config);
     await screen.findByTestId("canvas");
     return { container, canvas: container.querySelector("canvas")!, rerender };
   };
@@ -461,6 +455,23 @@ describe("GameLayersLayout camera interactions", () => {
     sendPlayers([playerWithHandAt(0, 7)], 900); // outside the element, so the hand then moves in
     sendPlayers([playerWithHandAt(6, 1)]);
 
+    expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith({ elementId: "overview-thing", interaction: "hand" });
+  });
+
+  it("waits for the configured number of frames before reporting an interaction", async () => {
+    const onPlayerInteraction = vi.fn();
+    const { container, canvas } = await renderWithCamera(
+      { interactionTargets: { "overview-thing": { stage: "stage-1", interactions: ["hand"] } }, onPlayerInteraction },
+      { visionSmoothing: true, visionStableFrames: 2 },
+    );
+    stubRect(canvas, new DOMRect(0, 0, 100, 100));
+    stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 50, 50));
+
+    sendPlayers([playerWithHandAt(0, 7)], 900);
+    sendPlayers([playerWithHandAt(6, 1)]);
+    expect(onPlayerInteraction).not.toHaveBeenCalled(); // one frame could be a flicker
+
+    sendPlayers([playerWithHandAt(6, 1)], 1100);
     expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith({ elementId: "overview-thing", interaction: "hand" });
   });
 

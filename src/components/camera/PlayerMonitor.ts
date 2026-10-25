@@ -1,17 +1,19 @@
 import type { GameInteraction } from "../../entities/data/displays/GameDisplayData";
 import { isDefined } from "../../util/ObjectUtils";
-import { BODY_PARTS } from "./BodySegSupport";
+import { BODY_PARTS, BodyPart } from "../../vision/BodyPart";
+import { bodyPartsIn } from "../../vision/VisionQueries";
+import type { VisionPerson } from "../../vision/VisionTypes";
 import type { FootPosition, MaskRect } from "./CameraSupport";
 
 /** Interactions the player monitor can detect through the camera. */
 export type CameraInteraction = Exclude<GameInteraction, "click">;
 
-/** One player, as the camera saw them in a frame. */
-export interface PlayerFrame {
-  /** The player's index in the segmentation. */
-  id: number;
-  /** The player's body-part mask: the red channel holds the part, the alpha channel the body. */
-  mask: Pick<ImageData, "data" | "width" | "height">;
+/** One player, as the camera saw them in a frame: the model's view of them, in a mask of the given size. */
+export interface PlayerFrame extends VisionPerson {
+  /** Mask width, in pixels. */
+  width: number;
+  /** Mask height, in pixels. */
+  height: number;
   /** Where the player's feet are, or null when they are not visible. */
   feet: FootPosition | null;
 }
@@ -37,15 +39,14 @@ export interface MonitorTarget {
 /** Interactions detected from how much of a body part is inside an element. */
 type CoverageInteraction = Exclude<CameraInteraction, "jump">;
 
-/** Mask values counted for each grouped interaction. */
-const PART_GROUPS: Record<Exclude<CoverageInteraction, "body" | "any">, number[]> = {
-  hand: [BODY_PARTS.LEFT_HAND.maskValue, BODY_PARTS.RIGHT_HAND.maskValue],
-  foot: [BODY_PARTS.LEFT_FOOT.maskValue, BODY_PARTS.RIGHT_FOOT.maskValue],
-  head: [BODY_PARTS.LEFT_FACE.maskValue, BODY_PARTS.RIGHT_FACE.maskValue],
+/** The body parts each coverage interaction looks for; any one of them over the element counts. */
+const PART_GROUPS: Record<CoverageInteraction, readonly BodyPart[]> = {
+  hand: [BodyPart.LEFT_HAND, BodyPart.RIGHT_HAND],
+  foot: [BodyPart.LEFT_FOOT, BodyPart.RIGHT_FOOT],
+  head: [BodyPart.HEAD],
+  body: [BodyPart.BODY],
+  any: BODY_PARTS,
 };
-
-/** Every mask value the segmentation model uses for a body part. */
-const BODY_PART_VALUES = Object.values(BODY_PARTS).map((part) => part.maskValue);
 
 /** Vertical speed, in frame heights per second, above which the player counts as moving. */
 const JUMP_SPEED_THRESHOLD = 0.3;
@@ -66,10 +67,8 @@ interface JumpState {
 
 /** What one frame means for a target's coverage. */
 interface TargetCoverage {
-  /** The frame's counts per body part. */
-  totals: Uint32Array;
-  /** The frame's counts per body part inside the target. */
-  inside: Uint32Array;
+  /** The fraction of each body part that is inside the target; parts with none inside are absent. */
+  proportions: Map<BodyPart, number>;
   /** The target's threshold, clamped to the range it means. */
   threshold: number;
 }
@@ -81,62 +80,15 @@ const isCameraInteraction = (value: string): value is CameraInteraction =>
 /** Clamps an authored threshold to the range it means. */
 const clampThreshold = (threshold: number): number => Math.min(Math.max(threshold, 0), 1);
 
-/** Counts the frame's opaque pixels per mask value. */
-const countParts = (mask: PlayerFrame["mask"]): Uint32Array => {
-  const counts = new Uint32Array(256);
-  const { data } = mask;
-  for (let i = 0; i < data.length; i += 4) {
-    if (data[i + 3] > 0) counts[data[i]]++;
-  }
-  return counts;
-};
+/** Whether enough of any of the interaction's body parts is inside the element. */
+const isCovered = (interaction: CoverageInteraction, { proportions, threshold }: TargetCoverage): boolean =>
+  PART_GROUPS[interaction].some((part) => {
+    const proportion = proportions.get(part);
+    return proportion !== undefined && proportion >= threshold;
+  });
 
-/** Counts the opaque pixels per mask value inside the given rectangle. */
-const countPartsInside = (mask: PlayerFrame["mask"], rect: MaskRect): Uint32Array => {
-  const counts = new Uint32Array(256);
-  const { data, width, height } = mask;
-  const left = Math.max(0, rect.left);
-  const top = Math.max(0, rect.top);
-  const right = Math.min(width, rect.right);
-  const bottom = Math.min(height, rect.bottom);
-  for (let y = top; y < bottom; y++) {
-    for (let x = left; x < right; x++) {
-      const i = (y * width + x) * 4;
-      if (data[i + 3] > 0) counts[data[i]]++;
-    }
-  }
-  return counts;
-};
-
-/** Sums the counts for the given mask values. */
-const sumValues = (counts: Uint32Array, values: number[]): number => {
-  let total = 0;
-  for (const value of values) total += counts[value];
-  return total;
-};
-
-/** Sums every count, which is the whole person silhouette. */
-const sumAll = (counts: Uint32Array): number => {
-  let total = 0;
-  for (const count of counts) total += count;
-  return total;
-};
-
-/** Whether enough of a body part is inside the element: some of it, and at least the threshold's fraction. */
-const covers = (inside: number, total: number, threshold: number): boolean => inside > 0 && inside / total >= threshold;
-
-/** Whether the interaction's body part meets the threshold inside the element. */
-const isCovered = (
-  interaction: CoverageInteraction,
-  inside: Uint32Array,
-  totals: Uint32Array,
-  threshold: number,
-): boolean => {
-  if (interaction === "body") return covers(sumAll(inside), sumAll(totals), threshold);
-  if (interaction === "any") return BODY_PART_VALUES.some((value) => covers(inside[value], totals[value], threshold));
-  const values = PART_GROUPS[interaction];
-  return covers(sumValues(inside, values), sumValues(totals, values), threshold);
-};
+/** Marks an interaction that already held when the monitor was armed: it can't fire until it lets go. */
+const ALREADY_HELD = -1;
 
 /** Whether a jump sequence has been running too long to complete. */
 const jumpExpired = (state: JumpState, timestamp: number): boolean =>
@@ -160,8 +112,13 @@ const nextJumpPhase = (phase: JumpPhase, velocity: number): { phase: JumpPhase; 
  */
 export class PlayerMonitor {
   private readonly onEvent: (event: PlayerMonitorEvent) => void;
-  /** Interactions that held on the previous frame, keyed `${elementId}:${interaction}`. */
-  private held = new Set<string>();
+  /** Frames an interaction must hold before it fires. */
+  private readonly stableFrames: number;
+  /**
+   * How many frames in a row each interaction has held, keyed `${elementId}:${interaction}`;
+   * {@link ALREADY_HELD} for one that held before the monitor was armed.
+   */
+  private held = new Map<string, number>();
   /** Whether a frame has been seen, so coverage on later frames can count as beginning. */
   private armed = false;
   /** Jump sequences in progress, by element id. */
@@ -169,9 +126,13 @@ export class PlayerMonitor {
   /** The feet position and time of the previous frame, for measuring vertical speed. */
   private previousFeet: { percentY: number; timestamp: number } | undefined;
 
-  /** @param onEvent called for each interaction that begins */
-  constructor(onEvent: (event: PlayerMonitorEvent) => void) {
+  /**
+   * @param onEvent called for each interaction that begins
+   * @param stableFrames frames an interaction must hold before it fires, so a one-frame flicker doesn't count
+   */
+  constructor(onEvent: (event: PlayerMonitorEvent) => void, stableFrames = 1) {
     this.onEvent = onEvent;
+    this.stableFrames = Math.max(1, stableFrames);
   }
 
   /**
@@ -182,22 +143,21 @@ export class PlayerMonitor {
    * @param timestamp when the frame was taken, in milliseconds
    */
   update(frame: PlayerFrame, targets: Record<string, MonitorTarget>, timestamp: number): void {
-    const totals = countParts(frame.mask);
     const velocity = this.verticalVelocity(frame.feet, timestamp);
-    const held = new Set<string>();
+    const held = new Map<string, number>();
     const jumpIds = new Set<string>();
 
     for (const [elementId, target] of Object.entries(targets)) {
+      const found = bodyPartsIn({ width: frame.width, height: frame.height, timestamp, people: [frame] }, target.rect);
       const coverage: TargetCoverage = {
-        totals,
-        inside: countPartsInside(frame.mask, target.rect),
+        proportions: new Map(found.map(({ part, proportion }) => [part, proportion])),
         threshold: clampThreshold(target.threshold),
       };
       this.reportCovered(elementId, target, coverage, held);
 
       if (target.interactions.includes("jump")) {
         jumpIds.add(elementId);
-        const footCovered = isCovered("foot", coverage.inside, totals, coverage.threshold);
+        const footCovered = isCovered("foot", coverage);
         if (this.advanceJump(elementId, footCovered, velocity, timestamp)) {
           this.onEvent({ elementId, interaction: "jump" });
         }
@@ -211,15 +171,22 @@ export class PlayerMonitor {
     }
   }
 
-  /** Reports each coverage interaction that has just begun (once armed), and remembers those that are holding. */
-  private reportCovered(elementId: string, target: MonitorTarget, coverage: TargetCoverage, held: Set<string>): void {
+  /** Reports each coverage interaction that has held for long enough (once armed), and counts those that are holding. */
+  private reportCovered(
+    elementId: string,
+    target: MonitorTarget,
+    coverage: TargetCoverage,
+    held: Map<string, number>,
+  ): void {
     for (const interaction of target.interactions) {
       if (!isCameraInteraction(interaction) || interaction === "jump") continue;
-      if (!isCovered(interaction, coverage.inside, coverage.totals, coverage.threshold)) continue;
+      if (!isCovered(interaction, coverage)) continue;
 
       const key = `${elementId}:${interaction}`;
-      held.add(key);
-      if (this.armed && !this.held.has(key)) this.onEvent({ elementId, interaction });
+      const previous = this.held.get(key) ?? 0;
+      const streak = !this.armed || previous === ALREADY_HELD ? ALREADY_HELD : previous + 1;
+      held.set(key, streak);
+      if (streak === this.stableFrames) this.onEvent({ elementId, interaction });
     }
   }
 

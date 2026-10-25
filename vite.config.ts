@@ -1,5 +1,4 @@
 import { reactRouter } from "@react-router/dev/vite";
-import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 // https://vitejs.dev/config/
@@ -7,13 +6,11 @@ export default defineConfig({
   base: process.env.BASE_URL ?? "/",
   // The React Router plugin builds the app; vitest compiles JSX itself and must not load it
   plugins: [!process.env.VITEST && reactRouter()],
-  resolve: {
-    alias: {
-      "@mediapipe/selfie_segmentation": fileURLToPath(
-        new URL("./src/shims/mediapipe-selfie-segmentation.ts", import.meta.url),
-      ),
-    },
-  },
+  // The vision worker is a module worker that loads MediaPipe's runtime with a dynamic import
+  worker: { format: "es" },
+  // Scan every source file when the dev server starts: dependencies reached only from routes or the vision worker
+  // were otherwise found mid-page-load, and the re-bundle that followed failed that page's imports
+  optimizeDeps: { entries: ["src/**/*.{ts,tsx}"] },
   test: {
     globals: true,
     environment: "jsdom",

@@ -1,7 +1,7 @@
 import { useParams } from "react-router";
 import GameLanding from "../components/landing/GameLanding";
 import type { GameId } from "../entities/data/GameData";
-import FeatureFlagsProvider from "../providers/FeatureFlagsProvider";
+import AppConfigProvider from "../providers/AppConfigProvider";
 import { GameDataProvider } from "../providers/GameDataProvider";
 import GameRepositoryProvider from "../providers/GameRepositoryProvider";
 
@@ -10,12 +10,12 @@ export default function LocalGameLanding() {
   const { id } = useParams();
 
   return (
-    <FeatureFlagsProvider>
+    <AppConfigProvider>
       <GameRepositoryProvider source={{ type: "LocalRepository", path: "game-repository.json" }}>
         <GameDataProvider id={id as GameId}>
           <GameLanding />
         </GameDataProvider>
       </GameRepositoryProvider>
-    </FeatureFlagsProvider>
+    </AppConfigProvider>
   );
 }

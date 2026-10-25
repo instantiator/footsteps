@@ -1,6 +1,7 @@
 import { useEffect, useRef, type Dispatch, type RefObject, type SetStateAction } from "react";
-import { BODY_PARTS } from "./BodySegSupport";
+import useAppConfig from "../../providers/AppConfigHook";
 import { isDefined } from "../../util/ObjectUtils";
+import { BODY_PART_STYLES } from "../../vision/BodyPart";
 import { getCameraStream } from "./CameraSupport";
 
 /** Props for {@link CharacterCamera}. State is held by the parent, so sibling components can share the video and stream. */
@@ -35,6 +36,7 @@ function useCameraStart(
     setAspect: CharacterCameraProps["onAspectChange"];
   },
 ) {
+  const { cameraWidth: width, cameraHeight: height } = useAppConfig();
   // An abandoned start turns the camera straight off again
   useEffect(() => {
     const element = videoRef.current;
@@ -42,7 +44,7 @@ function useCameraStart(
     let cancelled = false;
     let opened: MediaStream | undefined;
     const start = async () => {
-      opened = await getCameraStream();
+      opened = await getCameraStream({ width, height });
       if (cancelled) return stopTracks(opened);
       element.srcObject = opened;
       await element.play();
@@ -59,7 +61,7 @@ function useCameraStart(
     return () => {
       cancelled = true;
     };
-  }, [videoRef, video, stream, setStream, setAspect, onError]);
+  }, [videoRef, video, stream, setStream, setAspect, onError, width, height]);
 
   // The shared stream's tracks stop when it is replaced or the camera unmounts
   useEffect(() => () => stream && stopTracks(stream), [stream]);
@@ -98,7 +100,7 @@ export default function CharacterCamera({
         playsInline
       />
       {colorKey &&
-        Object.entries(BODY_PARTS).map(([key, part]) => (
+        Object.entries(BODY_PART_STYLES).map(([key, part]) => (
           <div key={`body-part-${key}`} style={{ display: "flex", alignItems: "center", backgroundColor: "#ffffffaa" }}>
             <div
               style={{
@@ -109,9 +111,7 @@ export default function CharacterCamera({
                 border: "solid 1px black",
               }}
             />
-            <span>
-              {part.description} ({part.maskValue})
-            </span>
+            <span>{part.description}</span>
           </div>
         ))}
     </div>

@@ -6,7 +6,7 @@ import type { GameChallengeId } from "../../entities/data/GameChallengeData";
 import type { GameChallengeAnswerValidation } from "../../entities/data/GameChallengeSolution";
 import type { GameStageId } from "../../entities/data/GameStageData";
 import type { GameState } from "../../entities/state/GameState";
-import useFeatureFlags from "../../providers/FeatureFlagsHook";
+import useAppConfig from "../../providers/AppConfigHook";
 import { useGameData } from "../../providers/GameDataHook";
 import useGameMusic from "../../providers/GameMusicHook";
 import { useGameState } from "../../providers/GameStateHook";
@@ -170,7 +170,7 @@ function useInteractionHandlers(gameState: GameState, setGameState: Dispatch<Set
  * along with the click handling, feedback (music, sound effects, rewards) and title screen keys.
  */
 export default function Game() {
-  const { debug } = useFeatureFlags();
+  const { debug } = useAppConfig();
   const { resources } = useGameData();
   const { gameState, setGameState } = useGameState();
   useGameFeedback();

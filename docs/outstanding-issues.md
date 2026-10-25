@@ -16,34 +16,60 @@ TypeScript 7.0.2 is the latest release, but typescript-eslint 8.71.2 (latest) ac
 
 ## Camera mode is not proven on a physical camera
 
-The Playwright suite runs the real TensorFlow pipeline, but against a fake canvas stream. It does
+The Playwright suite runs the real vision pipeline, but against a fake canvas stream and photos. It does
 not prove that a real webcam works, that a real player is segmented accurately, or that the camera
 permission and preview behave the same in every browser. The manual script in
 [`docs/testing/manual-testing.md`](testing/manual-testing.md) covers those checks.
 
 **Act when:** a game ships with camera mode on, or a tester reports the silhouette or interactions
 behaving differently from the fake-camera suite. Run the manual script on at least two machines, with
-different lighting and a second player, and record the results.
+different lighting and a second player, and record the results. Include the vision defaults chosen in
+ADRs 0004 and 0005 (BodyPix MobileNetV1, frames 960 wide, 3 refinement steps, WebGPU, in a worker): check the debug readout shows 2 hands and 2 feet per
+full-length player at 10 fps or more, and compare `?visionModel=movenet` in the same room.
 
-## Browser suite depends on the TensorFlow model download
+## Browser suite depends on downloading the vision models
 
-The first browser run downloads the BodyPix ResNet50 weights (about 90 MB) from the network, and
-headless Chromium needs hardware WebGL to segment fast enough; the config enables Metal on macOS.
-The suite is therefore local only, and a slow or offline network makes it fail before any assertion.
+The browser suite and the vision bench download their models from Google's storage (see "Camera model and
+fonts load from third parties at play time"), and headless Chromium needs the GPU to track fast enough; the
+config enables Metal and WebGPU on macOS. The suite is therefore local only, and a slow or offline network
+makes it fail before any assertion.
 
-**Act when:** the suite should run in CI, or a first run fails only because the model download timed
-out. Then cache or vendor the model files for the tests, and add a CI job with a GPU or a longer
-timeout.
+**Act when:** the suite should run in CI, or a run fails only because a model download timed out. Then
+vendor the model files and add a CI job with a GPU or a longer timeout.
 
-## Players are identified by segmentation index
+## Groups of four or more slow BodyPix down
 
-`usePlayerInteractions` keys monitors by the player's index in the segmentation. If two players
-cross and the model swaps their order, the held and jump state can follow the index rather than the
-person, so one player may inherit the other's state.
+Each extra person adds a full-size mask for BodyPix to read back and process, so its time grows with the number of
+people. With the 720p tuning (frames 960 wide, 3 refinement steps; ADR 0004), the vision bench runs one or two people
+at 10–13 fps but groups of four to ten at 4.6–7.3 fps.
 
-**Act when:** a game supports two players interacting at the same time, or a tester sees an
-interaction fire for the wrong player after they cross. Then track players across frames (for
-example by matching feet positions) and key the monitors by that identity.
+**Act when:** a game is meant for four or more players at once, or a real-camera session drops below 8 fps with
+a group. Then bench input widths between 640 and 960 with `VISION_BENCH_QUERY="&visionInputWidth=800"`, or cap
+`visionMaxPeople` at the game's player count, comparing the hands and feet found in the group photos.
+
+## MoveNet key points with BodyPix silhouettes
+
+MoveNet placed key points quickly and counted people well (28 fps in the bench), but its selfie-segmenter
+silhouettes often missed people further from the camera. A hybrid that takes MoveNet's key points and
+BodyPix's person-only masks might combine the two, at the cost of two models per frame.
+
+**Act when:** BodyPix's frame rate or hand and foot placement isn't good enough in real-camera sessions.
+Then add it as a fourth model behind `FootstepsVisionModelImplementation` and compare it in the bench.
+
+## Other vision models to revisit
+
+- **YOLO26** (pose and instance segmentation, with an official browser package) is AGPL-3.0. **Act when:**
+  an AGPL release of the game, or an Ultralytics licence, is acceptable, and BodyPix misses players.
+- **WebNN** (which could reach the Apple Neural Engine) is a Chrome origin trial only. **Act when:** WebNN
+  ships in stable Chrome or Safari with a Core ML backend.
+
+## Head box is approximate for MediaPipe and MoveNet
+
+Those models give ears and eyes, not the head's outline, so the head's top and bottom come from typical
+proportions (`PoseGeometry.ts`), not the mask.
+
+**Act when:** a game uses `head` interactions with `mediapipe` or `movenet`, and they fire in the wrong place.
+Then measure the head's extent from the mask above the shoulders.
 
 ## Camera interactions are only available on overview displays
 
@@ -135,8 +161,9 @@ message and a link back to the landing page.
 
 ## Camera model and fonts load from third parties at play time
 
-The BodyPix weights (about 90 MB) load from Google's storage when camera mode starts, and the
-game's font from Google Fonts. Offline, or during an outage, the camera shows no silhouette (the
+The vision models load from Google's storage when camera mode starts (BodyPix and MoveNet weights, MediaPipe's
+`.task` and `.tflite` files; MoveNet from Kaggle), and the game's font from Google Fonts. MediaPipe's
+wasm runtime is already bundled with the app. Offline, or during an outage, the camera shows no silhouette (the
 model fails to load and play continues by clicks) and text falls back to another font. Camera
 frames never leave the device.
 

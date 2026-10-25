@@ -1,0 +1,146 @@
+import type { KeyPointName, KeyPoints, Point, VisionFrame, VisionPerson } from "./VisionTypes";
+
+/** One Euro filter settings: below `MIN_CUTOFF_HZ` jitter is smoothed hard; faster motion is followed via `BETA`. */
+const MIN_CUTOFF_HZ = 1;
+/** How much speed (pixels per second) raises the cutoff, so fast moves aren't lagged. */
+const BETA = 0.01;
+/** The cutoff for smoothing the speed itself. */
+const DERIVATIVE_CUTOFF_HZ = 1;
+
+/** The furthest a person's centre may move between frames, as a fraction of the frame width, and still match. */
+const MAX_MATCH_DISTANCE = 0.25;
+
+/** How long a person may go unseen, in milliseconds, before a returning one counts as someone new. */
+const TRACK_TIMEOUT_MS = 500;
+
+/** The smoothing factor for a low-pass filter at the given cutoff, over the given interval. */
+const alpha = (cutoffHz: number, seconds: number): number => {
+  const tau = 1 / (2 * Math.PI * cutoffHz);
+  return 1 / (1 + tau / seconds);
+};
+
+/**
+ * Smooths one coordinate with the One Euro filter (Casiez et al., 2012): steady when still, responsive when moving.
+ */
+export class OneEuroFilter {
+  private value: number | undefined;
+  private speed = 0;
+  private time = 0;
+
+  /**
+   * Filters a new sample.
+   * @param value the raw coordinate
+   * @param timestamp when it was sampled, in milliseconds
+   * @returns the smoothed coordinate
+   */
+  filter(value: number, timestamp: number): number {
+    if (this.value === undefined) {
+      [this.value, this.time] = [value, timestamp];
+      return value;
+    }
+    const seconds = (timestamp - this.time) / 1000;
+    if (seconds <= 0) return this.value;
+
+    const rawSpeed = (value - this.value) / seconds;
+    this.speed += alpha(DERIVATIVE_CUTOFF_HZ, seconds) * (rawSpeed - this.speed);
+    const cutoff = MIN_CUTOFF_HZ + BETA * Math.abs(this.speed);
+    this.value += alpha(cutoff, seconds) * (value - this.value);
+    this.time = timestamp;
+    return this.value;
+  }
+}
+
+/** A person seen in earlier frames. */
+interface Track {
+  id: number;
+  centre: Point;
+  lastSeen: number;
+  /** An x and y filter per key point, reset whenever the point goes missing. */
+  filters: Partial<Record<KeyPointName, [OneEuroFilter, OneEuroFilter]>>;
+}
+
+/** The centre of a person's silhouette, or null if it is empty. */
+const centreOf = ({ mask }: VisionPerson, width: number): Point | null => {
+  let x = 0;
+  let y = 0;
+  let count = 0;
+  for (let i = 0; i < mask.length; i++) {
+    if (mask[i] !== 1) continue;
+    const column = i % width;
+    x += column;
+    y += (i - column) / width;
+    count++;
+  }
+  return count === 0 ? null : { x: x / count, y: y / count };
+};
+
+/** The squared distance between two points. */
+const distanceSquared = (a: Point, b: Point): number => (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
+
+/**
+ * Follows people from frame to frame: each keeps their id while they stay in view, and their key points are smoothed.
+ *
+ * People are matched to the previous frame's greedily, nearest first, by the centres of their silhouettes.
+ */
+export class PersonTracker {
+  private tracks: Track[] = [];
+  private nextId = 0;
+
+  /** The frame with each person's id made stable and their key points smoothed. */
+  update(frame: VisionFrame): VisionFrame {
+    const { width, timestamp } = frame;
+    this.tracks = this.tracks.filter((track) => timestamp - track.lastSeen <= TRACK_TIMEOUT_MS);
+    const centres = frame.people.map((person) => centreOf(person, width));
+    const owners = this.match(centres, width);
+
+    const people = frame.people.map((person, index) => {
+      let track = owners.get(index);
+      if (!track) {
+        track = { id: this.nextId++, centre: centres[index] ?? { x: 0, y: 0 }, lastSeen: timestamp, filters: {} };
+        this.tracks.push(track);
+      }
+      track.centre = centres[index] ?? track.centre;
+      track.lastSeen = timestamp;
+      return { ...person, id: track.id, keyPoints: this.smooth(track, person.keyPoints, timestamp) };
+    });
+    return { ...frame, people };
+  }
+
+  /** Pairs people with existing tracks, nearest first, within reach; returns the track for each matched person. */
+  private match(centres: (Point | null)[], width: number): Map<number, Track> {
+    const reach = (MAX_MATCH_DISTANCE * width) ** 2;
+    const pairs: [person: number, track: Track, distance: number][] = [];
+    centres.forEach((centre, person) => {
+      if (!centre) return;
+      for (const track of this.tracks) {
+        const distance = distanceSquared(centre, track.centre);
+        if (distance <= reach) pairs.push([person, track, distance]);
+      }
+    });
+    pairs.sort((a, b) => a[2] - b[2]);
+
+    const owners = new Map<number, Track>();
+    const taken = new Set<Track>();
+    for (const [person, track] of pairs) {
+      if (owners.has(person) || taken.has(track)) continue;
+      owners.set(person, track);
+      taken.add(track);
+    }
+    return owners;
+  }
+
+  /** Smooths each placed key point with the track's filters; a point that went missing starts afresh. */
+  private smooth(track: Track, keyPoints: KeyPoints, timestamp: number): KeyPoints {
+    const smoothed = { ...keyPoints };
+    for (const name of Object.keys(keyPoints) as KeyPointName[]) {
+      const point = keyPoints[name];
+      if (!point) {
+        delete track.filters[name];
+        continue;
+      }
+      const [fx, fy] = (track.filters[name] ??= [new OneEuroFilter(), new OneEuroFilter()]);
+      smoothed[name] = { x: fx.filter(point.x, timestamp), y: fy.filter(point.y, timestamp) };
+    }
+    return smoothed;
+  }
+}
