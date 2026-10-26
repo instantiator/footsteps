@@ -25,25 +25,7 @@ export type GameDisplayComponentData =
 /** A way a player can interact with an element in a display. */
 export type GameInteraction = "click" | "hand" | "foot" | "body" | "head" | "jump" | "any";
 
-/** What interacting with an element does, and how the player can do it. */
-export interface GameInteractionTarget {
-  /** Stage entered by the interaction. */
-  stage: GameStageId;
-  /** Accepted interactions. Defaults to `["click"]`. */
-  interactions?: GameInteraction[];
-  /**
-   * Fraction of the body part that must be inside the element (0–1).
-   *
-   * @minimum 0
-   * @maximum 1
-   */
-  threshold?: number;
-}
-
-/** The interactions an element accepts when it doesn't name any. */
-export const DEFAULT_INTERACTIONS: readonly GameInteraction[] = ["click"];
-
-/** The fraction of a body part that must be inside an element when it doesn't name a threshold. */
+/** The fraction of a body part that must be inside an element when a rule doesn't name a threshold. */
 export const DEFAULT_INTERACTION_THRESHOLD = 1;
 
 /** Camera mode settings for one display; unset fields fall back to broader displays. */
@@ -209,12 +191,6 @@ export type GameAction =
 /** A display shown when no stage is active. */
 export interface GameOverviewDisplay extends GameDisplayBase {
   purpose: GameOverviewDisplayPurpose;
-  /**
-   * Maps ids of elements in the template to what interacting with them does.
-   *
-   * NB. The name predates camera interactions: a target lists which interactions it accepts.
-   */
-  clickIdToStageId?: { [elementId: string]: GameInteractionTarget };
 }
 
 /** A display shared by all challenges in a stage. */

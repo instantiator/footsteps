@@ -116,19 +116,6 @@ function eachDisplay(game: GameData, visit: (display: GameDisplayBase, path: str
   });
 }
 
-/** Overview elements whose interaction names a stage the game doesn't have, which would fail when used. */
-function stageLinkProblems(game: GameData): ResourceProblem[] {
-  const stageIds = new Set(game.stages.map((stage) => stage.id));
-  return game.displays.flatMap((display, index) =>
-    Object.entries(display.clickIdToStageId ?? {})
-      .filter(([, target]) => !stageIds.has(target.stage))
-      .map(([elementId, target]) => ({
-        path: `displays[${index}].clickIdToStageId.${elementId}.stage`,
-        message: `refers to undefined stage "${target.stage}"`,
-      })),
-  );
-}
-
 /** Collects every resource path, template source and resource name a game refers to. */
 function collectReferences(game: GameData): GameReferences {
   const targets: TargetReference[] = [];
@@ -252,7 +239,7 @@ function createChecker(options: CheckOptions) {
     const { targets, names, problems } = collectReferences(game);
     const checked: CheckCounts = { files: 0, urls: 0, names: 0 };
     const definitions = game.resources ?? {};
-    const found = [...problems, ...stageLinkProblems(game)].map((problem) => ({
+    const found = problems.map((problem) => ({
       ...problem,
       path: at(prefix, problem.path),
     }));
@@ -282,7 +269,7 @@ function createChecker(options: CheckOptions) {
   return checkOne;
 }
 
-/** Checks one game's resource paths, template sources, resource names and stage links. */
+/** Checks one game's resource paths, template sources and resource names. */
 export async function checkGame(game: GameData, options: CheckOptions): Promise<CheckResult> {
   return createChecker(options)(game, "");
 }

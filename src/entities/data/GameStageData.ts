@@ -9,7 +9,7 @@ export type GameStageId = string;
  * A stage may contain more than one challenge, and may group its challenges together.
  */
 export interface GameStageData {
-  /** Unique id for this stage, referenced by `clickIdToStageId` in overview displays. */
+  /** Unique id for this stage, referenced by `enterStage` actions in display rules. */
   id: GameStageId;
 
   /** Displays shown behind this stage's challenges (purpose `shared`). Optional. */

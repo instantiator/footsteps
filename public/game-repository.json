@@ -130,16 +130,7 @@
               }
             ]
           },
-          "camera": { "enabled": true },
-          "clickIdToStageId": {
-            "stages-link-stage-1": { "stage": "stage-1", "interactions": ["click", "hand", "jump"], "threshold": 0.5 },
-            "stages-link-stage-2": { "stage": "stage-2", "interactions": ["click", "hand", "jump"], "threshold": 0.5 },
-            "stages-link-stage-3": { "stage": "stage-3", "interactions": ["click", "hand", "jump"], "threshold": 0.5 },
-            "stages-link-stage-4": { "stage": "stage-4", "interactions": ["click", "hand", "jump"], "threshold": 0.5 },
-            "stages-link-stage-5": { "stage": "stage-5", "interactions": ["click", "hand", "jump"], "threshold": 0.5 },
-            "stages-link-stage-6": { "stage": "stage-6", "interactions": ["click", "hand", "jump"], "threshold": 0.5 },
-            "stages-link-stage-7": { "stage": "stage-7", "interactions": ["click", "hand", "jump"], "threshold": 0.5 }
-          }
+          "camera": { "enabled": true }
         }
       ],
       "stages": [
