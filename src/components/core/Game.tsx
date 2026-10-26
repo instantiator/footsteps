@@ -5,7 +5,7 @@ import type { GameOverviewDisplayPurpose } from "../../entities/data/displays/Ga
 import type { GameChallengeId } from "../../entities/data/GameChallengeData";
 import type { GameChallengeAnswerValidation } from "../../entities/data/GameChallengeSolution";
 import type { GameStageId } from "../../entities/data/GameStageData";
-import type { GameState } from "../../entities/state/GameState";
+import type { DisplayScope, GameState } from "../../entities/state/GameState";
 import useAppConfig from "../../providers/AppConfigHook";
 import { useGameData } from "../../providers/GameDataHook";
 import useGameMusic from "../../providers/GameMusicHook";
@@ -17,12 +17,7 @@ import "./Game.css";
 import GameStylesheets from "./GameStylesheets";
 import GameLayersLayout, { type GameLayers } from "./layout/GameLayersLayout";
 import { resolveCameraMode } from "./logic/CameraModeUtils";
-import {
-  getInteractionTargets,
-  getNewGameStateForClick,
-  getNewGameStateForInteraction,
-  leaveTitleScreen,
-} from "./logic/GameClickUtils";
+import { getInteractionTargets, getNewGameStateForInteraction, leaveTitleScreen } from "./logic/GameClickUtils";
 import { findChallengeState } from "./logic/GameDataUtils";
 import type { DisplayDomEvent } from "./logic/TemplateUtils";
 import { completeChallenge, validateAnswer } from "./logic/GameStateUtils";
@@ -33,6 +28,7 @@ import {
   type LayeredGameDisplayRenderData,
 } from "./logic/RenderDataUtils";
 import { playAudio } from "./sfx/AudioUtils";
+import { useGameRules } from "./GameRulesHook";
 import { useWakeLock } from "./WakeLockHook";
 
 /**
@@ -122,7 +118,7 @@ interface DisplayHandlers {
   /** Submits an answer to a challenge. */
   onAnswer: GameAnswerFunction;
   /** Responds to an event inside a display's template. */
-  onDisplayEvent: (event: DisplayDomEvent) => void;
+  onDisplayEvent: (scope: DisplayScope, event: DisplayDomEvent) => void;
 }
 
 /** One display component per render datum, for the given layer. */
@@ -139,7 +135,7 @@ const createDisplayComponents = (
         render={renderDatum}
         layerHint={layerHint}
         onAnswer={handlers.onAnswer}
-        onDisplayEvent={handlers.onDisplayEvent}
+        onDisplayEvent={(event) => handlers.onDisplayEvent(renderDatum.scope, event)}
       />
     ));
 
@@ -156,14 +152,8 @@ const createLayers = (renderData: LayeredGameDisplayRenderData, handlers: Displa
   };
 };
 
-/** Handlers that move the game on when the player interacts with an element, by click or through the camera. */
+/** Handlers that move the game on when the player interacts with an element through the camera. */
 function useInteractionHandlers(gameState: GameState, setGameState: Dispatch<SetStateAction<GameState>>) {
-  const handleDisplayEvent = ({ kind, target }: DisplayDomEvent) => {
-    if (kind !== "click" || !target.id) return;
-    const newState = getNewGameStateForClick(gameState, target.id);
-    if (isDefined(newState)) setGameState(newState);
-  };
-
   /** Applies a camera interaction the same way as a click on the same element. */
   const handlePlayerInteraction = ({ elementId, interaction }: PlayerMonitorEvent) => {
     const newState = getNewGameStateForInteraction(gameState, elementId, interaction);
@@ -171,31 +161,21 @@ function useInteractionHandlers(gameState: GameState, setGameState: Dispatch<Set
     setGameState(newState);
   };
 
-  return { handleDisplayEvent, handlePlayerInteraction };
+  return { handlePlayerInteraction };
 }
 
 /**
- * The game itself: builds layered render data from the game state, and hands it to {@link GameLayersLayout}
- * along with the click handling, feedback (music, sound effects, rewards) and title screen keys.
+ * The callback function used when an answer is submitted (or tested) by a display component.
+ * Accepts the answer, and if correct, updates the game state to complete the challenge.
+ *
+ * @returns true if the answer is correct (ie. the challenge is completed), or an array of validations.
+ *
+ * NB. Not all incorrect answers result in validations.
+ * An empty array of validation also indicates an incorrect answer.
  */
-export default function Game() {
-  const { debug } = useAppConfig();
-  const { gameId, resources } = useGameData();
+function useAnswerHandler(): GameAnswerFunction {
   const { gameState, setGameState } = useGameState();
-  useGameFeedback();
-  useTitleScreenKeys();
-  useWakeLock(!gameState.stages.every((stage) => stage.completion === "completed"));
-
-  /**
-   * The callback function used when an answer is submitted (or tested) by a display component.
-   * Accepts the answer, and if correct, updates the game state to complete the challenge.
-   *
-   * @returns true if the answer is correct (ie. the challenge is completed), or an array of validations.
-   *
-   * NB. Not all incorrect answers result in validations.
-   * An empty array of validation also indicates an incorrect answer.
-   */
-  const onAnswer: GameAnswerFunction = useCallback(
+  return useCallback(
     (stageId, challengeId, answer): GameChallengeAnswerValidation[] | true => {
       const challengeState = findChallengeState(gameState, stageId, challengeId);
       if (challengeState.succeeded) {
@@ -210,10 +190,25 @@ export default function Game() {
     },
     [gameState, setGameState],
   );
+}
 
+/**
+ * The game itself: builds layered render data from the game state, and hands it to {@link GameLayersLayout}
+ * along with the click handling, feedback (music, sound effects, rewards) and title screen keys.
+ */
+export default function Game() {
+  const { debug } = useAppConfig();
+  const { gameId, resources } = useGameData();
+  const { gameState, setGameState } = useGameState();
+  useGameFeedback();
+  useTitleScreenKeys();
+  useWakeLock(!gameState.stages.every((stage) => stage.completion === "completed"));
+
+  const onAnswer = useAnswerHandler();
   const renderData = useMemo(() => getLayeredRenderData(gameState, resources, gameId), [gameState, resources, gameId]);
   const displayKey = useMemo(() => getDisplayKey(renderData), [renderData]);
-  const { handleDisplayEvent, handlePlayerInteraction } = useInteractionHandlers(gameState, setGameState);
+  const { handlePlayerInteraction } = useInteractionHandlers(gameState, setGameState);
+  const handleDisplayEvent = useGameRules();
   const layers = useMemo(
     () => createLayers(renderData, { onAnswer, onDisplayEvent: handleDisplayEvent }),
     [renderData, onAnswer, handleDisplayEvent],

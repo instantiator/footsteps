@@ -25,6 +25,10 @@ export const smallGame: GameData = {
       component: {
         type: "template",
         data: {},
+        rules: ["stage-1", "stage-2"].map((stageId) => ({
+          on: { interact: "click", target: `#stage-link-${stageId}` },
+          do: [{ enterStage: stageId }],
+        })),
         foregroundTemplate: {
           sourceType: "embedded",
           content:

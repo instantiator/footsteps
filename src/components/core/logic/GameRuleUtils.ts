@@ -3,6 +3,8 @@ import type { GameData, GameId } from "../../../entities/data/GameData";
 import type {
   GameAction,
   GameDisplayBase,
+  GameInteraction,
+  GameInteractTrigger,
   GameRule,
   GameTrigger,
 } from "../../../entities/data/displays/GameDisplayData";
@@ -18,6 +20,7 @@ import {
 import { findChallengeState } from "./GameDataUtils";
 import { completeChallenge, resetChallenge, validateAnswer } from "./GameStateUtils";
 import { getDisplayState, getShownDisplays, type ShownDisplay } from "./RenderDataUtils";
+import { matchTarget, type DisplayDomEvent } from "./TemplateUtils";
 import { isDefined } from "../../../util/ObjectUtils";
 
 /** Every expression in a game's rules, compiled once when the game loads, by source text. */
@@ -303,4 +306,50 @@ export const runWhens = (env: RuleEnvironment, state: GameState, edges: WhenEdge
   }
   console.error(`when rules still firing after ${MAX_WHEN_CHAIN} rounds, so stopped: ${round.fired.join(", ")}`);
   return { state: round.state, edges: whenRound(env, round.state, round.edges, false).edges };
+};
+
+/** The interactions an interact trigger accepts, as a list. */
+export const triggerInteractions = (trigger: GameInteractTrigger): GameInteraction[] =>
+  Array.isArray(trigger.interact) ? trigger.interact : [trigger.interact];
+
+/** Whether a trigger is for this kind of DOM event: one accepting clicks, or naming the animation or transition. */
+const triggerKindMatches = (trigger: GameTrigger, event: DisplayDomEvent): boolean => {
+  if (event.kind === "click") return "interact" in trigger && triggerInteractions(trigger).includes("click");
+  if (event.kind === "animationEnd") return "animationEnd" in trigger && trigger.animationEnd === event.name;
+  return "transitionEnd" in trigger && trigger.transitionEnd === event.name;
+};
+
+/**
+ * Whether a DOM event inside a display fires a rule's trigger: a click on (or inside) an element matching an
+ * interact trigger that accepts clicks, or the end of the named animation or transition on a matching element.
+ * @returns the event the rule fires with, or undefined if it doesn't fire
+ */
+export const matchDisplayEvent = (trigger: GameTrigger, event: DisplayDomEvent): RuleEvent | undefined => {
+  if (!triggerKindMatches(trigger, event) || !("target" in trigger)) return undefined;
+  const element = matchTarget(event, trigger.target);
+  return isDefined(element) ? { id: element.id, interaction: event.kind === "click" ? "click" : "" } : undefined;
+};
+
+/** The shortest gap between `every` firings, so a tiny or zero interval can't flood the game with updates. */
+export const MIN_EVERY_MS = 50;
+
+/**
+ * How long an `every` or `after` rule waits, worked out now: a number, or an expression over the display's state.
+ * @returns milliseconds, or undefined (after logging) if the value isn't a usable number
+ */
+export const ruleDelay = (
+  env: RuleEnvironment,
+  state: GameState,
+  display: ShownDisplay,
+  ruleIndex: number,
+): number | undefined => {
+  const trigger = display.component.rules![ruleIndex].on;
+  const value = "every" in trigger ? trigger.every : "after" in trigger ? trigger.after : undefined;
+  const where = `${display.scope} › rules[${ruleIndex}].on`;
+  const ms = typeof value === "string" ? evaluate({ env, display, event: NO_EVENT }, state, value, where) : value;
+  if (typeof ms !== "number" || !Number.isFinite(ms) || ms < 0) {
+    console.error(`${where}: a duration must be a number of milliseconds, not ${String(ms)}`);
+    return undefined;
+  }
+  return "every" in trigger ? Math.max(ms, MIN_EVERY_MS) : ms;
 };

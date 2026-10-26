@@ -98,7 +98,37 @@
               "backgroundSize": "cover",
               "backgroundPosition": "center"
             },
-            "data": {}
+            "data": {},
+            "rules": [
+              {
+                "on": { "interact": ["click", "hand", "jump"], "target": "#stages-link-stage-1", "threshold": 0.5 },
+                "do": [{ "enterStage": "stage-1" }]
+              },
+              {
+                "on": { "interact": ["click", "hand", "jump"], "target": "#stages-link-stage-2", "threshold": 0.5 },
+                "do": [{ "enterStage": "stage-2" }]
+              },
+              {
+                "on": { "interact": ["click", "hand", "jump"], "target": "#stages-link-stage-3", "threshold": 0.5 },
+                "do": [{ "enterStage": "stage-3" }]
+              },
+              {
+                "on": { "interact": ["click", "hand", "jump"], "target": "#stages-link-stage-4", "threshold": 0.5 },
+                "do": [{ "enterStage": "stage-4" }]
+              },
+              {
+                "on": { "interact": ["click", "hand", "jump"], "target": "#stages-link-stage-5", "threshold": 0.5 },
+                "do": [{ "enterStage": "stage-5" }]
+              },
+              {
+                "on": { "interact": ["click", "hand", "jump"], "target": "#stages-link-stage-6", "threshold": 0.5 },
+                "do": [{ "enterStage": "stage-6" }]
+              },
+              {
+                "on": { "interact": ["click", "hand", "jump"], "target": "#stages-link-stage-7", "threshold": 0.5 },
+                "do": [{ "enterStage": "stage-7" }]
+              }
+            ]
           },
           "camera": { "enabled": true },
           "clickIdToStageId": {
