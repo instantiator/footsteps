@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import type { ComponentProps, ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type CharacterCamera from "../src/components/camera/CharacterCamera";
@@ -86,26 +86,12 @@ const playerWithHandAt = (x: number, y: number): PlayerFrame => {
 const stubRect = (element: Element, rect: DOMRect) => vi.spyOn(element, "getBoundingClientRect").mockReturnValue(rect);
 
 describe("GameLayersLayout", () => {
-  it.each([
-    ["overview-thing", "overview"],
-    ["challenge-thing", "challenges"],
-  ])("reports a click on #%s as coming from the %s layer", (targetId, layerId) => {
-    const onElementClick = vi.fn<(layerId: string, targetId: string) => boolean>();
-    const { container } = renderLayout({ onElementClick });
-    fireEvent.click(container.querySelector(`#${targetId}`)!);
-    expect(onElementClick).toHaveBeenCalledExactlyOnceWith(layerId, targetId);
-  });
-
-  it("ignores clicks on elements with no id", () => {
-    const onElementClick = vi.fn<(layerId: string, targetId: string) => boolean>();
-    renderLayout({
-      onElementClick,
-      gameLayers: {
-        overview: { backgroundLayerNodes: undefined, foregroundLayerNodes: [<span key="n">anonymous</span>] },
-      },
-    });
-    fireEvent.click(screen.getByText("anonymous"));
-    expect(onElementClick).not.toHaveBeenCalled();
+  it("lets pointer events through the display layers, so displays handle their own", () => {
+    const { container } = renderLayout();
+    expect(container.querySelectorAll('[id$="ground-container"]').length).toBeGreaterThan(0);
+    for (const layer of container.querySelectorAll('[id$="ground-container"], [id*="-grid"]')) {
+      expect(layer.className, layer.id).toContain("noClicks");
+    }
   });
 
   it("shows the debug layer only when debugging", () => {

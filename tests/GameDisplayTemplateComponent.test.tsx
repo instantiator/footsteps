@@ -1,8 +1,9 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import GameDisplayTemplateComponent from "../src/components/core/display/GameDisplayTemplateComponent";
+import type { DisplayDomEvent } from "../src/components/core/logic/TemplateUtils";
 import type { GameDisplayTemplateSourceData } from "../src/entities/data/displays/GameDisplayTemplateComponentData";
 import type { GameSource } from "../src/entities/GameSource";
 import GameContentCacheProvider from "../src/providers/GameContentCacheProvider";
@@ -229,5 +230,95 @@ describe("GameDisplayTemplateComponent", () => {
     );
     expect(await screen.findAllByText("shared")).toHaveLength(2);
     expect(fetches).toBe(1);
+  });
+
+  describe("patching in place", () => {
+    const toggle = embedded(
+      '<div id="switch" class="position-{{position}}"></div>{{#if extra}}<p id="extra"></p>{{/if}}',
+    );
+
+    it("keeps an element with the same id when the data changes, so its transitions run", async () => {
+      const { container, rerender } = render(
+        <GameDisplayTemplateComponent templateSource={toggle} templateData={{ position: 1 }} />,
+        { wrapper: Wrapper },
+      );
+      await waitFor(() => expect(container.querySelector("#switch")).not.toBeNull());
+      const before = container.querySelector("#switch");
+
+      rerender(<GameDisplayTemplateComponent templateSource={toggle} templateData={{ position: 2, extra: true }} />);
+
+      await waitFor(() => expect(container.querySelector("#extra")).not.toBeNull());
+      expect(container.querySelector("#switch")).toBe(before);
+      expect(before).toHaveClass("position-2");
+    });
+
+    it("creates a new element when its id changes", async () => {
+      const balloon = embedded('<div id="balloon-{{n}}" class="balloon"></div>');
+      const { container, rerender } = render(
+        <GameDisplayTemplateComponent templateSource={balloon} templateData={{ n: 0 }} />,
+        { wrapper: Wrapper },
+      );
+      await waitFor(() => expect(container.querySelector("#balloon-0")).not.toBeNull());
+      const first = container.querySelector(".balloon");
+
+      rerender(<GameDisplayTemplateComponent templateSource={balloon} templateData={{ n: 1 }} />);
+
+      await waitFor(() => expect(container.querySelector("#balloon-1")).not.toBeNull());
+      expect(container.querySelector(".balloon")).not.toBe(first);
+    });
+  });
+
+  describe("display events", () => {
+    const renderEvents = async () => {
+      const onDisplayEvent = vi.fn<(event: DisplayDomEvent) => void>();
+      const { container } = render(
+        <GameDisplayTemplateComponent
+          templateSource={embedded('<div id="door" role="button" tabindex="0"><span id="knob">o</span></div>')}
+          templateData={{}}
+          scope="overview:game-overview-stages"
+          onDisplayEvent={onDisplayEvent}
+        >
+          <input aria-label="Answer" />
+        </GameDisplayTemplateComponent>,
+        { wrapper: Wrapper },
+      );
+      await waitFor(() => expect(container.querySelector("#knob")).not.toBeNull());
+      const root = container.querySelector('[data-display-scope="overview:game-overview-stages"]')!;
+      return { onDisplayEvent, root, knob: container.querySelector("#knob")!, door: container.querySelector("#door")! };
+    };
+
+    it("passes on clicks, with the element and the container matching stops at", async () => {
+      const { onDisplayEvent, root, knob } = await renderEvents();
+      fireEvent.click(knob);
+      expect(onDisplayEvent).toHaveBeenCalledExactlyOnceWith({ kind: "click", target: knob, root, name: undefined });
+    });
+
+    it("passes on animation and transition ends, with their names", async () => {
+      const { onDisplayEvent, door } = await renderEvents();
+      // jsdom has no AnimationEvent, so React listens for the prefixed name there (browsers send animationend)
+      fireEvent(door, Object.assign(new Event("webkitAnimationEnd", { bubbles: true }), { animationName: "pop" }));
+      fireEvent.transitionEnd(door, { propertyName: "left" });
+      expect(onDisplayEvent.mock.calls.map(([event]) => [event.kind, event.name])).toEqual([
+        ["animationEnd", "pop"],
+        ["transitionEnd", "left"],
+      ]);
+    });
+
+    it("treats Enter and Space on a template button like a click on it", async () => {
+      const { onDisplayEvent, door } = await renderEvents();
+      fireEvent.keyDown(door, { key: "Enter" });
+      fireEvent.keyDown(door, { key: " " });
+      expect(onDisplayEvent.mock.calls.map(([event]) => [event.kind, event.target])).toEqual([
+        ["click", door],
+        ["click", door],
+      ]);
+    });
+
+    it("ignores other keys, and leaves text inputs their own keys", async () => {
+      const { onDisplayEvent, door } = await renderEvents();
+      fireEvent.keyDown(door, { key: "a" });
+      fireEvent.keyDown(screen.getByRole("textbox", { name: "Answer" }), { key: " " });
+      expect(onDisplayEvent).not.toHaveBeenCalled();
+    });
   });
 });

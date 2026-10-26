@@ -24,6 +24,7 @@ import {
   leaveTitleScreen,
 } from "./logic/GameClickUtils";
 import { findChallengeState } from "./logic/GameDataUtils";
+import type { DisplayDomEvent } from "./logic/TemplateUtils";
 import { completeChallenge, validateAnswer } from "./logic/GameStateUtils";
 import {
   getDisplayKey,
@@ -116,11 +117,19 @@ function useTitleScreenKeys() {
   }, [gameState, setGameState]);
 }
 
+/** What the displays call when the player answers, or something happens in a template. */
+interface DisplayHandlers {
+  /** Submits an answer to a challenge. */
+  onAnswer: GameAnswerFunction;
+  /** Responds to an event inside a display's template. */
+  onDisplayEvent: (event: DisplayDomEvent) => void;
+}
+
 /** One display component per render datum, for the given layer. */
 const createDisplayComponents = (
   renderData: (GameDisplayRenderData | undefined)[] | undefined,
   layerHint: LayerHint,
-  onAnswer: GameAnswerFunction,
+  handlers: DisplayHandlers,
 ): ReactNode[] | undefined =>
   renderData
     ?.filter(isDefined)
@@ -129,15 +138,16 @@ const createDisplayComponents = (
         key={`${renderDatum.stageId}-${renderDatum.challengeId}-display-component`}
         render={renderDatum}
         layerHint={layerHint}
-        onAnswer={onAnswer}
+        onAnswer={handlers.onAnswer}
+        onDisplayEvent={handlers.onDisplayEvent}
       />
     ));
 
 /** Background and foreground nodes for the overview, stage, and challenge layers. */
-const createLayers = (renderData: LayeredGameDisplayRenderData, onAnswer: GameAnswerFunction): GameLayers => {
+const createLayers = (renderData: LayeredGameDisplayRenderData, handlers: DisplayHandlers): GameLayers => {
   const layer = (data: (GameDisplayRenderData | undefined)[] | undefined) => ({
-    backgroundLayerNodes: createDisplayComponents(data, "background", onAnswer),
-    foregroundLayerNodes: createDisplayComponents(data, "foreground", onAnswer),
+    backgroundLayerNodes: createDisplayComponents(data, "background", handlers),
+    foregroundLayerNodes: createDisplayComponents(data, "foreground", handlers),
   });
   return {
     overview: layer([renderData.overviewRenderData]),
@@ -148,11 +158,10 @@ const createLayers = (renderData: LayeredGameDisplayRenderData, onAnswer: GameAn
 
 /** Handlers that move the game on when the player interacts with an element, by click or through the camera. */
 function useInteractionHandlers(gameState: GameState, setGameState: Dispatch<SetStateAction<GameState>>) {
-  const handleElementClick = (_layerId: string, elementId: string) => {
-    const newState = getNewGameStateForClick(gameState, elementId);
-    if (!isDefined(newState)) return false;
-    setGameState(newState);
-    return true;
+  const handleDisplayEvent = ({ kind, target }: DisplayDomEvent) => {
+    if (kind !== "click" || !target.id) return;
+    const newState = getNewGameStateForClick(gameState, target.id);
+    if (isDefined(newState)) setGameState(newState);
   };
 
   /** Applies a camera interaction the same way as a click on the same element. */
@@ -162,7 +171,7 @@ function useInteractionHandlers(gameState: GameState, setGameState: Dispatch<Set
     setGameState(newState);
   };
 
-  return { handleElementClick, handlePlayerInteraction };
+  return { handleDisplayEvent, handlePlayerInteraction };
 }
 
 /**
@@ -204,10 +213,13 @@ export default function Game() {
 
   const renderData = useMemo(() => getLayeredRenderData(gameState, resources, gameId), [gameState, resources, gameId]);
   const displayKey = useMemo(() => getDisplayKey(renderData), [renderData]);
-  const layers = useMemo(() => createLayers(renderData, onAnswer), [renderData, onAnswer]);
+  const { handleDisplayEvent, handlePlayerInteraction } = useInteractionHandlers(gameState, setGameState);
+  const layers = useMemo(
+    () => createLayers(renderData, { onAnswer, onDisplayEvent: handleDisplayEvent }),
+    [renderData, onAnswer, handleDisplayEvent],
+  );
   const camera = useMemo(() => resolveCameraMode(gameState.gameData, renderData), [gameState.gameData, renderData]);
   const interactionTargets = useMemo(() => getInteractionTargets(gameState), [gameState]);
-  const { handleElementClick, handlePlayerInteraction } = useInteractionHandlers(gameState, setGameState);
 
   return (
     <div
@@ -232,7 +244,6 @@ export default function Game() {
         gameLayers={layers}
         displayKey={displayKey}
         camera={camera}
-        onElementClick={handleElementClick}
         interactionTargets={interactionTargets}
         onPlayerInteraction={handlePlayerInteraction}
       />

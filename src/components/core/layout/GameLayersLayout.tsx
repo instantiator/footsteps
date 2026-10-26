@@ -35,8 +35,6 @@ interface GameLayersLayoutProps {
   camera: ResolvedCameraMode;
   /** Shows the debug overlay and the camera's colour key. */
   debug?: boolean;
-  /** Called when an element in a layer is clicked; returns whether the click was handled. */
-  onElementClick?: (layerId: string, targetId: string) => boolean;
   /** The elements the camera can interact with, by element id. */
   interactionTargets?: Record<string, GameInteractionTarget>;
   /** Called when a player interacts with an element through the camera. */
@@ -71,9 +69,6 @@ export interface GameLayers {
 /** Camera mode switched off, for when the camera can't start: the game falls back to clicks. */
 const CAMERA_OFF: ResolvedCameraMode = { enabled: false, preview: false };
 
-/** Handles a click or key activation within a layer; `layerIdOverride` replaces the layer's own id as the source. */
-type LayerClickHandler = (event: React.SyntheticEvent<HTMLElement>, layerIdOverride?: string) => void;
-
 /** The given element's width-to-height ratio, if it has a size. */
 const aspectRatioOf = (element: Element | null | undefined): number | undefined => {
   const rect = element?.getBoundingClientRect();
@@ -83,29 +78,16 @@ const aspectRatioOf = (element: Element | null | undefined): number | undefined 
 /** Props for the groups of display layers. */
 interface DisplayLayersProps {
   layers: GameLayers;
-  clickHandler: LayerClickHandler;
 }
 
 /** The overview, stage, and challenge background layers, which sit beneath the camera character. */
-function LowerDisplayLayers({ layers: { overview, stage, challenges }, clickHandler }: DisplayLayersProps) {
+function LowerDisplayLayers({ layers: { overview, stage, challenges } }: DisplayLayersProps) {
   return (
     <>
       <GameLayerWrapper zIndex={1} nodes={[overview?.backgroundLayerNodes]} layer="overview" layerHint="background" />
-      <GameLayerWrapper
-        zIndex={2}
-        nodes={[overview?.foregroundLayerNodes]}
-        clickHandler={clickHandler}
-        layer="overview"
-        layerHint="foreground"
-      />
+      <GameLayerWrapper zIndex={2} nodes={[overview?.foregroundLayerNodes]} layer="overview" layerHint="foreground" />
       <GameLayerWrapper zIndex={3} nodes={[stage?.backgroundLayerNodes]} layer="stage" layerHint="background" />
-      <GameLayerWrapper
-        zIndex={4}
-        nodes={[stage?.foregroundLayerNodes]}
-        clickHandler={clickHandler}
-        layer="stage"
-        layerHint="foreground"
-      />
+      <GameLayerWrapper zIndex={4} nodes={[stage?.foregroundLayerNodes]} layer="stage" layerHint="foreground" />
       <GameLayerWrapper zIndex={5} nodes={challenges?.backgroundLayerNodes} layer="challenges" layerHint="background" />
     </>
   );
@@ -114,7 +96,6 @@ function LowerDisplayLayers({ layers: { overview, stage, challenges }, clickHand
 /** The challenge foreground layer, and the debug overlay when debugging; both sit above the camera. */
 function UpperDisplayLayers({
   layers,
-  clickHandler,
   debug,
   feetPositions,
   cameraEnabled,
@@ -124,18 +105,10 @@ function UpperDisplayLayers({
       <GameLayerWrapper
         zIndex={8}
         nodes={layers.challenges?.foregroundLayerNodes}
-        clickHandler={clickHandler}
         layer="challenges"
         layerHint="foreground"
       />
-      {debug && (
-        <DebugLayerWrapper
-          zIndex={9}
-          clickHandler={clickHandler}
-          feetPositions={feetPositions}
-          cameraEnabled={cameraEnabled}
-        />
-      )}
+      {debug && <DebugLayerWrapper zIndex={9} feetPositions={feetPositions} cameraEnabled={cameraEnabled} />}
     </>
   );
 }
@@ -171,8 +144,6 @@ interface SceneProps {
   show: boolean;
   /** Shows the debug overlay and the camera's colour key. */
   debug?: boolean;
-  /** Handles clicks and key activations within a layer. */
-  clickHandler: LayerClickHandler;
   /** The webcam's video and stream, and what to do when the camera can't start. */
   media: ReturnType<typeof useCameraMedia> & { onCameraError: () => void };
   /** The video's shape, once the camera reports it. */
@@ -196,7 +167,6 @@ function Scene({
   showPreview,
   show,
   debug,
-  clickHandler,
   media,
   aspectRatio,
   setFeetPositions,
@@ -212,7 +182,7 @@ function Scene({
       inert={scene.transitioning}
       aria-busy={scene.transitioning}
     >
-      {show && <LowerDisplayLayers layers={scene.layers} clickHandler={clickHandler} />}
+      {show && <LowerDisplayLayers layers={scene.layers} />}
       {show && scene.camera.enabled && (
         <CharacterCanvasLayerWrapper
           zIndex={6}
@@ -241,7 +211,6 @@ function Scene({
       {show && (
         <UpperDisplayLayers
           layers={scene.layers}
-          clickHandler={clickHandler}
           debug={debug}
           feetPositions={feetPositions}
           cameraEnabled={scene.camera.enabled}
@@ -269,17 +238,6 @@ function useCameraFallback(requested: ResolvedCameraMode) {
   return { camera: failed ? CAMERA_OFF : requested, onCameraError };
 }
 
-/** Calls the game's click handler for elements inside a layer. */
-function useLayerClickHandler(onElementClick: GameLayersLayoutProps["onElementClick"]): LayerClickHandler {
-  return useCallback(
-    (event, layerIdOverride) => {
-      const targetId = (event.target as HTMLElement)?.id;
-      if (targetId) onElementClick?.(layerIdOverride ?? event.currentTarget.id, targetId);
-    },
-    [onElementClick],
-  );
-}
-
 /** The viewport's target shape, and the shape a camera reshape starts from while one is running. */
 const viewportStyle = (scene: SceneTransition<GameLayers>): CSSProperties => {
   const style: CSSProperties & { "--reshape-from"?: string; "--reshape-to"?: string } = {
@@ -298,7 +256,6 @@ export default function GameLayersLayout({
   displayKey = "default",
   camera: requestedCamera,
   debug,
-  onElementClick,
   interactionTargets,
   onPlayerInteraction,
 }: GameLayersLayoutProps) {
@@ -326,8 +283,6 @@ export default function GameLayersLayout({
   // With a camera, wait for its aspect ratio so the layers line up with the video
   const show = !scene.camera.enabled || isDefined(cameraAspectRatio);
 
-  const clickHandler = useLayerClickHandler(onElementClick);
-
   const { canvasRef, handlePlayers } = usePlayerInteractions(
     interactionTargets,
     onPlayerInteraction,
@@ -347,7 +302,6 @@ export default function GameLayersLayout({
         showPreview={showPreview}
         show={show}
         debug={debug}
-        clickHandler={clickHandler}
         media={{ ...media, onCameraError }}
         aspectRatio={cameraAspectRatio}
         setFeetPositions={setFeetPositions}

@@ -1,8 +1,8 @@
 import { Children } from "react";
 
 /**
- * Lays a layer's challenges side by side in equal-width columns. Clicks pass through the grid
- * and its columns to the elements inside them.
+ * Lays a layer's challenges side by side in equal-width columns. Pointer events pass through the grid
+ * and its columns; only what the displays' templates draw takes them.
  */
 export default function GameChallengeGrid({
   className,
@@ -37,7 +37,7 @@ export default function GameChallengeGrid({
           id={`${layer}-${layerHint}-grid-child-${index}`}
           key={`${layer}-${layerHint}-grid-child-${index}`}
           style={{ flexGrow: 1, flexShrink: 1, flexBasis: 0, overflow: "hidden" }}
-          className="childClicksOnly"
+          className="noClicks"
         >
           {child}
         </div>

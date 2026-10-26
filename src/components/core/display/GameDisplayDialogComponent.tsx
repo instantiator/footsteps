@@ -13,6 +13,7 @@ import type { GameAnswerFunction } from "../Game";
 import type { GameTemplateData } from "../logic/RenderDataUtils";
 import { parseLines } from "../logic/TemplateUtils";
 import GameAudioComponent from "./GameAudioComponent";
+import type { DisplayDomEvent } from "../logic/TemplateUtils";
 import type { LayerHint } from "./GameDisplayComponent";
 import GameDisplayTemplateComponent from "./GameDisplayTemplateComponent";
 import GameTextInputComponent, { type GameTextInputComponentProps } from "./GameTextInputComponent";
@@ -42,6 +43,10 @@ export interface GameDisplayDialogComponentProps {
   challengeId?: GameChallengeId;
   /** Called when the player submits an answer on a page. */
   onAnswer?: GameAnswerFunction;
+  /** Identifies the display, so camera rules can find its elements. */
+  scope?: string;
+  /** Called with events inside the dialog's template, for the display's rules. */
+  onDisplayEvent?: (event: DisplayDomEvent) => void;
 }
 
 /** The default template: the text, line by line, in the foreground; nothing (the image) behind it. */
@@ -182,6 +187,8 @@ export default function GameDisplayDialogComponent({
   stageId,
   challengeId,
   onAnswer,
+  scope,
+  onDisplayEvent,
 }: GameDisplayDialogComponentProps) {
   const [solved, setSolved] = useState<boolean>(false);
   const [contentIndex, setContentIndex] = useState<number>(0);
@@ -196,6 +203,8 @@ export default function GameDisplayDialogComponent({
           containerStyle={layerStyle(layerHint, image, margins, containerStyle)}
           templateStyle={{ ...(layerHint === "foreground" && SCROLLING_TEXT_STYLE), ...templateStyle }}
           templateData={{ text: content?.text, lines: parseLines(content?.text), ...templateData }}
+          scope={scope}
+          onDisplayEvent={onDisplayEvent}
         >
           {layerHint === "foreground" && (
             <PageControls

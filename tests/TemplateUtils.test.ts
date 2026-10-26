@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { decorateGameState, parseLines, summariseTemplateSource } from "../src/components/core/logic/TemplateUtils";
+import {
+  decorateGameState,
+  matchTarget,
+  parseLines,
+  summariseTemplateSource,
+} from "../src/components/core/logic/TemplateUtils";
 import type { GameState } from "../src/entities/state/GameState";
 import { simpleGameState } from "./data/SampleGameState";
 
@@ -65,5 +70,38 @@ describe("parseLines", () => {
 
   it("drops blank lines and trims the rest", () => {
     expect(parseLines("  one \n\n   \n\ttwo\t\nthree")).toEqual(["one", "two", "three"]);
+  });
+});
+
+describe("matchTarget", () => {
+  const dom = () => {
+    const root = document.createElement("div");
+    root.className = "lava";
+    root.innerHTML = '<div id="door" class="door"><span id="knob"></span></div><p id="other"></p>';
+    document.body.append(root);
+    return {
+      root,
+      door: root.querySelector("#door")!,
+      knob: root.querySelector("#knob")!,
+      other: root.querySelector("#other")!,
+    };
+  };
+
+  it("matches the target, or its nearest matching ancestor", () => {
+    const { root, door, knob } = dom();
+    expect(matchTarget({ target: door, root }, ".door")).toBe(door);
+    expect(matchTarget({ target: knob, root }, ".door")).toBe(door);
+    expect(matchTarget({ target: knob, root }, "#knob")).toBe(knob);
+  });
+
+  it("matches nothing when no element in the container matches", () => {
+    const { root, other } = dom();
+    expect(matchTarget({ target: other, root }, ".door")).toBeUndefined();
+  });
+
+  it("never matches the container itself, or anything outside it", () => {
+    const { root, knob } = dom();
+    expect(matchTarget({ target: knob, root }, ".lava")).toBeUndefined();
+    expect(matchTarget({ target: knob, root }, "body")).toBeUndefined();
   });
 });

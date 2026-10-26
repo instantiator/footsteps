@@ -44,8 +44,6 @@ export interface LayerNodeProps {
   onPlayersChange?: (players: PlayerFrame[], timestamp: number) => void;
   /** Whether debug aids (colour key, coloured mask) are shown. */
   debug?: boolean;
-  /** Called with clicks on elements in the layer; `layerIdOverride` replaces the layer's own id as the source. */
-  clickHandler?: (event: React.SyntheticEvent<HTMLElement>, layerIdOverride?: string) => void;
   /** The display components to render in the layer, one per grid column. */
   nodes?: ReactNode[];
   /** Whether the game uses the camera. */
@@ -57,30 +55,11 @@ export interface LayerNodeProps {
 }
 
 /**
- * Treats Enter or Space on a focused template element marked `role="button"` like a click on it.
- * Other elements (text inputs, native buttons) keep their own key handling.
- */
-const isTemplateButtonActivation = (event: React.KeyboardEvent<HTMLElement>): boolean =>
-  (event.key === "Enter" || event.key === " ") && (event.target as HTMLElement).getAttribute("role") === "button";
-
-/**
  * A background or foreground layer of the overview, stage or challenges: its display components in a
- * {@link GameChallengeGrid}, with clicks and key presses delegated to the click handler.
+ * {@link GameChallengeGrid}. The layer lets pointer events through; each display handles its own.
  */
-export const GameLayerWrapper = ({ nodes, style, zIndex, clickHandler, layer, layerHint }: LayerNodeProps) => (
-  // Delegates clicks and key presses from elements inside game-authored templates, which are the real controls
-  // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
-  <div
-    id={`${layer!}-${layerHint!}-container`}
-    className="outerStyle noClicks"
-    style={{ ...style, zIndex: zIndex }}
-    onClick={(event) => clickHandler?.(event, layer!)}
-    onKeyDown={(event) => {
-      if (!isTemplateButtonActivation(event)) return;
-      event.preventDefault(); // stop Space scrolling the page
-      clickHandler?.(event, layer!);
-    }}
-  >
+export const GameLayerWrapper = ({ nodes, style, zIndex, layer, layerHint }: LayerNodeProps) => (
+  <div id={`${layer!}-${layerHint!}-container`} className="outerStyle noClicks" style={{ ...style, zIndex: zIndex }}>
     {isDefined(nodes) && (
       <GameChallengeGrid layer={layer!} layerHint={layerHint!} className="innerStyle noClicks">
         {nodes.map((node, index) => (
@@ -122,15 +101,8 @@ export const CharacterCameraLayerWrapper = ({
 );
 
 /** Layer holding the debug overlay: feet markers when the camera is enabled. */
-export const DebugLayerWrapper = ({ style, zIndex, clickHandler, feetPositions, cameraEnabled }: LayerNodeProps) => (
-  // Debug-only overlay that delegates clicks, as GameLayerWrapper does
-  // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-  <div
-    id="debug-overlay-container"
-    className="outerStyle noClicks"
-    onClick={(event) => clickHandler?.(event, undefined)}
-    style={{ ...style, zIndex: zIndex }}
-  >
+export const DebugLayerWrapper = ({ style, zIndex, feetPositions, cameraEnabled }: LayerNodeProps) => (
+  <div id="debug-overlay-container" className="outerStyle noClicks" style={{ ...style, zIndex: zIndex }}>
     {cameraEnabled && <CameraDebugOverlay className="innerStyle childClicksOnly" feetPositions={feetPositions} />}
   </div>
 );
