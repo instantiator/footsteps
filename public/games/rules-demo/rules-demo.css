@@ -1,0 +1,169 @@
+/* The rules demo: each screen fills its display, and positions its pieces in percentages of it */
+.demo-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: system-ui, sans-serif;
+  color: white;
+  text-align: center;
+}
+
+.demo-title-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: linear-gradient(#1d3557, #457b9d);
+  cursor: pointer;
+}
+
+.demo-hint {
+  opacity: 0.8;
+}
+
+.demo-stages {
+  display: flex;
+  justify-content: center;
+  gap: 4cqw;
+}
+
+.demo-stage-link {
+  padding: 2cqh 4cqw;
+  border-radius: 1cqh;
+  background: #e63946;
+  font-size: 4cqh;
+  cursor: pointer;
+}
+
+.demo-stage-link.completed {
+  background: #2a9d8f;
+}
+
+/* The toggle: moves between two positions, animated by a transition as idiomorph keeps the element */
+.demo-switch {
+  position: absolute;
+  width: 8cqw;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #f1c40f;
+  cursor: pointer;
+  transition:
+    left 0.4s ease,
+    top 0.4s ease;
+}
+.demo-switch.position-1 {
+  left: 10%;
+  top: 55%;
+}
+.demo-switch.position-2 {
+  left: 75%;
+  top: 70%;
+}
+
+.demo-sky {
+  background: linear-gradient(#a8dadc, #f1faee);
+}
+
+.demo-score {
+  position: absolute;
+  inset: auto 0 2cqh;
+  margin: 0;
+  font-size: 4cqh;
+  color: #1d3557;
+  text-shadow: 0 0 0.5em white;
+}
+
+/*
+ * A balloon falls (outer), sways (middle) and pops (inner). Popping pauses the fall and sway where they are,
+ * so the pop starts from where the balloon was, and a new balloon (a new id) starts both afresh.
+ */
+.balloon {
+  position: absolute;
+  top: -15%;
+  left: 45%;
+  width: 10%;
+  aspect-ratio: 3 / 4;
+  animation: fall var(--drop-ms) linear forwards;
+}
+.balloon-sway {
+  width: 100%;
+  height: 100%;
+  animation: sway 1.5s ease-in-out infinite alternate;
+}
+.balloon-body {
+  width: 100%;
+  height: 100%;
+  border-radius: 50% 50% 45% 45%;
+  background: radial-gradient(circle at 35% 30%, #ffb3c1, #e63946 60%);
+  cursor: pointer;
+}
+.balloon.popping,
+.balloon.popping .balloon-sway {
+  animation-play-state: paused;
+}
+.balloon.popping .balloon-body {
+  animation: pop 0.3s ease-out forwards;
+}
+@keyframes fall {
+  to {
+    top: 100%;
+  }
+}
+@keyframes sway {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes pop {
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.demo-floor {
+  background: #3d405b;
+}
+
+.lava {
+  position: absolute;
+  width: 20%;
+  height: 12%;
+  border-radius: 40%;
+  background: radial-gradient(#ffd166, #ef476f);
+}
+
+.lava-start {
+  position: absolute;
+  left: 4%;
+  bottom: 4%;
+  width: 14%;
+  height: 12%;
+  display: grid;
+  place-items: center;
+  border-radius: 1cqh;
+  background: #06d6a0;
+  color: #1d3557;
+  font-size: 3cqh;
+}
+
+.lava-door {
+  position: absolute;
+  right: 6%;
+  top: 8%;
+  width: 10%;
+  height: 30%;
+  border-radius: 1cqh 1cqh 0 0;
+  background: #8d5524;
+  pointer-events: none;
+}
+/* Only the door's base counts as reaching it */
+.lava-door-base {
+  position: absolute;
+  inset: 80% 0 0;
+  background: #c68642;
+  pointer-events: auto;
+}
