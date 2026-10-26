@@ -70,7 +70,7 @@ const acceptsInteraction = (target: GameInteractionTarget, interaction: GameInte
   (target.interactions ?? DEFAULT_INTERACTIONS).includes(interaction);
 
 /** Enters the given stage, unless it is locked or already completed. */
-const enterStage = (state: GameState, stageId: string): GameState | undefined => {
+export const enterStage = (state: GameState, stageId: string): GameState | undefined => {
   const stageState = state.stages.find((stage) => stage.stage.id === stageId);
   if (!isDefined(stageState)) {
     throw new Error("Stage state not found for stage id: " + stageId);
