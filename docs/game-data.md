@@ -192,7 +192,7 @@ elements `pointer-events: none` so they don't cover what's beneath them.
 
 Templates are patched in place when state changes, rather than replaced, so CSS transitions and animations carry
 on. An element is matched to its previous self by `id`, so give an `id` to anything that animates or that the
-camera tracks. Changing an element's `id` (eg. `balloon-{{state.balloon}}`) makes a new element, which restarts its
+camera tracks. Changing an element's `id` (eg. `balloon-{{state.balloonIndex}}`) makes a new element, which restarts its
 animations: a simple way to spawn a replacement.
 
 ### Layers

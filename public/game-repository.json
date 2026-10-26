@@ -494,7 +494,7 @@
                     "data": { "target": 10 },
                     "initialState": {
                       "score": 0,
-                      "balloon": 0,
+                      "balloonIndex": 0,
                       "popping": false,
                       "dropMs": 4000,
                       "left": 45,
@@ -517,9 +517,9 @@
                           {
                             "set": {
                               "popping": "false",
-                              "balloon": "state.balloon + 1",
-                              "left": "((state.balloon + 1) * 37) mod 70 + 10",
-                              "colour": "(state.balloon + 1) mod 6"
+                              "balloonIndex": "state.balloonIndex + 1",
+                              "left": "((state.balloonIndex + 1) * 37) mod 70 + 10",
+                              "colour": "(state.balloonIndex + 1) mod 6"
                             }
                           }
                         ]

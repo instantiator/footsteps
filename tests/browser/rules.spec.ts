@@ -88,7 +88,7 @@ test.describe("rules demo", () => {
       challengeOf(game, "balloons").data = { target: 2 };
       challengeOf(game, "balloons").initialState = {
         score: 0,
-        balloon: 0,
+        balloonIndex: 0,
         popping: false,
         dropMs: 2500,
         left: 45,
