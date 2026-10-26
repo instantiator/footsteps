@@ -74,7 +74,8 @@
 }
 
 /*
- * A balloon falls (outer), sways (middle) and pops (inner). Popping pauses the fall and sway where they are,
+ * A balloon falls (outer), sways (middle) and pops (inner). Its column (`left`) comes from the game state, so each new
+ * balloon starts somewhere else. Popping pauses the fall and sway where they are,
  * so the pop starts from where the balloon was, and a new balloon (a new id) starts both afresh.
  */
 .balloon {

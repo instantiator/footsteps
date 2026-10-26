@@ -492,7 +492,7 @@
                   "component": {
                     "type": "template",
                     "data": { "target": 10 },
-                    "initialState": { "score": 0, "balloon": 0, "popping": false, "dropMs": 4000 },
+                    "initialState": { "score": 0, "balloon": 0, "popping": false, "dropMs": 4000, "left": 45 },
                     "resetStateOnShow": true,
                     "rules": [
                       {
@@ -506,7 +506,15 @@
                       },
                       {
                         "on": { "animationEnd": "pop", "target": ".balloon" },
-                        "do": [{ "set": { "popping": "false", "balloon": "state.balloon + 1" } }]
+                        "do": [
+                          {
+                            "set": {
+                              "popping": "false",
+                              "balloon": "state.balloon + 1",
+                              "left": "((state.balloon + 1) * 37) mod 70 + 10"
+                            }
+                          }
+                        ]
                       },
                       { "on": { "when": "state.score >= data.target" }, "do": [{ "completeChallenge": true }] }
                     ],

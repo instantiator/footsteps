@@ -104,6 +104,21 @@ describe("rules demo, played by camera", () => {
     expect($("#score")).toHaveTextContent("1 / 10");
   });
 
+  it("starts each new balloon in a different column", async () => {
+    await start();
+    touch("#stage-link-balloons", "hand");
+    await waitFor(() => expect($("#balloon-0")).not.toBeNull());
+    expect($("#balloon-0")).toHaveStyle({ left: "45%" });
+
+    touch("#balloon-0", "hand");
+    await waitFor(() => expect($("#balloon-0")).toHaveClass("popping"));
+    // jsdom has no AnimationEvent, so React listens for the prefixed name there (browsers send animationend)
+    const popEnd = Object.assign(new Event("webkitAnimationEnd", { bubbles: true }), { animationName: "pop" });
+    act(() => void $("#balloon-0 .balloon-body")!.dispatchEvent(popEnd));
+
+    await waitFor(() => expect($("#balloon-1")).toHaveStyle({ left: "47%" }));
+  });
+
   it("closes the door on lava, opens it at the start, and completes at the door's base", async () => {
     await start();
     touch("#stage-link-lava", "hand");

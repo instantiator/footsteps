@@ -142,7 +142,7 @@ Play it once with the mouse and once with the camera (`?debug=true` shows where 
 - [ ] **State is kept:** move the switch, open a stage, close it again: the switch is where you left it, and
       still is after a reload.
 - [ ] **Balloons:** balloons fall one at a time, swaying. Click one, then pop one with a hand: it bursts where it
-      is, the score goes up, and a new one appears at the top. A balloon that reaches the bottom bursts there with
+      is, the score goes up, and a new one appears at the top, in a different place. A balloon that reaches the bottom bursts there with
       no score. At 10 the stage completes.
 - [ ] **Balloons start afresh:** close the balloons stage partway and open it again: the score is back to 0.
 - [ ] **Lava:** step on a lava pool: the door disappears and the message says to go back. Step on Start: the

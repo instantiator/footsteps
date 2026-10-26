@@ -86,7 +86,7 @@ test.describe("rules demo", () => {
   }) => {
     await openDemo(page, (game) => {
       challengeOf(game, "balloons").data = { target: 2 };
-      challengeOf(game, "balloons").initialState = { score: 0, balloon: 0, popping: false, dropMs: 2500 };
+      challengeOf(game, "balloons").initialState = { score: 0, balloon: 0, popping: false, dropMs: 2500, left: 45 };
     });
     await page.locator("#stage-link-balloons").click();
 
