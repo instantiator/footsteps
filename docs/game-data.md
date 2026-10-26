@@ -115,15 +115,15 @@ A rule has a trigger (`on`), an optional condition (`if`, an expression), and ac
 Rules on displays that aren't showing do nothing. An overview display counts as showing only while no stage is
 open.
 
-| Trigger                                                     | Fires                                                                                 |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `{ "interact": …, "target": "<selector>" }`                 | When any player (or a click) starts interacting with an element matching the selector |
-| `{ "animationEnd": "<name>", "target": "<selector>" }`      | When a CSS animation with that name ends on a matching element                        |
-| `{ "transitionEnd": "<property>", "target": "<selector>" }` | When a CSS transition of that property ends on a matching element                     |
-| `{ "when": "<expression>" }`                                | When the expression turns from false to true, after any change                        |
-| `{ "every": <ms or expression> }`                           | Repeatedly while the display shows; an expression is worked out again each time       |
-| `{ "after": <ms or expression> }`                           | Once, that long after the display is shown                                            |
-| `{ "start": true }`                                         | When the display is shown                                                             |
+| Trigger                                                     | Fires                                                                                   |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `{ "interact": …, "target": "<selector>" }`                 | When any player (or the mouse) starts interacting with an element matching the selector |
+| `{ "animationEnd": "<name>", "target": "<selector>" }`      | When a CSS animation with that name ends on a matching element                          |
+| `{ "transitionEnd": "<property>", "target": "<selector>" }` | When a CSS transition of that property ends on a matching element                       |
+| `{ "when": "<expression>" }`                                | When the expression turns from false to true, after any change                          |
+| `{ "every": <ms or expression> }`                           | Repeatedly while the display shows; an expression is worked out again each time         |
+| `{ "after": <ms or expression> }`                           | Once, that long after the display is shown                                              |
+| `{ "start": true }`                                         | When the display is shown                                                               |
 
 | Action                           | Does                                                                                                    |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------- |
@@ -163,17 +163,21 @@ See [how filtrex works](filtrex.md) for the syntax and why it is safe.
 
 #### Interactions
 
-| Interaction | The player does                                           |
-| ----------- | --------------------------------------------------------- |
-| `click`     | Clicks the element, or focuses it and presses Enter/Space |
-| `hand`      | Puts either hand over the element                         |
-| `foot`      | Puts either foot over the element                         |
-| `head`      | Puts either side of their face over the element           |
-| `body`      | Covers the element with their whole silhouette            |
-| `any`       | Covers it with any single body part                       |
-| `jump`      | Jumps with their feet inside the element                  |
+| Interaction   | The player does                                           |
+| ------------- | --------------------------------------------------------- |
+| `click`       | Clicks the element, or focuses it and presses Enter/Space |
+| `mouse-enter` | Moves the mouse onto the element, from outside it         |
+| `mouse-exit`  | Moves the mouse off the element                           |
+| `hand`        | Puts either hand over the element                         |
+| `foot`        | Puts either foot over the element                         |
+| `head`        | Puts either side of their face over the element           |
+| `body`        | Covers the element with their whole silhouette            |
+| `any`         | Covers it with any single body part                       |
+| `jump`        | Jumps with their feet inside the element                  |
 
-`interact` takes one interaction or a list. `threshold` is the fraction of the body part that must be inside the
+`interact` takes one interaction or a list. Moving the mouse between an element's own parts neither enters nor leaves
+it. `mouse-enter` is a good mouse stand-in for walking onto something with the camera (the lava demo uses it with
+`foot`); pair it with `click` where keyboard players need a way in too. `threshold` is the fraction of the body part that must be inside the
 element (0–1, default `1`). Interactions fire once per approach, and re-arm when the player moves away. The monitor
 and jump sequence are described under [how interactions work](camera-mode.md#how-interactions-work).
 

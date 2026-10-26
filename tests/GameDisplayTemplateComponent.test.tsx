@@ -304,6 +304,16 @@ describe("GameDisplayTemplateComponent", () => {
       ]);
     });
 
+    it("passes on the mouse moving over and out of elements, with where it came from or went to", async () => {
+      const { onDisplayEvent, root, knob, door } = await renderEvents();
+      fireEvent.mouseOver(knob, { relatedTarget: door });
+      fireEvent.mouseOut(knob, { relatedTarget: null });
+      expect(onDisplayEvent.mock.calls.map(([event]) => event)).toEqual([
+        { kind: "mouseOver", target: knob, root, related: door },
+        { kind: "mouseOut", target: knob, root, related: null },
+      ]);
+    });
+
     it("treats Enter and Space on a template button like a click on it", async () => {
       const { onDisplayEvent, door } = await renderEvents();
       fireEvent.keyDown(door, { key: "Enter" });

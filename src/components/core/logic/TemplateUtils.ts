@@ -58,14 +58,16 @@ export const parseLines = (text: string | undefined): string[] => {
 
 /** Something that happened inside a display's template that rules can respond to. */
 export interface DisplayDomEvent {
-  /** A click (or key activation), or the end of a CSS animation or transition. */
-  kind: "click" | "animationEnd" | "transitionEnd";
+  /** A click (or key activation), the mouse moving over or out of an element, or the end of a CSS animation or transition. */
+  kind: "click" | "mouseOver" | "mouseOut" | "animationEnd" | "transitionEnd";
   /** The element the event happened on. */
   target: Element;
   /** The display's template container, where matching stops. */
   root: Element;
   /** The animation's name, or the transitioned property. */
   name?: string;
+  /** For mouse moves: the element the mouse came from (over) or went to (out), if any. */
+  related?: Element | null;
 }
 
 /**

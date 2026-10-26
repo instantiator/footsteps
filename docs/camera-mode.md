@@ -164,15 +164,17 @@ The trigger names the elements (any CSS selector), which interactions it accepts
 must be inside an element. `threshold` defaults to `1`. Any display that is showing can have them, including a
 stage's shared display and its challenges.
 
-| Interaction | Detected from                                      |
-| ----------- | -------------------------------------------------- |
-| `click`     | A mouse click, or Enter/Space on a focused element |
-| `hand`      | Either hand                                        |
-| `foot`      | Either foot                                        |
-| `head`      | The head                                           |
-| `body`      | The whole silhouette                               |
-| `any`       | Any single body part, or the whole silhouette      |
-| `jump`      | The feet's vertical motion, in the sequence below  |
+| Interaction   | Detected from                                      |
+| ------------- | -------------------------------------------------- |
+| `click`       | A mouse click, or Enter/Space on a focused element |
+| `mouse-enter` | The mouse moving onto the element (not the camera) |
+| `mouse-exit`  | The mouse moving off the element (not the camera)  |
+| `hand`        | Either hand                                        |
+| `foot`        | Either foot                                        |
+| `head`        | The head                                           |
+| `body`        | The whole silhouette                               |
+| `any`         | Any single body part, or the whole silhouette      |
+| `jump`        | The feet's vertical motion, in the sequence below  |
 
 A **body part** is a region of the player's silhouette. A hand or foot is a disc around its key point, scaled to
 the player's head; the head is the box its top, bottom and sides span; the body is the whole silhouette. A

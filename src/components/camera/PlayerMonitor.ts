@@ -1,4 +1,4 @@
-import type { GameInteraction } from "../../entities/data/displays/GameDisplayData";
+import type { GameInteraction, PointerInteraction } from "../../entities/data/displays/GameDisplayData";
 import { isDefined } from "../../util/ObjectUtils";
 import { BODY_PARTS, BodyPart } from "../../vision/BodyPart";
 import { bodyPartsIn, partRegion } from "../../vision/VisionQueries";
@@ -6,7 +6,7 @@ import type { Point, VisionPerson } from "../../vision/VisionTypes";
 import type { FootPosition, MaskRect } from "./CameraSupport";
 
 /** Interactions the player monitor can detect through the camera. */
-export type CameraInteraction = Exclude<GameInteraction, "click">;
+export type CameraInteraction = Exclude<GameInteraction, PointerInteraction>;
 
 /** One player, as the camera saw them in a frame: the model's view of them, in a mask of the given size. */
 export interface PlayerFrame extends VisionPerson {

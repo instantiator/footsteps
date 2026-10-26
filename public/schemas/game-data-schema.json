@@ -561,7 +561,9 @@
                                 "foot",
                                 "hand",
                                 "head",
-                                "jump"
+                                "jump",
+                                "mouse-enter",
+                                "mouse-exit"
                             ],
                             "type": "string"
                         }
@@ -594,7 +596,9 @@
                 "foot",
                 "hand",
                 "head",
-                "jump"
+                "jump",
+                "mouse-enter",
+                "mouse-exit"
             ],
             "type": "string"
         },

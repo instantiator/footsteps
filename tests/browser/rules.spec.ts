@@ -35,6 +35,12 @@ const challengeOf = (game: GameData, stageId: string) =>
   game.stages.find((stage) => stage.id === stageId)!.challenges[0].displays[0].component;
 
 /** Clicks the middle of an element wherever it is now, as a moving element is never stable enough to wait for. */
+/** Moves the mouse to the middle of an element, whatever is drawn over it. */
+const moveTo = async (page: Page, selector: string) => {
+  const box = (await page.locator(selector).boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+};
+
 const clickNow = async (page: Page, selector: string) => {
   const box = (await page.locator(selector).boundingBox())!;
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
@@ -120,23 +126,25 @@ test.describe("rules demo", () => {
     await expect(page.locator("#score")).toHaveText("0 / 5");
   });
 
-  test("hides the door on lava, shows it again at the start, and completes at the door", async ({ page }) => {
+  test("hides the door when the mouse walks onto lava, shows it at the start, and completes at the door", async ({
+    page,
+  }) => {
     await openDemo(page);
     await page.locator("#stage-link-lava").click();
     await expect(page.locator("#door")).toBeVisible();
 
-    await page.locator("#lava-1").click();
+    await page.locator("#lava-1").hover();
     await expect(page.locator("#door")).toHaveCount(0);
     await expect(page.locator("#lava-message")).toContainText("Back to the start");
 
-    await page.locator("#start").click();
+    await page.locator("#start").hover();
     await expect(page.locator("#door")).toBeVisible();
 
-    await page.locator("#door-base").click();
+    await page.locator("#door-base").hover();
     await expect(page.locator("#stage-link-lava")).toHaveClass(/completed/);
   });
 
-  test("lets a click through empty foreground to the background, but not through something drawn over it", async ({
+  test("lets the mouse through empty foreground to the background, but not through something drawn over it", async ({
     page,
   }) => {
     await openDemo(page, (game) => {
@@ -153,10 +161,10 @@ test.describe("rules demo", () => {
     await page.locator("#stage-link-lava").click();
     await expect(page.locator("#cover")).toBeVisible();
 
-    await clickNow(page, "#lava-1");
+    await moveTo(page, "#lava-1");
     await expect(page.locator("#door")).toBeVisible();
 
-    await clickNow(page, "#lava-2");
+    await moveTo(page, "#lava-2");
     await expect(page.locator("#door")).toHaveCount(0);
   });
 });

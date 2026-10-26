@@ -538,15 +538,15 @@
                     "resetStateOnShow": true,
                     "rules": [
                       {
-                        "on": { "interact": ["foot", "click"], "target": ".lava", "threshold": 0.3 },
+                        "on": { "interact": ["foot", "mouse-enter"], "target": ".lava", "threshold": 0.3 },
                         "do": [{ "set": { "doorOpen": "false" } }]
                       },
                       {
-                        "on": { "interact": ["foot", "click"], "target": "#start", "threshold": 0.3 },
+                        "on": { "interact": ["foot", "mouse-enter"], "target": "#start", "threshold": 0.3 },
                         "do": [{ "set": { "doorOpen": "true" } }]
                       },
                       {
-                        "on": { "interact": ["foot", "click"], "target": "#door-base", "threshold": 0.3 },
+                        "on": { "interact": ["foot", "mouse-enter"], "target": "#door-base", "threshold": 0.3 },
                         "if": "state.doorOpen",
                         "do": [{ "completeChallenge": true }]
                       }

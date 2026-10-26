@@ -8,7 +8,10 @@ import {
   useMemo,
   useRef,
   useState,
+  type AnimationEvent,
   type KeyboardEvent,
+  type MouseEvent,
+  type TransitionEvent,
   type PropsWithChildren,
   type SyntheticEvent,
 } from "react";
@@ -29,7 +32,7 @@ interface GameDisplayTemplateProps {
   templateStyle?: React.CSSProperties;
   /** Identifies the display this template belongs to, so camera rules can find its elements. */
   scope?: string;
-  /** Called with clicks, key activations, and animation and transition ends inside the template. */
+  /** Called with clicks, key activations, mouse moves, and animation and transition ends inside the template. */
   onDisplayEvent?: (event: DisplayDomEvent) => void;
 }
 
@@ -78,6 +81,32 @@ const isTemplateButtonActivation = (event: KeyboardEvent<HTMLElement>): boolean 
   event.target instanceof Element &&
   event.target.getAttribute("role") === "button";
 
+/** The container's handlers, which pass events inside the template on to the display, with the container they stop at. */
+const displayEventHandlers = (onDisplayEvent: GameDisplayTemplateProps["onDisplayEvent"]) => {
+  const emit = (event: SyntheticEvent<HTMLElement>, kind: DisplayDomEvent["kind"], name?: string) => {
+    if (event.target instanceof Element)
+      onDisplayEvent?.({ kind, target: event.target, root: event.currentTarget, name });
+  };
+  // The mouse moving over or out of an element, with where it came from or went to
+  const emitMouse = (event: MouseEvent<HTMLElement>, kind: "mouseOver" | "mouseOut") => {
+    if (!(event.target instanceof Element)) return;
+    const related = event.relatedTarget instanceof Element ? event.relatedTarget : null;
+    onDisplayEvent?.({ kind, target: event.target, root: event.currentTarget, related });
+  };
+  return {
+    onClick: (event: MouseEvent<HTMLElement>) => emit(event, "click"),
+    onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
+      if (!isTemplateButtonActivation(event)) return;
+      event.preventDefault(); // stop Space scrolling the page
+      emit(event, "click");
+    },
+    onMouseOver: (event: MouseEvent<HTMLElement>) => emitMouse(event, "mouseOver"),
+    onMouseOut: (event: MouseEvent<HTMLElement>) => emitMouse(event, "mouseOut"),
+    onAnimationEnd: (event: AnimationEvent<HTMLElement>) => emit(event, "animationEnd", event.animationName),
+    onTransitionEnd: (event: TransitionEvent<HTMLElement>) => emit(event, "transitionEnd", event.propertyName),
+  };
+};
+
 /**
  * Fetches a Handlebars template (via the content cache) and renders it with the template data,
  * inside a container. Both styles' string values are rendered too. Children follow the rendered template.
@@ -118,12 +147,6 @@ export default function GameDisplayTemplateComponent({
     Idiomorph.morph(bodyRef.current, DOMPurify.sanitize(html, SANITIZE_OPTIONS), { morphStyle: "innerHTML" });
   }, [html]);
 
-  /** Passes an event inside the template on to the display, with the container it stops at. */
-  const emit = (event: SyntheticEvent<HTMLElement>, kind: DisplayDomEvent["kind"], name?: string) => {
-    if (event.target instanceof Element)
-      onDisplayEvent?.({ kind, target: event.target, root: event.currentTarget, name });
-  };
-
   useEffect(() => {
     getTemplate(templateSource)
       .then(setRender)
@@ -142,14 +165,7 @@ export default function GameDisplayTemplateComponent({
       className="templateContent"
       data-display-scope={scope}
       style={{ width: "100%", height: "100%", ...containerStyleParsed }}
-      onClick={(event) => emit(event, "click")}
-      onKeyDown={(event) => {
-        if (!isTemplateButtonActivation(event)) return;
-        event.preventDefault(); // stop Space scrolling the page
-        emit(event, "click");
-      }}
-      onAnimationEnd={(event) => emit(event, "animationEnd", event.animationName)}
-      onTransitionEnd={(event) => emit(event, "transitionEnd", event.propertyName)}
+      {...displayEventHandlers(onDisplayEvent)}
     >
       {isDefined(html) && <div ref={bodyRef} className="templateBody" style={templateStyleParsed} />}
       {children}

@@ -18,7 +18,11 @@ import { getShownDisplays, overviewScope, type ShownDisplay } from "./logic/Rend
 import { displayRoots, type DisplayDomEvent } from "./logic/TemplateUtils";
 import type { CameraRuleEvent, CameraRuleTarget } from "./layout/PlayerInteractionHook";
 import type { CameraInteraction } from "../camera/PlayerMonitor";
-import { DEFAULT_INTERACTION_THRESHOLD } from "../../entities/data/displays/GameDisplayData";
+import { DEFAULT_INTERACTION_THRESHOLD, POINTER_INTERACTIONS } from "../../entities/data/displays/GameDisplayData";
+
+/** Whether an interaction comes from a mouse or pointer, so the camera ignores it. */
+const isPointerInteraction = (interaction: string): boolean =>
+  POINTER_INTERACTIONS.some((pointer) => pointer === interaction);
 
 /**
  * How long after a display is shown to check that its rules' selectors match something. Templates load
@@ -43,7 +47,7 @@ const getCameraRules = (state: GameState): CameraRuleTarget[] =>
   getShownDisplays(state).flatMap(({ scope, component }) =>
     (component.rules ?? []).flatMap(({ on }, ruleIndex) => {
       if (!("interact" in on)) return [];
-      const interactions = triggerInteractions(on).filter((i): i is CameraInteraction => i !== "click");
+      const interactions = triggerInteractions(on).filter((i): i is CameraInteraction => !isPointerInteraction(i));
       if (interactions.length === 0) return [];
       const threshold = on.threshold ?? DEFAULT_INTERACTION_THRESHOLD;
       return [

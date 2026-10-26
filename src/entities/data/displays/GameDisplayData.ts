@@ -23,7 +23,14 @@ export type GameDisplayComponentData =
   GameDisplayTemplateComponentData | GameDisplayDialogComponentData | GameDisplayScrollComponentData;
 
 /** A way a player can interact with an element in a display. */
-export type GameInteraction = "click" | "hand" | "foot" | "body" | "head" | "jump" | "any";
+export type GameInteraction =
+  "click" | "mouse-enter" | "mouse-exit" | "hand" | "foot" | "body" | "head" | "jump" | "any";
+
+/** The interactions made with a mouse or other pointer, rather than through the camera. */
+export const POINTER_INTERACTIONS = ["click", "mouse-enter", "mouse-exit"] as const;
+
+/** An interaction made with a mouse or other pointer. */
+export type PointerInteraction = (typeof POINTER_INTERACTIONS)[number];
 
 /** The fraction of a body part that must be inside an element when a rule doesn't name a threshold. */
 export const DEFAULT_INTERACTION_THRESHOLD = 1;

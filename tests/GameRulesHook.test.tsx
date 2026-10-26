@@ -126,6 +126,47 @@ describe("useGameRules", () => {
     });
   });
 
+  describe("mouse-enter and mouse-exit", () => {
+    const hoverRules: GameRule[] = [
+      {
+        on: { interact: "mouse-enter", target: ".door" },
+        do: [{ set: { entered: "state.entered + 1", how: "event.interaction" } }],
+      },
+      { on: { interact: "mouse-exit", target: ".door" }, do: [{ set: { left: "state.left + 1" } }] },
+    ];
+    const hovering = () => {
+      const rules = renderRules(rulesGame({ [TITLE]: { rules: hoverRules, initialState: { entered: 0, left: 0 } } }));
+      return { rules, ...template() };
+    };
+
+    it("fires mouse-enter when the mouse comes onto a matching element from outside it", () => {
+      const { rules, root, el } = hovering();
+      rules.send(TITLE, { kind: "mouseOver", target: el("knob"), root, related: el("window") });
+      expect(rules.displayState(TITLE)).toEqual({ entered: 1, left: 0, how: "mouse-enter" });
+    });
+
+    it("doesn't fire while the mouse moves between an element's own parts", () => {
+      const { rules, root, el } = hovering();
+      rules.send(TITLE, { kind: "mouseOver", target: el("knob"), root, related: el("door") });
+      rules.send(TITLE, { kind: "mouseOut", target: el("knob"), root, related: el("door") });
+      expect(rules.displayState(TITLE)).toBeUndefined();
+    });
+
+    it("fires mouse-exit when the mouse leaves a matching element, including out of the page", () => {
+      const { rules, root, el } = hovering();
+      rules.send(TITLE, { kind: "mouseOut", target: el("door"), root, related: el("window") });
+      rules.send(TITLE, { kind: "mouseOut", target: el("knob"), root, related: null });
+      expect(rules.displayState(TITLE)).toEqual({ entered: 0, left: 2 });
+    });
+
+    it("doesn't count a click as entering, or entering as a click", () => {
+      const rules = renderRules(rulesGame({ [TITLE]: { rules: hoverRules, initialState: { entered: 0, left: 0 } } }));
+      const { root, el } = template();
+      rules.send(TITLE, { kind: "click", target: el("door"), root });
+      expect(rules.displayState(TITLE)).toBeUndefined();
+    });
+  });
+
   describe("start", () => {
     it("fires once each time the display is shown, keeping state while hidden", () => {
       const rules = renderRules(rulesGame({ [STAGES]: { rules: [count()], initialState: { n: 0 } } }));

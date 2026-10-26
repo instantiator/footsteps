@@ -146,7 +146,7 @@ Play it once with the mouse and once with the camera (`?debug=true` shows where 
       no score. At 10 the stage completes.
 - [ ] **Balloons start afresh:** close the balloons stage partway and open it again: the score is back to 0.
 - [ ] **Lava:** step on a lava pool: the door disappears and the message says to go back. Step on Start: the
-      door returns. Step on the door's base: the stage completes. The same works by clicking.
+      door returns. Step on the door's base: the stage completes. The same works by walking the mouse over them.
 - [ ] **Covering:** with the HUD over part of the game, a hand under the HUD's buttons does not count.
 
 ## Without a working camera
@@ -178,15 +178,15 @@ scripts/run-browser-tests.sh
 
 What the suite proves:
 
-| Test                                                | Proves                                                                                                                                                      |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Landing page starts the game at `/play`             | The landing page and route split work in a real browser                                                                                                     |
-| Shows the preview and runs the silhouette loop      | The fake camera reaches the preview, and segmentation draws frames                                                                                          |
-| Debug changes the mask type                         | The loop survives the mask-type change with no model errors                                                                                                 |
-| Preview off keeps the camera running                | Hiding the preview does not stop segmentation                                                                                                               |
-| Camera-off display stops, returning reacquires      | The track ends on the camera-off display, and a live stream returns                                                                                         |
-| Switching the fake camera image changes the preview | The harness controls the image the app receives                                                                                                             |
-| Rules demo (`rules.spec.ts`)                        | The toggle, balloons and lava play by mouse; display state is kept, and resets on show; clicks pass through empty foreground but not through drawn elements |
+| Test                                                | Proves                                                                                                                                                           |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Landing page starts the game at `/play`             | The landing page and route split work in a real browser                                                                                                          |
+| Shows the preview and runs the silhouette loop      | The fake camera reaches the preview, and segmentation draws frames                                                                                               |
+| Debug changes the mask type                         | The loop survives the mask-type change with no model errors                                                                                                      |
+| Preview off keeps the camera running                | Hiding the preview does not stop segmentation                                                                                                                    |
+| Camera-off display stops, returning reacquires      | The track ends on the camera-off display, and a live stream returns                                                                                              |
+| Switching the fake camera image changes the preview | The harness controls the image the app receives                                                                                                                  |
+| Rules demo (`rules.spec.ts`)                        | The toggle, balloons and lava play by mouse; display state is kept, and resets on show; the mouse passes through empty foreground but not through drawn elements |
 
 The suite does not prove that a physical camera works, that a real player's body is segmented
 accurately, or that the model download succeeds on every network. Cover those with the manual

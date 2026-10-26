@@ -6,6 +6,7 @@ import type {
   GameInteraction,
   GameInteractTrigger,
   GameRule,
+  PointerInteraction,
   GameTrigger,
 } from "../../../entities/data/displays/GameDisplayData";
 import { toGameSnapshot } from "../../../entities/state/GameSnapshot";
@@ -312,22 +313,42 @@ export const runWhens = (env: RuleEnvironment, state: GameState, edges: WhenEdge
 export const triggerInteractions = (trigger: GameInteractTrigger): GameInteraction[] =>
   Array.isArray(trigger.interact) ? trigger.interact : [trigger.interact];
 
-/** Whether a trigger is for this kind of DOM event: one accepting clicks, or naming the animation or transition. */
-const triggerKindMatches = (trigger: GameTrigger, event: DisplayDomEvent): boolean => {
-  if (event.kind === "click") return "interact" in trigger && triggerInteractions(trigger).includes("click");
-  if (event.kind === "animationEnd") return "animationEnd" in trigger && trigger.animationEnd === event.name;
-  return "transitionEnd" in trigger && trigger.transitionEnd === event.name;
+/** The pointer interaction each kind of DOM event is. */
+const POINTER_EVENT_INTERACTIONS: Partial<Record<DisplayDomEvent["kind"], PointerInteraction>> = {
+  click: "click",
+  mouseOver: "mouse-enter",
+  mouseOut: "mouse-exit",
 };
 
 /**
- * Whether a DOM event inside a display fires a rule's trigger: a click on (or inside) an element matching an
- * interact trigger that accepts clicks, or the end of the named animation or transition on a matching element.
+ * The element a pointer event fires an interact trigger for: one matching its selector that the click happened in,
+ * or that the mouse entered or left. Moving between an element's own children neither enters nor leaves it.
+ */
+const pointerTarget = (trigger: GameInteractTrigger, event: DisplayDomEvent, interaction: PointerInteraction) => {
+  if (!triggerInteractions(trigger).includes(interaction)) return undefined;
+  const element = matchTarget(event, trigger.target);
+  return isDefined(element) && isDefined(event.related) && element.contains(event.related) ? undefined : element;
+};
+
+/** Whether a trigger names this animation or transition end. */
+const namesEvent = (trigger: GameTrigger, event: DisplayDomEvent): boolean =>
+  (event.kind === "animationEnd" && "animationEnd" in trigger && trigger.animationEnd === event.name) ||
+  (event.kind === "transitionEnd" && "transitionEnd" in trigger && trigger.transitionEnd === event.name);
+
+/**
+ * Whether a DOM event inside a display fires a rule's trigger: a click on, or the mouse entering or leaving, an
+ * element matching an interact trigger that accepts it, or the end of the named animation or transition on a
+ * matching element.
  * @returns the event the rule fires with, or undefined if it doesn't fire
  */
 export const matchDisplayEvent = (trigger: GameTrigger, event: DisplayDomEvent): RuleEvent | undefined => {
-  if (!triggerKindMatches(trigger, event) || !("target" in trigger)) return undefined;
-  const element = matchTarget(event, trigger.target);
-  return isDefined(element) ? { id: element.id, interaction: event.kind === "click" ? "click" : "" } : undefined;
+  const interaction = POINTER_EVENT_INTERACTIONS[event.kind];
+  if (isDefined(interaction)) {
+    const element = "interact" in trigger ? pointerTarget(trigger, event, interaction) : undefined;
+    return isDefined(element) ? { id: element.id, interaction } : undefined;
+  }
+  const element = namesEvent(trigger, event) && "target" in trigger ? matchTarget(event, trigger.target) : undefined;
+  return isDefined(element) ? { id: element.id, interaction: "" } : undefined;
 };
 
 /** The shortest gap between `every` firings, so a tiny or zero interval can't flood the game with updates. */

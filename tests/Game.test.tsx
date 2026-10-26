@@ -134,7 +134,10 @@ describe("Game camera interactions", () => {
             component: {
               ...display.component,
               rules: [
-                { on: { interact: "hand", target: "#stage-link-stage-1" }, do: [{ enterStage: "stage-1" }] },
+                {
+                  on: { interact: ["hand", "mouse-enter"], target: "#stage-link-stage-1" },
+                  do: [{ enterStage: "stage-1" }],
+                },
                 ...(display.component.rules ?? []).slice(1),
               ],
             },
@@ -154,7 +157,7 @@ describe("Game camera interactions", () => {
   const cameraRules = () => receivedLayout.at(-1)!.cameraRules!;
   const layoutInteraction = () => receivedLayout.at(-1)!.onPlayerInteraction!;
 
-  it("gives the camera the rules it can fire, and enters the stage one names", async () => {
+  it("gives the camera the rules it can fire, without their mouse interactions, and enters the stage one names", async () => {
     renderVariant(handGame);
     await screen.findByText("Small Game");
     expect(cameraRules()).toEqual([
