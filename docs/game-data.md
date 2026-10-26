@@ -1,6 +1,6 @@
 # Game data
 
-A game is one `GameData` object (`src/entities/data/GameData.ts`), authored as JSON inside a [game repository](game-repository-data.md). Its JSON schema, generated from the types, is `public/schemas/game-data-schema.json`. Check a game with `./validate-game.sh path/to/game.json`, which validates its schema, that its resource files, templates and resource names can load, and that its stage links (`clickIdToStageId`) name real stages.
+A game is one `GameData` object (`src/entities/data/GameData.ts`), authored as JSON inside a [game repository](game-repository-data.md). Its JSON schema, generated from the types, is `public/schemas/game-data-schema.json`. Check a game with `./validate-game.sh path/to/game.json`, which validates its schema, and that its resource files, templates and resource names can load. Mistakes in a game's [rules](#rules-and-state) are reported when it loads, and `npm test` checks the rules of every game in the local repository.
 
 ## Structure
 
@@ -44,12 +44,10 @@ Every display has a `purpose`, which says when it shows, and a `component`, whic
 
 The selection code is `calcOverviewDisplay`, `calcStageDisplay` and `calcChallengeDisplay` in `src/components/core/logic/RenderDataUtils.ts`. Once every stage is complete, the overview switches to `game-overview-complete`, or falls back to the title, and then to the stages.
 
-An overview display can also have **`clickIdToStageId`**, which maps element ids in its template to
-a `GameInteractionTarget`: the stage the element enters, which interactions it accepts, and the
-threshold for camera interactions. A target without `interactions` accepts only `click`, and its
-`threshold` defaults to `1`. Locked and completed stages ignore the interaction. Any click on the
-title screen moves on to the stages overview. Clicks remain the keyboard-accessible route; for
-keyboard access, see [clickable elements in templates](dev-overview.md#clickable-elements-in-templates).
+Any display's component can have **state** and **rules**, which respond to clicks, the camera, animations,
+timers and changes in the game: see [Rules and state](#rules-and-state). A click on the title screen that no rule
+takes moves on to the stages overview. Clicks remain the keyboard-accessible route; for keyboard access, see
+[clickable elements in templates](dev-overview.md#clickable-elements-in-templates).
 
 ### Camera settings
 
@@ -77,19 +75,93 @@ Camera mode and its preview resolve separately, most specific first:
 The preview is always off while camera mode is off. See [camera mode](camera-mode.md) for what the
 player sees and how the settings behave in practice.
 
-### Interaction targets
+### Rules and state
 
-A `GameInteractionTarget` names the stage to enter and, optionally, how to enter it:
+Every component can keep its own **state**, and change it, or act on the game, with **rules**. Rules are data:
+templates only render the state, and no game script ever runs. The `rules-demo` game in
+`public/game-repository.json` (templates in `public/games/rules-demo/`) is a working example of everything here.
 
 ```json
-"clickIdToStageId": {
-  "stages-link-stage-1": {
-    "stage": "stage-1",
-    "interactions": ["hand"],
-    "threshold": 0.5
-  }
+"component": {
+  "type": "template",
+  "data": {},
+  "initialState": { "position": 1 },
+  "rules": [
+    {
+      "on": { "interact": ["click", "hand"], "target": "#switch" },
+      "do": [{ "set": { "position": "if state.position == 1 then 2 else 1" } }]
+    }
+  ]
 }
 ```
+
+```handlebars
+<div id="switch" class="switch position-{{state.position}}"></div>
+```
+
+#### State
+
+- A display starts from its `initialState` (or `{}`), and templates, styles and rules see it as `state`.
+- State is kept for the life of the game, and saved with its progress, so it survives the display being hidden
+  and shown again, and a reload.
+- With `resetStateOnShow: true`, it returns to `initialState` each time the display is shown.
+- Resetting a challenge (the `resetChallenge` action) resets the state of that challenge's displays. A New game
+  from the landing page clears everything.
+- Each display has its own state. Displays can't share state yet.
+
+#### Rules
+
+A rule has a trigger (`on`), an optional condition (`if`, an expression), and actions (`do`), applied in order.
+Rules on displays that aren't showing do nothing. An overview display counts as showing only while no stage is
+open.
+
+| Trigger                                                     | Fires                                                                                 |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `{ "interact": …, "target": "<selector>" }`                 | When any player (or a click) starts interacting with an element matching the selector |
+| `{ "animationEnd": "<name>", "target": "<selector>" }`      | When a CSS animation with that name ends on a matching element                        |
+| `{ "transitionEnd": "<property>", "target": "<selector>" }` | When a CSS transition of that property ends on a matching element                     |
+| `{ "when": "<expression>" }`                                | When the expression turns from false to true, after any change                        |
+| `{ "every": <ms or expression> }`                           | Repeatedly while the display shows; an expression is worked out again each time       |
+| `{ "after": <ms or expression> }`                           | Once, that long after the display is shown                                            |
+| `{ "start": true }`                                         | When the display is shown                                                             |
+
+| Action                           | Does                                                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `{ "set": { "key": "<expr>" }`   | Sets state keys to expressions' values, all worked out from the state before the action                 |
+| `{ "resetState": true }`         | Returns the display's state to `initialState`                                                           |
+| `{ "completeChallenge": true }`  | Solves this display's challenge, as a correct answer does (challenge displays only)                     |
+| `{ "answer": "<expression>" }`   | Submits the expression's value as an answer to this display's challenge (challenge displays only)       |
+| `{ "resetChallenge": true }`     | Makes this display's challenge unsolved again, and resets its displays' state (challenge displays only) |
+| `{ "enterStage": "<stage id>" }` | Opens a stage, unless it is locked or completed                                                         |
+
+- Selectors are any CSS selector (`#door`, `.lava`, `.door:not(.open)`), matched inside the display's own
+  templates. A click fires the rules whose selector matches the clicked element or its nearest matching ancestor.
+- `when` doesn't fire for an expression that is already true when the display is shown: it records it, and fires
+  the next time it turns true. Use `start` with an `if` for "when shown, if…".
+- A `set` can make a `when` fire, which can `set` again. A chain of more than 10 rounds is logged, naming the
+  rules, and stopped.
+- `every` waits at least 50 ms between firings.
+- Everything is checked when the game loads: an expression that doesn't parse, an invalid selector, a negative
+  duration, a challenge action outside a challenge display, or `enterStage` to a stage the game doesn't have stops
+  the game loading, with a message naming the display and rule. A selector that matches nothing in the display is
+  a console warning.
+
+#### Expressions
+
+Conditions, `set` values, answers and durations are short [filtrex](filtrex.md) expressions, eg.
+`state.score + 1`, `state.score >= data.target`, `if state.position == 1 then 2 else 1`, `not state.popping`.
+They see:
+
+| Name    | What it is                                                                                                                            |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `state` | This display's state                                                                                                                  |
+| `data`  | The component's `data`, as authored                                                                                                   |
+| `game`  | The game's progress: `id`, `title`, `config`, `stages` (each with `id`, `availability`, `completion` and `challenges`), and `current` |
+| `event` | For element triggers: the matched element's `id` (empty if it has none) and the `interaction`                                         |
+
+See [how filtrex works](filtrex.md) for the syntax and why it is safe.
+
+#### Interactions
 
 | Interaction | The player does                                           |
 | ----------- | --------------------------------------------------------- |
@@ -101,13 +173,23 @@ A `GameInteractionTarget` names the stage to enter and, optionally, how to enter
 | `any`       | Covers it with any single body part                       |
 | `jump`      | Jumps with their feet inside the element                  |
 
-`interactions` defaults to `["click"]`, so existing targets keep working as clicks. A target that
-lists `click` still accepts clicks alongside its camera interactions. `threshold` is the fraction
-of the chosen body part that must be inside the element (0–1, default `1`), clamped to that range.
-Interactions fire once per approach, and re-arm when the player moves away.
+`interact` takes one interaction or a list. `threshold` is the fraction of the body part that must be inside the
+element (0–1, default `1`). Interactions fire once per approach, and re-arm when the player moves away. The monitor
+and jump sequence are described under [how interactions work](camera-mode.md#how-interactions-work).
 
-Camera interactions are currently detected on overview displays only. The monitor and jump sequence
-are described under [how interactions work](camera-mode.md#how-interactions-work).
+#### What can be clicked or touched
+
+Only elements a template draws take clicks: empty space in a layer lets them through to whatever is beneath,
+including background layers. An element drawn over another covers it, so the one beneath gets neither the click
+nor the camera's touch, unless its rule sets `"includeCovered": true` (camera interactions only). Give decorative
+elements `pointer-events: none` so they don't cover what's beneath them.
+
+#### Elements that animate or keep state
+
+Templates are patched in place when state changes, rather than replaced, so CSS transitions and animations carry
+on. An element is matched to its previous self by `id`, so give an `id` to anything that animates or that the
+camera tracks. Changing an element's `id` (eg. `balloon-{{state.balloon}}`) makes a new element, which restarts its
+animations: a simple way to spawn a replacement.
 
 ### Layers
 
@@ -124,7 +206,7 @@ The active challenges are the first chunk of `challengeChunking` challenges that
 
 ### Components
 
-Both component types carry `data`, a free-form object that templates see as `componentData`, and a background and a foreground, each with:
+Both component types carry `data`, a free-form object that templates see as `data` (and `componentData`), optional [state and rules](#rules-and-state), and a background and a foreground, each with:
 
 - `backgroundTemplate` / `foregroundTemplate`: a `GameDisplayTemplateSourceData` (see [Templating](#templating))
 - `backgroundStyle` / `foregroundStyle`: CSS for the layer's container.
@@ -230,6 +312,9 @@ Every template, and every Handlebars value in a style, is rendered with `GameTem
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `gameState`      | The whole `GameState` (`gameData`, `stages`, and `current.stageId` / `current.overviewDisplay`), decorated by `decorateGameState` for templates. See below. |
 | `componentData`  | This display's `component.data`, as authored                                                                                                                |
+| `data`           | The same `component.data`, by the name rules' expressions use                                                                                               |
+| `state`          | This display's [state](#state)                                                                                                                              |
+| `game`           | The game's progress, as rules' [expressions](#expressions) see it                                                                                           |
 | `resources`      | Resource name → resolved URL                                                                                                                                |
 | `challenge`      | The challenge's `GameChallengeData`. Challenge displays only, otherwise undefined.                                                                          |
 | `challengeState` | Its `GameChallengeState` (`succeeded`, …). Challenge displays only.                                                                                         |
@@ -245,7 +330,7 @@ A dialog's or scroll's templates also get `text`, the current page's text, and `
 
 ### Example
 
-The magic-trifle stages overview (`public/games/magic-trifle/overview/foreground.hbs`) draws a stepping stone per stage. Each stone's id matches the display's `clickIdToStageId`:
+The magic-trifle stages overview (`public/games/magic-trifle/overview/foreground.hbs`) draws a stepping stone per stage. A rule enters each stage when its stone is clicked:
 
 ```json
 {
@@ -257,9 +342,9 @@ The magic-trifle stages overview (`public/games/magic-trifle/overview/foreground
       "templateSource": "games/magic-trifle/overview/foreground.hbs"
     },
     "backgroundStyle": { "backgroundImage": "url('{{resources.blank-river}}')" },
-    "data": {}
-  },
-  "clickIdToStageId": { "stages-link-stage-1": { "stage": "stage-1" } }
+    "data": {},
+    "rules": [{ "on": { "interact": "click", "target": "#stages-link-stage-1" }, "do": [{ "enterStage": "stage-1" }] }]
+  }
 }
 ```
 

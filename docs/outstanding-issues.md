@@ -25,7 +25,9 @@ permission and preview behave the same in every browser. The manual script in
 behaving differently from the fake-camera suite. Run the manual script on at least two machines, with
 different lighting and a second player, and record the results. Include the vision defaults chosen in
 ADRs 0004 and 0005 (BodyPix MobileNetV1, frames 960 wide, 3 refinement steps, WebGPU, in a worker): check the debug readout shows 2 hands and 2 feet per
-full-length player at 10 fps or more, and compare `?visionModel=movenet` in the same room.
+full-length player at 10 fps or more, and compare `?visionModel=movenet` in the same room. Play the rules demo by
+camera too ([the rules demo](testing/manual-testing.md#the-rules-demo) checklist): its covering check and
+selector-based targets are only tested with synthetic frames, and camera play of the demo only through its rules.
 
 ## Browser suite depends on downloading the vision models
 
@@ -71,22 +73,55 @@ proportions (`PoseGeometry.ts`), not the mask.
 **Act when:** a game uses `head` interactions with `mediapipe` or `movenet`, and they fire in the wrong place.
 Then measure the head's extent from the mask above the shoulders.
 
-## Camera interactions are only available on overview displays
+## Rule conditions can't speak for all players
 
-`getInteractionTargets` returns the current overview display's targets, and an empty map while a
-stage is open. Stage and challenge displays can set their own camera mode, but their elements cannot
-yet be interaction targets.
+Interaction triggers fire for any one player. A game can't say "when every player's feet are on the start", because
+expressions can't see how many players there are, or which player did what, and player identities are only stable
+across frames while tracking holds.
 
-**Act when:** a game needs an interaction inside a stage or challenge. Then extend
-`getInteractionTargets` to the active stage and challenge displays, add their elements to the
-target map, and cover the stage case in `tests/GameClickUtils.test.ts` and
-`tests/GameLayersLayout.test.tsx`.
+**Act when:** a game needs a condition over all players (or a count of them). Then design player counts (and possibly
+per-player identities) for `event` or `game`, and the trigger that uses them.
+
+## Displays can't share state
+
+Each display has its own state. A stage's shared display and its challenges can't share a value, such as a score
+that carries from one challenge to the next.
+
+**Act when:** a game needs one value across displays. Then add a shared scope (eg. per stage) to `displayStates`,
+and a way for expressions to read and `set` it.
+
+## Covering is sampled at one point per body part
+
+A camera interaction only counts where the element is on top, checked with one `elementFromPoint` per body part, at
+the centre of where the part overlaps the element (`visibility` in `PlayerMonitor.ts`). A part that overlaps a mostly
+covered element can miss the uncovered sliver, or hit it.
+
+**Act when:** players report partly covered elements firing when they shouldn't, or not firing when they should.
+Then sample a small grid across the overlap, and count the fraction on top against the threshold.
+
+## Every rule's state change saves the progress
+
+Display state lives in `GameState`, so each `set` re-renders the game and writes saved progress to local storage.
+That is fine at the rate rules fire (clicks, animation ends, timers of a second or so), but not for state that
+changes many times a second.
+
+**Act when:** a game uses `every` faster than about 200 ms, or a profile shows rule updates causing dropped frames.
+Then debounce `saveGameState` in `GameStateProvider`, or move display state into its own store with per-display
+subscriptions (the option set aside in [ADR 0006](ADRs/0006-display-rules-and-state.md)).
+
+## The unmatched-selector check waits a fixed time
+
+`useGameRules` warns about a rule selector that matches nothing in its display 2 seconds after the display is shown,
+because templates load asynchronously.
+
+**Act when:** the warning appears for a selector that does match (a slow template load), or a game needs the
+warning sooner. Then have `GameDisplayTemplateComponent` report when it has rendered, and check then.
 
 ## No strict script-src Content-Security-Policy
 
-Game repositories may be remote, and templates are compiled by Handlebars (which uses `new Function`) and inserted as HTML. `src/root.tsx` sets a CSP meta with `object-src 'none'; base-uri 'self'; form-action 'none'`, and DOMPurify strips script from template output. A `script-src` policy would also block injected script outright. But React Router's prerendered pages carry inline scripts that would need per-build hashes, and Handlebars needs `'unsafe-eval'`.
+Game repositories may be remote, and templates are compiled by Handlebars (which uses `new Function`) and inserted as HTML. `src/root.tsx` sets a CSP meta with `object-src 'none'; base-uri 'self'; form-action 'none'`, and DOMPurify strips script from template output. A `script-src` policy would also block injected script outright. But React Router's prerendered pages carry inline scripts that would need per-build hashes, and Handlebars and filtrex (rule expressions; see [how filtrex works](filtrex.md)) need `'unsafe-eval'`.
 
-**Act when:** the app loads game repositories from authors who aren't trusted, or gains logins or cookies. Then generate `script-src` hashes in `finish-static-build.sh` (or move to precompiled templates and drop `'unsafe-eval'`), or render games in a sandboxed iframe.
+**Act when:** the app loads game repositories from authors who aren't trusted, or gains logins or cookies. Then generate `script-src` hashes in `finish-static-build.sh` (or move to precompiled templates and an expression evaluator that walks the syntax tree, and drop `'unsafe-eval'`), or render games in a sandboxed iframe.
 
 ## Validator does not read template contents
 

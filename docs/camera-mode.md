@@ -151,20 +151,18 @@ value is ignored with a console warning. [ADR 0004](ADRs/0004-vision-optimisatio
 
 ## How interactions work
 
-An overview display's `clickIdToStageId` maps an element's `id` to a target:
+Camera interactions fire display [rules](game-data.md#rules-and-state) whose trigger is an `interact`:
 
 ```json
-"clickIdToStageId": {
-  "stages-link-stage-1": {
-    "stage": "stage-1",
-    "interactions": ["hand"],
-    "threshold": 0.5
-  }
+{
+  "on": { "interact": ["click", "hand"], "target": "#stages-link-stage-1", "threshold": 0.5 },
+  "do": [{ "enterStage": "stage-1" }]
 }
 ```
 
-A target names the stage an interaction enters, which interactions it accepts, and how much of the
-body part must be inside the element. `interactions` defaults to `["click"]` and `threshold` to `1`.
+The trigger names the elements (any CSS selector), which interactions it accepts, and how much of the body part
+must be inside an element. `threshold` defaults to `1`. Any display that is showing can have them, including a
+stage's shared display and its challenges.
 
 | Interaction | Detected from                                      |
 | ----------- | -------------------------------------------------- |
@@ -199,9 +197,14 @@ A **jump** is a short sequence, not a single frame:
 Leaving the element during the sequence does not reset it; the feet must come back inside for the
 falling and resting steps.
 
-Clicks keep working exactly as before, and remain the keyboard-accessible route. A camera
-interaction is applied through the same state change as a click, and locked or completed stages are
-still ignored; see `getNewGameStateForInteraction` in `GameClickUtils.ts`.
+Clicks remain the keyboard-accessible route. A camera interaction fires the same rule a click would, through
+`useGameRules` (`src/components/core/GameRulesHook.ts`), so `enterStage` still ignores locked and completed stages.
+
+An element only counts where it is the **topmost** thing under the body part, as a click would find it: an
+element covered by another doesn't respond, unless the rule sets `"includeCovered": true`. The check is one
+`document.elementFromPoint` per body part and element, at the centre of where the part overlaps the element, and
+only once the threshold is met, so it stays cheap every frame. The silhouette, the camera preview and the debug
+overlay take no pointer events, so they never count as covering.
 
 While a display or camera transition is running, clicks and camera interactions are ignored. The
 scene is `inert`, the monitors are cleared, and the camera hook drops frames. The fresh monitors
@@ -210,12 +213,15 @@ ignore whatever holds on their first frame, so a held hand cannot fire as the ne
 ### From frame to event
 
 `CharacterCanvas` calls `onPlayersChange` once per frame with every player's mask, key points and feet,
-and the frame's timestamp. `usePlayerInteractions` builds a mask-space rectangle for each target element
-that is on screen, keeps one `PlayerMonitor` per player, and turns the monitors' events into game
-state changes in `Game`. The rectangle conversion mirrors the x axis to match the canvas.
+and the frame's timestamp. Each frame, `usePlayerInteractions` runs every camera rule's selector inside its
+display's templates (found by `data-display-scope`), so elements can appear, move and disappear between frames. It
+builds a mask-space rectangle for each element, keeps one `PlayerMonitor` per player, and passes the monitors'
+events to `useGameRules`. The rectangle conversion mirrors the x axis to match the canvas, and
+`screenPointForMaskPoint` maps back for the covering check.
 
-Interactions are only available on **overview displays** today: `getInteractionTargets` returns the
-overview's targets and an empty map while a stage is open.
+The monitors remember each element by a key: its `id`, or a key generated for an element without one (held in a
+`WeakMap`, so it goes with the element). An element without an `id` that a re-render replaces gets a new key, and
+counts as new, so give an `id` to elements whose interactions should carry over.
 
 ## Debugging
 
@@ -226,7 +232,7 @@ Add `?debug=true` to the URL to turn on the `debug` setting. In camera mode that
 - shows the frame rate, inference time, and the people, hands and feet found, over the silhouette;
 - draws a green dot where each person's feet were found.
 
-Lower a target's `threshold` when testing interactions, and use the feet dots to see where the
+Lower a rule's `threshold` when testing interactions, and use the feet dots to see where the
 camera thinks the player is. Changing the debug setting restarts the tracking loop with the new
 mask type, and cancels the old one; check the console for model or "disposed" errors after
 toggling it.

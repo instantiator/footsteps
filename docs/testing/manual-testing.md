@@ -100,14 +100,13 @@ the silhouette must keep working when the preview is off.
 
 ## Each camera interaction
 
-Interactions are declared on the overview display's `clickIdToStageId` entries. For example, to
-make stage 1 respond to a hand at half coverage:
+Interactions are declared by display rules (see [rules and state](../game-data.md#rules-and-state)). For example,
+to make stage 1 respond to a hand at half coverage, change the stage link's rule on the overview display:
 
 ```json
-"stages-link-stage-1": {
-  "stage": "stage-1",
-  "interactions": ["hand"],
-  "threshold": 0.5
+{
+  "on": { "interact": ["hand"], "target": "#stages-link-stage-1", "threshold": 0.5 },
+  "do": [{ "enterStage": "stage-1" }]
 }
 ```
 
@@ -133,6 +132,23 @@ such as `0.2`. Confirm that holding still fires only once, and that moving away 
 - [ ] Complete a stage while standing with a hand over the next stage's link. When the overview
       fades back in, the stage does not open until you move the hand away and back.
 
+## The rules demo
+
+`rules-demo` exercises display rules and state, and turns the camera on for its stages overview and both stages.
+Play it once with the mouse and once with the camera (`?debug=true` shows where your hands and feet are found).
+
+- [ ] **Toggle:** click the yellow switch on the stages overview, then touch it with a hand. It slides between two
+      places each time, rather than jumping.
+- [ ] **State is kept:** move the switch, open a stage, close it again: the switch is where you left it, and
+      still is after a reload.
+- [ ] **Balloons:** balloons fall one at a time, swaying. Click one, then pop one with a hand: it bursts where it
+      is, the score goes up, and a new one appears at the top. A balloon that reaches the bottom bursts there with
+      no score. At 10 the stage completes.
+- [ ] **Balloons start afresh:** close the balloons stage partway and open it again: the score is back to 0.
+- [ ] **Lava:** step on a lava pool: the door disappears and the message says to go back. Step on Start: the
+      door returns. Step on the door's base: the stage completes. The same works by clicking.
+- [ ] **Covering:** with the HUD over part of the game, a hand under the HUD's buttons does not count.
+
 ## Without a working camera
 
 - [ ] Open another app that holds the camera (a video call), then New game or Continue into a camera
@@ -155,19 +171,22 @@ scripts/run-browser-tests.sh
 - The config uses port `5180` and reuses a dev server already running there.
 - On macOS the config enables Metal and WebGPU, because headless Chromium otherwise falls back to
   software WebGL and tracking becomes too slow to test.
+- `E2E_STATIC=1 scripts/run-browser-tests.sh` runs the suite against the static build (`npm run build` and
+  `npm run preview`) instead of the dev server. The rules demo specs need no vision model.
 - A failure writes a trace under `test-results/`. Open it with
   `npx playwright show-trace test-results/<test>/trace.zip`.
 
 What the suite proves:
 
-| Test                                                | Proves                                                              |
-| --------------------------------------------------- | ------------------------------------------------------------------- |
-| Landing page starts the game at `/play`             | The landing page and route split work in a real browser             |
-| Shows the preview and runs the silhouette loop      | The fake camera reaches the preview, and segmentation draws frames  |
-| Debug changes the mask type                         | The loop survives the mask-type change with no model errors         |
-| Preview off keeps the camera running                | Hiding the preview does not stop segmentation                       |
-| Camera-off display stops, returning reacquires      | The track ends on the camera-off display, and a live stream returns |
-| Switching the fake camera image changes the preview | The harness controls the image the app receives                     |
+| Test                                                | Proves                                                                                                                                                      |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Landing page starts the game at `/play`             | The landing page and route split work in a real browser                                                                                                     |
+| Shows the preview and runs the silhouette loop      | The fake camera reaches the preview, and segmentation draws frames                                                                                          |
+| Debug changes the mask type                         | The loop survives the mask-type change with no model errors                                                                                                 |
+| Preview off keeps the camera running                | Hiding the preview does not stop segmentation                                                                                                               |
+| Camera-off display stops, returning reacquires      | The track ends on the camera-off display, and a live stream returns                                                                                         |
+| Switching the fake camera image changes the preview | The harness controls the image the app receives                                                                                                             |
+| Rules demo (`rules.spec.ts`)                        | The toggle, balloons and lava play by mouse; display state is kept, and resets on show; clicks pass through empty foreground but not through drawn elements |
 
 The suite does not prove that a physical camera works, that a real player's body is segmented
 accurately, or that the model download succeeds on every network. Cover those with the manual

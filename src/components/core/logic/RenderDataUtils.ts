@@ -5,16 +5,13 @@ import type {
   GameChallengeDisplay,
   GameChallengeDisplayPurpose,
   GameDisplayBase,
+  GameDisplayComponentData,
   GameOverviewDisplay,
+  GameOverviewDisplayPurpose,
   GameStageDisplay,
   GameStageDisplayPurpose,
 } from "../../../entities/data/displays/GameDisplayData";
 import type { GameData, GameId } from "../../../entities/data/GameData";
-import type {
-  GameChallengeDisplayPurpose as ChallengePurpose,
-  GameDisplayComponentData,
-  GameOverviewDisplayPurpose,
-} from "../../../entities/data/displays/GameDisplayData";
 import type { GameChallengeState } from "../../../entities/state/GameChallengeState";
 import { toGameSnapshot, type GameSnapshot } from "../../../entities/state/GameSnapshot";
 import type { DisplayScope, GameState } from "../../../entities/state/GameState";
@@ -101,8 +98,11 @@ export const overviewScope = (purpose: GameOverviewDisplayPurpose): DisplayScope
 export const stageScope = (stageId: GameStageId): DisplayScope => `stage:${stageId}:shared`;
 
 /** The scope of one of a challenge's displays. */
-export const challengeScope = (stageId: GameStageId, challengeId: GameChallengeId, purpose: ChallengePurpose) =>
-  `challenge:${stageId}:${challengeId}:${purpose}`;
+export const challengeScope = (
+  stageId: GameStageId,
+  challengeId: GameChallengeId,
+  purpose: GameChallengeDisplayPurpose,
+) => `challenge:${stageId}:${challengeId}:${purpose}`;
 
 /** Every scope the game's displays have. */
 export const allDisplayScopes = (gameData: GameData): Set<DisplayScope> =>

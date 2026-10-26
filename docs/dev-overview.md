@@ -97,15 +97,36 @@ Every game in the local repository, `public/game-repository.json`, is prerendere
 
 ### Clickable elements in templates
 
-Overview templates make elements interactive by giving them an `id` that the display's
-`clickIdToStageId` maps to an interaction target. A target without `interactions` accepts clicks, so
-the clickable behaviour is unchanged; a target can also accept hand, foot, head, body, any, and jump
-interactions (see [interaction targets](game-data.md#interaction-targets), and
-[camera mode](camera-mode.md#how-interactions-work) for what the camera detects). For keyboard
-players, also mark each element a player can currently use with `role="button"`, `tabindex="0"`, and
-a label (`alt` on an image, or `aria-label`): the layer then treats Enter or Space on it as a click.
-On the title screen, Enter or Space anywhere moves on, as a click does. See
-`public/games/magic-trifle/overview/foreground.hbs`.
+Any display's template makes elements interactive through the display's [rules](game-data.md#rules-and-state):
+a rule names the elements with a CSS selector, and the interactions it accepts (click, hand, foot, head, body,
+any, jump; see [camera mode](camera-mode.md#how-interactions-work) for what the camera detects). For keyboard
+players, also mark each element a player can currently use with `role="button"`, `tabindex="0"`, and a label
+(`alt` on an image, or `aria-label`): the display then treats Enter or Space on it as a click. On the title
+screen, Enter or Space anywhere moves on, as a click does. See `public/games/magic-trifle/overview/foreground.hbs`.
+
+### How rules run
+
+`compileGameRules` (`src/components/core/logic/GameRuleUtils.ts`) compiles every rule expression when the game
+loads ([filtrex](filtrex.md)), and `GameDataProvider` reports `rules-error` if one doesn't parse. While playing:
+
+```mermaid
+flowchart LR
+  click["Click, key, animationend, transitionend<br/>(GameDisplayTemplateComponent)"] --> hook
+  camera["Camera frame<br/>(usePlayerInteractions: selectors, elementFromPoint)"] --> hook
+  timers["start, every, after<br/>(per shown display)"] --> hook
+  hook["useGameRules<br/>(GameRulesHook.ts)"] -->|"setGameState(prev => fireRules(...))"| state["GameState<br/>(displayStates)"]
+  state -->|"after each change"| whens["runWhens"]
+  whens --> state
+  state -->|"applyShowResets, save"| provider["GameStateProvider"]
+```
+
+- The engine (`fireRules`, `runWhens`, `applyShowResets`) is pure: each change is a function of the latest
+  `GameState`, so no rule receives `setGameState`, and events between renders compose.
+- Display state lives in `GameState.displayStates`, keyed by display scope (`overview:<purpose>`,
+  `stage:<id>:shared`, `challenge:<stage>:<challenge>:<purpose>`), and is saved with the progress.
+- `GameDisplayTemplateComponent` patches its HTML in place with idiomorph, after DOMPurify, so elements keep
+  their transitions. Its container carries `data-display-scope`, which the camera uses to find a display's elements.
+- See [ADR 0006](ADRs/0006-display-rules-and-state.md) for why it is built this way.
 
 ### Validate data
 
