@@ -7,6 +7,7 @@ Published as HTML at <https://instantiator.dev/footsteps/docs/>, with the API re
 - [Deployment](deployment.md): deployment details.
 - [Game data](game-data.md): how a game's data, displays, resources, and templates fit together.
 - [Game repository data](game-repository-data.md): the repository file that holds games, and where it's loaded from.
+- [How filtrex works](filtrex.md): the expression language used by display rules, and why it is safe.
 - [Camera mode](camera-mode.md): what camera mode is, and how the camera view is layered into the game.
 - [Manual testing](testing/manual-testing.md): camera checks with a real webcam, and how to run the browser suite.
 - [API reference](/tsdoc/){target="_blank"}: generated from the TSDoc comments in `src/` by `npm run docs:api`, and rendered as HTML by TypeDoc.
@@ -20,3 +21,4 @@ Published as HTML at <https://instantiator.dev/footsteps/docs/>, with the API re
 - [0003 Save game progress in local storage](ADRs/0003-save-progress-in-local-storage.md)
 - [0004 Vision optimisations](ADRs/0004-vision-optimisations.md)
 - [0005 Vision models](ADRs/0005-vision-models.md)
+- [0006 Display rules and state](ADRs/0006-display-rules-and-state.md)

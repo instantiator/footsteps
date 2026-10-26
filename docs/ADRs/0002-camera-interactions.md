@@ -1,6 +1,6 @@
 # ADR 0002: Camera interactions and per-display camera settings
 
-- Status: Accepted
+- Status: Accepted; superseded in part by [ADR 0006](0006-display-rules-and-state.md) (camera targets come from rule selectors, and covered elements don't respond)
 - Date: 2026-10-22
 
 ## Context

@@ -39,6 +39,7 @@
     "@tensorflow/tfjs-backend-webgpu": "4.22.0",
     "@uidotdev/usehooks": "^2.4.1",
     "dompurify": "^3.4.17",
+    "filtrex": "3.1.0",
     "handlebars": "^4.7.10",
     "isbot": "^5",
     "lodash": "^4.17.21",
