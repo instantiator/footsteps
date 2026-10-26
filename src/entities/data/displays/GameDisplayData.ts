@@ -68,9 +68,143 @@ export interface GameDisplayBase {
 export interface GameDisplayComponentBase {
   /** Which kind of component this is. */
   type: GameDisplayComponentType;
-  /** Extra values for this display, passed through to its templates as `componentData`. */
+  /** Extra values for this display, passed through to its templates as `data` (and `componentData`). */
   data: Record<string, unknown>;
+  /** The display's state when it is first shown, and after a reset. Templates and rules see it as `state`. */
+  initialState?: Record<string, unknown>;
+  /** Whether state returns to `initialState` each time the display is shown. Defaults to false. */
+  resetStateOnShow?: boolean;
+  /** What happens in response to events, in order. */
+  rules?: GameRule[];
 }
+
+/**
+ * An expression, eg. `state.score + 1` or `if state.on then 2 else 1`, over `state`, `data`, `game` and `event`.
+ * See docs/filtrex.md for the syntax.
+ */
+export type GameExpressionSource = string;
+
+/** One behaviour: when the trigger fires and the condition holds, apply the actions in order. */
+export interface GameRule {
+  /** What makes the rule fire. */
+  on: GameTrigger;
+  /** The rule is skipped when this expression is false. */
+  if?: GameExpressionSource;
+  /** What the rule does, in order. */
+  do: GameAction[];
+}
+
+/** A player (or a click) interacting with an element of the display. */
+export interface GameInteractTrigger {
+  /** The interactions that fire the rule. */
+  interact: GameInteraction | GameInteraction[];
+  /** CSS selector for the elements, eg. `#door` or `.lava`. */
+  target: string;
+  /**
+   * Camera interactions only: the fraction of the body part that must be inside the element (0–1). Defaults to 1.
+   *
+   * @minimum 0
+   * @maximum 1
+   */
+  threshold?: number;
+  /** Camera interactions only: also fire when the element is covered by another element. Defaults to false. */
+  includeCovered?: boolean;
+}
+
+/** A CSS animation ending on an element of the display. */
+export interface GameAnimationEndTrigger {
+  /** The animation's name, as in `@keyframes`. */
+  animationEnd: string;
+  /** CSS selector for the elements. */
+  target: string;
+}
+
+/** A CSS transition ending on an element of the display. */
+export interface GameTransitionEndTrigger {
+  /** The transitioned CSS property, eg. `left`. */
+  transitionEnd: string;
+  /** CSS selector for the elements. */
+  target: string;
+}
+
+/** An expression turning from false to true. */
+export interface GameWhenTrigger {
+  /** Fires on each change from false to true, after any state or game change. */
+  when: GameExpressionSource;
+}
+
+/** Repeatedly, while the display is shown. */
+export interface GameEveryTrigger {
+  /** Milliseconds between firings: a number, or an expression re-evaluated each time. */
+  every: number | GameExpressionSource;
+}
+
+/** Once, some time after the display is shown. */
+export interface GameAfterTrigger {
+  /** Milliseconds after the display is shown: a number, or an expression. */
+  after: number | GameExpressionSource;
+}
+
+/** When the display is shown. */
+export interface GameStartTrigger {
+  /** Always true. */
+  start: true;
+}
+
+/** What makes a rule fire. */
+export type GameTrigger =
+  | GameInteractTrigger
+  | GameAnimationEndTrigger
+  | GameTransitionEndTrigger
+  | GameWhenTrigger
+  | GameEveryTrigger
+  | GameAfterTrigger
+  | GameStartTrigger;
+
+/** Sets state keys to the values of expressions, all evaluated against the state before the action. */
+export interface GameSetAction {
+  /** State key to expression. */
+  set: Record<string, GameExpressionSource>;
+}
+
+/** Returns the display's state to `initialState`. */
+export interface GameResetStateAction {
+  /** Always true. */
+  resetState: true;
+}
+
+/** Marks this display's challenge as solved. Challenge displays only. */
+export interface GameCompleteChallengeAction {
+  /** Always true. */
+  completeChallenge: true;
+}
+
+/** Submits an answer to this display's challenge, checked as a typed answer is. Challenge displays only. */
+export interface GameAnswerAction {
+  /** Expression giving the answer. */
+  answer: GameExpressionSource;
+}
+
+/** Clears this display's challenge, and the state of its displays. Challenge displays only. */
+export interface GameResetChallengeAction {
+  /** Always true. */
+  resetChallenge: true;
+}
+
+/** Opens a stage, unless it is locked or completed. */
+export interface GameEnterStageAction {
+  /** The stage's id. */
+  enterStage: GameStageId;
+}
+
+/** Something a rule does. */
+export type GameAction =
+  | GameSetAction
+  | GameResetStateAction
+  | GameCompleteChallengeAction
+  | GameAnswerAction
+  | GameResetChallengeAction
+  | GameEnterStageAction;
 
 /** A display shown when no stage is active. */
 export interface GameOverviewDisplay extends GameDisplayBase {

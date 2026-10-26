@@ -18,6 +18,76 @@
             ],
             "type": "object"
         },
+        "GameAction": {
+            "anyOf": [
+                {
+                    "$ref": "#/definitions/GameSetAction"
+                },
+                {
+                    "$ref": "#/definitions/GameResetStateAction"
+                },
+                {
+                    "$ref": "#/definitions/GameCompleteChallengeAction"
+                },
+                {
+                    "$ref": "#/definitions/GameAnswerAction"
+                },
+                {
+                    "$ref": "#/definitions/GameResetChallengeAction"
+                },
+                {
+                    "$ref": "#/definitions/GameEnterStageAction"
+                }
+            ],
+            "description": "Something a rule does."
+        },
+        "GameAfterTrigger": {
+            "description": "Once, some time after the display is shown.",
+            "properties": {
+                "after": {
+                    "description": "Milliseconds after the display is shown: a number, or an expression.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
+                }
+            },
+            "required": [
+                "after"
+            ],
+            "type": "object"
+        },
+        "GameAnimationEndTrigger": {
+            "description": "A CSS animation ending on an element of the display.",
+            "properties": {
+                "animationEnd": {
+                    "description": "The animation's name, as in `@keyframes`.",
+                    "type": "string"
+                },
+                "target": {
+                    "description": "CSS selector for the elements.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "animationEnd",
+                "target"
+            ],
+            "type": "object"
+        },
+        "GameAnswerAction": {
+            "description": "Submits an answer to this display's challenge, checked as a typed answer is. Challenge displays only.",
+            "properties": {
+                "answer": {
+                    "description": "Expression giving the answer.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "answer"
+            ],
+            "type": "object"
+        },
         "GameChallengeData": {
             "description": "Describes an individual challenge in the game",
             "properties": {
@@ -100,6 +170,20 @@
             },
             "required": [
                 "answers"
+            ],
+            "type": "object"
+        },
+        "GameCompleteChallengeAction": {
+            "description": "Marks this display's challenge as solved. Challenge displays only.",
+            "properties": {
+                "completeChallenge": {
+                    "const": true,
+                    "description": "Always true.",
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "completeChallenge"
             ],
             "type": "object"
         },
@@ -296,7 +380,7 @@
                 },
                 "data": {
                     "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
-                    "description": "Extra values for this display, passed through to its templates as `componentData`."
+                    "description": "Extra values for this display, passed through to its templates as `data` (and `componentData`)."
                 },
                 "foregroundStyle": {
                     "$ref": "#/definitions/React.CSSProperties",
@@ -317,6 +401,21 @@
                 "imageResource": {
                     "description": "Resource name of the background image. Without one, the dialog fills its display.",
                     "type": "string"
+                },
+                "initialState": {
+                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
+                    "description": "The display's state when it is first shown, and after a reset. Templates and rules see it as `state`."
+                },
+                "resetStateOnShow": {
+                    "description": "Whether state returns to `initialState` each time the display is shown. Defaults to false.",
+                    "type": "boolean"
+                },
+                "rules": {
+                    "description": "What happens in response to events, in order.",
+                    "items": {
+                        "$ref": "#/definitions/GameRule"
+                    },
+                    "type": "array"
                 },
                 "type": {
                     "const": "dialog",
@@ -430,7 +529,7 @@
                 },
                 "data": {
                     "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
-                    "description": "Extra values for this display, passed through to its templates as `componentData`."
+                    "description": "Extra values for this display, passed through to its templates as `data` (and `componentData`)."
                 },
                 "foregroundStyle": {
                     "$ref": "#/definitions/React.CSSProperties",
@@ -443,6 +542,21 @@
                 "foregroundTemplateStyle": {
                     "$ref": "#/definitions/React.CSSProperties",
                     "description": "CSS for the element wrapping the rendered foreground template."
+                },
+                "initialState": {
+                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
+                    "description": "The display's state when it is first shown, and after a reset. Templates and rules see it as `state`."
+                },
+                "resetStateOnShow": {
+                    "description": "Whether state returns to `initialState` each time the display is shown. Defaults to false.",
+                    "type": "boolean"
+                },
+                "rules": {
+                    "description": "What happens in response to events, in order.",
+                    "items": {
+                        "$ref": "#/definitions/GameRule"
+                    },
+                    "type": "array"
                 },
                 "type": {
                     "const": "scroll",
@@ -474,7 +588,7 @@
                 },
                 "data": {
                     "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
-                    "description": "Extra values for this display, passed through to its templates as `componentData`."
+                    "description": "Extra values for this display, passed through to its templates as `data` (and `componentData`)."
                 },
                 "foregroundStyle": {
                     "$ref": "#/definitions/React.CSSProperties",
@@ -487,6 +601,21 @@
                 "foregroundTemplateStyle": {
                     "$ref": "#/definitions/React.CSSProperties",
                     "description": "CSS for the element wrapping the rendered foreground template."
+                },
+                "initialState": {
+                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
+                    "description": "The display's state when it is first shown, and after a reset. Templates and rules see it as `state`."
+                },
+                "resetStateOnShow": {
+                    "description": "Whether state returns to `initialState` each time the display is shown. Defaults to false.",
+                    "type": "boolean"
+                },
+                "rules": {
+                    "description": "What happens in response to events, in order.",
+                    "items": {
+                        "$ref": "#/definitions/GameRule"
+                    },
+                    "type": "array"
                 },
                 "type": {
                     "const": "template",
@@ -518,6 +647,82 @@
             },
             "required": [
                 "sourceType"
+            ],
+            "type": "object"
+        },
+        "GameEnterStageAction": {
+            "description": "Opens a stage, unless it is locked or completed.",
+            "properties": {
+                "enterStage": {
+                    "description": "The stage's id.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "enterStage"
+            ],
+            "type": "object"
+        },
+        "GameEveryTrigger": {
+            "description": "Repeatedly, while the display is shown.",
+            "properties": {
+                "every": {
+                    "description": "Milliseconds between firings: a number, or an expression re-evaluated each time.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
+                }
+            },
+            "required": [
+                "every"
+            ],
+            "type": "object"
+        },
+        "GameInteractTrigger": {
+            "description": "A player (or a click) interacting with an element of the display.",
+            "properties": {
+                "includeCovered": {
+                    "description": "Camera interactions only: also fire when the element is covered by another element. Defaults to false.",
+                    "type": "boolean"
+                },
+                "interact": {
+                    "anyOf": [
+                        {
+                            "items": {
+                                "$ref": "#/definitions/GameInteraction"
+                            },
+                            "type": "array"
+                        },
+                        {
+                            "enum": [
+                                "any",
+                                "body",
+                                "click",
+                                "foot",
+                                "hand",
+                                "head",
+                                "jump"
+                            ],
+                            "type": "string"
+                        }
+                    ],
+                    "description": "The interactions that fire the rule."
+                },
+                "target": {
+                    "description": "CSS selector for the elements, eg. `#door` or `.lava`.",
+                    "type": "string"
+                },
+                "threshold": {
+                    "description": "Camera interactions only: the fraction of the body part that must be inside the element (0–1). Defaults to 1.",
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number"
+                }
+            },
+            "required": [
+                "interact",
+                "target"
             ],
             "type": "object"
         },
@@ -598,6 +803,34 @@
             ],
             "type": "string"
         },
+        "GameResetChallengeAction": {
+            "description": "Clears this display's challenge, and the state of its displays. Challenge displays only.",
+            "properties": {
+                "resetChallenge": {
+                    "const": true,
+                    "description": "Always true.",
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "resetChallenge"
+            ],
+            "type": "object"
+        },
+        "GameResetStateAction": {
+            "description": "Returns the display's state to `initialState`.",
+            "properties": {
+                "resetState": {
+                    "const": true,
+                    "description": "Always true.",
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "resetState"
+            ],
+            "type": "object"
+        },
         "GameResourceDefinitions": {
             "additionalProperties": {
                 "properties": {
@@ -622,6 +855,44 @@
                 "type": "object"
             },
             "description": "Named resources, keyed by the name used to refer to them.\nResolved to absolute URLs when the game loads.",
+            "type": "object"
+        },
+        "GameRule": {
+            "description": "One behaviour: when the trigger fires and the condition holds, apply the actions in order.",
+            "properties": {
+                "do": {
+                    "description": "What the rule does, in order.",
+                    "items": {
+                        "$ref": "#/definitions/GameAction"
+                    },
+                    "type": "array"
+                },
+                "if": {
+                    "description": "The rule is skipped when this expression is false.",
+                    "type": "string"
+                },
+                "on": {
+                    "$ref": "#/definitions/GameTrigger",
+                    "description": "What makes the rule fire."
+                }
+            },
+            "required": [
+                "do",
+                "on"
+            ],
+            "type": "object"
+        },
+        "GameSetAction": {
+            "description": "Sets state keys to the values of expressions, all evaluated against the state before the action.",
+            "properties": {
+                "set": {
+                    "$ref": "#/definitions/Record%3Cstring%2Cstring%3E",
+                    "description": "State key to expression."
+                }
+            },
+            "required": [
+                "set"
+            ],
             "type": "object"
         },
         "GameStageData": {
@@ -679,7 +950,81 @@
             ],
             "type": "object"
         },
+        "GameStartTrigger": {
+            "description": "When the display is shown.",
+            "properties": {
+                "start": {
+                    "const": true,
+                    "description": "Always true.",
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "start"
+            ],
+            "type": "object"
+        },
+        "GameTransitionEndTrigger": {
+            "description": "A CSS transition ending on an element of the display.",
+            "properties": {
+                "target": {
+                    "description": "CSS selector for the elements.",
+                    "type": "string"
+                },
+                "transitionEnd": {
+                    "description": "The transitioned CSS property, eg. `left`.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "target",
+                "transitionEnd"
+            ],
+            "type": "object"
+        },
+        "GameTrigger": {
+            "anyOf": [
+                {
+                    "$ref": "#/definitions/GameInteractTrigger"
+                },
+                {
+                    "$ref": "#/definitions/GameAnimationEndTrigger"
+                },
+                {
+                    "$ref": "#/definitions/GameTransitionEndTrigger"
+                },
+                {
+                    "$ref": "#/definitions/GameWhenTrigger"
+                },
+                {
+                    "$ref": "#/definitions/GameEveryTrigger"
+                },
+                {
+                    "$ref": "#/definitions/GameAfterTrigger"
+                },
+                {
+                    "$ref": "#/definitions/GameStartTrigger"
+                }
+            ],
+            "description": "What makes a rule fire."
+        },
+        "GameWhenTrigger": {
+            "description": "An expression turning from false to true.",
+            "properties": {
+                "when": {
+                    "description": "Fires on each change from false to true, after any state or game change.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "when"
+            ],
+            "type": "object"
+        },
         "React.CSSProperties": {
+            "type": "object"
+        },
+        "Record<string,string>": {
             "type": "object"
         },
         "Record<string,unknown>": {
