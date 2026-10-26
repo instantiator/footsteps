@@ -74,8 +74,8 @@
 }
 
 /*
- * A balloon falls (outer), sways (middle) and pops (inner). Its column (`left`) comes from the game state, so each new
- * balloon starts somewhere else. Popping pauses the fall and sway where they are,
+ * A balloon falls (outer), sways (middle) and pops (inner). Its column (`left`) and colour come from the game state,
+ * so each new balloon starts somewhere else, in the next colour. Popping pauses the fall and sway where they are,
  * so the pop starts from where the balloon was, and a new balloon (a new id) starts both afresh.
  */
 .balloon {
@@ -95,8 +95,33 @@
   width: 100%;
   height: 100%;
   border-radius: 50% 50% 45% 45%;
-  background: radial-gradient(circle at 35% 30%, #ffb3c1, #e63946 60%);
+  background: radial-gradient(circle at 35% 30%, var(--balloon-light), var(--balloon-base) 60%);
   cursor: pointer;
+}
+/* The balloon colours, in the order they cycle: red, green, yellow, blue, magenta, cyan */
+.colour-0 {
+  --balloon-light: #ffb3b3;
+  --balloon-base: #e02424;
+}
+.colour-1 {
+  --balloon-light: #b8f5c4;
+  --balloon-base: #16a34a;
+}
+.colour-2 {
+  --balloon-light: #fff7b0;
+  --balloon-base: #eab308;
+}
+.colour-3 {
+  --balloon-light: #b3ccff;
+  --balloon-base: #1d4ed8;
+}
+.colour-4 {
+  --balloon-light: #ffb3f0;
+  --balloon-base: #c026d3;
+}
+.colour-5 {
+  --balloon-light: #b3f7ff;
+  --balloon-base: #06b6d4;
 }
 .balloon.popping,
 .balloon.popping .balloon-sway {

@@ -492,7 +492,14 @@
                   "component": {
                     "type": "template",
                     "data": { "target": 10 },
-                    "initialState": { "score": 0, "balloon": 0, "popping": false, "dropMs": 4000, "left": 45 },
+                    "initialState": {
+                      "score": 0,
+                      "balloon": 0,
+                      "popping": false,
+                      "dropMs": 4000,
+                      "left": 45,
+                      "colour": 0
+                    },
                     "resetStateOnShow": true,
                     "rules": [
                       {
@@ -511,7 +518,8 @@
                             "set": {
                               "popping": "false",
                               "balloon": "state.balloon + 1",
-                              "left": "((state.balloon + 1) * 37) mod 70 + 10"
+                              "left": "((state.balloon + 1) * 37) mod 70 + 10",
+                              "colour": "(state.balloon + 1) mod 6"
                             }
                           }
                         ]
