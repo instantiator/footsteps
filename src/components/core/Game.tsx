@@ -171,7 +171,7 @@ function useInteractionHandlers(gameState: GameState, setGameState: Dispatch<Set
  */
 export default function Game() {
   const { debug } = useAppConfig();
-  const { resources } = useGameData();
+  const { gameId, resources } = useGameData();
   const { gameState, setGameState } = useGameState();
   useGameFeedback();
   useTitleScreenKeys();
@@ -202,7 +202,7 @@ export default function Game() {
     [gameState, setGameState],
   );
 
-  const renderData = useMemo(() => getLayeredRenderData(gameState, resources), [gameState, resources]);
+  const renderData = useMemo(() => getLayeredRenderData(gameState, resources, gameId), [gameState, resources, gameId]);
   const displayKey = useMemo(() => getDisplayKey(renderData), [renderData]);
   const layers = useMemo(() => createLayers(renderData, onAnswer), [renderData, onAnswer]);
   const camera = useMemo(() => resolveCameraMode(gameState.gameData, renderData), [gameState.gameData, renderData]);

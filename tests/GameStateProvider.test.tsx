@@ -7,6 +7,7 @@ import { GameDataProvider } from "../src/providers/GameDataProvider";
 import GameRepositoryProvider from "../src/providers/GameRepositoryProvider";
 import GameStateProvider from "../src/providers/GameStateProvider";
 import { useGameState } from "../src/providers/GameStateHook";
+import { challenge, game, stage } from "./data/GameBuilders";
 import { simpleGameData } from "./data/SampleGameState";
 
 const GAME_ID = "simple-game";
@@ -78,5 +79,55 @@ describe("GameStateProvider", () => {
     renderProvider();
 
     expect(screen.getByText("Solved: 0")).toBeInTheDocument();
+  });
+});
+
+describe("GameStateProvider display resets", () => {
+  const SCOPE = "challenge:s1:c1:challenge-in-progress";
+  const resettingGame = game(["game-overview-stages"], [stage("s1", [challenge("c1")])]);
+  resettingGame.stages[0].challenges[0].displays[0].component.resetStateOnShow = true;
+
+  /** Moves in and out of the stage with plain states, as the HUD does, and sets the challenge display's state. */
+  function DisplayStateProbe() {
+    const { gameState, setGameState } = useGameState();
+    const go = (stageId: string | null) => setGameState({ ...gameState, current: { ...gameState.current, stageId } });
+    return (
+      <div>
+        <p>State: {JSON.stringify(gameState.displayStates[SCOPE] ?? null)}</p>
+        <button type="button" onClick={() => go("s1")}>
+          Enter
+        </button>
+        <button type="button" onClick={() => go(null)}>
+          Leave
+        </button>
+        <button
+          type="button"
+          onClick={() => setGameState((s) => ({ ...s, displayStates: { ...s.displayStates, [SCOPE]: { n: 1 } } }))}
+        >
+          Set
+        </button>
+      </div>
+    );
+  }
+
+  it("keeps state while hidden, and resets it when a flagged display is shown again", () => {
+    render(
+      <GameRepositoryProvider source={{ type: "RawRepository", repository: { games: { g: resettingGame } } }}>
+        <GameDataProvider id="g">
+          <GameStateProvider>
+            <DisplayStateProbe />
+          </GameStateProvider>
+        </GameDataProvider>
+      </GameRepositoryProvider>,
+    );
+    const click = (name: string) => fireEvent.click(screen.getByRole("button", { name }));
+
+    click("Enter");
+    click("Set");
+    expect(screen.getByText('State: {"n":1}')).toBeInTheDocument();
+    click("Leave");
+    expect(screen.getByText('State: {"n":1}')).toBeInTheDocument();
+    click("Enter");
+    expect(screen.getByText("State: null")).toBeInTheDocument();
   });
 });

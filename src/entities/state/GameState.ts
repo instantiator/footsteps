@@ -5,7 +5,13 @@ import type { GameData } from "../data/GameData";
 import type { GameStageId } from "../data/GameStageData";
 import type { GameStageState } from "./GameStageState";
 
-/** Runtime progress of a game: its definition, per-stage progress, and what is currently showing. */
+/**
+ * Identifies one display, and so its state: `overview:<purpose>`, `stage:<stageId>:shared`, or
+ * `challenge:<stageId>:<challengeId>:<purpose>`.
+ */
+export type DisplayScope = string;
+
+/** Runtime progress of a game: its definition, per-stage progress, what is currently showing, and display states. */
 export interface GameState {
   /** The authored definition of the game being played. */
   gameData: GameData;
@@ -18,6 +24,8 @@ export interface GameState {
     /** The overview display showing when no stage is active. */
     overviewDisplay: GameOverviewDisplayPurpose | null;
   };
+  /** Each display's own state, by scope. A display with no entry uses its component's `initialState`. */
+  displayStates: Record<DisplayScope, Record<string, unknown>>;
 }
 
 /**
@@ -50,5 +58,6 @@ export function createBlankGameState(game: GameData): GameState {
       stageId: null,
       overviewDisplay,
     },
+    displayStates: {},
   };
 }

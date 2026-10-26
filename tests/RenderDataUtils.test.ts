@@ -8,6 +8,7 @@ import {
   getDisplayKey,
   getLayeredRenderData,
   getRenderMode,
+  getShownDisplays,
 } from "../src/components/core/logic/RenderDataUtils";
 import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
 import { challenge, display, game, stage } from "./data/GameBuilders";
@@ -41,7 +42,7 @@ describe("getRenderMode", () => {
 });
 
 describe("getDisplayKey", () => {
-  const keyOf = (state: GameState) => getDisplayKey(getLayeredRenderData(state, resources));
+  const keyOf = (state: GameState) => getDisplayKey(getLayeredRenderData(state, resources, "game"));
 
   it("stays the same while a display's contents change", () => {
     const state = inStage(createBlankGameState(chunkedGame(1)), "s1");
@@ -78,7 +79,7 @@ describe("getDisplayKey", () => {
 describe("getLayeredRenderData", () => {
   describe("in overview mode", () => {
     const state = createBlankGameState(chunkedGame(1));
-    const layers = getLayeredRenderData(state, resources);
+    const layers = getLayeredRenderData(state, resources, "game");
 
     it("has only the overview layer", () => {
       expect(layers.overviewRenderData?.purpose).toBe("game-overview-title");
@@ -104,20 +105,25 @@ describe("getLayeredRenderData", () => {
 
   describe("in stage mode", () => {
     it("has the stage's shared display when it has one", () => {
-      const layers = getLayeredRenderData(inStage(createBlankGameState(chunkedGame(1)), "s1"), resources);
+      const layers = getLayeredRenderData(inStage(createBlankGameState(chunkedGame(1)), "s1"), resources, "game");
       expect(layers.stageRenderData?.purpose).toBe("shared");
       expect(layers.stageRenderData?.stageId).toBe("s1");
       expect(layers.stageRenderData?.templateData.componentData).toEqual({ marker: "shared" });
     });
 
     it("has no stage layer when the stage has no shared display", () => {
-      const layers = getLayeredRenderData(inStage(createBlankGameState(chunkedGame(1, false)), "s1"), resources);
+      const layers = getLayeredRenderData(
+        inStage(createBlankGameState(chunkedGame(1, false)), "s1"),
+        resources,
+        "game",
+      );
       expect(layers.stageRenderData).toBeUndefined();
     });
 
     it("renders one challenge per challenge in the first chunk with an unsolved challenge", () => {
       const state = inStage(createBlankGameState(chunkedGame(2)), "s1");
-      const ids = (s: GameState) => getLayeredRenderData(s, resources).challengesRenderData?.map((c) => c.challengeId);
+      const ids = (s: GameState) =>
+        getLayeredRenderData(s, resources, "game").challengesRenderData?.map((c) => c.challengeId);
       expect(ids(state)).toEqual(["c1", "c2"]);
 
       const afterFirstChunk = completeChallenge(completeChallenge(state, "s1", "c1"), "s1", "c2");
@@ -126,7 +132,7 @@ describe("getLayeredRenderData", () => {
 
     it("gives challenge templates the challenge, its state, and where to check answers", () => {
       const state = inStage(createBlankGameState(chunkedGame(1)), "s1");
-      const [datum] = getLayeredRenderData(state, resources).challengesRenderData!;
+      const [datum] = getLayeredRenderData(state, resources, "game").challengesRenderData!;
       expect(datum.stageId).toBe("s1");
       expect(datum.challengeId).toBe("c1");
       expect(datum.solution).toEqual({ answers: ["ANSWER"] });
@@ -138,7 +144,7 @@ describe("getLayeredRenderData", () => {
     it("throws when an active challenge has no display", () => {
       const noDisplays = game(["game-overview-title"], [stage("s1", [challenge("c1", [])])]);
       const state = inStage(createBlankGameState(noDisplays), "s1");
-      expect(() => getLayeredRenderData(state, resources)).toThrow("c1");
+      expect(() => getLayeredRenderData(state, resources, "game")).toThrow("c1");
     });
   });
 });
@@ -217,5 +223,56 @@ describe("calcChallengeDisplays", () => {
     );
     const displays = calcChallengeDisplays(state.stages[0].challengeStates);
     expect(displays.map((d) => d?.purpose)).toEqual(["challenge-title", undefined, "challenge-completed"]);
+  });
+});
+
+describe("display scopes and state", () => {
+  const blank = () => createBlankGameState(chunkedGame(2));
+
+  it("shows only the overview while no stage is open", () => {
+    expect(getShownDisplays(blank()).map((d) => d.scope)).toEqual(["overview:game-overview-title"]);
+  });
+
+  it("shows the stage's shared display and its active challenges, with what they belong to", () => {
+    expect(
+      getShownDisplays(inStage(blank(), "s1")).map(({ scope, stageId, challengeId }) => ({
+        scope,
+        stageId,
+        challengeId,
+      })),
+    ).toEqual([
+      { scope: "stage:s1:shared", stageId: "s1", challengeId: undefined },
+      { scope: "challenge:s1:c1:challenge-in-progress", stageId: "s1", challengeId: "c1" },
+      { scope: "challenge:s1:c2:challenge-in-progress", stageId: "s1", challengeId: "c2" },
+    ]);
+  });
+
+  it("gives each display its scope, and its state, data and the game snapshot to render", () => {
+    const data = chunkedGame(1);
+    data.stages[0].challenges[0].displays[0].component.initialState = { n: 0 };
+    const state = {
+      ...inStage(createBlankGameState(data), "s1"),
+      displayStates: { "stage:s1:shared": { open: true } },
+    };
+
+    const layers = getLayeredRenderData(state, resources, "game-id");
+
+    expect(layers.stageRenderData?.scope).toBe("stage:s1:shared");
+    expect(layers.stageRenderData?.templateData.state).toEqual({ open: true });
+    const [first] = layers.challengesRenderData!;
+    expect(first.templateData.state).toEqual({ n: 0 });
+    expect(first.templateData.data).toBe(first.component.data);
+    expect(first.templateData.game).toMatchObject({
+      id: "game-id",
+      title: "Test Game",
+      config: { sequential: true, autoAdvanceStages: false },
+      current: { stageId: "s1" },
+    });
+    expect(first.templateData.game.stages[0]).toEqual({
+      id: "s1",
+      availability: "unlocked",
+      completion: "ready",
+      challenges: ["c1", "c2", "c3", "c4"].map((id) => ({ id, succeeded: false })),
+    });
   });
 });

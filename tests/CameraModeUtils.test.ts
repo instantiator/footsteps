@@ -44,7 +44,7 @@ const gameWithCamera = ({ game, overview, stage, challenges = [undefined] }: Cam
 const onOverview = (settings: CameraSettings = {}) => {
   const gameData = gameWithCamera(settings);
   const state = createBlankGameState(gameData);
-  return resolveCameraMode(gameData, getLayeredRenderData(state, {}));
+  return resolveCameraMode(gameData, getLayeredRenderData(state, {}, "game"));
 };
 
 /** Resolves camera mode while stage-1 and its challenges are showing. */
@@ -52,7 +52,7 @@ const inStage = (settings: CameraSettings = {}) => {
   const gameData = gameWithCamera(settings);
   const state = createBlankGameState(gameData);
   const inStageState = { ...state, current: { stageId: "stage-1", overviewDisplay: null } };
-  const renderData: LayeredGameDisplayRenderData = getLayeredRenderData(inStageState, {});
+  const renderData: LayeredGameDisplayRenderData = getLayeredRenderData(inStageState, {}, "game");
   return resolveCameraMode(gameData, renderData);
 };
 

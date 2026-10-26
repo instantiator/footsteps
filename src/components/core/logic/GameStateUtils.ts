@@ -7,6 +7,7 @@ import type { GameChallengeState } from "../../../entities/state/GameChallengeSt
 import type { GameStageCompletionState, GameStageState } from "../../../entities/state/GameStageState";
 import type { GameState } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
+import { challengeScope } from "./RenderDataUtils";
 
 /**
  * Validates an answer for a given challenge, applying the solution's case and whitespace rules (all on by default).
@@ -184,3 +185,35 @@ const calcFinaleOverviewDisplay = (gameState: GameState): GameOverviewDisplayPur
 export const getRecommendedStageId = (gameState: GameState): GameStageId | null => {
   return gameState.stages.find((s) => s.completion !== "completed")?.stage.id ?? null;
 };
+
+/** How complete a stage is, from its challenges: all solved, some solved, or none. */
+export const stageCompletion = (challengeStates: GameChallengeState[]): GameStageCompletionState =>
+  challengeStates.every((c) => c.succeeded)
+    ? "completed"
+    : challengeStates.some((c) => c.succeeded)
+      ? "partial"
+      : "ready";
+
+/**
+ * Clears a challenge: it is unsolved again, its stage's completion follows, and its displays' states are removed so
+ * they start again from `initialState`. The stage's availability, and what is showing, are left alone.
+ * @returns a new game state (the given state is not modified)
+ * @throws if the stage or challenge has no state
+ */
+export function resetChallenge(gameState: GameState, stageId: GameStageId, challengeId: GameChallengeId): GameState {
+  const stageState = getStageState(gameState, stageId);
+  const challengeState = stageState?.challengeStates.find((c) => c.challenge.id === challengeId);
+  if (!isDefined(stageState) || !isDefined(challengeState)) {
+    throw new Error(`No challenge state found for challenge id ${challengeId} in stage id ${stageId}`);
+  }
+  const challengeStates = stageState.challengeStates.map((c) =>
+    c === challengeState ? { ...c, succeeded: false } : c,
+  );
+  const updatedStageState = { ...stageState, challengeStates, completion: stageCompletion(challengeStates) };
+  const scopes = new Set(challengeState.challenge.displays.map((d) => challengeScope(stageId, challengeId, d.purpose)));
+  return {
+    ...gameState,
+    stages: gameState.stages.map((s) => (s === stageState ? updatedStageState : s)),
+    displayStates: _.omitBy(gameState.displayStates, (_state, scope) => scopes.has(scope)),
+  };
+}

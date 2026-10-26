@@ -5,7 +5,10 @@ import type {
   GameRule,
   GameTrigger,
 } from "../../../entities/data/displays/GameDisplayData";
+import type { GameState } from "../../../entities/state/GameState";
 import { compileGameExpression, type GameExpression } from "./GameExpressionUtils";
+import { getShownDisplays } from "./RenderDataUtils";
+import { isDefined } from "../../../util/ObjectUtils";
 
 /** Every expression in a game's rules, compiled once when the game loads, by source text. */
 export type GameExpressions = ReadonlyMap<string, GameExpression>;
@@ -120,4 +123,21 @@ export const compileGameRules = (gameData: GameData): GameExpressions => {
     });
   }
   return expressions;
+};
+
+/**
+ * Returns displays with `resetStateOnShow` to their `initialState` when they become shown. It runs on every game
+ * state change, in the same update, so a reset display never renders its old state.
+ * @param previous the state before the change, or undefined when the game starts
+ */
+export const applyShowResets = (previous: GameState | undefined, next: GameState): GameState => {
+  const wasShown = new Set(isDefined(previous) ? getShownDisplays(previous).map((d) => d.scope) : []);
+  const resets = getShownDisplays(next).filter(
+    (d) =>
+      d.component.resetStateOnShow === true && !wasShown.has(d.scope) && Object.hasOwn(next.displayStates, d.scope),
+  );
+  if (resets.length === 0) return next;
+  const displayStates = { ...next.displayStates };
+  for (const { scope } of resets) delete displayStates[scope];
+  return { ...next, displayStates };
 };

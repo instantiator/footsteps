@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import GameDisplayComponent from "../src/components/core/display/GameDisplayComponent";
 import type { GameDisplayComponentData } from "../src/entities/data/displays/GameDisplayData";
 import type { GameDisplayRenderData } from "../src/components/core/logic/RenderDataUtils";
+import { toGameSnapshot } from "../src/entities/state/GameSnapshot";
 import { decorateGameState } from "../src/components/core/logic/TemplateUtils";
 import { SMALL_GAME_ID, smallRepository } from "./data/SmallGame";
 import { simpleGameState } from "./data/SampleGameState";
@@ -16,9 +17,13 @@ const renderDisplay = (
   const display: GameDisplayRenderData = {
     purpose: "game-overview-stages",
     component,
+    scope: "overview:game-overview-stages",
     templateData: {
       gameState: decorateGameState(simpleGameState),
+      game: toGameSnapshot("game", simpleGameState),
       componentData: {},
+      data: {},
+      state: {},
       resources,
       challenge: undefined,
       challengeState: undefined,

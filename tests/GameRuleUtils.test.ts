@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import localRepository from "../public/game-repository.json";
-import { compileGameRules } from "../src/components/core/logic/GameRuleUtils";
+import { applyShowResets, compileGameRules } from "../src/components/core/logic/GameRuleUtils";
+import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
 import type { GameData } from "../src/entities/data/GameData";
 import type { GameAction, GameRule } from "../src/entities/data/displays/GameDisplayData";
 import type { GameRepository } from "../src/entities/GameRepository";
@@ -80,5 +81,43 @@ describe("compileGameRules", () => {
     for (const [id, data] of Object.entries((localRepository as GameRepository).games)) {
       expect(() => compileGameRules(data), id).not.toThrow();
     }
+  });
+});
+
+describe("applyShowResets", () => {
+  const OVERVIEW_SCOPE = "overview:game-overview-stages";
+  const CHALLENGE_SCOPE = "challenge:s1:c1:challenge-in-progress";
+
+  /** A game whose challenge display resets on show, with both displays holding state. */
+  const withStates = (current: GameState["current"]): GameState => {
+    const data = gameWithRules([]);
+    data.stages[0].challenges[0].displays[0].component.resetStateOnShow = true;
+    return {
+      ...createBlankGameState(data),
+      current,
+      displayStates: { [OVERVIEW_SCOPE]: { n: 1 }, [CHALLENGE_SCOPE]: { n: 2 } },
+    };
+  };
+  const overview = { stageId: null, overviewDisplay: "game-overview-stages" } as const;
+  const inStage = { stageId: "s1", overviewDisplay: "game-overview-stages" } as const;
+
+  it("resets a flagged display when it becomes shown", () => {
+    expect(applyShowResets(withStates(overview), withStates(inStage)).displayStates).toEqual({
+      [OVERVIEW_SCOPE]: { n: 1 },
+    });
+  });
+
+  it("keeps the state of a flagged display that was already shown", () => {
+    const next = withStates(inStage);
+    expect(applyShowResets(withStates(inStage), next)).toBe(next);
+  });
+
+  it("resets a flagged display that is shown when the game starts", () => {
+    expect(applyShowResets(undefined, withStates(inStage)).displayStates).not.toHaveProperty(CHALLENGE_SCOPE);
+  });
+
+  it("keeps the state of a display without the flag when it becomes shown", () => {
+    const next = withStates(overview);
+    expect(applyShowResets(withStates(inStage), next)).toBe(next);
   });
 });
