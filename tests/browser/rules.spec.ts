@@ -107,12 +107,19 @@ test.describe("rules demo", () => {
     const falling = (await page.locator("#balloon-1").boundingBox())!;
     await clickNow(page, "#balloon-1 .balloon-body");
     await expect(page.locator("#balloon-1")).toHaveClass(/popping/);
+    // It fades out from the balloons' opacity as it pops, and the next balloon is back at that opacity
+    const opacity = (n: number) =>
+      page.locator(`#balloon-${n} .balloon-body`).evaluate((element) => Number(getComputedStyle(element).opacity));
+    await expect.poll(() => opacity(1).catch(() => 0)).toBeLessThan(0.8);
     const popped = (await page.locator("#balloon-1").boundingBox())!;
     await page.waitForTimeout(100);
     const later = page.locator("#balloon-1");
     if (await later.count()) expect((await later.boundingBox())?.y).toBe(popped.y);
     expect(Math.abs(popped.y - falling.y)).toBeLessThan(40);
     await expect(page.locator("#score")).toHaveText("1 / 2");
+
+    await expect(page.locator("#balloon-2")).toBeVisible();
+    expect(await opacity(2)).toBeCloseTo(0.8);
 
     // Reaching the target completes the challenge, and the game goes back to the stages
     await clickBalloon(page, 2);

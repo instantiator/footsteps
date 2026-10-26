@@ -92,10 +92,12 @@
   animation: sway 1.5s ease-in-out infinite alternate;
 }
 .balloon-body {
+  --balloon-opacity: 0.8;
   width: 100%;
   height: 100%;
   border-radius: 50% 50% 45% 45%;
   background: radial-gradient(circle at 35% 30%, var(--balloon-light), var(--balloon-base) 60%);
+  opacity: var(--balloon-opacity);
   cursor: pointer;
 }
 /* The balloon colours, in the order they cycle: red, green, yellow, blue, magenta, cyan */
@@ -143,7 +145,12 @@
     transform: translateX(100%);
   }
 }
+/* Grows and fades out; once it ends, the popping class goes and the next balloon is back at full balloon opacity */
 @keyframes pop {
+  from {
+    transform: scale(1);
+    opacity: var(--balloon-opacity);
+  }
   to {
     transform: scale(1.6);
     opacity: 0;
