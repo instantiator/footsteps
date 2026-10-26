@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { feetOf, maskRectForElement, type Rect } from "../src/components/camera/CameraSupport";
+import { feetOf, maskRectForElement, screenPointForMaskPoint, type Rect } from "../src/components/camera/CameraSupport";
 import { noKeyPoints, type Point } from "../src/vision/VisionTypes";
 
 const WIDTH = 10;
@@ -95,5 +95,25 @@ describe("maskRectForElement", () => {
     const none: Rect = { left: 0, top: 0, right: 0, bottom: 0 };
     expect(maskRectForElement(canvas, none, MASK_WIDTH, MASK_HEIGHT)).toEqual(none);
     expect(maskRectForElement(canvas, canvas, 0, MASK_HEIGHT)).toEqual(none);
+  });
+});
+
+describe("screenPointForMaskPoint", () => {
+  /** A canvas 200 pixels wide and 100 tall, at (100, 50) in the viewport, showing a 400 by 200 mask. */
+  const canvas: Rect = { left: 100, top: 50, right: 300, bottom: 150 };
+
+  it("mirrors x and scales both axes, taking the centre of the pixel", () => {
+    expect(screenPointForMaskPoint({ x: 0, y: 0 }, canvas, 400, 200)).toEqual({ x: 299.75, y: 50.25 });
+    expect(screenPointForMaskPoint({ x: 399, y: 199 }, canvas, 400, 200)).toEqual({ x: 100.25, y: 149.75 });
+  });
+
+  it("lands inside the element whose mask rectangle holds the point", () => {
+    const element: Rect = { left: 120, top: 60, right: 180, bottom: 100 };
+    const rect = maskRectForElement(element, canvas, 400, 200);
+    const { x, y } = screenPointForMaskPoint({ x: rect.left, y: rect.top }, canvas, 400, 200);
+    expect(x).toBeGreaterThan(element.left);
+    expect(x).toBeLessThan(element.right);
+    expect(y).toBeGreaterThan(element.top);
+    expect(y).toBeLessThan(element.bottom);
   });
 });

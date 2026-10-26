@@ -1,8 +1,8 @@
 import type { GameInteraction } from "../../entities/data/displays/GameDisplayData";
 import { isDefined } from "../../util/ObjectUtils";
 import { BODY_PARTS, BodyPart } from "../../vision/BodyPart";
-import { bodyPartsIn } from "../../vision/VisionQueries";
-import type { VisionPerson } from "../../vision/VisionTypes";
+import { bodyPartsIn, partRegion } from "../../vision/VisionQueries";
+import type { Point, VisionPerson } from "../../vision/VisionTypes";
 import type { FootPosition, MaskRect } from "./CameraSupport";
 
 /** Interactions the player monitor can detect through the camera. */
@@ -20,8 +20,8 @@ export interface PlayerFrame extends VisionPerson {
 
 /** Something a player did to an element. */
 export interface PlayerMonitorEvent {
-  /** Id of the element the player interacted with. */
-  elementId: string;
+  /** The key of the target the player interacted with. */
+  key: string;
   /** What the player did. */
   interaction: CameraInteraction;
 }
@@ -34,6 +34,11 @@ export interface MonitorTarget {
   interactions: readonly string[];
   /** Fraction of the body part that must be inside the element (0–1). */
   threshold: number;
+  /**
+   * Whether the element is the topmost thing at a point in the mask, as a click there would find it. Without it,
+   * the element counts wherever it is, even under others.
+   */
+  isTopmostAt?: (point: Point) => boolean;
 }
 
 /** Interactions detected from how much of a body part is inside an element. */
@@ -71,6 +76,8 @@ interface TargetCoverage {
   proportions: Map<BodyPart, number>;
   /** The target's threshold, clamped to the range it means. */
   threshold: number;
+  /** Whether the target is on top where the part is, so nothing covers it there. */
+  visible: (part: BodyPart) => boolean;
 }
 
 /** Whether a value is an interaction the monitor understands, including unknown values from game data. */
@@ -80,12 +87,39 @@ const isCameraInteraction = (value: string): value is CameraInteraction =>
 /** Clamps an authored threshold to the range it means. */
 const clampThreshold = (threshold: number): number => Math.min(Math.max(threshold, 0), 1);
 
-/** Whether enough of any of the interaction's body parts is inside the element. */
-const isCovered = (interaction: CoverageInteraction, { proportions, threshold }: TargetCoverage): boolean =>
+/** Whether enough of any of the interaction's body parts is inside the element, where nothing covers it. */
+const isCovered = (interaction: CoverageInteraction, { proportions, threshold, visible }: TargetCoverage): boolean =>
   PART_GROUPS[interaction].some((part) => {
     const proportion = proportions.get(part);
-    return proportion !== undefined && proportion >= threshold;
+    return proportion !== undefined && proportion >= threshold && visible(part);
   });
+
+/** The centre of where two rectangles overlap, or undefined if they don't. */
+const overlapCentre = (a: MaskRect, b: MaskRect): Point | undefined => {
+  const left = Math.max(a.left, b.left);
+  const right = Math.min(a.right, b.right);
+  const top = Math.max(a.top, b.top);
+  const bottom = Math.min(a.bottom, b.bottom);
+  return right > left && bottom > top ? { x: (left + right) / 2, y: (top + bottom) / 2 } : undefined;
+};
+
+/**
+ * Whether a target is on top where a part overlaps it, sampled once per part (and frame), at the centre of the
+ * part's region clipped to the target.
+ * ponytail: one sample per part; sample a grid if partly covered elements fire, or fail to, when they shouldn't.
+ */
+const visibility = (frame: PlayerFrame, { isTopmostAt, rect }: MonitorTarget): ((part: BodyPart) => boolean) => {
+  if (!isTopmostAt) return () => true;
+  const seen = new Map<BodyPart, boolean>();
+  return (part) => {
+    if (!seen.has(part)) {
+      const bounds = partRegion(frame, part, frame.width, frame.height)?.bounds;
+      const centre = isDefined(bounds) ? overlapCentre(bounds, rect) : undefined;
+      seen.set(part, isDefined(centre) && isTopmostAt(centre));
+    }
+    return seen.get(part)!;
+  };
+};
 
 /** Marks an interaction that already held when the monitor was armed: it can't fire until it lets go. */
 const ALREADY_HELD = -1;
@@ -115,13 +149,13 @@ export class PlayerMonitor {
   /** Frames an interaction must hold before it fires. */
   private readonly stableFrames: number;
   /**
-   * How many frames in a row each interaction has held, keyed `${elementId}:${interaction}`;
+   * How many frames in a row each interaction has held, keyed `${key}:${interaction}`;
    * {@link ALREADY_HELD} for one that held before the monitor was armed.
    */
   private held = new Map<string, number>();
   /** Whether a frame has been seen, so coverage on later frames can count as beginning. */
   private armed = false;
-  /** Jump sequences in progress, by element id. */
+  /** Jump sequences in progress, by target key. */
   private readonly jumps = new Map<string, JumpState>();
   /** The feet position and time of the previous frame, for measuring vertical speed. */
   private previousFeet: { percentY: number; timestamp: number } | undefined;
@@ -139,41 +173,42 @@ export class PlayerMonitor {
    * Updates the monitor with one frame from this player.
    *
    * @param frame the player's mask and feet for this frame
-   * @param targets the elements in front of the player, by element id
+   * @param targets the elements in front of the player, by a key that stays the same for an element across frames
    * @param timestamp when the frame was taken, in milliseconds
    */
   update(frame: PlayerFrame, targets: Record<string, MonitorTarget>, timestamp: number): void {
     const velocity = this.verticalVelocity(frame.feet, timestamp);
     const held = new Map<string, number>();
-    const jumpIds = new Set<string>();
+    const jumpKeys = new Set<string>();
 
-    for (const [elementId, target] of Object.entries(targets)) {
+    for (const [key, target] of Object.entries(targets)) {
       const found = bodyPartsIn({ width: frame.width, height: frame.height, timestamp, people: [frame] }, target.rect);
       const coverage: TargetCoverage = {
         proportions: new Map(found.map(({ part, proportion }) => [part, proportion])),
         threshold: clampThreshold(target.threshold),
+        visible: visibility(frame, target),
       };
-      this.reportCovered(elementId, target, coverage, held);
+      this.reportCovered(key, target, coverage, held);
 
       if (target.interactions.includes("jump")) {
-        jumpIds.add(elementId);
+        jumpKeys.add(key);
         const footCovered = isCovered("foot", coverage);
-        if (this.advanceJump(elementId, footCovered, velocity, timestamp)) {
-          this.onEvent({ elementId, interaction: "jump" });
+        if (this.advanceJump(key, footCovered, velocity, timestamp)) {
+          this.onEvent({ key, interaction: "jump" });
         }
       }
     }
 
     this.held = held;
     this.armed = true;
-    for (const elementId of Array.from(this.jumps.keys())) {
-      if (!jumpIds.has(elementId)) this.jumps.delete(elementId);
+    for (const key of Array.from(this.jumps.keys())) {
+      if (!jumpKeys.has(key)) this.jumps.delete(key);
     }
   }
 
   /** Reports each coverage interaction that has held for long enough (once armed), and counts those that are holding. */
   private reportCovered(
-    elementId: string,
+    targetKey: string,
     target: MonitorTarget,
     coverage: TargetCoverage,
     held: Map<string, number>,
@@ -182,11 +217,11 @@ export class PlayerMonitor {
       if (!isCameraInteraction(interaction) || interaction === "jump") continue;
       if (!isCovered(interaction, coverage)) continue;
 
-      const key = `${elementId}:${interaction}`;
-      const previous = this.held.get(key) ?? 0;
+      const heldKey = `${targetKey}:${interaction}`;
+      const previous = this.held.get(heldKey) ?? 0;
       const streak = !this.armed || previous === ALREADY_HELD ? ALREADY_HELD : previous + 1;
-      held.set(key, streak);
-      if (streak === this.stableFrames) this.onEvent({ elementId, interaction });
+      held.set(heldKey, streak);
+      if (streak === this.stableFrames) this.onEvent({ key: targetKey, interaction });
     }
   }
 
@@ -201,14 +236,9 @@ export class PlayerMonitor {
     return (feet.percent.y - previous.percentY) / 100 / seconds;
   }
 
-  /** Advances one element's jump sequence, and reports whether it has just completed. */
-  private advanceJump(
-    elementId: string,
-    footCovered: boolean,
-    velocity: number | undefined,
-    timestamp: number,
-  ): boolean {
-    const state: JumpState = this.jumps.get(elementId) ?? { phase: "ready", since: timestamp };
+  /** Advances one target's jump sequence, and reports whether it has just completed. */
+  private advanceJump(key: string, footCovered: boolean, velocity: number | undefined, timestamp: number): boolean {
+    const state: JumpState = this.jumps.get(key) ?? { phase: "ready", since: timestamp };
     if (jumpExpired(state, timestamp)) state.phase = "ready";
 
     let completed = false;
@@ -219,7 +249,7 @@ export class PlayerMonitor {
       completed = next.completed;
     }
 
-    this.jumps.set(elementId, state);
+    this.jumps.set(key, state);
     return completed;
   }
 }

@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { useReward } from "partycles";
-import { useCallback, useEffect, useMemo, useRef, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import type { GameOverviewDisplayPurpose } from "../../entities/data/displays/GameDisplayData";
 import type { GameChallengeId } from "../../entities/data/GameChallengeData";
 import type { GameChallengeAnswerValidation } from "../../entities/data/GameChallengeSolution";
@@ -11,13 +11,12 @@ import { useGameData } from "../../providers/GameDataHook";
 import useGameMusic from "../../providers/GameMusicHook";
 import { useGameState } from "../../providers/GameStateHook";
 import { isDefined } from "../../util/ObjectUtils";
-import type { PlayerMonitorEvent } from "../camera/PlayerMonitor";
 import GameDisplayComponent, { type LayerHint } from "./display/GameDisplayComponent";
 import "./Game.css";
 import GameStylesheets from "./GameStylesheets";
 import GameLayersLayout, { type GameLayers } from "./layout/GameLayersLayout";
 import { resolveCameraMode } from "./logic/CameraModeUtils";
-import { getInteractionTargets, getNewGameStateForInteraction, leaveTitleScreen } from "./logic/GameClickUtils";
+import { leaveTitleScreen } from "./logic/GameClickUtils";
 import { findChallengeState } from "./logic/GameDataUtils";
 import type { DisplayDomEvent } from "./logic/TemplateUtils";
 import { completeChallenge, validateAnswer } from "./logic/GameStateUtils";
@@ -152,18 +151,6 @@ const createLayers = (renderData: LayeredGameDisplayRenderData, handlers: Displa
   };
 };
 
-/** Handlers that move the game on when the player interacts with an element through the camera. */
-function useInteractionHandlers(gameState: GameState, setGameState: Dispatch<SetStateAction<GameState>>) {
-  /** Applies a camera interaction the same way as a click on the same element. */
-  const handlePlayerInteraction = ({ elementId, interaction }: PlayerMonitorEvent) => {
-    const newState = getNewGameStateForInteraction(gameState, elementId, interaction);
-    if (!isDefined(newState)) return;
-    setGameState(newState);
-  };
-
-  return { handlePlayerInteraction };
-}
-
 /**
  * The callback function used when an answer is submitted (or tested) by a display component.
  * Accepts the answer, and if correct, updates the game state to complete the challenge.
@@ -199,7 +186,7 @@ function useAnswerHandler(): GameAnswerFunction {
 export default function Game() {
   const { debug } = useAppConfig();
   const { gameId, resources } = useGameData();
-  const { gameState, setGameState } = useGameState();
+  const { gameState } = useGameState();
   useGameFeedback();
   useTitleScreenKeys();
   useWakeLock(!gameState.stages.every((stage) => stage.completion === "completed"));
@@ -207,14 +194,12 @@ export default function Game() {
   const onAnswer = useAnswerHandler();
   const renderData = useMemo(() => getLayeredRenderData(gameState, resources, gameId), [gameState, resources, gameId]);
   const displayKey = useMemo(() => getDisplayKey(renderData), [renderData]);
-  const { handlePlayerInteraction } = useInteractionHandlers(gameState, setGameState);
-  const handleDisplayEvent = useGameRules();
+  const { onDisplayEvent, cameraRules, onPlayerInteraction } = useGameRules();
   const layers = useMemo(
-    () => createLayers(renderData, { onAnswer, onDisplayEvent: handleDisplayEvent }),
-    [renderData, onAnswer, handleDisplayEvent],
+    () => createLayers(renderData, { onAnswer, onDisplayEvent }),
+    [renderData, onAnswer, onDisplayEvent],
   );
   const camera = useMemo(() => resolveCameraMode(gameState.gameData, renderData), [gameState.gameData, renderData]);
-  const interactionTargets = useMemo(() => getInteractionTargets(gameState), [gameState]);
 
   return (
     <div
@@ -239,8 +224,8 @@ export default function Game() {
         gameLayers={layers}
         displayKey={displayKey}
         camera={camera}
-        interactionTargets={interactionTargets}
-        onPlayerInteraction={handlePlayerInteraction}
+        cameraRules={cameraRules}
+        onPlayerInteraction={onPlayerInteraction}
       />
     </div>
   );

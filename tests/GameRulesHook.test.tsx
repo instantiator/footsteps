@@ -39,7 +39,7 @@ const renderRules = (data: GameData) => {
       {children}
     </GameProviders>
   );
-  const { result } = renderHook(() => ({ onDisplayEvent: useGameRules(), ...useGameState() }), { wrapper });
+  const { result } = renderHook(() => ({ ...useGameRules(), ...useGameState() }), { wrapper });
   const set = (change: (state: ReturnType<typeof useGameState>["gameState"]) => typeof state) =>
     act(() => result.current.setGameState(change));
   const go = (overviewDisplay: "game-overview-title" | "game-overview-stages", stageId: string | null = null) =>

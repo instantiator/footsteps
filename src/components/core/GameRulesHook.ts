@@ -10,11 +10,15 @@ import {
   NO_EVENT,
   ruleDelay,
   runWhens,
+  triggerInteractions,
   type RuleEnvironment,
   type WhenEdges,
 } from "./logic/GameRuleUtils";
 import { getShownDisplays, overviewScope, type ShownDisplay } from "./logic/RenderDataUtils";
-import type { DisplayDomEvent } from "./logic/TemplateUtils";
+import { displayRoots, type DisplayDomEvent } from "./logic/TemplateUtils";
+import type { CameraRuleEvent, CameraRuleTarget } from "./layout/PlayerInteractionHook";
+import type { CameraInteraction } from "../camera/PlayerMonitor";
+import { DEFAULT_INTERACTION_THRESHOLD } from "../../entities/data/displays/GameDisplayData";
 
 /**
  * How long after a display is shown to check that its rules' selectors match something. Templates load
@@ -22,12 +26,6 @@ import type { DisplayDomEvent } from "./logic/TemplateUtils";
  * ponytail: a fixed wait; if it misleads, have the template component report when it has rendered.
  */
 const SELECTOR_CHECK_DELAY_MS = 2000;
-
-/** The template containers of a display, by its scope. */
-const displayRoots = (scope: DisplayScope): Element[] =>
-  Array.from(document.querySelectorAll("[data-display-scope]")).filter(
-    (element) => element instanceof HTMLElement && element.dataset.displayScope === scope,
-  );
 
 /** Warns about rules whose selectors match nothing in the display, as that is usually a typo. */
 const warnUnmatchedSelectors = (display: ShownDisplay): void => {
@@ -39,6 +37,20 @@ const warnUnmatchedSelectors = (display: ShownDisplay): void => {
     console.warn(`${display.scope} › rules[${ruleIndex}].on.target: "${selector}" matches nothing in the display`);
   });
 };
+
+/** The shown displays' rules that camera interactions can fire. */
+const getCameraRules = (state: GameState): CameraRuleTarget[] =>
+  getShownDisplays(state).flatMap(({ scope, component }) =>
+    (component.rules ?? []).flatMap(({ on }, ruleIndex) => {
+      if (!("interact" in on)) return [];
+      const interactions = triggerInteractions(on).filter((i): i is CameraInteraction => i !== "click");
+      if (interactions.length === 0) return [];
+      const threshold = on.threshold ?? DEFAULT_INTERACTION_THRESHOLD;
+      return [
+        { scope, ruleIndex, selector: on.target, interactions, threshold, includeCovered: on.includeCovered === true },
+      ];
+    }),
+  );
 
 /** Fires chosen rules of one display. */
 type FireRules = (scope: DisplayScope, pick: Parameters<typeof fireRules>[3]) => void;
@@ -129,6 +141,16 @@ function useWhenRules(env: RuleEnvironment, gameState: GameState, setGameState: 
   }, [env, gameState, setGameState]);
 }
 
+/** What {@link useGameRules} gives the game. */
+export interface GameRules {
+  /** Fires a display's rules for an event in its templates. */
+  onDisplayEvent: (scope: DisplayScope, event: DisplayDomEvent) => void;
+  /** The shown displays' rules that the camera can fire. */
+  cameraRules: CameraRuleTarget[];
+  /** Fires the camera rule that watches the element a player interacted with. */
+  onPlayerInteraction: (event: CameraRuleEvent) => void;
+}
+
 /**
  * Runs the shown displays' rules: fires them for events inside their templates, when they are shown (`start`),
  * on timers (`every`, `after`), and when a `when` expression becomes true after any change.
@@ -136,9 +158,9 @@ function useWhenRules(env: RuleEnvironment, gameState: GameState, setGameState: 
  * Rules change the game only through pure functions of the latest state, so events that arrive between renders
  * compose, and no rule ever receives `setGameState`.
  *
- * @returns the handler for events inside a display's templates
+ * @returns the handler for events inside a display's templates, and the rules the camera can fire with their handler
  */
-export function useGameRules() {
+export function useGameRules(): GameRules {
   const { gameId, expressions } = useGameData();
   const { gameState, setGameState } = useGameState();
   const env: RuleEnvironment = useMemo(() => ({ gameId, expressions }), [gameId, expressions]);
@@ -155,7 +177,7 @@ export function useGameRules() {
   useWhenRules(env, gameState, setGameState);
 
   /** Fires a display's rules for an event in its template. A click no rule takes moves on from the title screen. */
-  return useCallback(
+  const onDisplayEvent = useCallback(
     (scope: DisplayScope, event: DisplayDomEvent) => {
       const display = getShownDisplays(stateRef.current).find((d) => d.scope === scope);
       if (!isDefined(display)) return;
@@ -168,4 +190,14 @@ export function useGameRules() {
     },
     [fire, setGameState],
   );
+
+  /** Fires the camera rule that watches the element the player interacted with. */
+  const onPlayerInteraction = useCallback(
+    ({ scope, ruleIndex, element, interaction }: CameraRuleEvent) =>
+      fire(scope, (_, index) => (index === ruleIndex ? { id: element.id, interaction } : undefined)),
+    [fire],
+  );
+
+  const cameraRules = useMemo(() => getCameraRules(gameState), [gameState]);
+  return { onDisplayEvent, cameraRules, onPlayerInteraction };
 }

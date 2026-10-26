@@ -100,10 +100,10 @@ export const CharacterCameraLayerWrapper = ({
   </div>
 );
 
-/** Layer holding the debug overlay: feet markers when the camera is enabled. */
+/** Layer holding the debug overlay: feet markers when the camera is enabled. They take no pointer events, so they never cover what the player touches. */
 export const DebugLayerWrapper = ({ style, zIndex, feetPositions, cameraEnabled }: LayerNodeProps) => (
   <div id="debug-overlay-container" className="outerStyle noClicks" style={{ ...style, zIndex: zIndex }}>
-    {cameraEnabled && <CameraDebugOverlay className="innerStyle childClicksOnly" feetPositions={feetPositions} />}
+    {cameraEnabled && <CameraDebugOverlay className="innerStyle noClicks" feetPositions={feetPositions} />}
   </div>
 );
 

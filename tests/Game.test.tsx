@@ -131,9 +131,12 @@ describe("Game camera interactions", () => {
       display.purpose === "game-overview-stages"
         ? {
             ...display,
-            clickIdToStageId: {
-              ...display.clickIdToStageId,
-              "stage-link-stage-1": { stage: "stage-1", interactions: ["hand"] },
+            component: {
+              ...display.component,
+              rules: [
+                { on: { interact: "hand", target: "#stage-link-stage-1" }, do: [{ enterStage: "stage-1" }] },
+                ...(display.component.rules ?? []).slice(1),
+              ],
             },
           }
         : display,
@@ -147,26 +150,35 @@ describe("Game camera interactions", () => {
       </GameProviders>,
     );
 
-  /** The interaction callback the layout was last given. */
+  /** The camera rules and interaction callback the layout was last given. */
+  const cameraRules = () => receivedLayout.at(-1)!.cameraRules!;
   const layoutInteraction = () => receivedLayout.at(-1)!.onPlayerInteraction!;
 
-  it("enters the stage a camera interaction names", async () => {
+  it("gives the camera the rules it can fire, and enters the stage one names", async () => {
     renderVariant(handGame);
     await screen.findByText("Small Game");
+    expect(cameraRules()).toEqual([
+      {
+        scope: "overview:game-overview-stages",
+        ruleIndex: 0,
+        selector: "#stage-link-stage-1",
+        interactions: ["hand"],
+        threshold: 1,
+        includeCovered: false,
+      },
+    ]);
 
-    act(() => layoutInteraction()({ elementId: "stage-link-stage-1", interaction: "hand" }));
+    const [{ scope, ruleIndex }] = cameraRules();
+    const element = document.querySelector("#stage-link-stage-1")!;
+    act(() => layoutInteraction()({ scope, ruleIndex, element, interaction: "hand" }));
 
     expect(await screen.findByText("Question for stage-1")).toBeInTheDocument();
   });
 
-  it("ignores a camera interaction on an element that only accepts clicks", async () => {
+  it("gives the camera no rules for links that only accept clicks", async () => {
     renderGame();
     await screen.findByText("Small Game");
-
-    act(() => layoutInteraction()({ elementId: "stage-link-stage-1", interaction: "hand" }));
-
-    expect(screen.queryByText("Question for stage-1")).toBeNull();
-    expect(screen.getByText("Stage 1")).toBeInTheDocument();
+    expect(cameraRules()).toEqual([]);
   });
 });
 

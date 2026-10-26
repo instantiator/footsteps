@@ -14,17 +14,17 @@
 <section class="tsd-panel">
 <ul class="tsd-signatures">
 <li class="">
-<div class="tsd-signature tsd-anchor-link" id="usegamerules"><span class="tsd-kind-call-signature">useGameRules</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">scope</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">event</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/components_core_logic_TemplateUtils.DisplayDomEvent.html" class="tsd-signature-type tsd-kind-interface">DisplayDomEvent</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><a href="#usegamerules" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-signature tsd-anchor-link" id="usegamerules"><span class="tsd-kind-call-signature">useGameRules</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/components_core_GameRulesHook.GameRules.html" class="tsd-signature-type tsd-kind-interface">GameRules</a><a href="#usegamerules" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>Runs the shown displays' rules: fires them for events inside their templates, when they are shown (<code>start</code>),
 on timers (<code>every</code>, <code>after</code>), and when a <code>when</code> expression becomes true after any change.</p>
 <p>Rules change the game only through pure functions of the latest state, so events that arrive between renders
 compose, and no rule ever receives <code>setGameState</code>.</p>
 </div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">scope</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">event</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/components_core_logic_TemplateUtils.DisplayDomEvent.html" class="tsd-signature-type tsd-kind-interface">DisplayDomEvent</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></h4><p>the handler for events inside a display's templates</p>
+<h4 class="tsd-returns-title">Returns <a href="../interfaces/components_core_GameRulesHook.GameRules.html" class="tsd-signature-type tsd-kind-interface">GameRules</a></h4><p>the handler for events inside a display's templates, and the rules the camera can fire with their handler</p>
 <aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/GameRulesHook.ts#L141">components/core/GameRulesHook.ts:141</a></li></ul></aside></div></li></ul></section></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/GameRulesHook.ts#L163">components/core/GameRulesHook.ts:163</a></li></ul></aside></div></li></ul></section></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

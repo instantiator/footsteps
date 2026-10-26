@@ -9,10 +9,9 @@ import {
   type RefObject,
   type SetStateAction,
 } from "react";
-import type { GameInteractionTarget } from "../../../entities/data/displays/GameDisplayData";
 import { isDefined } from "../../../util/ObjectUtils";
 import type { FeetPositions } from "../../camera/CameraSupport";
-import type { PlayerFrame, PlayerMonitorEvent } from "../../camera/PlayerMonitor";
+import type { PlayerFrame } from "../../camera/PlayerMonitor";
 import type { ResolvedCameraMode } from "../logic/CameraModeUtils";
 import "./GameLayersLayout.css";
 import {
@@ -22,7 +21,7 @@ import {
   GameLayerWrapper,
   HudLayerWrapper,
 } from "./GameLayerWrappers";
-import { usePlayerInteractions } from "./PlayerInteractionHook";
+import { usePlayerInteractions, type CameraRuleEvent, type CameraRuleTarget } from "./PlayerInteractionHook";
 import useSceneTransition, { type SceneTransition } from "./useSceneTransition";
 
 /** Props for {@link GameLayersLayout}. */
@@ -35,10 +34,10 @@ interface GameLayersLayoutProps {
   camera: ResolvedCameraMode;
   /** Shows the debug overlay and the camera's colour key. */
   debug?: boolean;
-  /** The elements the camera can interact with, by element id. */
-  interactionTargets?: Record<string, GameInteractionTarget>;
-  /** Called when a player interacts with an element through the camera. */
-  onPlayerInteraction?: (event: PlayerMonitorEvent) => void;
+  /** The rules the camera can fire, for the displays shown now. */
+  cameraRules?: CameraRuleTarget[];
+  /** Called when a player interacts with an element a camera rule watches. */
+  onPlayerInteraction?: (event: CameraRuleEvent) => void;
 }
 
 /** The nodes for the background and foreground of the overview, the stage, and its challenges. */
@@ -256,7 +255,7 @@ export default function GameLayersLayout({
   displayKey = "default",
   camera: requestedCamera,
   debug,
-  interactionTargets,
+  cameraRules,
   onPlayerInteraction,
 }: GameLayersLayoutProps) {
   const [feetPositions, setFeetPositions] = useState<FeetPositions>({});
@@ -284,7 +283,7 @@ export default function GameLayersLayout({
   const show = !scene.camera.enabled || isDefined(cameraAspectRatio);
 
   const { canvasRef, handlePlayers } = usePlayerInteractions(
-    interactionTargets,
+    cameraRules,
     onPlayerInteraction,
     scene.camera.enabled && !scene.transitioning,
   );

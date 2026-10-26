@@ -89,6 +89,20 @@ export const maskRectForElement = (
 };
 
 /**
+ * Converts a point in mask pixels to the viewport point it is drawn at: the inverse of {@link maskRectForElement},
+ * mirrored the same way. The point is taken at the centre of its pixel.
+ */
+export const screenPointForMaskPoint = (
+  point: Point,
+  canvasRect: Rect,
+  maskWidth: number,
+  maskHeight: number,
+): Point => ({
+  x: canvasRect.right - ((point.x + 0.5) / maskWidth) * (canvasRect.right - canvasRect.left),
+  y: canvasRect.top + ((point.y + 0.5) / maskHeight) * (canvasRect.bottom - canvasRect.top),
+});
+
+/**
  * Where a person's feet are: midway between the feet the model placed, at the lower foot's height.
  * @param offScreenThreshold_percent feet lower than this (% of height) count as off screen
  * @returns the feet position, or null if neither foot was placed or they are off screen

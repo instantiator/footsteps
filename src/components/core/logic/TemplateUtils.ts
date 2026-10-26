@@ -76,3 +76,9 @@ export const matchTarget = ({ target, root }: Pick<DisplayDomEvent, "target" | "
   const element = target.closest(selector);
   return element !== null && element !== root && root.contains(element) ? element : undefined;
 };
+
+/** The template containers of a display (its background and foreground), by its scope. */
+export const displayRoots = (scope: string): Element[] =>
+  Array.from(document.querySelectorAll("[data-display-scope]")).filter(
+    (element) => element instanceof HTMLElement && element.dataset.displayScope === scope,
+  );
