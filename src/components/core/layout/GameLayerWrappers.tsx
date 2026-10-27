@@ -1,4 +1,5 @@
 import { Fragment, type CSSProperties, type ReactNode } from "react";
+import useAppConfig from "../../../providers/AppConfigHook";
 import { isDefined } from "../../../util/ObjectUtils";
 import CameraDebugOverlay from "../../camera/CameraDebugOverlay";
 import type { FeetPositions } from "../../camera/CameraSupport";
@@ -118,22 +119,25 @@ export const CharacterCanvasLayerWrapper = ({
   canvasRef,
   onPlayersChange,
   debug,
-}: LayerNodeProps) => (
-  // Clicks pass through to the game layers beneath; the silhouette is decoration
-  <div id="character-canvas-container" className="outerStyle noClicks">
-    <CharacterCanvas
-      video={video ?? null}
-      mediaStream={characterStream}
-      className="innerStyle"
-      style={{ ...style, transform: "scaleX(-1)", aspectRatio: aspectRatio, zIndex }}
-      onFeetPositionsChange={setFeetPositions}
-      onPlayersChange={onPlayersChange}
-      canvasRef={canvasRef}
-      maskType={debug ? "colored" : "binary"}
-      showStats={debug}
-    />
-  </div>
-);
+}: LayerNodeProps) => {
+  const { showFps } = useAppConfig();
+  return (
+    // Clicks pass through to the game layers beneath; the silhouette is decoration
+    <div id="character-canvas-container" className="outerStyle noClicks">
+      <CharacterCanvas
+        video={video ?? null}
+        mediaStream={characterStream}
+        className="innerStyle"
+        style={{ ...style, transform: "scaleX(-1)", aspectRatio: aspectRatio, zIndex }}
+        onFeetPositionsChange={setFeetPositions}
+        onPlayersChange={onPlayersChange}
+        canvasRef={canvasRef}
+        maskType={debug ? "colored" : "binary"}
+        showStats={debug || showFps}
+      />
+    </div>
+  );
+};
 
 /** Top layer, holding the {@link HeadsUpDisplay}. */
 export const HudLayerWrapper = ({ style, zIndex }: LayerNodeProps) => (

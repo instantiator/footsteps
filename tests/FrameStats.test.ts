@@ -15,14 +15,27 @@ describe("FrameStatsRecorder", () => {
     recorder.record(0, 10); // 10ms
     recorder.record(90, 110); // 20ms
     recorder.record(150, 210); // 60ms, an outlier the median ignores
-    expect(recorder.timing()).toEqual({ fps: 10, inferenceMs: 20 });
+    expect(recorder.timing()).toMatchObject({ fps: 10, inferenceMs: 20 });
+  });
+
+  it("reports the median time of each step after the model, and zero for frames that only timed the model", () => {
+    const recorder = new FrameStatsRecorder();
+    recorder.record(0, 10, { trackMs: 1, monitorMs: 2, drawMs: 3 });
+    recorder.record(100, 110, { trackMs: 3, monitorMs: 4, drawMs: 5 });
+    recorder.record(200, 210, { trackMs: 2, monitorMs: 40, drawMs: 4 }); // a monitor outlier the median ignores
+    expect(recorder.timing()).toMatchObject({ trackMs: 2, monitorMs: 4, drawMs: 4 });
+
+    const modelOnly = new FrameStatsRecorder();
+    modelOnly.record(0, 10);
+    modelOnly.record(100, 110);
+    expect(modelOnly.timing()).toMatchObject({ trackMs: 0, monitorMs: 0, drawMs: 0 });
   });
 
   it("only covers the most recent thirty frames", () => {
     const recorder = new FrameStatsRecorder();
     for (let frame = 0; frame < 30; frame++) recorder.record(frame * 1000, frame * 1000 + 500); // slow frames
     for (let frame = 0; frame < 30; frame++) recorder.record(30_000 + frame * 10, 30_000 + frame * 10 + 5);
-    expect(recorder.timing()).toEqual({ fps: 100, inferenceMs: 5 });
+    expect(recorder.timing()).toMatchObject({ fps: 100, inferenceMs: 5 });
   });
 });
 

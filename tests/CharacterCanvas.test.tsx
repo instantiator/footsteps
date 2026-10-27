@@ -111,6 +111,19 @@ describe("CharacterCanvas", () => {
     expect(container.querySelector("output.vision-stats") !== null).toBe(showStats);
   });
 
+  it("shows how long each step of a frame took, for the benchmark to read", async () => {
+    const onPlayersChange = vi.fn();
+    const { container } = renderCanvas({ onPlayersChange, showStats: true });
+    await waitFor(() => expect(onPlayersChange).toHaveBeenCalled());
+    await act(async () => runNextFrame());
+
+    await waitFor(() => expect(container.querySelector("output.vision-stats")).not.toBeNull());
+    const readout = container.querySelector("output.vision-stats")!;
+    for (const step of ["inference", "track", "monitor", "draw"]) {
+      expect(Number(readout.getAttribute(`data-${step}-ms`))).toBeGreaterThanOrEqual(0);
+    }
+  });
+
   it("publishes the tracking frame rate for the HUD, and clears it when tracking stops", async () => {
     const seen: (number | null)[] = [];
     const publish = vi.spyOn(fpsStore, "setTrackingFps").mockImplementation((fps) => void seen.push(fps));

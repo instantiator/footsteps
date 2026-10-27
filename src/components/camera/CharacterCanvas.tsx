@@ -7,7 +7,7 @@ import { PersonTracker } from "../../vision/Tracking";
 import type { VisionFrame } from "../../vision/VisionTypes";
 import { feetOf, type FeetPositions } from "./CameraSupport";
 import { drawPeople, type MaskType } from "./DrawPeople";
-import { frameQuality, FrameStatsRecorder, type FrameStats } from "./FrameStats";
+import { frameQuality, FrameStatsRecorder, type FrameStats, type FrameSteps } from "./FrameStats";
 import { setTrackingFps } from "./TrackingFpsStore";
 import type { PlayerFrame } from "./PlayerMonitor";
 
@@ -136,6 +136,24 @@ type LoopHandlers = Pick<
 };
 
 /**
+ * Records each frame's timings, and reports the loop's speed at most every {@link STATS_INTERVAL_MS}.
+ * @returns a function to call once per frame, after it has been drawn
+ */
+const statsReporter = (onStats?: (stats: FrameStats) => void) => {
+  const recorder = new FrameStatsRecorder();
+  let shownAt = 0;
+  return (frame: VisionFrame, start: number, inferenceEnd: number, steps: FrameSteps) => {
+    recorder.record(start, inferenceEnd, steps);
+    const timing = recorder.timing();
+    const now = performance.now();
+    if (!timing || now - shownAt < STATS_INTERVAL_MS) return;
+    shownAt = now;
+    setTrackingFps(timing.fps);
+    onStats?.({ ...timing, ...frameQuality(frame) });
+  };
+};
+
+/**
  * Tracks the people in each video frame: reports players and feet, then draws their silhouettes.
  * @returns a function that stops the loop
  */
@@ -158,28 +176,27 @@ const startTrackingLoop = (
   const ctx = canvas.getContext("2d");
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
-  const recorder = new FrameStatsRecorder();
+  const reportStats = statsReporter(onStats);
   const tracker = smoothing ? new PersonTracker() : null;
-  let statsShownAt = 0;
 
   const trackOnce = async () => {
     const timestamp = performance.now();
     const detected = await detectFrame(model, video, inputWidth, timestamp);
     if (cancelled) return; // the model may have been disposed while this frame was tracked
     const inferenceEnd = performance.now();
-    recorder.record(timestamp, inferenceEnd);
     const frame = tracker ? tracker.update(detected) : detected;
-    const timing = recorder.timing();
-    if (timing && inferenceEnd - statsShownAt >= STATS_INTERVAL_MS) {
-      statsShownAt = inferenceEnd;
-      setTrackingFps(timing.fps);
-      onStats?.({ ...timing, ...frameQuality(frame) });
-    }
     const players = playersOf(frame, offScreenThreshold_percent);
+    const trackEnd = performance.now();
     onPlayersChange?.(players, timestamp);
     onFeetPositionsChange?.(feetPositionsOf(players));
+    const monitorEnd = performance.now();
     // The 2D context is missing in some environments (eg. tests); the reports above still happen
     if (ctx) await drawPeople(video, frame, ctx, maskType);
+    reportStats(frame, timestamp, inferenceEnd, {
+      trackMs: trackEnd - inferenceEnd,
+      monitorMs: monitorEnd - trackEnd,
+      drawMs: performance.now() - monitorEnd,
+    });
   };
 
   // A failed frame is skipped rather than ending the loop; only the first failure is logged, as it may repeat every frame
@@ -210,6 +227,9 @@ const FrameStatsReadout = ({ stats }: { stats: FrameStats }) => (
     className="vision-stats"
     data-fps={stats.fps.toFixed(1)}
     data-inference-ms={stats.inferenceMs.toFixed(1)}
+    data-track-ms={stats.trackMs.toFixed(1)}
+    data-monitor-ms={stats.monitorMs.toFixed(1)}
+    data-draw-ms={stats.drawMs.toFixed(1)}
     data-people={stats.people}
     data-hands={stats.hands}
     data-feet={stats.feet}
