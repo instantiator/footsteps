@@ -31,7 +31,8 @@ export const silhouettePixels = (
   pixels: Uint8ClampedArray<ArrayBuffer> = new Uint8ClampedArray(width * height * 4),
 ): Uint8ClampedArray<ArrayBuffer> => {
   pixels.fill(0);
-  for (const { mask, held } of people) {
+  for (const { mask: detected, filled, held } of people) {
+    const mask = filled ?? detected;
     const alpha = Math.round(255 * (held?.opacity ?? 1));
     for (let i = 0; i < mask.length; i++) if (mask[i] === 1) pixels[i * 4 + 3] = Math.max(pixels[i * 4 + 3], alpha);
   }

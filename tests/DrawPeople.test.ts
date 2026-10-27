@@ -29,6 +29,11 @@ describe("silhouettePixels", () => {
     expect(alpha).toEqual([255, 0, 255, 0]);
   });
 
+  it("draws a person's filled silhouette where the tracker filled one", () => {
+    const filled = { ...person(0, [0]), filled: Uint8Array.from([1, 1, 0, 0]) };
+    expect(rgba(silhouettePixels(frame(filled))).map((pixel) => pixel[3])).toEqual([255, 255, 0, 0]);
+  });
+
   it("draws a held person as opaque as they are held, and overlaps at the more opaque", () => {
     const fading = { ...person(0, [0, 1]), held: { opacity: 0.5 } };
     const alpha = rgba(silhouettePixels(frame(fading, person(1, [1])))).map((pixel) => pixel[3]);

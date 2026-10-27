@@ -65,6 +65,8 @@ interface Track {
   lastSeen: number;
   /** The person as last seen, to show while the model has lost them. */
   last: VisionPerson;
+  /** Their key points as the model last placed them, before smoothing, to measure how far they move. */
+  detected: KeyPoints;
   /** An x and y filter per key point, reset whenever the point goes missing. */
   filters: Partial<Record<KeyPointName, [OneEuroFilter, OneEuroFilter]>>;
 }
@@ -84,6 +86,41 @@ const centreOf = ({ mask }: VisionPerson, width: number): Point | null => {
   return count === 0 ? null : { x: x / count, y: y / count };
 };
 
+/**
+ * A mask with the frame before's mask laid over it, moved by the given offset in pixels, so a part the model missed
+ * for one frame is still there. Only the frame before is used, so a part that is really gone is gone a frame later.
+ */
+export const fillFromPrevious = (mask: Uint8Array, previous: Uint8Array, width: number, offset: Point): Uint8Array => {
+  const filled = mask.slice();
+  const height = mask.length / width;
+  for (let y = Math.max(0, offset.y); y < Math.min(height, height + offset.y); y++) {
+    for (let x = Math.max(0, offset.x); x < Math.min(width, width + offset.x); x++) {
+      if (previous[(y - offset.y) * width + x - offset.x] === 1) filled[y * width + x] = 1;
+    }
+  }
+  return filled;
+};
+
+/**
+ * How far, in whole pixels, a person moved since the frame before: the mean move of the key points placed in both
+ * frames, or else of their silhouette's centre. Key points come first because the centre jumps when the model misses
+ * a part, which is when a fill is needed.
+ */
+const movement = (now: KeyPoints, before: KeyPoints, centre: Point | null, centreBefore: Point): Point => {
+  const moves = (Object.keys(now) as KeyPointName[]).flatMap((name) => {
+    const [a, b] = [before[name], now[name]];
+    return a && b ? [{ x: b.x - a.x, y: b.y - a.y }] : [];
+  });
+  const mean =
+    moves.length > 0
+      ? {
+          x: moves.reduce((sum, move) => sum + move.x, 0) / moves.length,
+          y: moves.reduce((sum, move) => sum + move.y, 0) / moves.length,
+        }
+      : { x: (centre ?? centreBefore).x - centreBefore.x, y: (centre ?? centreBefore).y - centreBefore.y };
+  return { x: Math.round(mean.x), y: Math.round(mean.y) };
+};
+
 /** The squared distance between two points. */
 const distanceSquared = (a: Point, b: Point): number => (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
 
@@ -99,10 +136,15 @@ export class PersonTracker {
   private tracks: Track[] = [];
   private nextId = 0;
   private readonly hold: HoldTimes;
+  private readonly fillGaps: boolean;
 
-  /** @param hold how long to keep showing someone the model loses; nobody is held by default */
-  constructor(hold: HoldTimes = { holdMs: 0, fadeMs: 0 }) {
+  /**
+   * @param hold how long to keep showing someone the model loses; nobody is held by default
+   * @param fillGaps whether to fill parts the model missed from the frame before (see {@link fillFromPrevious})
+   */
+  constructor(hold: HoldTimes = { holdMs: 0, fadeMs: 0 }, fillGaps = false) {
     this.hold = hold;
+    this.fillGaps = fillGaps;
   }
 
   /** The frame with each person's id made stable and their key points smoothed, and anyone held added. */
@@ -117,16 +159,26 @@ export class PersonTracker {
     const people = frame.people.map((person, index) => {
       let track = owners.get(index);
       if (!track) {
-        track = { id: this.nextId++, centre: { x: 0, y: 0 }, lastSeen: timestamp, last: person, filters: {} };
+        const { keyPoints: detected } = person;
+        track = { id: this.nextId++, centre: { x: 0, y: 0 }, lastSeen: timestamp, last: person, detected, filters: {} };
         this.tracks.push(track);
       }
+      const filled = this.fillGaps && owners.has(index) ? this.fill(person, track, centres[index], width) : undefined;
       track.centre = centres[index] ?? track.centre;
       track.lastSeen = timestamp;
-      track.last = { ...person, id: track.id, keyPoints: this.smooth(track, person.keyPoints, timestamp) };
+      const keyPoints = this.smooth(track, person.keyPoints, timestamp);
+      track.last = { ...person, id: track.id, keyPoints, ...(filled && { filled }) };
+      track.detected = person.keyPoints;
       seen.add(track);
       return track.last;
     });
     return { ...frame, people: [...people, ...this.held(seen, timestamp)] };
+  }
+
+  /** The person's mask filled from their track's last one, moved as far as they have. */
+  private fill(person: VisionPerson, track: Track, centre: Point | null, width: number): Uint8Array {
+    const moved = movement(person.keyPoints, track.detected, centre, track.centre);
+    return fillFromPrevious(person.mask, track.last.mask, width, moved);
   }
 
   /** The people lost this frame who are still held, drawn as they were last seen, fading once the hold is over. */

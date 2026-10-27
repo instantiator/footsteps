@@ -31,6 +31,8 @@ export interface AppConfig {
   cameraHoldMs: number;
   /** How long, in milliseconds, a held player then takes to fade out. */
   cameraFadeMs: number;
+  /** Fills parts of a player the model missed for a frame (eg. their legs) from the frame before (needs smoothing). */
+  cameraFillGaps: boolean;
   /** BodyPix's backbone: ResNet50 is more accurate, MobileNetV1 faster. */
   bodypixArchitecture: "ResNet50" | "MobileNetV1";
   /** BodyPix's output stride: smaller is finer and slower. ResNet50 has 16 and 32, MobileNetV1 8 and 16; else 16. */
@@ -63,6 +65,7 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   cameraFeatherPx: 3,
   cameraHoldMs: 400,
   cameraFadeMs: 300,
+  cameraFillGaps: false,
   bodypixArchitecture: "MobileNetV1",
   bodypixOutputStride: 16,
   bodypixQuantBytes: 2,
@@ -114,6 +117,7 @@ const PARSERS: { [K in keyof AppConfig]: Parser<AppConfig[K]> } = {
   cameraFeatherPx: int(0),
   cameraHoldMs: int(0),
   cameraFadeMs: int(0),
+  cameraFillGaps: bool,
   bodypixArchitecture: oneOf("ResNet50", "MobileNetV1"),
   bodypixOutputStride: oneOf(8, 16, 32),
   bodypixQuantBytes: oneOf(1, 2, 4),

@@ -43,6 +43,11 @@ export interface VisionPerson {
     /** How opaque to draw them (0–1), falling as they fade out. */
     opacity: number;
   };
+  /**
+   * The silhouette to draw, when the tracker filled gaps in `mask` from the frame before (eg. legs missed for a
+   * frame). Drawing only: interactions use `mask`.
+   */
+  filled?: Uint8Array;
 }
 
 /**

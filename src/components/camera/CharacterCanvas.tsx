@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import type { AppConfig } from "../../config/AppConfig";
+import { DEFAULT_APP_CONFIG, type AppConfig } from "../../config/AppConfig";
 import useAppConfig from "../../providers/AppConfigHook";
 import { createVisionModel } from "../../vision/createVisionModel";
 import type { FootstepsVisionModelImplementation } from "../../vision/FootstepsVisionModelImplementation";
 import { PersonTracker, type HoldTimes } from "../../vision/Tracking";
 import type { VisionFrame } from "../../vision/VisionTypes";
 import { feetOf, type FeetPositions } from "./CameraSupport";
-import { drawPeople, type DrawStyle, type MaskType } from "./DrawPeople";
+import { drawPeople, type MaskType } from "./DrawPeople";
 import { frameQuality, FrameStatsRecorder, type FrameStats, type FrameSteps } from "./FrameStats";
 import { setTrackingFps } from "./TrackingFpsStore";
 import type { PlayerFrame } from "./PlayerMonitor";
@@ -126,16 +126,53 @@ type LoopHandlers = Pick<
   CharacterCanvasProps,
   "offScreenThreshold_percent" | "onFeetPositionsChange" | "onPlayersChange"
 > & {
-  /** How the silhouettes are drawn. */
-  drawStyle: DrawStyle;
+  /** How the silhouettes are tinted. */
+  maskType: MaskType;
+  /** How the loop follows, holds and draws players. */
+  settings: LoopSettings;
+  /** Called at most every {@link STATS_INTERVAL_MS} with the loop's speed; omitted when nobody is looking. */
+  onStats?: (stats: FrameStats) => void;
+};
+
+/** The app config settings the tracking loop uses. */
+interface LoopSettings {
   /** Keeps player ids stable and smooths key points between frames. */
   smoothing: boolean;
   /** How long a player the model loses is still shown; needs smoothing. */
   hold: HoldTimes;
+  /** Whether to fill parts of a player the model missed from the frame before; needs smoothing. */
+  fillGaps: boolean;
   /** The widest frame the model is given; see {@link detectFrame}. */
   inputWidth: number;
-  /** Called at most every {@link STATS_INTERVAL_MS} with the loop's speed; omitted when nobody is looking. */
-  onStats?: (stats: FrameStats) => void;
+  /** How far the silhouette's edges fade out, in canvas pixels. */
+  featherPx: number;
+}
+
+/** The loop's settings from the app config, the same object until one of them changes. */
+const useLoopSettings = (config: AppConfig): LoopSettings => {
+  const { visionSmoothing, cameraHoldMs, cameraFadeMs, cameraFillGaps, visionInputWidth, cameraFeatherPx } = config;
+  return useMemo(
+    () => ({
+      smoothing: visionSmoothing,
+      hold: { holdMs: cameraHoldMs, fadeMs: cameraFadeMs },
+      fillGaps: cameraFillGaps,
+      inputWidth: visionInputWidth,
+      featherPx: cameraFeatherPx,
+    }),
+    [visionSmoothing, cameraHoldMs, cameraFadeMs, cameraFillGaps, visionInputWidth, cameraFeatherPx],
+  );
+};
+
+/** Settings that only change how players are drawn or held, not which model runs. */
+const DRAWING_SETTINGS = ["debug", "cameraFeatherPx", "cameraHoldMs", "cameraFadeMs", "cameraFillGaps"] as const;
+
+/** The config the model is made from, the same object while only {@link DRAWING_SETTINGS} change, so the model is kept. */
+const useModelConfig = (config: AppConfig): AppConfig => {
+  const modelKey = JSON.stringify({
+    ...config,
+    ...Object.fromEntries(DRAWING_SETTINGS.map((key) => [key, DEFAULT_APP_CONFIG[key]])),
+  });
+  return useMemo(() => JSON.parse(modelKey) as AppConfig, [modelKey]);
 };
 
 /**
@@ -235,10 +272,8 @@ const startTrackingLoop = (
     offScreenThreshold_percent,
     onFeetPositionsChange,
     onPlayersChange,
-    drawStyle,
-    smoothing,
-    hold,
-    inputWidth,
+    maskType,
+    settings: { smoothing, hold, fillGaps, inputWidth, featherPx },
     onStats,
   }: LoopHandlers,
 ): (() => void) => {
@@ -248,7 +283,7 @@ const startTrackingLoop = (
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   const reportStats = statsReporter(onStats);
-  const tracker = smoothing ? new PersonTracker(hold) : null;
+  const tracker = smoothing ? new PersonTracker(hold, fillGaps) : null;
 
   const reportAndDraw = (timestamp: number, detected: VisionFrame, inferenceEnd: number) => {
     const frame = tracker ? tracker.update(detected) : detected;
@@ -258,7 +293,7 @@ const startTrackingLoop = (
     onFeetPositionsChange?.(feetPositionsOf(players));
     const monitorEnd = performance.now();
     // The 2D context is missing in some environments (eg. tests); the reports above still happen
-    if (ctx) drawPeople(video, frame, ctx, drawStyle);
+    if (ctx) drawPeople(video, frame, ctx, { maskType, featherPx });
     reportStats(detected, timestamp, inferenceEnd, {
       trackMs: trackEnd - inferenceEnd,
       monitorMs: monitorEnd - trackEnd,
@@ -326,14 +361,8 @@ export default function CharacterCanvas({
   ...loopProps
 }: CharacterCanvasProps) {
   const config = useAppConfig();
-  // These only change how players are drawn, so changing them keeps the loaded model
-  const modelKey = JSON.stringify({ ...config, debug: false, cameraFeatherPx: 0, cameraHoldMs: 0, cameraFadeMs: 0 });
-  const modelConfig = useMemo(() => JSON.parse(modelKey) as AppConfig, [modelKey]);
-  const model = useVisionModel(loopProps.mediaStream, modelConfig);
-  const smoothing = config.visionSmoothing;
-  const inputWidth = config.visionInputWidth;
-  const featherPx = config.cameraFeatherPx;
-  const { cameraHoldMs: holdMs, cameraFadeMs: fadeMs } = config;
+  const model = useVisionModel(loopProps.mediaStream, useModelConfig(config));
+  const settings = useLoopSettings(config);
   const [stats, setStats] = useState<FrameStats | null>(null);
   const internalCanvasRef = useRef<HTMLCanvasElement>(null);
   const canvas = canvasRef ?? internalCanvasRef;
@@ -348,10 +377,8 @@ export default function CharacterCanvas({
       offScreenThreshold_percent,
       onFeetPositionsChange,
       onPlayersChange,
-      drawStyle: { maskType, featherPx },
-      smoothing,
-      hold: { holdMs, fadeMs },
-      inputWidth,
+      maskType,
+      settings,
       onStats,
     };
     return startTrackingLoop(model, video, canvasElement, handlers);
@@ -364,11 +391,7 @@ export default function CharacterCanvas({
     onPlayersChange,
     offScreenThreshold_percent,
     maskType,
-    featherPx,
-    holdMs,
-    fadeMs,
-    smoothing,
-    inputWidth,
+    settings,
     showStats,
   ]);
 

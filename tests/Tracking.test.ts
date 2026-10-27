@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { OneEuroFilter, PersonTracker } from "../src/vision/Tracking";
+import { fillFromPrevious, OneEuroFilter, PersonTracker } from "../src/vision/Tracking";
 import { noKeyPoints, type Point, type VisionFrame, type VisionPerson } from "../src/vision/VisionTypes";
 
 const WIDTH = 100;
@@ -88,6 +88,59 @@ describe("PersonTracker holding", () => {
     const tracker = new PersonTracker();
     tracker.update(frame(0, personAt(0, 20)));
     expect(tracker.update(frame(33)).people).toEqual([]);
+  });
+});
+
+describe("fillFromPrevious", () => {
+  // 4×2 masks, row by row
+  it("lays the frame before's mask, moved by the offset, over the mask, and leaves both unchanged", () => {
+    const mask = Uint8Array.from([1, 0, 0, 0, 0, 0, 0, 0]);
+    const previous = Uint8Array.from([0, 1, 0, 0, 0, 0, 0, 1]);
+    const filled = fillFromPrevious(mask, previous, 4, { x: 1, y: 0 });
+    expect(Array.from(filled)).toEqual([1, 0, 1, 0, 0, 0, 0, 0]); // the pixel moved off the right edge is dropped
+    expect(Array.from(mask)).toEqual([1, 0, 0, 0, 0, 0, 0, 0]);
+  });
+
+  it("moves the frame before's mask up and left too", () => {
+    const previous = Uint8Array.from([0, 0, 0, 0, 0, 0, 1, 0]);
+    expect(Array.from(fillFromPrevious(new Uint8Array(8), previous, 4, { x: -1, y: -1 }))).toEqual([
+      0, 1, 0, 0, 0, 0, 0, 0,
+    ]);
+  });
+});
+
+describe("PersonTracker gap filling", () => {
+  /** A person at column `x` with their hand placed, whose legs (the bottom half of the frame) the model missed. */
+  const withoutLegs = (x: number): VisionPerson => {
+    const person = personAt(0, x, { x, y: 2 });
+    person.mask.fill(0, (WIDTH * HEIGHT) / 2);
+    return person;
+  };
+  const legPixel = (x: number) => (HEIGHT - 1) * WIDTH + x;
+
+  it("fills legs the model missed for a frame from the frame before, moved with the person, for drawing only", () => {
+    const tracker = new PersonTracker(undefined, true);
+    tracker.update(frame(0, personAt(0, 20, { x: 20, y: 2 })));
+    const [person] = tracker.update(frame(33, withoutLegs(22))).people;
+
+    // Moved two pixels right with the hand, though the silhouette's centre rose as the legs went
+    expect(person.filled?.[legPixel(22 + 2)]).toBe(1);
+    expect(person.filled?.[legPixel(22 - 3)]).toBe(0);
+    expect(person.mask[legPixel(22)]).toBe(0);
+  });
+
+  it("drops legs missing for a second frame, as only the frame before is used", () => {
+    const tracker = new PersonTracker(undefined, true);
+    tracker.update(frame(0, personAt(0, 20)));
+    tracker.update(frame(33, withoutLegs(20)));
+    const [person] = tracker.update(frame(66, withoutLegs(20))).people;
+    expect(person.filled?.[legPixel(20)]).toBe(0);
+  });
+
+  it("fills nothing when off", () => {
+    const tracker = new PersonTracker();
+    tracker.update(frame(0, personAt(0, 20)));
+    expect(tracker.update(frame(33, withoutLegs(20))).people[0].filled).toBeUndefined();
   });
 });
 
