@@ -28,6 +28,13 @@ describe("silhouettePixels", () => {
     const alpha = rgba(silhouettePixels(frame(person(0, [0]), person(1, [2])))).map((pixel) => pixel[3]);
     expect(alpha).toEqual([255, 0, 255, 0]);
   });
+
+  it("fills the buffer it is given, clearing the last frame's silhouette from it", () => {
+    const buffer = silhouettePixels(frame(person(0, [0, 1])));
+    const reused = silhouettePixels(frame(person(0, [3])), buffer);
+    expect(reused).toBe(buffer);
+    expect(rgba(reused).map((pixel) => pixel[3])).toEqual([0, 0, 0, 255]);
+  });
 });
 
 describe("tintPixels", () => {
@@ -48,6 +55,13 @@ describe("tintPixels", () => {
   it("tints each person differently for colored", () => {
     const [first, , second] = rgba(tintPixels(frame(person(0, [0]), person(1, [2])), "colored"));
     expect(first).not.toEqual(second);
+  });
+
+  it("fills the buffer it is given, clearing the last frame's tint from it", () => {
+    const buffer = tintPixels(withHand, "colored");
+    const reused = tintPixels(frame(person(0, [3])), "extremities", buffer);
+    expect(reused).toBe(buffer);
+    expect(rgba(reused)).toEqual([CLEAR, CLEAR, CLEAR, CLEAR]);
   });
 
   it("leaves a part's key point unpainted where the silhouette isn't", () => {

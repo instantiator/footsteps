@@ -25,6 +25,8 @@ export interface AppConfig {
   cameraWidth: number;
   /** See {@link AppConfig.cameraWidth}. */
   cameraHeight: number;
+  /** How far the silhouette's edges fade out, in screen pixels of the camera canvas; 0 for hard edges. */
+  cameraFeatherPx: number;
   /** BodyPix's backbone: ResNet50 is more accurate, MobileNetV1 faster. */
   bodypixArchitecture: "ResNet50" | "MobileNetV1";
   /** BodyPix's output stride: smaller is finer and slower. ResNet50 has 16 and 32, MobileNetV1 8 and 16; else 16. */
@@ -54,6 +56,7 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   visionInputWidth: 960,
   cameraWidth: 1280,
   cameraHeight: 720,
+  cameraFeatherPx: 3,
   bodypixArchitecture: "MobileNetV1",
   bodypixOutputStride: 16,
   bodypixQuantBytes: 2,
@@ -102,6 +105,7 @@ const PARSERS: { [K in keyof AppConfig]: Parser<AppConfig[K]> } = {
   visionInputWidth: int(0),
   cameraWidth: int(1),
   cameraHeight: int(1),
+  cameraFeatherPx: int(0),
   bodypixArchitecture: oneOf("ResNet50", "MobileNetV1"),
   bodypixOutputStride: oneOf(8, 16, 32),
   bodypixQuantBytes: oneOf(1, 2, 4),

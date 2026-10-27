@@ -6,7 +6,7 @@ import type { FootstepsVisionModelImplementation } from "../../vision/FootstepsV
 import { PersonTracker } from "../../vision/Tracking";
 import type { VisionFrame } from "../../vision/VisionTypes";
 import { feetOf, type FeetPositions } from "./CameraSupport";
-import { drawPeople, type MaskType } from "./DrawPeople";
+import { drawPeople, type DrawStyle, type MaskType } from "./DrawPeople";
 import { frameQuality, FrameStatsRecorder, type FrameStats, type FrameSteps } from "./FrameStats";
 import { setTrackingFps } from "./TrackingFpsStore";
 import type { PlayerFrame } from "./PlayerMonitor";
@@ -126,7 +126,8 @@ type LoopHandlers = Pick<
   CharacterCanvasProps,
   "offScreenThreshold_percent" | "onFeetPositionsChange" | "onPlayersChange"
 > & {
-  maskType: MaskType;
+  /** How the silhouettes are drawn. */
+  drawStyle: DrawStyle;
   /** Keeps player ids stable and smooths key points between frames. */
   smoothing: boolean;
   /** The widest frame the model is given; see {@link detectFrame}. */
@@ -232,7 +233,7 @@ const startTrackingLoop = (
     offScreenThreshold_percent,
     onFeetPositionsChange,
     onPlayersChange,
-    maskType,
+    drawStyle,
     smoothing,
     inputWidth,
     onStats,
@@ -246,7 +247,7 @@ const startTrackingLoop = (
   const reportStats = statsReporter(onStats);
   const tracker = smoothing ? new PersonTracker() : null;
 
-  const reportAndDraw = async (timestamp: number, detected: VisionFrame, inferenceEnd: number) => {
+  const reportAndDraw = (timestamp: number, detected: VisionFrame, inferenceEnd: number) => {
     const frame = tracker ? tracker.update(detected) : detected;
     const players = playersOf(frame, offScreenThreshold_percent);
     const trackEnd = performance.now();
@@ -254,7 +255,7 @@ const startTrackingLoop = (
     onFeetPositionsChange?.(feetPositionsOf(players));
     const monitorEnd = performance.now();
     // The 2D context is missing in some environments (eg. tests); the reports above still happen
-    if (ctx) await drawPeople(video, frame, ctx, maskType);
+    if (ctx) drawPeople(video, frame, ctx, drawStyle);
     reportStats(frame, timestamp, inferenceEnd, {
       trackMs: trackEnd - inferenceEnd,
       monitorMs: monitorEnd - trackEnd,
@@ -271,7 +272,7 @@ const startTrackingLoop = (
       const { detected, inferenceEnd } = await result;
       if (cancelled) return; // the model may have been disposed while this frame was tracked
       next = detections.next();
-      await reportAndDraw(timestamp, detected, inferenceEnd);
+      reportAndDraw(timestamp, detected, inferenceEnd);
     } catch (error) {
       // A frame cut short by the loop stopping (eg. the model disposed) is expected, not a failure
       if (!warned && !cancelled) console.warn("Skipped a camera frame that could not be tracked:", error);
@@ -322,12 +323,13 @@ export default function CharacterCanvas({
   ...loopProps
 }: CharacterCanvasProps) {
   const config = useAppConfig();
-  // Debug only changes how players are drawn, so toggling it keeps the loaded model
-  const modelKey = JSON.stringify({ ...config, debug: false });
+  // Debug and feathering only change how players are drawn, so changing them keeps the loaded model
+  const modelKey = JSON.stringify({ ...config, debug: false, cameraFeatherPx: 0 });
   const modelConfig = useMemo(() => JSON.parse(modelKey) as AppConfig, [modelKey]);
   const model = useVisionModel(loopProps.mediaStream, modelConfig);
   const smoothing = config.visionSmoothing;
   const inputWidth = config.visionInputWidth;
+  const featherPx = config.cameraFeatherPx;
   const [stats, setStats] = useState<FrameStats | null>(null);
   const internalCanvasRef = useRef<HTMLCanvasElement>(null);
   const canvas = canvasRef ?? internalCanvasRef;
@@ -342,7 +344,7 @@ export default function CharacterCanvas({
       offScreenThreshold_percent,
       onFeetPositionsChange,
       onPlayersChange,
-      maskType,
+      drawStyle: { maskType, featherPx },
       smoothing,
       inputWidth,
       onStats,
@@ -357,6 +359,7 @@ export default function CharacterCanvas({
     onPlayersChange,
     offScreenThreshold_percent,
     maskType,
+    featherPx,
     smoothing,
     inputWidth,
     showStats,

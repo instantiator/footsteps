@@ -22,9 +22,15 @@ const TINTED_PARTS: BodyPart[] = [
   BodyPart.RIGHT_FOOT,
 ];
 
-/** RGBA pixels, opaque wherever anyone is, for cutting the people out of the video. */
-export const silhouettePixels = ({ width, height, people }: VisionFrame): Uint8ClampedArray<ArrayBuffer> => {
-  const pixels = new Uint8ClampedArray(width * height * 4);
+/**
+ * RGBA pixels, opaque wherever anyone is, for cutting the people out of the video.
+ * @param pixels a buffer to fill, reused between frames; a new one if omitted
+ */
+export const silhouettePixels = (
+  { width, height, people }: VisionFrame,
+  pixels: Uint8ClampedArray<ArrayBuffer> = new Uint8ClampedArray(width * height * 4),
+): Uint8ClampedArray<ArrayBuffer> => {
+  pixels.fill(0);
   for (const { mask } of people) {
     for (let i = 0; i < mask.length; i++) if (mask[i] === 1) pixels[i * 4 + 3] = 255;
   }
@@ -39,13 +45,15 @@ const paint = (pixels: Uint8ClampedArray, i: number, { r, g, b, a }: Color) => {
 /**
  * RGBA pixels that tint the silhouette: each person in their own colour for "colored", then the head,
  * hands and feet in their part's colour; transparent elsewhere.
+ * @param pixels a buffer to fill, reused between frames; a new one if omitted
  */
 export const tintPixels = (
   frame: VisionFrame,
   maskType: Exclude<MaskType, "binary">,
+  pixels: Uint8ClampedArray<ArrayBuffer> = new Uint8ClampedArray(frame.width * frame.height * 4),
 ): Uint8ClampedArray<ArrayBuffer> => {
   const { width, height, people } = frame;
-  const pixels = new Uint8ClampedArray(width * height * 4);
+  pixels.fill(0);
   people.forEach((person, index) => {
     const { mask } = person;
     if (maskType === "colored") {
@@ -67,39 +75,67 @@ export const tintPixels = (
   return pixels;
 };
 
-/** An image of the given pixels, scaled onto the canvas. */
-const drawPixels = async (
-  ctx: CanvasRenderingContext2D,
-  pixels: Uint8ClampedArray<ArrayBuffer>,
-  frame: VisionFrame,
-) => {
-  const bitmap = await createImageBitmap(new ImageData(pixels, frame.width, frame.height));
-  ctx.drawImage(bitmap, 0, 0, ctx.canvas.width, ctx.canvas.height);
-  bitmap.close();
+/** How the people are drawn. */
+export interface DrawStyle {
+  /** How the silhouette is tinted. */
+  maskType: MaskType;
+  /** How far the silhouette's edges fade out, in canvas pixels; 0 for hard edges. */
+  featherPx: number;
+}
+
+/** A mask-sized canvas and the pixels drawn onto it, kept for each drawing context so every frame reuses them. */
+interface MaskSurface {
+  context: OffscreenCanvasRenderingContext2D;
+  image: ImageData;
+}
+
+const surfaces = new WeakMap<CanvasRenderingContext2D, MaskSurface>();
+
+/** The context's mask surface at the frame's size, made (or remade, when the size changes) as needed. */
+const surfaceFor = (ctx: CanvasRenderingContext2D, { width, height }: VisionFrame): MaskSurface | null => {
+  const existing = surfaces.get(ctx);
+  if (existing?.image.width === width && existing.image.height === height) return existing;
+  const context = new OffscreenCanvas(width, height).getContext("2d");
+  if (!context) return null;
+  const surface = { context, image: context.createImageData(width, height) };
+  surfaces.set(ctx, surface);
+  return surface;
+};
+
+/** Draws the surface's pixels, scaled up onto the canvas. */
+const drawSurface = (ctx: CanvasRenderingContext2D, { context, image }: MaskSurface) => {
+  context.putImageData(image, 0, 0);
+  ctx.drawImage(context.canvas, 0, 0, ctx.canvas.width, ctx.canvas.height);
 };
 
 /**
  * Draws the people from the video onto the canvas, cut out by their silhouettes, and tints them for debugging
  * unless the mask type is "binary".
  */
-export const drawPeople = async (
+export const drawPeople = (
   video: HTMLVideoElement,
   frame: VisionFrame,
   ctx: CanvasRenderingContext2D,
-  maskType: MaskType,
+  { maskType, featherPx }: DrawStyle,
 ) => {
   const { canvas } = ctx;
   ctx.save();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (frame.people.length === 0 || frame.width === 0 || frame.height === 0) return ctx.restore();
+  const surface = frame.people.length > 0 && frame.width > 0 && frame.height > 0 ? surfaceFor(ctx, frame) : null;
+  if (!surface) return ctx.restore();
 
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
   ctx.globalCompositeOperation = "destination-in";
-  await drawPixels(ctx, silhouettePixels(frame), frame);
+  // Blurring the mask as it scales up softens the edges it cuts, on the GPU
+  if (featherPx > 0) ctx.filter = `blur(${featherPx}px)`;
+  silhouettePixels(frame, surface.image.data);
+  drawSurface(ctx, surface);
+  ctx.filter = "none";
   if (maskType !== "binary") {
     // The tint's hue and saturation over the video's luminosity
     ctx.globalCompositeOperation = "color";
-    await drawPixels(ctx, tintPixels(frame, maskType), frame);
+    tintPixels(frame, maskType, surface.image.data);
+    drawSurface(ctx, surface);
   }
   ctx.restore();
 };
