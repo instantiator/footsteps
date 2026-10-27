@@ -3,10 +3,6 @@
   <div id="lava-2" class="lava" style="left: 55%; top: 70%"></div>
   <div id="lava-3" class="lava" style="left: 40%; top: 30%"></div>
   <div id="start" class="lava-start">Start</div>
-  {{#if state.doorOpen}}
   <div id="door" class="lava-door"><div id="door-base" class="lava-door-base"></div></div>
-  {{/if}}
-  <p id="lava-message" class="demo-score">
-    {{#if state.doorOpen}}Reach the door without touching the lava.{{else}}You touched the lava! Back to the start.{{/if}}
-  </p>
+  <p id="lava-message" class="demo-score">Reach the door without touching the lava.</p>
 </div>

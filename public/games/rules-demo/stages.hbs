@@ -11,6 +11,7 @@
     </div>
     {{/each}}
   </div>
-  <p class="demo-hint">Click or touch the switch to move it.</p>
+  <p class="demo-hint">Click or touch the switch to move it. Hold a hand (or the mouse) over the bulb to light it.</p>
   <div id="switch" class="demo-switch position-{{state.position}}" role="button" tabindex="0"></div>
+  <div id="bulb" class="demo-bulb{{#if state.lit}} lit{{/if}}"></div>
 </div>

@@ -46,6 +46,21 @@ const clickNow = async (page: Page, selector: string) => {
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 };
 
+/** Stands the mouse on the lava's reset display's start, and waits for the floor to be revealed. */
+const returnToStart = async (page: Page) => {
+  await expect(page.locator("#reset-message")).toHaveText("Return to the start");
+  await page.locator("#reset-start").hover();
+  await expect(page.locator("#reset-message")).toHaveText("Get ready!");
+  await expect(page.locator("#door-base")).toBeVisible({ timeout: 6000 });
+};
+
+/** Opens the balloons stage, and waits out its countdown. */
+const startBalloons = async (page: Page) => {
+  await page.locator("#stage-link-balloons").click();
+  await expect(page.locator("#countdown")).toContainText("Get ready");
+  await expect(page.locator("#balloon-0")).toBeVisible({ timeout: 6000 });
+};
+
 /** Clicks a balloon once it has fallen into view (each starts above the sky). */
 const clickBalloon = async (page: Page, n: number) => {
   const balloon = page.locator(`#balloon-${n}`);
@@ -75,7 +90,7 @@ test.describe("rules demo", () => {
     await expect(page.locator("#switch")).toHaveClass(/position-2/);
 
     await page.locator("#stage-link-lava").click();
-    await expect(page.locator("#lava-message")).toBeVisible();
+    await expect(page.locator("#reset-message")).toBeVisible();
     await page.getByRole("button", { name: "Close challenge" }).click();
 
     await expect(page.locator("#switch")).toHaveClass(/position-2/);
@@ -95,10 +110,9 @@ test.describe("rules demo", () => {
         colour: 0,
       };
     });
-    await page.locator("#stage-link-balloons").click();
+    await startBalloons(page);
 
     // A balloon that isn't popped falls to the bottom, pops, and is replaced
-    await expect(page.locator("#balloon-0")).toBeVisible();
     await expect(page.locator("#balloon-1")).toBeVisible({ timeout: 5000 });
     await expect(page.locator("#score")).toHaveText("0 / 2");
 
@@ -130,32 +144,47 @@ test.describe("rules demo", () => {
     await openDemo(page, (game) => {
       challengeOf(game, "balloons").data = { target: 5 };
     });
-    await page.locator("#stage-link-balloons").click();
+    await startBalloons(page);
     await clickBalloon(page, 0);
     await expect(page.locator("#score")).toHaveText("1 / 5");
 
     await page.getByRole("button", { name: "Close challenge" }).click();
-    await page.locator("#stage-link-balloons").click();
+    await startBalloons(page);
 
     await expect(page.locator("#score")).toHaveText("0 / 5");
   });
 
-  test("hides the door when the mouse walks onto lava, shows it at the start, and completes at the door", async ({
+  test("asks for the start before the lava, sends the mouse back there from lava, and completes at the door", async ({
     page,
   }) => {
     await openDemo(page);
     await page.locator("#stage-link-lava").click();
-    await expect(page.locator("#door")).toBeVisible();
+    await returnToStart(page);
 
     await page.locator("#lava-1").hover();
-    await expect(page.locator("#door")).toHaveCount(0);
-    await expect(page.locator("#lava-message")).toContainText("Back to the start");
-
-    await page.locator("#start").hover();
-    await expect(page.locator("#door")).toBeVisible();
+    await returnToStart(page);
 
     await page.locator("#door-base").hover();
     await expect(page.locator("#stage-link-lava")).toHaveClass(/completed/);
+  });
+
+  test("asks for the start again when the game is reloaded", async ({ page }) => {
+    await openDemo(page);
+    await page.locator("#stage-link-lava").click();
+    await returnToStart(page);
+
+    await page.reload();
+
+    await expect(page.locator("#reset-message")).toHaveText("Return to the start");
+  });
+
+  test("lights the bulb while the mouse is over it", async ({ page }) => {
+    await openDemo(page);
+    await page.locator("#bulb").hover();
+    await expect(page.locator("#bulb")).toHaveClass(/lit/);
+
+    await page.locator("#switch").hover();
+    await expect(page.locator("#bulb")).not.toHaveClass(/lit/);
   });
 
   test("lets the mouse through empty foreground to the background, but not through something drawn over it", async ({
@@ -173,12 +202,13 @@ test.describe("rules demo", () => {
       challengeOf(game, "lava").foregroundTemplateStyle = { width: "100%", height: "100%" };
     });
     await page.locator("#stage-link-lava").click();
+    await returnToStart(page);
     await expect(page.locator("#cover")).toBeVisible();
 
     await moveTo(page, "#lava-1");
-    await expect(page.locator("#door")).toBeVisible();
+    await expect(page.locator("#door-base")).toBeVisible();
 
     await moveTo(page, "#lava-2");
-    await expect(page.locator("#door")).toHaveCount(0);
+    await expect(page.locator("#reset-message")).toBeVisible();
   });
 });

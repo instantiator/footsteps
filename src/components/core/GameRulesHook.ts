@@ -272,7 +272,10 @@ function useWhenRules(
     const result = runWhens(env, gameState, before);
     edgesRef.current = result.edges;
     followHeldWhens(gameState, { before, after: result.edges }, waitsRef.current, fire);
-    if (result.state !== gameState) setGameState((previous) => (previous === gameState ? result.state : previous));
+    // Another update (eg. draining played effects) may land first: the rules then run again on it, not dropped
+    if (result.state !== gameState) {
+      setGameState((previous) => (previous === gameState ? result.state : runWhens(env, previous, before).state));
+    }
   }, [env, gameState, setGameState, fire]);
 
   useEffect(() => {

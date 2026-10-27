@@ -468,7 +468,11 @@
       "config": { "sequential": false, "autoAdvanceStages": false },
       "stylesheets": ["demo-css"],
       "resources": {
-        "demo-css": { "type": "local", "target": "games/rules-demo/rules-demo.css" }
+        "demo-css": { "type": "local", "target": "games/rules-demo/rules-demo.css" },
+        "chime": { "type": "local", "target": "games/rules-demo/chime.wav" },
+        "tick": { "type": "local", "target": "games/rules-demo/tick.wav" },
+        "pop": { "type": "local", "target": "games/rules-demo/pop.wav" },
+        "fanfare": { "type": "local", "target": "games/rules-demo/fanfare.wav" }
       },
       "displays": [
         {
@@ -486,8 +490,16 @@
           "component": {
             "type": "template",
             "data": { "names": { "balloons": "Balloons", "lava": "The floor is lava" } },
-            "initialState": { "position": 1 },
+            "initialState": { "position": 1, "lit": false },
             "rules": [
+              {
+                "on": { "interact": ["hand-enter", "mouse-enter"], "target": "#bulb", "threshold": 0.3 },
+                "do": [{ "set": { "lit": "true" } }]
+              },
+              {
+                "on": { "interact": ["hand-exit", "mouse-exit"], "target": "#bulb", "threshold": 0.3 },
+                "do": [{ "set": { "lit": "false" } }]
+              },
               {
                 "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-balloons", "threshold": 0.5 },
                 "do": [{ "enterStage": "balloons" }]
@@ -533,7 +545,7 @@
                       {
                         "on": { "interact": ["hand-enter", "click"], "target": ".balloon", "threshold": 0.3 },
                         "if": "not state.popping",
-                        "do": [{ "set": { "popping": "true", "score": "state.score + 1" } }]
+                        "do": [{ "set": { "popping": "true", "score": "state.score + 1" } }, { "sound": "pop" }]
                       },
                       {
                         "on": { "animationEnd": "fall", "target": ".balloon" },
@@ -559,6 +571,27 @@
                       "templateSource": "games/rules-demo/balloons.hbs"
                     },
                     "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+                  },
+                  "resetDisplay": {
+                    "showOn": "every-show",
+                    "component": {
+                      "type": "template",
+                      "data": {},
+                      "initialState": { "count": 3 },
+                      "rules": [
+                        { "on": { "start": true }, "do": [{ "sound": "tick" }] },
+                        {
+                          "on": { "every": 1000 },
+                          "do": [{ "set": { "count": "state.count - 1" } }, { "sound": "tick" }]
+                        },
+                        { "on": { "after": 3000 }, "do": [{ "finishReset": true }] }
+                      ],
+                      "foregroundTemplate": {
+                        "sourceType": "relative",
+                        "templateSource": "games/rules-demo/balloons-ready.hbs"
+                      },
+                      "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+                    }
                   }
                 }
               ]
@@ -578,25 +611,55 @@
                   "component": {
                     "type": "template",
                     "data": {},
-                    "initialState": { "doorOpen": true },
+                    "initialState": { "done": false },
                     "resetStateOnShow": true,
                     "rules": [
                       {
                         "on": { "interact": ["foot-enter", "mouse-enter"], "target": ".lava", "threshold": 0.3 },
-                        "do": [{ "set": { "doorOpen": "false" } }]
-                      },
-                      {
-                        "on": { "interact": ["foot-enter", "mouse-enter"], "target": "#start", "threshold": 0.3 },
-                        "do": [{ "set": { "doorOpen": "true" } }]
+                        "if": "not state.done",
+                        "do": [{ "resetChallenge": true }]
                       },
                       {
                         "on": { "interact": ["foot-enter", "mouse-enter"], "target": "#door-base", "threshold": 0.3 },
-                        "if": "state.doorOpen",
-                        "do": [{ "completeChallenge": true }]
+                        "if": "not state.done",
+                        "do": [
+                          { "set": { "done": "true" } },
+                          { "completeChallenge": true },
+                          { "sound": "fanfare" },
+                          { "reward": { "animation": "fireworks", "particleCount": 150 } }
+                        ]
                       }
                     ],
                     "backgroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/lava.hbs" },
                     "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
+                  },
+                  "resetDisplay": {
+                    "component": {
+                      "type": "template",
+                      "data": {},
+                      "initialState": { "ready": false },
+                      "rules": [
+                        {
+                          "on": {
+                            "interact": ["foot-enter", "mouse-enter"],
+                            "target": "#reset-start",
+                            "threshold": 0.3
+                          },
+                          "if": "not state.ready",
+                          "do": [
+                            { "set": { "ready": "true" } },
+                            { "sound": "chime" },
+                            { "reward": { "animation": "sparkles", "particleCount": 60 } }
+                          ]
+                        },
+                        { "on": { "when": "state.ready", "forMs": 3000 }, "do": [{ "finishReset": true }] }
+                      ],
+                      "backgroundTemplate": {
+                        "sourceType": "relative",
+                        "templateSource": "games/rules-demo/lava-reset.hbs"
+                      },
+                      "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
+                    }
                   }
                 }
               ]

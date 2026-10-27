@@ -200,3 +200,39 @@
   background: #c68642;
   pointer-events: auto;
 }
+
+/* Reset displays: a dark floor with the start picked out, and a countdown before the balloons */
+.demo-reset {
+  background: #1b1b2f;
+}
+.lava-start-bright {
+  background: #ffd166;
+  box-shadow: 0 0 3cqh #ffd166;
+}
+.demo-countdown {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: #1d3557;
+  font-size: 10cqh;
+}
+
+/* A bulb that lights while something is over it */
+.demo-bulb {
+  position: absolute;
+  right: 10%;
+  bottom: 12%;
+  width: 8cqw;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #555;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.demo-bulb.lit {
+  background: #fff3b0;
+  box-shadow: 0 0 6cqh #ffd166;
+}
