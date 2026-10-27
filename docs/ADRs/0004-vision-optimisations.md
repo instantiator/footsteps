@@ -96,6 +96,28 @@ frame went to JavaScript pixel loops on the main thread. The worker moves those 
 nothing else competes for the main thread, so the worker's gain shows in the game's smoothness, not in these
 numbers.
 
+### The loop and the main thread (2026-10-27)
+
+At 4–6 fps in real play, the camera loop was benched again with a game running. `VISION_BENCH_PLAIN=1` draws plain
+silhouettes, as in play, and a balloons-challenge run counts React commits. The readout now times each step after
+the model (track, monitor, draw).
+
+| Change (720p fake camera, one person in the balloons challenge)                        |  fps | React commits/s |
+| -------------------------------------------------------------------------------------- | ---: | --------------: |
+| Before                                                                                 | 15.1 |            16.1 |
+| Feet reported only when the debug overlay shows them (it was a state change per frame) | 14.6 |             2.7 |
+| The model works on the next frame while one is drawn                                   | 20.6 |             2.7 |
+| The mask is drawn through a reused canvas, with a 3 px blur for soft edges             | 21.0 |             2.7 |
+
+- Over the 25 photos, the median went from 10.2 to 14.8 fps with the pipelined loop. Frame time is now close to the
+  model's time alone.
+- Before, each frame waited for the model, then for the drawing, then for the next video frame, so 43 ms of
+  inference plus a few ms of drawing came to two 33 ms camera frames (15 fps).
+- A React commit per frame re-rendered every display layer. That cost little on the bench machine, but competes with
+  the loop on slower ones.
+- Tracking, monitors and drawing take under 5 ms together, even with eight people, so they weren't optimised further.
+- The blur that softens the silhouette's edges runs on the GPU, with no measurable cost.
+
 ## Options considered
 
 | Option                                 | Outcome      | Notes                                                                                                                                                                                                     |

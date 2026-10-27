@@ -113,10 +113,12 @@ game's elements underneath. Each element's `id` says what a click or camera inte
    [configuration](#configuration)), once while there is a stream. By default this is BodyPix MobileNetV1 on
    WebGPU, run in a web worker. Every model implements `FootstepsVisionModelImplementation` (`src/vision/`).
 3. Once per new camera frame (`requestVideoFrameCallback`), the model returns a `VisionFrame`: for each person, a
-   silhouette mask and key points for their hands, feet and head. A `PersonTracker` keeps each person's id
-   stable between frames and smooths their key points.
-4. `drawPeople` (`DrawPeople.ts`) draws the video onto a canvas and keeps only the people. `binary` keeps the
-   players' own colours; `colored` tints each person and their head, hands and feet; `extremities` tints only
+   silhouette mask and key points for their hands, feet and head. As soon as it returns, it is given the next
+   frame, and the frame it returned is reported and drawn while it works. A `PersonTracker` keeps each person's id
+   stable between frames and smooths their key points. It also holds someone the model loses for a moment where
+   they were, then fades them out, so the silhouette doesn't flicker ([ADR 0007](ADRs/0007-camera-flicker.md)).
+4. `drawPeople` (`DrawPeople.ts`) draws the video onto a canvas and keeps only the people, with their edges
+   blurred by `cameraFeatherPx`. `binary` keeps the players' own colours; `colored` tints each person and their head, hands and feet; `extremities` tints only
    the hands and feet.
 5. The canvas is mirrored with a CSS transform, so the player's left is their left on screen. The masks are in
    the camera's own (unmirrored) orientation.
@@ -144,6 +146,11 @@ An untracked `.env.local` holds personal overrides. `src/config/AppConfig.ts` do
 | `VITE_BODYPIX_REFINE_STEPS` / `bodypixRefineSteps` | `3`                                 | Passes BodyPix makes to assign pixels to people                        |
 | `VITE_BODYPIX_*` / `bodypix*`                      | MobileNetV1                         | Architecture, output stride, weight bytes, resolution, and threshold   |
 | `VITE_MEDIAPIPE_VARIANT` / `mediapipeVariant`      | `full`                              | MediaPipe Pose's model size: `lite`, `full` or `heavy`                 |
+| `VITE_CAMERA_FEATHER_PX` / `cameraFeatherPx`       | `3`                                 | How far the silhouette's edges fade out, in canvas pixels; `0` is hard |
+| `VITE_CAMERA_HOLD_MS` / `cameraHoldMs`             | `400`                               | How long a player the model loses is still shown (needs smoothing)     |
+| `VITE_CAMERA_FADE_MS` / `cameraFadeMs`             | `300`                               | How long a held player then takes to fade out                          |
+| `VITE_CAMERA_FILL_GAPS` / `cameraFillGaps`         | `false`                             | Fills parts the model missed for a frame from the frame before         |
+| `VITE_JUMP_*` / `jump*`                            | see [jumps](#jumps)                 | What counts as a jump                                                  |
 
 For example, `?visionModel=mediapipe&visionWorker=false` tries MediaPipe Pose on the main thread. An invalid
 value is ignored with a console warning. [ADR 0004](ADRs/0004-vision-optimisations.md) and
@@ -164,17 +171,19 @@ The trigger names the elements (any CSS selector), which interactions it accepts
 must be inside an element. `threshold` defaults to `1`. Any display that is showing can have them, including a
 stage's shared display and its challenges.
 
-| Interaction   | Detected from                                      |
-| ------------- | -------------------------------------------------- |
-| `click`       | A mouse click, or Enter/Space on a focused element |
-| `mouse-enter` | The mouse moving onto the element (not the camera) |
-| `mouse-exit`  | The mouse moving off the element (not the camera)  |
-| `hand`        | Either hand                                        |
-| `foot`        | Either foot                                        |
-| `head`        | The head                                           |
-| `body`        | The whole silhouette                               |
-| `any`         | Any single body part, or the whole silhouette      |
-| `jump`        | The feet's vertical motion, in the sequence below  |
+| Interaction   | Detected from                                       |
+| ------------- | --------------------------------------------------- |
+| `click`       | A mouse click, or Enter/Space on a focused element  |
+| `mouse-enter` | The mouse moving onto the element (not the camera)  |
+| `mouse-exit`  | The mouse moving off the element (not the camera)   |
+| `hand`        | Either hand                                         |
+| `foot`        | Either foot                                         |
+| `head`        | The head                                            |
+| `body`        | The whole silhouette                                |
+| `any`         | Any single body part, or the whole silhouette       |
+| `jump`        | A jump that takes off from and lands on the element |
+| `jump-from`   | A jump that takes off from the element              |
+| `jump-onto`   | A jump that lands on the element                    |
 
 A **body part** is a region of the player's silhouette. A hand or foot is a disc around its key point, scaled to
 the player's head; the head is the box its top, bottom and sides span; the body is the whole silhouette. A
@@ -188,16 +197,30 @@ they hold it. Moving away re-arms it, so a second approach fires again. A player
 meets the condition when their monitor starts (when camera mode starts, after a display change, or on
 coming back into view) must move away and back first.
 
-A **jump** is a short sequence, not a single frame:
+### Jumps
 
-1. With the feet inside the element and moving upward faster than `0.3` frame-heights per second, the
-   sequence starts (`rising`).
-2. Moving downward faster than `0.3` while inside makes it `falling`.
-3. Coming to rest (speed `0.3` or less) while inside completes the jump and fires the interaction.
-4. If 1.5 seconds pass first, the sequence is abandoned and returns to `ready`.
+A **jump** is measured by how far the lower foot moves, as a fraction of the player's height (from their feet to the
+top of their head), so near and far players, children and adults, jump alike. Sideways motion is ignored. All three
+jump interactions fire as the player lands, on the elements their feet were on when they took off and when they
+landed.
 
-Leaving the element during the sequence does not reset it; the feet must come back inside for the
-falling and resting steps.
+1. The feet stand still (within `jumpStill`) for at least `jumpMinGroundedMs`.
+2. They rise at least `jumpMinRise` above where they stood. That is the take-off.
+3. They come back down at least `jumpMinDescent` of the rise, within `jumpMaxAirtimeMs` of leaving the ground. That
+   is the landing. A frame where the model loses the feet in the air is skipped.
+4. A rise still going after `jumpMaxRiseMs`, or a jump that doesn't land in time, is abandoned. Wherever the feet
+   are then is the ground. This is how stepping back, which raises the feet in the image, is told from a jump.
+
+| Setting (`.env` / query)                          | Default | What it does                                      |
+| ------------------------------------------------- | ------- | ------------------------------------------------- |
+| `VITE_JUMP_MIN_RISE` / `jumpMinRise`              | `0.04`  | The rise needed (about 5 cm for a 1.3 m child)    |
+| `VITE_JUMP_STILL` / `jumpStill`                   | `0.02`  | How far standing feet may wander                  |
+| `VITE_JUMP_MIN_GROUNDED_MS` / `jumpMinGroundedMs` | `100`   | How long the feet must stand before a take-off    |
+| `VITE_JUMP_MAX_RISE_MS` / `jumpMaxRiseMs`         | `500`   | The longest the feet may keep rising              |
+| `VITE_JUMP_MAX_AIRTIME_MS` / `jumpMaxAirtimeMs`   | `1000`  | The longest from leaving the ground to landing    |
+| `VITE_JUMP_MIN_DESCENT` / `jumpMinDescent`        | `0.5`   | How much of the rise the feet must come back down |
+
+[ADR 0008](ADRs/0008-jump-detection.md) explains the model and how the defaults were chosen.
 
 Clicks remain the keyboard-accessible route. A camera interaction fires the same rule a click would, through
 `useGameRules` (`src/components/core/GameRulesHook.ts`), so `enterStage` still ignores locked and completed stages.
@@ -231,7 +254,8 @@ Add `?debug=true` to the URL to turn on the `debug` setting. In camera mode that
 
 - tints each player differently, with their head, hands and feet in their own colours;
 - shows a colour key under the preview;
-- shows the frame rate, inference time, and the people, hands and feet found, over the silhouette;
+- shows the frame rate, the time each step takes (inference, tracking, monitors, drawing), and the people, hands and
+  feet found, over the silhouette (`showFps` shows this too);
 - draws a green dot where each person's feet were found.
 
 Lower a rule's `threshold` when testing interactions, and use the feet dots to see where the
@@ -248,13 +272,14 @@ toggling it.
 | `src/components/camera/CharacterCanvas.tsx`           | tracking loop; draws the silhouettes; reports players and feet; the stats readout |
 | `src/components/camera/DrawPeople.ts`                 | cuts the people out of the video, and tints them for debugging                    |
 | `src/components/camera/PlayerMonitor.ts`              | turns body-part coverage and feet into edge-triggered interactions                |
+| `src/components/camera/JumpDetector.ts`               | follows a player's feet for jumps                                                 |
 | `src/components/camera/CameraSupport.ts`              | camera request, feet position, and screen-to-mask rectangles                      |
 | `src/components/camera/FrameStats.ts`                 | frame rate, inference time, and what each frame found                             |
 | `src/components/camera/CameraDebugOverlay.tsx`        | green feet markers                                                                |
 | `src/vision/FootstepsVisionModelImplementation.ts`    | the base class every vision model implements, with the body-part queries          |
 | `src/vision/BodyPart.ts`, `VisionTypes.ts`            | our body parts, and the frames models return                                      |
 | `src/vision/VisionQueries.ts`                         | body parts at a point or in an area; splitting one silhouette between people      |
-| `src/vision/Tracking.ts`                              | stable player ids and key-point smoothing                                         |
+| `src/vision/Tracking.ts`                              | stable player ids, key-point smoothing, holding lost players, and filling gaps    |
 | `src/vision/models/`                                  | BodyPix, MediaPipe Pose and MoveNet, and the tfjs backend choice                  |
 | `src/vision/VisionWorkerProxy.ts`, `vision.worker.ts` | runs a model in a web worker                                                      |
 | `src/components/core/logic/CameraModeUtils.ts`        | per-display camera resolution                                                     |
@@ -267,7 +292,7 @@ toggling it.
 ## Testing
 
 Unit tests cover the camera resolution (`tests/CameraModeUtils.test.ts`), the monitor and its jump
-sequence (`tests/PlayerMonitor.test.ts`), mask rectangles and feet (`tests/CameraSupport.test.ts`), the
+interactions (`tests/PlayerMonitor.test.ts`), jump detection (`tests/JumpDetector.test.ts`), mask rectangles and feet (`tests/CameraSupport.test.ts`), the
 tracking loop (`tests/CharacterCanvas.test.tsx`), the config (`tests/AppConfig*.test.ts*`), each vision
 model and the worker proxy (`tests/*Model.test.ts`, `tests/VisionWorkerProxy.test.ts`), the body-part
 queries and tracking (`tests/VisionQueries.test.ts`, `tests/Tracking.test.ts`), and the layout and game

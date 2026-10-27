@@ -173,13 +173,16 @@ See [how filtrex works](filtrex.md) for the syntax and why it is safe.
 | `head`        | Puts either side of their face over the element           |
 | `body`        | Covers the element with their whole silhouette            |
 | `any`         | Covers it with any single body part                       |
-| `jump`        | Jumps with their feet inside the element                  |
+| `jump`        | Jumps up from the element and lands back on it            |
+| `jump-from`   | Jumps from the element, landing anywhere                  |
+| `jump-onto`   | Jumps onto the element, from anywhere                     |
 
 `interact` takes one interaction or a list. Moving the mouse between an element's own parts neither enters nor leaves
 it. `mouse-enter` is a good mouse stand-in for walking onto something with the camera (the lava demo uses it with
 `foot`); pair it with `click` where keyboard players need a way in too. `threshold` is the fraction of the body part that must be inside the
 element (0–1, default `1`). Interactions fire once per approach, and re-arm when the player moves away. The monitor
-and jump sequence are described under [how interactions work](camera-mode.md#how-interactions-work).
+is described under [how interactions work](camera-mode.md#how-interactions-work), and jumps under
+[jumps](camera-mode.md#jumps). Jump interactions fire as the player lands.
 
 #### What can be clicked or touched
 

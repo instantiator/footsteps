@@ -99,7 +99,7 @@ Every game in the local repository, `public/game-repository.json`, is prerendere
 
 Any display's template makes elements interactive through the display's [rules](game-data.md#rules-and-state):
 a rule names the elements with a CSS selector, and the interactions it accepts (click, hand, foot, head, body,
-any, jump; see [camera mode](camera-mode.md#how-interactions-work) for what the camera detects). For keyboard
+any, jump, jump-from, jump-onto; see [camera mode](camera-mode.md#how-interactions-work) for what the camera detects). For keyboard
 players, also mark each element a player can currently use with `role="button"`, `tabindex="0"`, and a label
 (`alt` on an image, or `aria-label`): the display then treats Enter or Space on it as a click. On the title
 screen, Enter or Space anywhere moves on, as a click does. See `public/games/magic-trifle/overview/foreground.hbs`.

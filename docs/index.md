@@ -22,3 +22,5 @@ Published as HTML at <https://instantiator.dev/footsteps/docs/>, with the API re
 - [0004 Vision optimisations](ADRs/0004-vision-optimisations.md)
 - [0005 Vision models](ADRs/0005-vision-models.md)
 - [0006 Display rules and state](ADRs/0006-display-rules-and-state.md)
+- [0007 Camera flicker](ADRs/0007-camera-flicker.md)
+- [0008 Jump detection](ADRs/0008-jump-detection.md)
