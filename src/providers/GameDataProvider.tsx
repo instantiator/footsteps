@@ -1,5 +1,5 @@
 import { useContext, useMemo, type ReactNode } from "react";
-import { compileGameRules } from "../components/core/logic/GameRuleUtils";
+import { compileGameRules } from "../components/core/logic/GameRuleCompile";
 import type { GameId } from "../entities/data/GameData";
 import { isDefined } from "../util/ObjectUtils";
 import { resolveResources } from "../util/ResourceUtils";

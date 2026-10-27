@@ -106,7 +106,7 @@ screen, Enter or Space anywhere moves on, as a click does. See `public/games/mag
 
 ### How rules run
 
-`compileGameRules` (`src/components/core/logic/GameRuleUtils.ts`) compiles every rule expression when the game
+`compileGameRules` (`src/components/core/logic/GameRuleCompile.ts`) compiles every rule expression when the game
 loads ([filtrex](filtrex.md)), and `GameDataProvider` reports `rules-error` if one doesn't parse. While playing:
 
 ```mermaid

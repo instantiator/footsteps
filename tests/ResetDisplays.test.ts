@@ -1,11 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  applyShowResets,
-  compileGameRules,
-  fireRules,
-  NO_EVENT,
-  type RuleEnvironment,
-} from "../src/components/core/logic/GameRuleUtils";
+import { applyShowResets, fireRules, NO_EVENT, type RuleEnvironment } from "../src/components/core/logic/GameRuleUtils";
+import { compileGameRules } from "../src/components/core/logic/GameRuleCompile";
 import { getDisplayKey, getLayeredRenderData, getShownDisplays } from "../src/components/core/logic/RenderDataUtils";
 import type { GameData } from "../src/entities/data/GameData";
 import type { GameResetDisplay, GameRule, GameTrigger } from "../src/entities/data/displays/GameDisplayData";

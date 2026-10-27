@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import localRepository from "../public/game-repository.json";
 import {
   applyShowResets,
-  compileGameRules,
   fireRules,
   MAX_WHEN_CHAIN,
   NO_EVENT,
@@ -10,6 +9,7 @@ import {
   type RuleEnvironment,
   type RuleEvent,
 } from "../src/components/core/logic/GameRuleUtils";
+import { compileGameRules } from "../src/components/core/logic/GameRuleCompile";
 import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
 import type { GameData } from "../src/entities/data/GameData";
 import type { GameAction, GameRule } from "../src/entities/data/displays/GameDisplayData";
