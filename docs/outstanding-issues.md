@@ -27,7 +27,41 @@ different lighting and a second player, and record the results. Include the visi
 ADRs 0004 and 0005 (BodyPix MobileNetV1, frames 960 wide, 3 refinement steps, WebGPU, in a worker): check the debug readout shows 2 hands and 2 feet per
 full-length player at 10 fps or more, and compare `?visionModel=movenet` in the same room. Play the rules demo by
 camera too ([the rules demo](testing/manual-testing.md#the-rules-demo) checklist): its covering check and
-selector-based targets are only tested with synthetic frames, and camera play of the demo only through its rules.
+selector-based targets are only tested with synthetic frames, and camera play of the demo only through its rules. Check
+the camera feedback work too ([ADRs 0007](ADRs/0007-camera-flicker.md) and [0008](ADRs/0008-jump-detection.md)):
+
+- standing still doesn't flicker, walking leaves no trail, and a player who walks out of the picture fades within
+  about a second;
+- the edges look soft rather than jagged;
+- hops on the spot and between two elements fire `jump`, `jump-from` and `jump-onto` for a child and an adult;
+- stepping back and forth fires nothing.
+
+Tune the `VITE_JUMP_*` and `VITE_CAMERA_HOLD_MS` / `FADE_MS` defaults from what you see, as they are estimates.
+
+## A jump can land a frame early onto an element nearer the camera
+
+`jump-onto` fires on the first frame the feet have come back down far enough. When landing on an element lower on
+the screen (nearer the camera), the feet may not have reached it yet on that frame.
+
+**Act when:** players report `jump-onto` missing elements nearer the camera, or firing on the element just above
+them. Then wait for the feet to settle (still for a frame, or level with the ground they left) before picking the
+landing element, at the cost of a frame of delay.
+
+## A quick step back and forth can look like a jump
+
+Jumps are told from walking by the feet's movement alone. A quick step back then forward rises and falls like a
+jump.
+
+**Act when:** players report jumps they didn't make. Then also require the head to rise with the feet, for models
+that place the head ([ADR 0008](ADRs/0008-jump-detection.md), option 3).
+
+## Gap filling is off by default
+
+`VITE_CAMERA_FILL_GAPS` fills parts of a player the model missed for one frame. It is off because it can smear fast
+limbs, and it hasn't been seen on a real camera.
+
+**Act when:** players report limbs (often legs) flickering while the rest of them is steady. Then try
+`?cameraFillGaps=true` in the same room, and make it the default if limbs stop flickering without visible smears.
 
 ## Browser suite depends on downloading the vision models
 

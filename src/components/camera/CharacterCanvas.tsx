@@ -33,7 +33,7 @@ interface CharacterCanvasProps {
   style?: React.CSSProperties;
   /** How to draw the silhouette; see {@link drawPeople}. Defaults to "binary". */
   maskType?: MaskType;
-  /** Shows the loop's frame rate and inference time, which benchmarks also read from its data attributes. */
+  /** Shows the loop's frame rate and the time each step takes, which benchmarks also read from its data attributes. */
   showStats?: boolean;
 }
 
@@ -327,7 +327,7 @@ const startTrackingLoop = (
   };
 };
 
-/** The loop's frame rate and inference time; benchmarks read the data attributes. */
+/** The loop's frame rate, the time each step takes, and what the frame found; benchmarks read the data attributes. */
 const FrameStatsReadout = ({ stats }: { stats: FrameStats }) => (
   <output
     className="vision-stats"
