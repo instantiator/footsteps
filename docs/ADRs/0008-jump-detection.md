@@ -102,13 +102,15 @@ Maximal countermovement jumps (a crouch, then a jump) give an upper bound:
   ([Haugen et al.](https://www.researchgate.net/publication/339940034_Countermovement_Jump_Height_in_National-Team_Athletes_of_Various_Sports_A_Framework_for_Practitioners_and_Scientists)).
   Untrained adults jump well below that. No general-population reference values were found, and 20–35 cm is an
   estimate.
+- No figures were found for children aged 6 to 10, so the 12–25 cm used for them is an estimate, extrapolated
+  downwards from the FUPRECOL medians for ages 9 to 17.
 
 Players in a game hop rather than jump with full effort, so the defaults are set for small hops. A hop of h metres
 spends 2√(2h/g) seconds in the air: about 0.2 s for 5 cm, 0.29 s for 10 cm and 0.45 s for 25 cm.
 
 - **`minRise` 0.04** is about 5 cm for a 1.3 m child, or 7 cm for a 1.75 m adult. It is twice `still`.
-- **`still` 0.02** allows for the model's frame-to-frame jitter in foot placement, which is about 1–2% of height in
-  the bench photos.
+- **`still` 0.02** allows for the model's frame-to-frame jitter in foot placement. This is an estimate: the bench
+  uses still photos, so it can't measure jitter between frames. Measure it on a real camera.
 - **`maxRiseMs` 500 and `maxAirtimeMs` 1000** cover the longest playful jumps (about 0.5 s in the air), with a frame
   of slack either side at 5 fps.
 - **`minDescent` 0.5** separates a jump back (which comes down by most of the rise) from a step back (which doesn't
