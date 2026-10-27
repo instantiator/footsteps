@@ -162,6 +162,24 @@ describe("GameLayersLayout", () => {
     expect(received.canvas.at(-1)?.maskType).toBe("colored");
   });
 
+  it("doesn't re-render the game for each camera frame unless the debug overlay shows the feet", async () => {
+    renderLayout({ camera: { enabled: true, preview: true }, debug: false });
+    await screen.findByTestId("canvas");
+    const canvas = received.canvas.at(-1)!;
+    expect(canvas.onFeetPositionsChange).toBeUndefined();
+    const renders = received.canvas.length;
+
+    act(() => canvas.onPlayersChange?.([playerWithHandAt(1, 1)], 0));
+
+    expect(received.canvas).toHaveLength(renders);
+  });
+
+  it("reports the feet to the debug overlay when debugging", async () => {
+    renderLayout({ camera: { enabled: true, preview: true }, debug: true });
+    await screen.findByTestId("canvas");
+    expect(received.canvas.at(-1)?.onFeetPositionsChange).toBeDefined();
+  });
+
   it("hides the preview, but keeps the camera and canvas, when the preview is off", async () => {
     const { container } = renderLayout({ camera: { enabled: true, preview: false } });
     expect(await screen.findByTestId("canvas")).toBeInTheDocument();

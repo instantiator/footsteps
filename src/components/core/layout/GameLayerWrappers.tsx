@@ -129,7 +129,8 @@ export const CharacterCanvasLayerWrapper = ({
         mediaStream={characterStream}
         className="innerStyle"
         style={{ ...style, transform: "scaleX(-1)", aspectRatio: aspectRatio, zIndex }}
-        onFeetPositionsChange={setFeetPositions}
+        // Only the debug overlay shows the feet; reporting them otherwise would re-render the game every frame
+        onFeetPositionsChange={debug ? setFeetPositions : undefined}
         onPlayersChange={onPlayersChange}
         canvasRef={canvasRef}
         maskType={debug ? "colored" : "binary"}
