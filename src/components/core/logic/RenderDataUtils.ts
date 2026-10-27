@@ -5,6 +5,7 @@ import type {
   GameChallengeDisplay,
   GameChallengeDisplayPurpose,
   GameDisplayBase,
+  GameDisplayCameraData,
   GameDisplayComponentData,
   GameOverviewDisplay,
   GameOverviewDisplayPurpose,
@@ -74,7 +75,7 @@ export const getRenderMode = (gameState: GameState): GameDisplayMode =>
 
 /**
  * Identifies the combination of displays on screen. It changes when the game cuts to another
- * overview, stage or challenge display, but not when their contents update.
+ * overview, stage or challenge display, or a reset display finishes, but not when their contents update.
  */
 export const getDisplayKey = ({
   overviewRenderData,
@@ -82,13 +83,9 @@ export const getDisplayKey = ({
   challengesRenderData,
 }: LayeredGameDisplayRenderData): string =>
   JSON.stringify({
-    overview: overviewRenderData?.purpose,
-    stage: stageRenderData?.stageId,
-    challenges: challengesRenderData?.map(({ stageId, challengeId, purpose }) => ({
-      stageId,
-      challengeId,
-      purpose,
-    })),
+    overview: overviewRenderData?.scope,
+    stage: stageRenderData?.scope,
+    challenges: challengesRenderData?.map(({ scope }) => scope),
   });
 
 /** The scope of an overview display. */
@@ -121,6 +118,44 @@ export const getDisplayState = (
   component: GameDisplayComponentData,
 ): Record<string, unknown> => state.displayStates[scope] ?? component.initialState ?? {};
 
+/** The scope of a display's reset display. */
+export const resetScope = (scope: DisplayScope): DisplayScope => `${scope}/reset`;
+
+/** What shows in a display's place: the display itself, or one of its reset displays. */
+interface ResolvedDisplay {
+  /** The scope of what shows. */
+  scope: DisplayScope;
+  /** How what shows renders, and its rules. */
+  component: GameDisplayComponentData;
+  /** Its camera settings: a reset display's over its parent's. */
+  camera: GameDisplayCameraData | undefined;
+  /** Whether what shows is a reset display. */
+  isReset: boolean;
+}
+
+/**
+ * What shows in a display's place: its deepest reset display not yet finished since the game loaded, or the display
+ * itself once they all are. A reset display's own reset display shows before it.
+ */
+export const resolveResets = (
+  state: GameState,
+  scope: DisplayScope,
+  display: Pick<GameDisplayBase, "component" | "camera" | "resetDisplay">,
+): ResolvedDisplay => {
+  let shown: ResolvedDisplay = { scope, component: display.component, camera: display.camera, isReset: false };
+  for (let reset = display.resetDisplay; isDefined(reset); reset = reset.resetDisplay) {
+    const nextScope = resetScope(shown.scope);
+    if (state.session.finishedResets.includes(nextScope)) break;
+    shown = {
+      scope: nextScope,
+      component: reset.component,
+      camera: { ...shown.camera, ...reset.camera },
+      isReset: true,
+    };
+  }
+  return shown;
+};
+
 /** A display the player can see and interact with, and what it belongs to. */
 export interface ShownDisplay {
   /** Identifies the display, and so its state. */
@@ -131,39 +166,55 @@ export interface ShownDisplay {
   stageId?: GameStageId;
   /** The challenge it belongs to; undefined unless it is a challenge display. */
   challengeId?: GameChallengeId;
+  /** Whether it is a reset display, shown in its parent's place. */
+  isReset?: boolean;
+}
+
+/** A display the game is showing, or showing a reset display in place of: the place on screen a display fills. */
+export interface DisplaySlot {
+  /** The display's own scope. */
+  scope: DisplayScope;
+  /** The display. */
+  display: GameDisplayBase;
+  /** The stage it belongs to; undefined for overview displays. */
+  stageId?: GameStageId;
+  /** The challenge it belongs to; undefined unless it is a challenge display. */
+  challengeId?: GameChallengeId;
 }
 
 /**
- * The displays whose rules are live: the overview while no stage is open, otherwise the stage's shared display
- * and its active challenges' displays. (The overview still renders behind a stage, but doesn't respond.)
+ * The displays the game is showing: the overview while no stage is open, otherwise the stage's shared display and its
+ * active challenges' displays. Each may be showing a reset display in its place.
  */
-export const getShownDisplays = (state: GameState): ShownDisplay[] => {
+export const getDisplaySlots = (state: GameState): DisplaySlot[] => {
   if (!isDefined(state.current.stageId)) {
     const overview = calcOverviewDisplay(state);
-    return isDefined(overview) ? [{ scope: overviewScope(overview.purpose), component: overview.component }] : [];
+    return isDefined(overview) ? [{ scope: overviewScope(overview.purpose), display: overview }] : [];
   }
   const { stageState, activeChallengeStates } = getActiveStageStateChallenges(state);
   if (!isDefined(stageState)) return [];
   const stageId = stageState.stage.id;
   const shared = calcStageDisplay(stageState.stage, "shared");
   return [
-    ...(isDefined(shared) ? [{ scope: stageScope(stageId), component: shared.component, stageId }] : []),
+    ...(isDefined(shared) ? [{ scope: stageScope(stageId), display: shared, stageId }] : []),
     ...(activeChallengeStates ?? []).flatMap((challengeState) => {
       const display = calcChallengeDisplay(challengeState);
       const challengeId = challengeState.challenge.id;
-      return isDefined(display)
-        ? [
-            {
-              scope: challengeScope(stageId, challengeId, display.purpose),
-              component: display.component,
-              stageId,
-              challengeId,
-            },
-          ]
-        : [];
+      if (!isDefined(display)) return [];
+      return [{ scope: challengeScope(stageId, challengeId, display.purpose), display, stageId, challengeId }];
     }),
   ];
 };
+
+/**
+ * The displays whose rules are live: what shows in each slot, which is a reset display until it is finished. (The
+ * overview still renders behind a stage, but doesn't respond.)
+ */
+export const getShownDisplays = (state: GameState): ShownDisplay[] =>
+  getDisplaySlots(state).map(({ scope, display, stageId, challengeId }) => {
+    const shown = resolveResets(state, scope, display);
+    return { scope: shown.scope, component: shown.component, stageId, challengeId, isReset: shown.isReset };
+  });
 
 /** The template values every display shares, worked out once per render. */
 type SharedTemplateData = Pick<GameTemplateData, "gameState" | "game" | "resources">;
@@ -201,13 +252,17 @@ export const getLayeredRenderData = (
 const getOverviewRenderData = (gameState: GameState, shared: SharedTemplateData): GameDisplayRenderData | undefined => {
   const overviewDisplay = calcOverviewDisplay(gameState);
   if (!isDefined(overviewDisplay)) return undefined;
-  const scope = overviewScope(overviewDisplay.purpose);
+  const { scope, component, camera } = resolveResets(
+    gameState,
+    overviewScope(overviewDisplay.purpose),
+    overviewDisplay,
+  );
   return {
     purpose: overviewDisplay.purpose,
-    component: overviewDisplay.component,
-    camera: overviewDisplay.camera,
+    component,
+    camera,
     scope,
-    templateData: templateDataFor(shared, gameState, { scope, component: overviewDisplay.component }),
+    templateData: templateDataFor(shared, gameState, { scope, component }),
     stageId: undefined,
     challengeId: undefined,
     solution: undefined,
@@ -223,11 +278,13 @@ const getStageDisplayRenderData = (
   if (!isDefined(stageState)) return undefined;
   const sharedStageDisplay = calcStageDisplay(stageState.stage, "shared");
   if (!isDefined(sharedStageDisplay)) return undefined;
-  const scope = stageScope(stageState.stage.id);
+  const { scope, component, camera } = resolveResets(gameState, stageScope(stageState.stage.id), sharedStageDisplay);
   return {
     ...sharedStageDisplay,
+    component,
+    camera,
     scope,
-    templateData: templateDataFor(shared, gameState, { scope, component: sharedStageDisplay.component }),
+    templateData: templateDataFor(shared, gameState, { scope, component }),
     stageId: stageState.stage.id,
     challengeId: undefined,
     solution: undefined,
@@ -249,18 +306,17 @@ const getChallengesRenderData = (
     if (!isDefined(challengeDisplay)) {
       throw new Error(`No display for challenge ${challengeState.challenge.id} in stage ${stageState.stage.id}.`);
     }
-    const scope = challengeScope(stageState.stage.id, challengeState.challenge.id, challengeDisplay.purpose);
+    const { scope, component, camera } = resolveResets(
+      gameState,
+      challengeScope(stageState.stage.id, challengeState.challenge.id, challengeDisplay.purpose),
+      challengeDisplay,
+    );
     return {
       purpose: challengeDisplay.purpose,
-      component: challengeDisplay.component,
-      camera: challengeDisplay.camera,
+      component,
+      camera,
       scope,
-      templateData: templateDataFor(
-        shared,
-        gameState,
-        { scope, component: challengeDisplay.component },
-        challengeState,
-      ),
+      templateData: templateDataFor(shared, gameState, { scope, component }, challengeState),
       stageId: stageState.stage.id,
       challengeId: challengeState.challenge.id,
       solution: challengeState.challenge.solution,

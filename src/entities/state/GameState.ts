@@ -7,9 +7,18 @@ import type { GameStageState } from "./GameStageState";
 
 /**
  * Identifies one display, and so its state: `overview:<purpose>`, `stage:<stageId>:shared`, or
- * `challenge:<stageId>:<challengeId>:<purpose>`.
+ * `challenge:<stageId>:<challengeId>:<purpose>`. A display's reset display adds `/reset` to its scope.
  */
 export type DisplayScope = string;
+
+/** What lasts only while the game is open, and is never saved with its progress. */
+export interface GameSession {
+  /** The scopes of the reset displays finished since the game was loaded. */
+  finishedResets: DisplayScope[];
+}
+
+/** A session with nothing in it, as a game starts or loads. */
+export const newGameSession = (): GameSession => ({ finishedResets: [] });
 
 /** Runtime progress of a game: its definition, per-stage progress, what is currently showing, and display states. */
 export interface GameState {
@@ -26,6 +35,8 @@ export interface GameState {
   };
   /** Each display's own state, by scope. A display with no entry uses its component's `initialState`. */
   displayStates: Record<DisplayScope, Record<string, unknown>>;
+  /** What lasts only while the game is open. */
+  session: GameSession;
 }
 
 /**
@@ -59,5 +70,6 @@ export function createBlankGameState(game: GameData): GameState {
       overviewDisplay,
     },
     displayStates: {},
+    session: newGameSession(),
   };
 }

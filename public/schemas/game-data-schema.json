@@ -37,6 +37,9 @@
                 },
                 {
                     "$ref": "#/definitions/GameEnterStageAction"
+                },
+                {
+                    "$ref": "#/definitions/GameFinishResetAction"
                 }
             ],
             "description": "Something a rule does."
@@ -128,6 +131,10 @@
                 "purpose": {
                     "$ref": "#/definitions/GameChallengeDisplayPurpose",
                     "description": "When this display is shown."
+                },
+                "resetDisplay": {
+                    "$ref": "#/definitions/GameResetDisplay",
+                    "description": "Shown in this display's place first, to help the player get ready for it, until one of its rules finishes it."
                 }
             },
             "required": [
@@ -538,6 +545,20 @@
             ],
             "type": "object"
         },
+        "GameFinishResetAction": {
+            "description": "Finishes this reset display, revealing the display it is shown for. Reset displays only.",
+            "properties": {
+                "finishReset": {
+                    "const": true,
+                    "description": "Always true.",
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "finishReset"
+            ],
+            "type": "object"
+        },
         "GameInteractTrigger": {
             "description": "A player (or a click) interacting with an element of the display.",
             "properties": {
@@ -616,6 +637,10 @@
                 "purpose": {
                     "$ref": "#/definitions/GameOverviewDisplayPurpose",
                     "description": "When this display is shown."
+                },
+                "resetDisplay": {
+                    "$ref": "#/definitions/GameResetDisplay",
+                    "description": "Shown in this display's place first, to help the player get ready for it, until one of its rules finishes it."
                 }
             },
             "required": [
@@ -644,6 +669,35 @@
             },
             "required": [
                 "resetChallenge"
+            ],
+            "type": "object"
+        },
+        "GameResetDisplay": {
+            "description": "A display that helps the player get ready for its parent display, eg. \"Return to the start\".",
+            "properties": {
+                "camera": {
+                    "$ref": "#/definitions/GameDisplayCameraData",
+                    "description": "Camera mode settings while it shows, over its parent's."
+                },
+                "component": {
+                    "$ref": "#/definitions/GameDisplayComponentData",
+                    "description": "How this display is rendered, and the rules that finish it (`finishReset`)."
+                },
+                "resetDisplay": {
+                    "$ref": "#/definitions/GameResetDisplay",
+                    "description": "A reset display for this reset display, shown before it."
+                },
+                "showOn": {
+                    "description": "When it shows: before its parent is first shown since the game loaded (the default), or before every showing.\nIt always shows again when its parent's challenge is reset. A nested reset display shows with this one.",
+                    "enum": [
+                        "every-show",
+                        "first-show"
+                    ],
+                    "type": "string"
+                }
+            },
+            "required": [
+                "component"
             ],
             "type": "object"
         },
@@ -772,6 +826,10 @@
                     "const": "shared",
                     "description": "When this display is shown.",
                     "type": "string"
+                },
+                "resetDisplay": {
+                    "$ref": "#/definitions/GameResetDisplay",
+                    "description": "Shown in this display's place first, to help the player get ready for it, until one of its rules finishes it."
                 }
             },
             "required": [

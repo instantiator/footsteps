@@ -103,14 +103,21 @@ interface GameReferences {
   problems: ResourceProblem[];
 }
 
-/** Visits every display in the game with its path relative to the game. */
-function eachDisplay(game: GameData, visit: (display: GameDisplayBase, path: string) => void): void {
-  game.displays.forEach((display, index) => visit(display, `displays[${index}]`));
+/** A display to visit: one of the game's displays, or a reset display. */
+type VisitedDisplay = Pick<GameDisplayBase, "component" | "resetDisplay">;
+
+/** Visits every display in the game, and their reset displays, with its path relative to the game. */
+function eachDisplay(game: GameData, visit: (display: VisitedDisplay, path: string) => void): void {
+  const visitWithResets = (display: VisitedDisplay, path: string): void => {
+    visit(display, path);
+    if (display.resetDisplay) visitWithResets(display.resetDisplay, `${path}.resetDisplay`);
+  };
+  game.displays.forEach((display, index) => visitWithResets(display, `displays[${index}]`));
   game.stages.forEach((stage, stageIndex) => {
-    stage.displays?.forEach((display, index) => visit(display, `stages[${stageIndex}].displays[${index}]`));
+    stage.displays?.forEach((display, index) => visitWithResets(display, `stages[${stageIndex}].displays[${index}]`));
     stage.challenges.forEach((challenge, challengeIndex) => {
       challenge.displays.forEach((display, index) =>
-        visit(display, `stages[${stageIndex}].challenges[${challengeIndex}].displays[${index}]`),
+        visitWithResets(display, `stages[${stageIndex}].challenges[${challengeIndex}].displays[${index}]`),
       );
     });
   });

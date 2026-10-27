@@ -5,7 +5,7 @@ import type { GameOverviewDisplayPurpose } from "../../../entities/data/displays
 import type { GameStageId } from "../../../entities/data/GameStageData";
 import type { GameChallengeState } from "../../../entities/state/GameChallengeState";
 import type { GameStageCompletionState, GameStageState } from "../../../entities/state/GameStageState";
-import type { GameState } from "../../../entities/state/GameState";
+import type { DisplayScope, GameState } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
 import { challengeScope } from "./RenderDataUtils";
 
@@ -211,9 +211,22 @@ export function resetChallenge(gameState: GameState, stageId: GameStageId, chall
   );
   const updatedStageState = { ...stageState, challengeStates, completion: stageCompletion(challengeStates) };
   const scopes = new Set(challengeState.challenge.displays.map((d) => challengeScope(stageId, challengeId, d.purpose)));
-  return {
-    ...gameState,
-    stages: gameState.stages.map((s) => (s === stageState ? updatedStageState : s)),
-    displayStates: _.omitBy(gameState.displayStates, (_state, scope) => scopes.has(scope)),
-  };
+  return forgetFinishedResets(
+    {
+      ...gameState,
+      stages: gameState.stages.map((s) => (s === stageState ? updatedStageState : s)),
+      displayStates: _.omitBy(gameState.displayStates, (_state, scope) => scopes.has(scope)),
+    },
+    scopes,
+  );
 }
+
+/** Forgets that the reset displays of the given displays (and theirs) were finished, so they show again. */
+export const forgetFinishedResets = (gameState: GameState, displayScopes: Iterable<DisplayScope>): GameState => {
+  const prefixes = Array.from(displayScopes, (scope) => `${scope}/`);
+  const finishedResets = gameState.session.finishedResets.filter(
+    (scope) => !prefixes.some((prefix) => scope.startsWith(prefix)),
+  );
+  if (finishedResets.length === gameState.session.finishedResets.length) return gameState;
+  return { ...gameState, session: { ...gameState.session, finishedResets } };
+};

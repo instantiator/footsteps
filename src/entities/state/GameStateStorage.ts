@@ -5,7 +5,7 @@ import type { GameStageId } from "../data/GameStageData";
 import { stageCompletion } from "../../components/core/logic/GameStateUtils";
 import { allDisplayScopes } from "../../components/core/logic/RenderDataUtils";
 import { isDefined } from "../../util/ObjectUtils";
-import { createBlankGameState, type GameState } from "./GameState";
+import { createBlankGameState, newGameSession, type GameState } from "./GameState";
 import type { GameStageAvailabilityState, GameStageState } from "./GameStageState";
 
 /** The version of the saved progress format; older or newer versions are ignored. */
@@ -171,6 +171,7 @@ const stateFromProgress = (progress: StoredGameProgress, gameData: GameData): Ga
     stages,
     current: { stageId: currentStageId, overviewDisplay },
     displayStates: progress.displayStates,
+    session: newGameSession(),
   };
 };
 

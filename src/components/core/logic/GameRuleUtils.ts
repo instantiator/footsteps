@@ -20,8 +20,8 @@ import {
   type GameExpression,
 } from "./GameExpressionUtils";
 import { findChallengeState } from "./GameDataUtils";
-import { completeChallenge, resetChallenge, validateAnswer } from "./GameStateUtils";
-import { getDisplayState, getShownDisplays, type ShownDisplay } from "./RenderDataUtils";
+import { completeChallenge, forgetFinishedResets, resetChallenge, validateAnswer } from "./GameStateUtils";
+import { getDisplaySlots, getDisplayState, getShownDisplays, type ShownDisplay } from "./RenderDataUtils";
 import { matchTarget, type DisplayDomEvent } from "./TemplateUtils";
 import { isDefined } from "../../../util/ObjectUtils";
 
@@ -33,36 +33,56 @@ const CHALLENGE_ACTIONS = ["completeChallenge", "answer", "resetChallenge"] as c
 
 /** A display to check, with a readable path to it for error messages. */
 interface DisplayToCompile {
-  display: GameDisplayBase;
+  display: Pick<GameDisplayBase, "component" | "resetDisplay">;
   path: string;
   isChallenge: boolean;
+  /** Whether it is a reset display, where `finishReset` can be used. */
+  isReset: boolean;
 }
 
-/** Every display in the game, overview, stage and challenge, with its path. */
-const allDisplays = (gameData: GameData): DisplayToCompile[] => [
-  ...gameData.displays.map((display, d) => ({
-    display,
-    path: `displays[${d}] (${display.purpose})`,
-    isChallenge: false,
-  })),
-  ...gameData.stages.flatMap((stage, s) => {
-    const stagePath = `stages[${s}] (${stage.id})`;
-    return [
-      ...(stage.displays ?? []).map((display, d) => ({
-        display,
-        path: `${stagePath} › displays[${d}] (${display.purpose})`,
-        isChallenge: false,
-      })),
-      ...stage.challenges.flatMap((challenge, c) =>
-        challenge.displays.map((display, d) => ({
+/** A display, followed by its reset display, and theirs. */
+const withResets = (target: DisplayToCompile): DisplayToCompile[] =>
+  isDefined(target.display.resetDisplay)
+    ? [
+        target,
+        ...withResets({
+          ...target,
+          display: target.display.resetDisplay,
+          path: `${target.path} › resetDisplay`,
+          isReset: true,
+        }),
+      ]
+    : [target];
+
+/** Every display in the game, overview, stage and challenge, and their reset displays, with its path. */
+const allDisplays = (gameData: GameData): DisplayToCompile[] =>
+  [
+    ...gameData.displays.map((display, d) => ({
+      display,
+      path: `displays[${d}] (${display.purpose})`,
+      isChallenge: false,
+      isReset: false,
+    })),
+    ...gameData.stages.flatMap((stage, s) => {
+      const stagePath = `stages[${s}] (${stage.id})`;
+      return [
+        ...(stage.displays ?? []).map((display, d) => ({
           display,
-          path: `${stagePath} › challenges[${c}] (${challenge.id}) › displays[${d}] (${display.purpose})`,
-          isChallenge: true,
+          path: `${stagePath} › displays[${d}] (${display.purpose})`,
+          isChallenge: false,
+          isReset: false,
         })),
-      ),
-    ];
-  }),
-];
+        ...stage.challenges.flatMap((challenge, c) =>
+          challenge.displays.map((display, d) => ({
+            display,
+            path: `${stagePath} › challenges[${c}] (${challenge.id}) › displays[${d}] (${display.purpose})`,
+            isChallenge: true,
+            isReset: false,
+          })),
+        ),
+      ];
+    }),
+  ].flatMap(withResets);
 
 /**
  * Checks that a selector parses, where there is a DOM to parse it with (not in the validation script).
@@ -118,6 +138,9 @@ const actionSources = (
   if (challengeAction && !target.isChallenge) {
     throw new Error(`${where}: ${challengeAction} can only be used on a challenge display`);
   }
+  if ("finishReset" in action && !target.isReset) {
+    throw new Error(`${where}: finishReset can only be used on a reset display`);
+  }
   if ("enterStage" in action && !gameData.stages.some((stage) => stage.id === action.enterStage)) {
     throw new Error(`${where}: there is no stage "${action.enterStage}"`);
   }
@@ -157,21 +180,35 @@ export const compileGameRules = (gameData: GameData): GameExpressions => {
   return expressions;
 };
 
+/** Shows again the reset displays set to show before every showing, of the displays the game has just started showing. */
+const showEveryShowResets = (previous: GameState | undefined, next: GameState): GameState => {
+  const wasSlot = new Set(isDefined(previous) ? getDisplaySlots(previous).map((slot) => slot.scope) : []);
+  const showAgain = getDisplaySlots(next)
+    .filter(({ scope, display }) => display.resetDisplay?.showOn === "every-show" && !wasSlot.has(scope))
+    .map(({ scope }) => scope);
+  return showAgain.length > 0 ? forgetFinishedResets(next, showAgain) : next;
+};
+
 /**
- * Returns displays with `resetStateOnShow` to their `initialState` when they become shown. It runs on every game
- * state change, in the same update, so a reset display never renders its old state.
+ * Prepares displays as they are shown. It runs on every game state change, in the same update, so a display never
+ * renders its old state:
+ * - a display whose reset display shows before every showing shows it again;
+ * - a reset display, or a display with `resetStateOnShow`, returns to its `initialState`.
  * @param previous the state before the change, or undefined when the game starts
  */
 export const applyShowResets = (previous: GameState | undefined, next: GameState): GameState => {
+  const prepared = showEveryShowResets(previous, next);
   const wasShown = new Set(isDefined(previous) ? getShownDisplays(previous).map((d) => d.scope) : []);
-  const resets = getShownDisplays(next).filter(
+  const resets = getShownDisplays(prepared).filter(
     (d) =>
-      d.component.resetStateOnShow === true && !wasShown.has(d.scope) && Object.hasOwn(next.displayStates, d.scope),
+      (d.isReset === true || d.component.resetStateOnShow === true) &&
+      !wasShown.has(d.scope) &&
+      Object.hasOwn(prepared.displayStates, d.scope),
   );
-  if (resets.length === 0) return next;
-  const displayStates = { ...next.displayStates };
+  if (resets.length === 0) return prepared;
+  const displayStates = { ...prepared.displayStates };
   for (const { scope } of resets) delete displayStates[scope];
-  return { ...next, displayStates };
+  return { ...prepared, displayStates };
 };
 
 /** What rules need besides the game state: the game's id (for the snapshot) and its compiled expressions. */
@@ -232,6 +269,12 @@ const applyAnswer = (state: GameState, { stageId, challengeId }: ShownDisplay, a
   return completeChallenge(state, stageId!, challengeId!);
 };
 
+/** Marks a reset display finished, revealing what it was shown for. */
+const finishReset = (state: GameState, scope: DisplayScope): GameState =>
+  state.session.finishedResets.includes(scope)
+    ? state
+    : { ...state, session: { ...state.session, finishedResets: [...state.session.finishedResets, scope] } };
+
 /** Applies one action. Challenge actions are only on challenge displays, as checked when the game loads. */
 const applyAction = (run: RuleRun, state: GameState, action: GameAction, where: string): GameState => {
   const { scope, stageId, challengeId } = run.display;
@@ -244,6 +287,7 @@ const applyAction = (run: RuleRun, state: GameState, action: GameAction, where: 
     return done ? state : completeChallenge(state, stageId!, challengeId!);
   }
   if ("resetChallenge" in action) return resetChallenge(state, stageId!, challengeId!);
+  if ("finishReset" in action) return finishReset(state, scope);
   return enterStage(state, action.enterStage) ?? state;
 };
 

@@ -69,6 +69,23 @@ export interface GameDisplayBase {
   component: GameDisplayComponentData;
   /** Camera mode settings for this display, falling back to broader displays. */
   camera?: GameDisplayCameraData;
+  /** Shown in this display's place first, to help the player get ready for it, until one of its rules finishes it. */
+  resetDisplay?: GameResetDisplay;
+}
+
+/** A display that helps the player get ready for its parent display, eg. "Return to the start". */
+export interface GameResetDisplay {
+  /** How this display is rendered, and the rules that finish it (`finishReset`). */
+  component: GameDisplayComponentData;
+  /** Camera mode settings while it shows, over its parent's. */
+  camera?: GameDisplayCameraData;
+  /**
+   * When it shows: before its parent is first shown since the game loaded (the default), or before every showing.
+   * It always shows again when its parent's challenge is reset. A nested reset display shows with this one.
+   */
+  showOn?: "first-show" | "every-show";
+  /** A reset display for this reset display, shown before it. */
+  resetDisplay?: GameResetDisplay;
 }
 
 /** Fields common to every display component. */
@@ -198,6 +215,12 @@ export interface GameResetChallengeAction {
   resetChallenge: true;
 }
 
+/** Finishes this reset display, revealing the display it is shown for. Reset displays only. */
+export interface GameFinishResetAction {
+  /** Always true. */
+  finishReset: true;
+}
+
 /** Opens a stage, unless it is locked or completed. */
 export interface GameEnterStageAction {
   /** The stage's id. */
@@ -211,7 +234,8 @@ export type GameAction =
   | GameCompleteChallengeAction
   | GameAnswerAction
   | GameResetChallengeAction
-  | GameEnterStageAction;
+  | GameEnterStageAction
+  | GameFinishResetAction;
 
 /** A display shown when no stage is active. */
 export interface GameOverviewDisplay extends GameDisplayBase {

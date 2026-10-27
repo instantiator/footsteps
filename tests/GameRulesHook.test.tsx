@@ -190,6 +190,23 @@ describe("useGameRules", () => {
     });
   });
 
+  describe("reset displays", () => {
+    it("run their own rules first, and start their parent's when they finish", () => {
+      const data = rulesGame({ [STAGES]: { rules: [count()], initialState: { n: 0 } } });
+      data.displays[1].resetDisplay = {
+        component: { ...scrollWith(), rules: [{ on: { after: 1000 }, do: [{ finishReset: true }] }] },
+      };
+      const rules = renderRules(data);
+      rules.go("game-overview-stages");
+      advance(999);
+      expect(rules.displayState(STAGES)).toBeUndefined();
+
+      advance(1);
+      expect(rules.state().session.finishedResets).toEqual([`${STAGES}/reset`]);
+      expect(rules.displayState(STAGES)).toEqual({ n: 1 });
+    });
+  });
+
   describe("timers", () => {
     const tick = (trigger: GameRule["on"]): GameRule => ({ on: trigger, do: [{ set: { n: "state.n + 1" } }] });
 
