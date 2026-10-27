@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { DEFAULT_APP_CONFIG, type AppConfig } from "../../config/AppConfig";
 import useAppConfig from "../../providers/AppConfigHook";
+import { isDefined } from "../../util/ObjectUtils";
 import { createVisionModel } from "../../vision/createVisionModel";
 import type { FootstepsVisionModelImplementation } from "../../vision/FootstepsVisionModelImplementation";
 import { PersonTracker, type HoldTimes } from "../../vision/Tracking";
@@ -77,11 +78,11 @@ const playersOf = ({ width, height, people }: VisionFrame, offScreenThreshold_pe
     feet: feetOf(person, width, height, offScreenThreshold_percent),
   }));
 
-/** The feet of the players that are on screen, keyed by player id; held players' feet are only where they were. */
+/** The feet of the players that are on screen, keyed by player id; a held player's are flagged, as where they were. */
 const feetPositionsOf = (players: PlayerFrame[]): FeetPositions => {
   const feetPositions: FeetPositions = {};
   for (const { id, feet, held } of players) {
-    if (feet && !held) feetPositions[id] = feet;
+    if (feet) feetPositions[id] = isDefined(held) ? { ...feet, held: true } : feet;
   }
   return feetPositions;
 };

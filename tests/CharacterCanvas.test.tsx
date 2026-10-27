@@ -155,6 +155,19 @@ describe("CharacterCanvas", () => {
     expect(Object.keys(onFeetPositionsChange.mock.calls[0][0])).toEqual(["0", "1"]);
   });
 
+  it("reports the feet of a player the model has lost for a moment, flagged as held", async () => {
+    const onFeetPositionsChange = vi.fn<(feetPositions: FeetPositions) => void>();
+    model.people = 1;
+    renderCanvas({ onFeetPositionsChange });
+    await waitFor(() => expect(onFeetPositionsChange).toHaveBeenCalled());
+    expect(onFeetPositionsChange.mock.calls[0][0][0].held).toBeUndefined();
+
+    model.people = 0; // lost by the model, so held by the tracker
+    await act(async () => runNextFrame());
+    await waitFor(() => expect(onFeetPositionsChange).toHaveBeenCalledTimes(2));
+    expect(onFeetPositionsChange.mock.calls[1][0][0]).toMatchObject({ held: true, percent: { y: 87.5 } });
+  });
+
   it("skips a frame that fails to be tracked, and carries on with the next", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
     model.detect.mockRejectedValueOnce(new Error("WebGL context lost"));

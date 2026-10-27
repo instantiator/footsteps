@@ -17,7 +17,10 @@ export const getCameraStream = async (size?: { width: number; height: number }) 
 
 /** Each tracked person's feet position, keyed by their index in the segmentation. */
 export type FeetPositions = {
-  [personId: number]: FootPosition;
+  [personId: number]: FootPosition & {
+    /** Whether the model has lost the person for a moment, so this is where their feet last were. */
+    held?: boolean;
+  };
 };
 
 /** A person's feet position, both in pixels and as a percentage of the frame. */
