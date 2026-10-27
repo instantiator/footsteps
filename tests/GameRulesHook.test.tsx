@@ -167,6 +167,44 @@ describe("useGameRules", () => {
     });
   });
 
+  describe("holding the mouse over an element (holdMs)", () => {
+    const holdRule: GameRule[] = [
+      { on: { interact: "mouse-enter", target: ".door", holdMs: 1000 }, do: [{ set: { held: "state.held + 1" } }] },
+    ];
+    const holding = () => {
+      const rules = renderRules(rulesGame({ [TITLE]: { rules: holdRule, initialState: { held: 0 } } }));
+      return { rules, ...template() };
+    };
+
+    it("fires once the mouse has stayed over the element for the time, and not before", () => {
+      const { rules, root, el } = holding();
+      rules.send(TITLE, { kind: "mouseOver", target: el("door"), root, related: el("window") });
+      advance(999);
+      expect(rules.displayState(TITLE)).toBeUndefined();
+      advance(1);
+      expect(rules.displayState(TITLE)).toEqual({ held: 1 });
+    });
+
+    it("doesn't fire if the mouse leaves first, but keeps waiting while it moves between the element's parts", () => {
+      const { rules, root, el } = holding();
+      rules.send(TITLE, { kind: "mouseOver", target: el("door"), root, related: el("window") });
+      rules.send(TITLE, { kind: "mouseOut", target: el("door"), root, related: el("knob") });
+      advance(500);
+      rules.send(TITLE, { kind: "mouseOut", target: el("knob"), root, related: el("window") });
+      advance(5000);
+      expect(rules.displayState(TITLE)).toBeUndefined();
+    });
+
+    it("doesn't fire once the display is hidden", () => {
+      const { rules, root, el } = holding();
+      rules.send(TITLE, { kind: "mouseOver", target: el("door"), root, related: el("window") });
+      rules.go("game-overview-stages");
+      rules.go("game-overview-title");
+      advance(5000);
+      expect(rules.displayState(TITLE)).toBeUndefined();
+    });
+  });
+
   describe("start", () => {
     it("fires once each time the display is shown, keeping state while hidden", () => {
       const rules = renderRules(rulesGame({ [STAGES]: { rules: [count()], initialState: { n: 0 } } }));

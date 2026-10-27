@@ -101,6 +101,7 @@ const handRule = (overrides: Partial<CameraRuleTarget> = {}): CameraRuleTarget =
   interactions: ["hand-enter"],
   threshold: 1,
   includeCovered: true,
+  holdMs: 0,
   ...overrides,
 });
 

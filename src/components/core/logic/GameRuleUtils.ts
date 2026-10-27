@@ -113,9 +113,26 @@ const checkInteractions = (trigger: GameInteractTrigger, where: string): void =>
   }
 };
 
+/** Whether an interaction is one of entering an element, which can be held: `mouse-enter`, or a camera `-enter`. */
+export const isEntering = (interaction: GameInteraction): boolean => interaction.endsWith("-enter");
+
+/**
+ * Checks that a trigger's `holdMs` is a time to stay over the element, on entering interactions only.
+ * @throws naming `where` if not
+ */
+const checkHold = (trigger: GameInteractTrigger, where: string): void => {
+  if (!isDefined(trigger.holdMs)) return;
+  if (trigger.holdMs < 0) throw new Error(`${where}: a duration can't be negative`);
+  const other = triggerInteractions(trigger).find((interaction) => !isEntering(interaction));
+  if (isDefined(other)) throw new Error(`${where}: only entering interactions can be held, not "${other}"`);
+};
+
 /** The selector and expressions a trigger needs, checking any fixed duration. */
 const triggerSources = (trigger: GameTrigger, where: string): [string, string][] => {
-  if ("interact" in trigger) checkInteractions(trigger, `${where}.interact`);
+  if ("interact" in trigger) {
+    checkInteractions(trigger, `${where}.interact`);
+    checkHold(trigger, `${where}.holdMs`);
+  }
   if ("target" in trigger) {
     checkSelector(trigger.target, `${where}.target`);
     return [];

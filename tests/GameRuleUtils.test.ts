@@ -93,6 +93,16 @@ describe("compileGameRules", () => {
     expect(() => compileGameRules(gameWithRules([unknown]))).toThrow('there is no interaction "wave"');
   });
 
+  it.each([
+    ["a click", { interact: ["click", "mouse-enter"], target: "#door", holdMs: 500 }, 'not "click"'],
+    ["an exit", { interact: "hand-exit", target: "#door", holdMs: 500 }, 'not "hand-exit"'],
+    ["a jump", { interact: "jump-onto", target: "#door", holdMs: 500 }, 'not "jump-onto"'],
+    ["a negative hold", { interact: "hand-enter", target: "#door", holdMs: -1 }, "can't be negative"],
+  ] satisfies [string, GameRule["on"], string][])("rejects holding %s", (_, on, message) => {
+    expect(() => compileGameRules(gameWithRules([{ on, do: [] }]))).toThrow(`${OVERVIEW}.on.holdMs: `);
+    expect(() => compileGameRules(gameWithRules([{ on, do: [] }]))).toThrow(message);
+  });
+
   it("rejects a negative duration", () => {
     const rule: GameRule = { on: { after: -1 }, do: [] };
     expect(() => compileGameRules(gameWithRules([rule]))).toThrow("can't be negative");

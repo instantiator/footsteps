@@ -12,13 +12,18 @@ import {
   runWhens,
   triggerInteractions,
   type RuleEnvironment,
+  type RuleEvent,
   type WhenEdges,
 } from "./logic/GameRuleUtils";
 import { getShownDisplays, overviewScope, type ShownDisplay } from "./logic/RenderDataUtils";
-import { displayRoots, type DisplayDomEvent } from "./logic/TemplateUtils";
+import { displayRoots, matchTarget, type DisplayDomEvent } from "./logic/TemplateUtils";
 import type { CameraRuleEvent, CameraRuleTarget } from "./layout/PlayerInteractionHook";
 import type { CameraInteraction } from "../camera/PlayerMonitor";
-import { DEFAULT_INTERACTION_THRESHOLD, POINTER_INTERACTIONS } from "../../entities/data/displays/GameDisplayData";
+import {
+  DEFAULT_INTERACTION_THRESHOLD,
+  POINTER_INTERACTIONS,
+  type GameTrigger,
+} from "../../entities/data/displays/GameDisplayData";
 
 /** Whether an interaction comes from a mouse or pointer, so the camera ignores it. */
 const isPointerInteraction = (interaction: string): boolean =>
@@ -51,7 +56,15 @@ const getCameraRules = (state: GameState): CameraRuleTarget[] =>
       if (interactions.length === 0) return [];
       const threshold = on.threshold ?? DEFAULT_INTERACTION_THRESHOLD;
       return [
-        { scope, ruleIndex, selector: on.target, interactions, threshold, includeCovered: on.includeCovered === true },
+        {
+          scope,
+          ruleIndex,
+          selector: on.target,
+          interactions,
+          threshold,
+          includeCovered: on.includeCovered === true,
+          holdMs: on.holdMs ?? 0,
+        },
       ];
     }),
   );
@@ -135,6 +148,79 @@ function useDisplayLifecycles(
   }, []);
 }
 
+/** One rule of one display. */
+interface RuleAt {
+  scope: DisplayScope;
+  ruleIndex: number;
+}
+
+/** A rule waiting for the mouse to stay over an element for its `holdMs`. */
+interface MouseHold {
+  scope: DisplayScope;
+  /** The element the mouse is over. */
+  element: Element;
+  timer: ReturnType<typeof setTimeout>;
+}
+
+/**
+ * Holds rules whose trigger has a `holdMs`: the mouse entering one of their elements starts a wait, and the rule fires
+ * if it is still there when the wait is over. Leaving the element, or the display being hidden, cancels the wait.
+ */
+function useMouseHolds(gameState: GameState, fire: FireRules) {
+  const holdsRef = useRef(new Set<MouseHold>());
+  const shownKey = getShownDisplays(gameState)
+    .map((display) => display.scope)
+    .join("\n");
+
+  useEffect(() => {
+    const shown = new Set(shownKey.split("\n"));
+    for (const hold of holdsRef.current) {
+      if (shown.has(hold.scope)) continue;
+      clearTimeout(hold.timer);
+      holdsRef.current.delete(hold);
+    }
+  }, [shownKey]);
+
+  useEffect(() => {
+    const holds = holdsRef.current;
+    return () => holds.forEach((hold) => clearTimeout(hold.timer));
+  }, []);
+
+  return useMemo(
+    () => ({
+      /**
+       * Starts waiting, if the rule holds and the mouse has just entered its element.
+       * @returns whether the rule is now waiting, rather than firing straight away
+       */
+      start: ({ scope, ruleIndex }: RuleAt, trigger: GameTrigger, event: DisplayDomEvent, matched: RuleEvent) => {
+        const holdMs = "interact" in trigger ? (trigger.holdMs ?? 0) : 0;
+        const element = "target" in trigger ? matchTarget(event, trigger.target) : undefined;
+        if (holdMs <= 0 || matched.interaction !== "mouse-enter" || !isDefined(element)) return false;
+        const hold: MouseHold = {
+          scope,
+          element,
+          timer: setTimeout(() => {
+            holdsRef.current.delete(hold);
+            fire(scope, (_, index) => (index === ruleIndex ? matched : undefined));
+          }, holdMs),
+        };
+        holdsRef.current.add(hold);
+        return true;
+      },
+      /** Cancels the waits for the elements the mouse has just left. */
+      leave: (scope: DisplayScope, event: DisplayDomEvent) => {
+        for (const hold of holdsRef.current) {
+          const left = hold.element.contains(event.target) && !(event.related && hold.element.contains(event.related));
+          if (hold.scope !== scope || !left) continue;
+          clearTimeout(hold.timer);
+          holdsRef.current.delete(hold);
+        }
+      },
+    }),
+    [fire],
+  );
+}
+
 /** After any change, fires the `when` rules that have become true; skipped if the state moved on meanwhile. */
 function useWhenRules(env: RuleEnvironment, gameState: GameState, setGameState: Dispatch<SetStateAction<GameState>>) {
   const edgesRef = useRef<WhenEdges>(new Map());
@@ -178,6 +264,7 @@ export function useGameRules(): GameRules {
     [env, setGameState],
   );
   useDisplayLifecycles(env, gameState, stateRef, fire);
+  const mouseHolds = useMouseHolds(gameState, fire);
   useWhenRules(env, gameState, setGameState);
 
   /** Fires a display's rules for an event in its template. A click no rule takes moves on from the title screen. */
@@ -185,14 +272,19 @@ export function useGameRules(): GameRules {
     (scope: DisplayScope, event: DisplayDomEvent) => {
       const display = getShownDisplays(stateRef.current).find((d) => d.scope === scope);
       if (!isDefined(display)) return;
-      const events = (display.component.rules ?? []).map((rule) => matchDisplayEvent(rule.on, event));
+      if (event.kind === "mouseOut") mouseHolds.leave(scope, event);
+      const events = (display.component.rules ?? []).map((rule, ruleIndex) => {
+        const matched = matchDisplayEvent(rule.on, event);
+        const held = isDefined(matched) && mouseHolds.start({ scope, ruleIndex }, rule.on, event, matched);
+        return held ? undefined : matched;
+      });
       if (events.some(isDefined)) {
         fire(scope, (_, ruleIndex) => events[ruleIndex]);
       } else if (event.kind === "click" && scope === overviewScope("game-overview-title")) {
         setGameState((previous) => leaveTitleScreen(previous) ?? previous);
       }
     },
-    [fire, setGameState],
+    [fire, setGameState, mouseHolds],
   );
 
   /** Fires the camera rule that watches the element the player interacted with. */

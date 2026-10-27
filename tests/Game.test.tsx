@@ -168,6 +168,7 @@ describe("Game camera interactions", () => {
         interactions: ["hand-enter"],
         threshold: 1,
         includeCovered: false,
+        holdMs: 0,
       },
     ]);
 

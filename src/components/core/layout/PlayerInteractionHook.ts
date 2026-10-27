@@ -26,6 +26,8 @@ export interface CameraRuleTarget {
   threshold: number;
   /** Whether the element counts even where something else covers it. */
   includeCovered: boolean;
+  /** How long, in milliseconds, a body part must stay over the element before it enters. */
+  holdMs: number;
 }
 
 /** A camera interaction with an element a rule watches. */
@@ -86,6 +88,7 @@ const frameTargets = (canvas: HTMLCanvasElement, players: PlayerFrame[], rules: 
         rect: maskRectForElement(element.getBoundingClientRect(), canvasRect, width, height),
         interactions: rule.interactions,
         threshold: rule.threshold,
+        holdMs: rule.holdMs,
         isTopmostAt: rule.includeCovered ? undefined : isTopmostAt,
       };
       result.sources.set(key, { scope: rule.scope, ruleIndex: rule.ruleIndex, element });

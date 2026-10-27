@@ -371,6 +371,33 @@ describe("PlayerMonitor exits", () => {
   });
 });
 
+describe("PlayerMonitor holds", () => {
+  const holdTarget = { "the-element": { ...target(["hand-enter"], 0), holdMs: 500 } };
+  const inside = handFrame([[1, 1]]);
+  const outside = handFrame([[8, 8]]);
+
+  it("fires once the part has stayed over the element for the target's hold, and not before", () => {
+    const { events, monitor } = monitorWithEvents();
+    monitor.update(inside, holdTarget, 100);
+    monitor.update(inside, holdTarget, 599);
+    expect(events).toEqual([]);
+    monitor.update(inside, holdTarget, 600);
+    monitor.update(inside, holdTarget, 900);
+    expect(events).toEqual([{ key: "the-element", interaction: "hand-enter" }]);
+  });
+
+  it("starts the hold again when the part leaves before it is over", () => {
+    const { events, monitor } = monitorWithEvents();
+    monitor.update(inside, holdTarget, 100);
+    monitor.update(outside, holdTarget, 400);
+    monitor.update(inside, holdTarget, 500);
+    monitor.update(inside, holdTarget, 900);
+    expect(events).toEqual([]);
+    monitor.update(inside, holdTarget, 1000);
+    expect(events).toHaveLength(1);
+  });
+});
+
 describe("PlayerMonitor stable frames", () => {
   const handTarget = { "the-element": target(["hand-enter"], 0) };
   const inside = handFrame([[1, 1]]);

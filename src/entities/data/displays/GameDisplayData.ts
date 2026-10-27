@@ -138,6 +138,13 @@ export interface GameInteractTrigger {
   threshold?: number;
   /** Camera interactions only: also fire when the element is covered by another element. Defaults to false. */
   includeCovered?: boolean;
+  /**
+   * Entering interactions only (`mouse-enter` and the camera's `-enter`s): fire once the player has stayed over the
+   * element this many milliseconds, rather than as they arrive.
+   *
+   * @minimum 0
+   */
+  holdMs?: number;
 }
 
 /** A CSS animation ending on an element of the display. */

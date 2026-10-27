@@ -36,6 +36,8 @@ export interface MonitorTarget {
   interactions: readonly string[];
   /** Fraction of the body part that must be inside the element (0–1). */
   threshold: number;
+  /** How long, in milliseconds, a body part must stay over the element before it enters; 0 by default. */
+  holdMs?: number;
   /**
    * Whether the element is the topmost thing at a point in the mask, as a click there would find it. Without it,
    * the element counts wherever it is, even under others.
@@ -82,6 +84,18 @@ const COVERAGE_GROUPS: Record<CoverageInteraction, PartGroup> = {
 const groupsOf = (interactions: readonly string[]): Set<PartGroup> =>
   new Set(interactions.filter(isCoverageInteraction).map((interaction) => COVERAGE_GROUPS[interaction]));
 
+/** A group of body parts over a target in a frame. */
+interface Arrival {
+  /** The target's key. */
+  targetKey: string;
+  /** The target. */
+  target: MonitorTarget;
+  /** The group of body parts. */
+  group: PartGroup;
+  /** When the frame was taken, in milliseconds. */
+  timestamp: number;
+}
+
 /** One group of body parts over one target, as followed from frame to frame. */
 interface Presence {
   /** The target's key. */
@@ -90,6 +104,8 @@ interface Presence {
   group: PartGroup;
   /** Frames in a row the group has been over the target; {@link ALREADY_HELD} if it was over when the monitor was armed. */
   streak: number;
+  /** When the streak began, in milliseconds, for the target's {@link MonitorTarget.holdMs}. */
+  since: number;
   /** Whether it stayed over the target long enough to have entered it, so it can leave. */
   entered: boolean;
   /** Frames in a row an entered group has been away. */
@@ -219,10 +235,11 @@ export class PlayerMonitor {
 
     for (const [key, target] of Object.entries(targets)) {
       const found = bodyPartsIn({ width: frame.width, height: frame.height, timestamp, people: [frame] }, target.rect);
-      const coverage: TargetCoverage = {
+      const coverage = {
         proportions: new Map(found.map(({ part, proportion }) => [part, proportion])),
         threshold: clampThreshold(target.threshold),
         visible: visibility(frame, target),
+        timestamp,
       };
       this.reportCoverage(key, target, coverage, presence);
       if (target.interactions.some(isJumpInteraction) && isCovered("foot", coverage)) feetOn.add(key);
@@ -267,24 +284,36 @@ export class PlayerMonitor {
   private reportCoverage(
     targetKey: string,
     target: MonitorTarget,
-    coverage: TargetCoverage,
+    coverage: TargetCoverage & { timestamp: number },
     presence: Map<string, Presence>,
   ): void {
+    const { timestamp } = coverage;
     for (const group of groupsOf(target.interactions)) {
       const presenceKey = `${targetKey}:${group}`;
       const before = this.presence.get(presenceKey);
-      const now = isCovered(group, coverage) ? this.stay(targetKey, group, before) : this.leave(before);
+      const now = isCovered(group, coverage)
+        ? this.stay(before, { targetKey, target, group, timestamp })
+        : this.leave(before);
       if (isDefined(now)) presence.set(presenceKey, now);
       const [wasIn, isIn] = [before?.entered === true, now?.entered === true];
       if (wasIn !== isIn) this.report(targetKey, `${group}-${isIn ? "enter" : "exit"}`, target);
     }
   }
 
-  /** A group over the target this frame: its streak grows, and it enters once the streak is long enough. */
-  private stay(key: string, group: PartGroup, before: Presence | undefined): Presence {
+  /**
+   * A group over the target this frame: its streak grows, and it enters once the streak has lasted the stable frames
+   * and the target's hold.
+   */
+  private stay(before: Presence | undefined, { targetKey, target, group, timestamp }: Arrival): Presence {
     const streak = !this.armed || before?.streak === ALREADY_HELD ? ALREADY_HELD : (before?.streak ?? 0) + 1;
-    const entered = before?.entered === true || (streak !== ALREADY_HELD && streak >= this.stableFrames);
-    return { key, group, streak, entered, away: 0 };
+    const since = before?.since ?? timestamp;
+    const entered = before?.entered === true || this.hasHeld(streak, timestamp - since, target);
+    return { key: targetKey, group, streak, since, entered, away: 0 };
+  }
+
+  /** Whether a streak (not one held when the monitor was armed) has lasted the stable frames and the target's hold. */
+  private hasHeld(streak: number, heldMs: number, target: MonitorTarget): boolean {
+    return streak !== ALREADY_HELD && streak >= this.stableFrames && heldMs >= (target.holdMs ?? 0);
   }
 
   /** A group away from the target this frame: forgotten unless it entered, which leaves once it has been away long enough. */
