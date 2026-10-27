@@ -38,7 +38,7 @@ describe("GameExpressionUtils", () => {
   });
 
   it("reads single-quoted names and tests membership", () => {
-    const ctx = context({ state: { "my-key": 5 }, event: { id: "lava-1", interaction: "foot" } });
+    const ctx = context({ state: { "my-key": 5 }, event: { id: "lava-1", interaction: "foot-enter" } });
     expect(run("'state.my-key' + 1", ctx)).toBe(6);
     expect(run('event.id in ("lava-1", "lava-2")', ctx)).toBe(true);
   });

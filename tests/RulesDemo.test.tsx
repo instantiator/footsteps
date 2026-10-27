@@ -89,16 +89,16 @@ describe("rules demo, played by camera", () => {
   it("moves the toggle at a touch of the hand", async () => {
     await start();
     expect($("#switch")).toHaveClass("position-1");
-    touch("#switch", "hand");
+    touch("#switch", "hand-enter");
     await waitFor(() => expect($("#switch")).toHaveClass("position-2"));
   });
 
   it("pops a balloon a hand touches, and scores it", async () => {
     await start();
-    touch("#stage-link-balloons", "hand");
+    touch("#stage-link-balloons", "hand-enter");
     await waitFor(() => expect($("#balloon-0")).not.toBeNull());
 
-    touch("#balloon-0", "hand");
+    touch("#balloon-0", "hand-enter");
 
     await waitFor(() => expect($("#balloon-0")).toHaveClass("popping"));
     expect($("#score")).toHaveTextContent("1 / 10");
@@ -106,12 +106,12 @@ describe("rules demo, played by camera", () => {
 
   it("starts each new balloon in a different column, in the next colour", async () => {
     await start();
-    touch("#stage-link-balloons", "hand");
+    touch("#stage-link-balloons", "hand-enter");
     await waitFor(() => expect($("#balloon-0")).not.toBeNull());
     expect($("#balloon-0")).toHaveStyle({ left: "45%" });
     expect($("#balloon-0 .balloon-body")).toHaveClass("colour-0");
 
-    touch("#balloon-0", "hand");
+    touch("#balloon-0", "hand-enter");
     await waitFor(() => expect($("#balloon-0")).toHaveClass("popping"));
     // jsdom has no AnimationEvent, so React listens for the prefixed name there (browsers send animationend)
     const popEnd = Object.assign(new Event("webkitAnimationEnd", { bubbles: true }), { animationName: "pop" });
@@ -123,14 +123,14 @@ describe("rules demo, played by camera", () => {
 
   it("closes the door on lava, opens it at the start, and completes at the door's base", async () => {
     await start();
-    touch("#stage-link-lava", "hand");
+    touch("#stage-link-lava", "hand-enter");
     await waitFor(() => expect($("#door")).not.toBeNull());
 
-    touch("#lava-2", "foot");
+    touch("#lava-2", "foot-enter");
     await waitFor(() => expect($("#door")).toBeNull());
-    touch("#start", "foot");
+    touch("#start", "foot-enter");
     await waitFor(() => expect($("#door-base")).not.toBeNull());
-    touch("#door-base", "foot");
+    touch("#door-base", "foot-enter");
 
     await waitFor(() => expect($("#stage-link-lava")).toHaveClass("completed"));
   });

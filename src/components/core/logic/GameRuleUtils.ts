@@ -1,13 +1,14 @@
 import _ from "lodash";
 import type { GameData, GameId } from "../../../entities/data/GameData";
-import type {
-  GameAction,
-  GameDisplayBase,
-  GameInteraction,
-  GameInteractTrigger,
-  GameRule,
-  PointerInteraction,
-  GameTrigger,
+import {
+  GAME_INTERACTIONS,
+  type GameAction,
+  type GameDisplayBase,
+  type GameInteraction,
+  type GameInteractTrigger,
+  type GameRule,
+  type PointerInteraction,
+  type GameTrigger,
 } from "../../../entities/data/displays/GameDisplayData";
 import { toGameSnapshot } from "../../../entities/state/GameSnapshot";
 import type { DisplayScope, GameState } from "../../../entities/state/GameState";
@@ -76,8 +77,25 @@ const checkSelector = (selector: string, where: string): void => {
   }
 };
 
+/** The camera interactions that were renamed with an `-enter` suffix, named in the error for old game data. */
+const RENAMED_INTERACTIONS = ["hand", "foot", "head", "body", "any"];
+
+/**
+ * Checks that every interaction an interact trigger names exists.
+ * @throws naming `where`, and the new name of an interaction that was renamed
+ */
+const checkInteractions = (trigger: GameInteractTrigger, where: string): void => {
+  const names: readonly string[] = triggerInteractions(trigger);
+  for (const name of names) {
+    if (GAME_INTERACTIONS.some((interaction) => interaction === name)) continue;
+    const hint = RENAMED_INTERACTIONS.includes(name) ? `; "${name}" is now "${name}-enter"` : "";
+    throw new Error(`${where}: there is no interaction "${name}"${hint}`);
+  }
+};
+
 /** The selector and expressions a trigger needs, checking any fixed duration. */
 const triggerSources = (trigger: GameTrigger, where: string): [string, string][] => {
+  if ("interact" in trigger) checkInteractions(trigger, `${where}.interact`);
   if ("target" in trigger) {
     checkSelector(trigger.target, `${where}.target`);
     return [];

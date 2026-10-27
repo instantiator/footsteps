@@ -52,13 +52,25 @@ type JumpInteraction = (typeof JUMP_INTERACTIONS)[number];
 /** Interactions detected from how much of a body part is inside an element. */
 type CoverageInteraction = Exclude<CameraInteraction, JumpInteraction>;
 
-/** The body parts each coverage interaction looks for; any one of them over the element counts. */
-const PART_GROUPS: Record<CoverageInteraction, readonly BodyPart[]> = {
+/** What a coverage interaction looks for: a group of body parts. */
+type PartGroup = "hand" | "foot" | "head" | "body" | "any";
+
+/** The body parts in each group; any one of them over the element counts. */
+const PART_GROUPS: Record<PartGroup, readonly BodyPart[]> = {
   hand: [BodyPart.LEFT_HAND, BodyPart.RIGHT_HAND],
   foot: [BodyPart.LEFT_FOOT, BodyPart.RIGHT_FOOT],
   head: [BodyPart.HEAD],
   body: [BodyPart.BODY],
   any: BODY_PARTS,
+};
+
+/** The group each coverage interaction looks for. */
+const COVERAGE_GROUPS: Record<CoverageInteraction, PartGroup> = {
+  "hand-enter": "hand",
+  "foot-enter": "foot",
+  "head-enter": "head",
+  "body-enter": "body",
+  "any-enter": "any",
 };
 
 /** What one frame means for a target's coverage. */
@@ -75,14 +87,14 @@ interface TargetCoverage {
 const isJumpInteraction = (value: string): value is JumpInteraction => JUMP_INTERACTIONS.some((jump) => jump === value);
 
 /** Whether a value is an interaction detected from coverage, rather than unknown game data or a jump. */
-const isCoverageInteraction = (value: string): value is CoverageInteraction => Object.hasOwn(PART_GROUPS, value);
+const isCoverageInteraction = (value: string): value is CoverageInteraction => Object.hasOwn(COVERAGE_GROUPS, value);
 
 /** Clamps an authored threshold to the range it means. */
 const clampThreshold = (threshold: number): number => Math.min(Math.max(threshold, 0), 1);
 
 /** Whether enough of any of the interaction's body parts is inside the element, where nothing covers it. */
-const isCovered = (interaction: CoverageInteraction, { proportions, threshold, visible }: TargetCoverage): boolean =>
-  PART_GROUPS[interaction].some((part) => {
+const isCovered = (group: PartGroup, { proportions, threshold, visible }: TargetCoverage): boolean =>
+  PART_GROUPS[group].some((part) => {
     const proportion = proportions.get(part);
     return proportion !== undefined && proportion >= threshold && visible(part);
   });
@@ -226,7 +238,7 @@ export class PlayerMonitor {
   ): void {
     for (const interaction of target.interactions) {
       if (!isCoverageInteraction(interaction)) continue;
-      if (!isCovered(interaction, coverage)) continue;
+      if (!isCovered(COVERAGE_GROUPS[interaction], coverage)) continue;
 
       const heldKey = `${targetKey}:${interaction}`;
       const previous = this.held.get(heldKey) ?? 0;

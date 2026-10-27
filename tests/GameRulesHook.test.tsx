@@ -76,10 +76,10 @@ describe("useGameRules", () => {
   describe("template events", () => {
     const clickRules: GameRule[] = [
       {
-        on: { interact: ["click", "hand"], target: ".door" },
+        on: { interact: ["click", "hand-enter"], target: ".door" },
         do: [{ set: { opened: "event.id", by: "event.interaction" } }],
       },
-      { on: { interact: "hand", target: "#window" }, do: [{ set: { waved: "true" } }] },
+      { on: { interact: "hand-enter", target: "#window" }, do: [{ set: { waved: "true" } }] },
       { on: { animationEnd: "pop", target: "#door" }, do: [{ set: { popped: "true" } }] },
       { on: { transitionEnd: "left", target: "#door" }, do: [{ set: { slid: "true" } }] },
     ];

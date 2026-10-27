@@ -549,18 +549,31 @@
                     "anyOf": [
                         {
                             "items": {
-                                "$ref": "#/definitions/GameInteraction"
+                                "enum": [
+                                    "any-enter",
+                                    "body-enter",
+                                    "click",
+                                    "foot-enter",
+                                    "hand-enter",
+                                    "head-enter",
+                                    "jump",
+                                    "jump-from",
+                                    "jump-onto",
+                                    "mouse-enter",
+                                    "mouse-exit"
+                                ],
+                                "type": "string"
                             },
                             "type": "array"
                         },
                         {
                             "enum": [
-                                "any",
-                                "body",
+                                "any-enter",
+                                "body-enter",
                                 "click",
-                                "foot",
-                                "hand",
-                                "head",
+                                "foot-enter",
+                                "hand-enter",
+                                "head-enter",
                                 "jump",
                                 "jump-from",
                                 "jump-onto",
@@ -588,23 +601,6 @@
                 "target"
             ],
             "type": "object"
-        },
-        "GameInteraction": {
-            "description": "A way a player can interact with an element in a display. Jumps fire as the player lands: `jump` when they took off\nfrom and landed on the element, `jump-from` when they took off from it, and `jump-onto` when they landed on it.",
-            "enum": [
-                "any",
-                "body",
-                "click",
-                "foot",
-                "hand",
-                "head",
-                "jump",
-                "jump-from",
-                "jump-onto",
-                "mouse-enter",
-                "mouse-exit"
-            ],
-            "type": "string"
         },
         "GameOverviewDisplay": {
             "description": "A display shown when no stage is active.",

@@ -98,7 +98,7 @@ const handRule = (overrides: Partial<CameraRuleTarget> = {}): CameraRuleTarget =
   scope: SCOPE,
   ruleIndex: 0,
   selector: "#overview-thing",
-  interactions: ["hand"],
+  interactions: ["hand-enter"],
   threshold: 1,
   includeCovered: true,
   ...overrides,
@@ -109,7 +109,7 @@ const handOnThing = (container: HTMLElement) => ({
   scope: SCOPE,
   ruleIndex: 0,
   element: container.querySelector("#overview-thing"),
-  interaction: "hand",
+  interaction: "hand-enter",
 });
 
 const stubRect = (element: Element, rect: DOMRect) => vi.spyOn(element, "getBoundingClientRect").mockReturnValue(rect);

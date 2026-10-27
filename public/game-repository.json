@@ -101,31 +101,59 @@
             "data": {},
             "rules": [
               {
-                "on": { "interact": ["click", "hand", "jump"], "target": "#stages-link-stage-1", "threshold": 0.5 },
+                "on": {
+                  "interact": ["click", "hand-enter", "jump"],
+                  "target": "#stages-link-stage-1",
+                  "threshold": 0.5
+                },
                 "do": [{ "enterStage": "stage-1" }]
               },
               {
-                "on": { "interact": ["click", "hand", "jump"], "target": "#stages-link-stage-2", "threshold": 0.5 },
+                "on": {
+                  "interact": ["click", "hand-enter", "jump"],
+                  "target": "#stages-link-stage-2",
+                  "threshold": 0.5
+                },
                 "do": [{ "enterStage": "stage-2" }]
               },
               {
-                "on": { "interact": ["click", "hand", "jump"], "target": "#stages-link-stage-3", "threshold": 0.5 },
+                "on": {
+                  "interact": ["click", "hand-enter", "jump"],
+                  "target": "#stages-link-stage-3",
+                  "threshold": 0.5
+                },
                 "do": [{ "enterStage": "stage-3" }]
               },
               {
-                "on": { "interact": ["click", "hand", "jump"], "target": "#stages-link-stage-4", "threshold": 0.5 },
+                "on": {
+                  "interact": ["click", "hand-enter", "jump"],
+                  "target": "#stages-link-stage-4",
+                  "threshold": 0.5
+                },
                 "do": [{ "enterStage": "stage-4" }]
               },
               {
-                "on": { "interact": ["click", "hand", "jump"], "target": "#stages-link-stage-5", "threshold": 0.5 },
+                "on": {
+                  "interact": ["click", "hand-enter", "jump"],
+                  "target": "#stages-link-stage-5",
+                  "threshold": 0.5
+                },
                 "do": [{ "enterStage": "stage-5" }]
               },
               {
-                "on": { "interact": ["click", "hand", "jump"], "target": "#stages-link-stage-6", "threshold": 0.5 },
+                "on": {
+                  "interact": ["click", "hand-enter", "jump"],
+                  "target": "#stages-link-stage-6",
+                  "threshold": 0.5
+                },
                 "do": [{ "enterStage": "stage-6" }]
               },
               {
-                "on": { "interact": ["click", "hand", "jump"], "target": "#stages-link-stage-7", "threshold": 0.5 },
+                "on": {
+                  "interact": ["click", "hand-enter", "jump"],
+                  "target": "#stages-link-stage-7",
+                  "threshold": 0.5
+                },
                 "do": [{ "enterStage": "stage-7" }]
               }
             ]
@@ -461,15 +489,15 @@
             "initialState": { "position": 1 },
             "rules": [
               {
-                "on": { "interact": ["click", "hand"], "target": "#stage-link-balloons", "threshold": 0.5 },
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-balloons", "threshold": 0.5 },
                 "do": [{ "enterStage": "balloons" }]
               },
               {
-                "on": { "interact": ["click", "hand"], "target": "#stage-link-lava", "threshold": 0.5 },
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-lava", "threshold": 0.5 },
                 "do": [{ "enterStage": "lava" }]
               },
               {
-                "on": { "interact": ["click", "hand"], "target": "#switch", "threshold": 0.5 },
+                "on": { "interact": ["click", "hand-enter"], "target": "#switch", "threshold": 0.5 },
                 "do": [{ "set": { "position": "if state.position == 1 then 2 else 1" } }]
               }
             ],
@@ -503,7 +531,7 @@
                     "resetStateOnShow": true,
                     "rules": [
                       {
-                        "on": { "interact": ["hand", "click"], "target": ".balloon", "threshold": 0.3 },
+                        "on": { "interact": ["hand-enter", "click"], "target": ".balloon", "threshold": 0.3 },
                         "if": "not state.popping",
                         "do": [{ "set": { "popping": "true", "score": "state.score + 1" } }]
                       },
@@ -554,15 +582,15 @@
                     "resetStateOnShow": true,
                     "rules": [
                       {
-                        "on": { "interact": ["foot", "mouse-enter"], "target": ".lava", "threshold": 0.3 },
+                        "on": { "interact": ["foot-enter", "mouse-enter"], "target": ".lava", "threshold": 0.3 },
                         "do": [{ "set": { "doorOpen": "false" } }]
                       },
                       {
-                        "on": { "interact": ["foot", "mouse-enter"], "target": "#start", "threshold": 0.3 },
+                        "on": { "interact": ["foot-enter", "mouse-enter"], "target": "#start", "threshold": 0.3 },
                         "do": [{ "set": { "doorOpen": "true" } }]
                       },
                       {
-                        "on": { "interact": ["foot", "mouse-enter"], "target": "#door-base", "threshold": 0.3 },
+                        "on": { "interact": ["foot-enter", "mouse-enter"], "target": "#door-base", "threshold": 0.3 },
                         "if": "state.doorOpen",
                         "do": [{ "completeChallenge": true }]
                       }

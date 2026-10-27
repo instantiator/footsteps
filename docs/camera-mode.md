@@ -162,7 +162,7 @@ Camera interactions fire display [rules](game-data.md#rules-and-state) whose tri
 
 ```json
 {
-  "on": { "interact": ["click", "hand"], "target": "#stages-link-stage-1", "threshold": 0.5 },
+  "on": { "interact": ["click", "hand-enter"], "target": "#stages-link-stage-1", "threshold": 0.5 },
   "do": [{ "enterStage": "stage-1" }]
 }
 ```
@@ -176,11 +176,11 @@ stage's shared display and its challenges.
 | `click`       | A mouse click, or Enter/Space on a focused element  |
 | `mouse-enter` | The mouse moving onto the element (not the camera)  |
 | `mouse-exit`  | The mouse moving off the element (not the camera)   |
-| `hand`        | Either hand                                         |
-| `foot`        | Either foot                                         |
-| `head`        | The head                                            |
-| `body`        | The whole silhouette                                |
-| `any`         | Any single body part, or the whole silhouette       |
+| `hand-enter`  | Either hand                                         |
+| `foot-enter`  | Either foot                                         |
+| `head-enter`  | The head                                            |
+| `body-enter`  | The whole silhouette                                |
+| `any-enter`   | Any single body part, or the whole silhouette       |
 | `jump`        | A jump that takes off from and lands on the element |
 | `jump-from`   | A jump that takes off from the element              |
 | `jump-onto`   | A jump that lands on the element                    |
@@ -189,7 +189,7 @@ A **body part** is a region of the player's silhouette. A hand or foot is a disc
 the player's head; the head is the box its top, bottom and sides span; the body is the whole silhouette. A
 **threshold** is the fraction of a body part that must be inside the element's rectangle: `inside pixels / total
 pixels of that part`. It is clamped to 0–1. The default, `1`, needs the whole part inside; `0` only needs one
-pixel. `hand`, `foot` and `any` fire when any one of their parts meets the threshold.
+pixel. `hand-enter`, `foot-enter` and `any-enter` fire when any one of their parts meets the threshold.
 
 Interactions are **edge-triggered**: one fires when the player has met the condition for
 `visionStableFrames` frames in a row (2 by default, so a one-frame flicker doesn't count), not on every frame

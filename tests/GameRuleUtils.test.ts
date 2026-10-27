@@ -34,7 +34,7 @@ describe("compileGameRules", () => {
     const expressions = compileGameRules(
       gameWithRules(
         [
-          { on: { interact: ["click", "hand"], target: "#door" }, do: [{ enterStage: "s1" }] },
+          { on: { interact: ["click", "hand-enter"], target: "#door" }, do: [{ enterStage: "s1" }] },
           { on: { every: "state.ms" }, if: "state.on", do: [{ set: { n: "state.n + 1", on: "state.on" } }] },
         ],
         [
@@ -81,6 +81,16 @@ describe("compileGameRules", () => {
   it("rejects an invalid selector", () => {
     const rule: GameRule = { on: { interact: "click", target: "#door[" }, do: [] };
     expect(() => compileGameRules(gameWithRules([rule]))).toThrow(`${OVERVIEW}.on.target: `);
+  });
+
+  it("rejects an interaction that doesn't exist, naming the new name of one that was renamed", () => {
+    // Game data from before the rename, as it would arrive from JSON
+    const old: GameRule = JSON.parse('{ "on": { "interact": ["click", "hand"], "target": "#door" }, "do": [] }');
+    expect(() => compileGameRules(gameWithRules([old]))).toThrow(
+      `${OVERVIEW}.on.interact: there is no interaction "hand"; "hand" is now "hand-enter"`,
+    );
+    const unknown: GameRule = JSON.parse('{ "on": { "interact": "wave", "target": "#door" }, "do": [] }');
+    expect(() => compileGameRules(gameWithRules([unknown]))).toThrow('there is no interaction "wave"');
   });
 
   it("rejects a negative duration", () => {
@@ -186,9 +196,9 @@ describe("rule engine", () => {
 
     it("sees the event in expressions", () => {
       const rule: GameRule = { on: { start: true }, do: [{ set: { hit: "event.id", how: "event.interaction" } }] };
-      expect(stateOf(fireAll(playing([rule]), { id: "lava-2", interaction: "foot" }))).toEqual({
+      expect(stateOf(fireAll(playing([rule]), { id: "lava-2", interaction: "foot-enter" }))).toEqual({
         hit: "lava-2",
-        how: "foot",
+        how: "foot-enter",
       });
     });
 

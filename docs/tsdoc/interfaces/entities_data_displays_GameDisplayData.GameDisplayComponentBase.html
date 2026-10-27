@@ -15,7 +15,7 @@
 <div class="tsd-comment tsd-typography"><p>Fields common to every display component.</p>
 </div></section>
 <div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">GameDisplayComponentBase</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#data">data</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#initialstate">initialState</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#resetstateonshow">resetStateOnShow</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#rules">rules</a><span class="tsd-signature-symbol">?:</span> <a href="entities_data_displays_GameDisplayData.GameRule.html" class="tsd-signature-type tsd-kind-interface">GameRule</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#type">type</a><span class="tsd-signature-symbol">:</span> <a href="../types/entities_data_displays_GameDisplayData.GameDisplayComponentType.html" class="tsd-signature-type tsd-kind-type-alias">GameDisplayComponentType</a><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div>
-<section class="tsd-panel tsd-hierarchy" data-refl="823">
+<section class="tsd-panel tsd-hierarchy" data-refl="824">
 <h4>Hierarchy (<a href="../hierarchy.html#entities/data/displays/GameDisplayData.GameDisplayComponentBase">View Summary</a>)</h4>
 <ul class="tsd-hierarchy">
 <li class="tsd-hierarchy-item"><span class="tsd-hierarchy-target">GameDisplayComponentBase</span>
@@ -23,7 +23,7 @@
 <li class="tsd-hierarchy-item"><a href="entities_data_displays_GameDisplayDialogComponentData.GameDisplayPagedComponentBase.html" class="tsd-signature-type tsd-kind-interface">GameDisplayPagedComponentBase</a></li>
 <li class="tsd-hierarchy-item"><a href="entities_data_displays_GameDisplayTemplateComponentData.GameDisplayTemplateComponentData.html" class="tsd-signature-type tsd-kind-interface">GameDisplayTemplateComponentData</a></li></ul></li></ul></section><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/displays/GameDisplayData.ts#L70">entities/data/displays/GameDisplayData.ts:70</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/displays/GameDisplayData.ts#L75">entities/data/displays/GameDisplayData.ts:75</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -46,35 +46,35 @@
 <div class="tsd-comment tsd-typography"><p>Extra values for this display, passed through to its templates as <code>data</code> (and <code>componentData</code>).</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/displays/GameDisplayData.ts#L74">entities/data/displays/GameDisplayData.ts:74</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/displays/GameDisplayData.ts#L79">entities/data/displays/GameDisplayData.ts:79</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="initialstate"><code class="tsd-tag">Optional</code><span>initial<wbr/>State</span><a href="#initialstate" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">initialState</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">&gt;</span></div>
 <div class="tsd-comment tsd-typography"><p>The display's state when it is first shown, and after a reset. Templates and rules see it as <code>state</code>.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/displays/GameDisplayData.ts#L76">entities/data/displays/GameDisplayData.ts:76</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/displays/GameDisplayData.ts#L81">entities/data/displays/GameDisplayData.ts:81</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="resetstateonshow"><code class="tsd-tag">Optional</code><span>reset<wbr/>State<wbr/>On<wbr/>Show</span><a href="#resetstateonshow" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">resetStateOnShow</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
 <div class="tsd-comment tsd-typography"><p>Whether state returns to <code>initialState</code> each time the display is shown. Defaults to false.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/displays/GameDisplayData.ts#L78">entities/data/displays/GameDisplayData.ts:78</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/displays/GameDisplayData.ts#L83">entities/data/displays/GameDisplayData.ts:83</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="rules"><code class="tsd-tag">Optional</code><span>rules</span><a href="#rules" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">rules</span><span class="tsd-signature-symbol">?:</span> <a href="entities_data_displays_GameDisplayData.GameRule.html" class="tsd-signature-type tsd-kind-interface">GameRule</a><span class="tsd-signature-symbol">[]</span></div>
 <div class="tsd-comment tsd-typography"><p>What happens in response to events, in order.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/displays/GameDisplayData.ts#L80">entities/data/displays/GameDisplayData.ts:80</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/displays/GameDisplayData.ts#L85">entities/data/displays/GameDisplayData.ts:85</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="type"><span>type</span><a href="#type" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">type</span><span class="tsd-signature-symbol">:</span> <a href="../types/entities_data_displays_GameDisplayData.GameDisplayComponentType.html" class="tsd-signature-type tsd-kind-type-alias">GameDisplayComponentType</a></div>
 <div class="tsd-comment tsd-typography"><p>Which kind of component this is.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/displays/GameDisplayData.ts#L72">entities/data/displays/GameDisplayData.ts:72</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/displays/GameDisplayData.ts#L77">entities/data/displays/GameDisplayData.ts:77</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

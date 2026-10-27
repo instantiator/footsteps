@@ -135,7 +135,7 @@ describe("Game camera interactions", () => {
               ...display.component,
               rules: [
                 {
-                  on: { interact: ["hand", "mouse-enter"], target: "#stage-link-stage-1" },
+                  on: { interact: ["hand-enter", "mouse-enter"], target: "#stage-link-stage-1" },
                   do: [{ enterStage: "stage-1" }],
                 },
                 ...(display.component.rules ?? []).slice(1),
@@ -165,7 +165,7 @@ describe("Game camera interactions", () => {
         scope: "overview:game-overview-stages",
         ruleIndex: 0,
         selector: "#stage-link-stage-1",
-        interactions: ["hand"],
+        interactions: ["hand-enter"],
         threshold: 1,
         includeCovered: false,
       },
@@ -173,7 +173,7 @@ describe("Game camera interactions", () => {
 
     const [{ scope, ruleIndex }] = cameraRules();
     const element = document.querySelector("#stage-link-stage-1")!;
-    act(() => layoutInteraction()({ scope, ruleIndex, element, interaction: "hand" }));
+    act(() => layoutInteraction()({ scope, ruleIndex, element, interaction: "hand-enter" }));
 
     expect(await screen.findByText("Question for stage-1")).toBeInTheDocument();
   });

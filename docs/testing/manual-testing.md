@@ -105,7 +105,7 @@ to make stage 1 respond to a hand at half coverage, change the stage link's rule
 
 ```json
 {
-  "on": { "interact": ["hand"], "target": "#stages-link-stage-1", "threshold": 0.5 },
+  "on": { "interact": ["hand-enter"], "target": "#stages-link-stage-1", "threshold": 0.5 },
   "do": [{ "enterStage": "stage-1" }]
 }
 ```
@@ -113,15 +113,15 @@ to make stage 1 respond to a hand at half coverage, change the stage link's rule
 The threshold is the fraction of the body part that must be inside the element (0–1, default 1).
 An interaction fires once when it starts, and re-arms when the body part leaves the element.
 
-| Interaction | How to perform it                                            | Expected                                           |
-| ----------- | ------------------------------------------------------------ | -------------------------------------------------- |
-| `click`     | Click the element, or focus it and press Enter or Space      | Enters the stage, as before                        |
-| `hand`      | Put a hand over the element                                  | Enters the stage once, when the threshold is met   |
-| `foot`      | Put a foot over the element                                  | Enters the stage once, when the threshold is met   |
-| `head`      | Put your head over the element                               | Enters the stage once, when the threshold is met   |
-| `body`      | Cover the element with any part of your body                 | Enters the stage once, when the threshold is met   |
-| `any`       | Cover the element with any single body part                  | Enters the stage once, when the threshold is met   |
-| `jump`      | Stand inside the element, jump up, and land or settle inside | Enters the stage once, when the sequence completes |
+| Interaction  | How to perform it                                            | Expected                                           |
+| ------------ | ------------------------------------------------------------ | -------------------------------------------------- |
+| `click`      | Click the element, or focus it and press Enter or Space      | Enters the stage, as before                        |
+| `hand-enter` | Put a hand over the element                                  | Enters the stage once, when the threshold is met   |
+| `foot-enter` | Put a foot over the element                                  | Enters the stage once, when the threshold is met   |
+| `head-enter` | Put your head over the element                               | Enters the stage once, when the threshold is met   |
+| `body-enter` | Cover the element with any part of your body                 | Enters the stage once, when the threshold is met   |
+| `any-enter`  | Cover the element with any single body part                  | Enters the stage once, when the threshold is met   |
+| `jump`       | Stand inside the element, jump up, and land or settle inside | Enters the stage once, when the sequence completes |
 
 A jump must happen within 1.5 seconds: rise, fall, then come to rest with the feet still inside the
 element. Moving outside during the sequence is allowed, but the feet must return to complete it.
