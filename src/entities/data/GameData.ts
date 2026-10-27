@@ -35,6 +35,14 @@ export type RewardAnimation =
   | "ribbons"
   | "geometric";
 
+/** A celebration: a burst of particles over the game. */
+export interface GameRewardData {
+  /** Which partycles animation to show. */
+  animation: RewardAnimation;
+  /** How many particles to launch (default 200). */
+  particleCount?: number;
+}
+
 /** A game's authored definition: its overview displays, stages, challenges, resources and settings. */
 export interface GameData {
   /** Name of the game, shown to players when choosing a game. */
@@ -66,12 +74,7 @@ export interface GameData {
     stageCompletedSoundResource?: string;
   };
   /** The celebration shown when a stage is completed. Unset means none. */
-  reward?: {
-    /** Which partycles animation to show. */
-    animation: RewardAnimation;
-    /** How many particles to launch (default 200). */
-    particleCount?: number;
-  };
+  reward?: GameRewardData;
   /** Credits for the third-party media this game uses, listed with the game on the landing page. */
   credits?: {
     /** What to show, e.g. the work's title and author. */

@@ -1,3 +1,4 @@
+import type { GameRewardData } from "../GameData";
 import type { GameStageId } from "../GameStageData";
 import type { GameDisplayDialogComponentData } from "./GameDisplayDialogComponentData";
 import type { GameDisplayScrollComponentData } from "./GameDisplayScrollComponentData";
@@ -234,6 +235,36 @@ export interface GameResetChallengeAction {
   resetChallenge: true;
 }
 
+/** Plays one of the game's sound resources. It doesn't hold up the rule: the rule's other actions carry on. */
+export interface GameSoundAction {
+  /** The resource's name, a key of the game's `resources`. */
+  sound: string;
+  /**
+   * Milliseconds to wait before playing it. Defaults to 0.
+   *
+   * @minimum 0
+   */
+  delayMs?: number;
+}
+
+/**
+ * Shows a celebration, as the game does for a completed stage; not shown to players who prefer reduced motion. It
+ * doesn't hold up the rule, and plays alongside any other sounds and rewards.
+ */
+export interface GameRewardAction {
+  /** The celebration. */
+  reward: GameRewardData;
+  /**
+   * Milliseconds to wait before showing it. Defaults to 0.
+   *
+   * @minimum 0
+   */
+  delayMs?: number;
+}
+
+/** Something a rule plays or shows, rather than changing the game. */
+export type GameEffectAction = GameSoundAction | GameRewardAction;
+
 /** Finishes this reset display, revealing the display it is shown for. Reset displays only. */
 export interface GameFinishResetAction {
   /** Always true. */
@@ -254,7 +285,9 @@ export type GameAction =
   | GameAnswerAction
   | GameResetChallengeAction
   | GameEnterStageAction
-  | GameFinishResetAction;
+  | GameFinishResetAction
+  | GameSoundAction
+  | GameRewardAction;
 
 /** A display shown when no stage is active. */
 export interface GameOverviewDisplay extends GameDisplayBase {

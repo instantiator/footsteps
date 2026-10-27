@@ -40,6 +40,12 @@
                 },
                 {
                     "$ref": "#/definitions/GameFinishResetAction"
+                },
+                {
+                    "$ref": "#/definitions/GameSoundAction"
+                },
+                {
+                    "$ref": "#/definitions/GameRewardAction"
                 }
             ],
             "description": "Something a rule does."
@@ -756,6 +762,41 @@
             "description": "Named resources, keyed by the name used to refer to them.\nResolved to absolute URLs when the game loads.",
             "type": "object"
         },
+        "GameRewardAction": {
+            "description": "Shows a celebration, as the game does for a completed stage; not shown to players who prefer reduced motion. It\ndoesn't hold up the rule, and plays alongside any other sounds and rewards.",
+            "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before showing it. Defaults to 0.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "reward": {
+                    "$ref": "#/definitions/GameRewardData",
+                    "description": "The celebration."
+                }
+            },
+            "required": [
+                "reward"
+            ],
+            "type": "object"
+        },
+        "GameRewardData": {
+            "description": "A celebration: a burst of particles over the game.",
+            "properties": {
+                "animation": {
+                    "$ref": "#/definitions/RewardAnimation",
+                    "description": "Which partycles animation to show."
+                },
+                "particleCount": {
+                    "description": "How many particles to launch (default 200).",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "animation"
+            ],
+            "type": "object"
+        },
         "GameRule": {
             "description": "One behaviour: when the trigger fires and the condition holds, apply the actions in order.",
             "properties": {
@@ -791,6 +832,24 @@
             },
             "required": [
                 "set"
+            ],
+            "type": "object"
+        },
+        "GameSoundAction": {
+            "description": "Plays one of the game's sound resources. It doesn't hold up the rule: the rule's other actions carry on.",
+            "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before playing it. Defaults to 0.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "sound": {
+                    "description": "The resource's name, a key of the game's `resources`.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "sound"
             ],
             "type": "object"
         },
@@ -1048,21 +1107,8 @@
             "description": "Named media resources, referenced by `*Resource` keys and passed to templates as `resources`."
         },
         "reward": {
-            "description": "The celebration shown when a stage is completed. Unset means none.",
-            "properties": {
-                "animation": {
-                    "$ref": "#/definitions/RewardAnimation",
-                    "description": "Which partycles animation to show."
-                },
-                "particleCount": {
-                    "description": "How many particles to launch (default 200).",
-                    "type": "number"
-                }
-            },
-            "required": [
-                "animation"
-            ],
-            "type": "object"
+            "$ref": "#/definitions/GameRewardData",
+            "description": "The celebration shown when a stage is completed. Unset means none."
         },
         "sounds": {
             "description": "Music and sound effects, as resource names (keys of `resources`). Any left unset is silent.",

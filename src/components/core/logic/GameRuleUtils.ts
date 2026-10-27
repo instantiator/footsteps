@@ -3,6 +3,8 @@ import type { GameData, GameId } from "../../../entities/data/GameData";
 import {
   GAME_INTERACTIONS,
   type GameAction,
+  type GameEffectAction,
+  type GameFinishResetAction,
   type GameDisplayBase,
   type GameInteraction,
   type GameInteractTrigger,
@@ -151,6 +153,25 @@ const triggerSources = (trigger: GameTrigger, where: string): [string, string][]
   return [];
 };
 
+/** Why a sound or reward can't be played, or undefined if it can. */
+const effectProblem = (effect: GameEffectAction, gameData: GameData): string | undefined => {
+  if ("sound" in effect && !Object.hasOwn(gameData.resources ?? {}, effect.sound)) {
+    return `there is no resource "${effect.sound}" to play`;
+  }
+  return (effect.delayMs ?? 0) < 0 ? "delayMs can't be negative" : undefined;
+};
+
+/** Why an action can't be used on this display, or undefined if it can. */
+const actionProblem = (action: GameAction, target: DisplayToCompile, gameData: GameData): string | undefined => {
+  const challengeAction = CHALLENGE_ACTIONS.find((name) => name in action);
+  if (challengeAction && !target.isChallenge) return `${challengeAction} can only be used on a challenge display`;
+  if ("finishReset" in action && !target.isReset) return "finishReset can only be used on a reset display";
+  if ("enterStage" in action && !gameData.stages.some((stage) => stage.id === action.enterStage)) {
+    return `there is no stage "${action.enterStage}"`;
+  }
+  return "sound" in action || "reward" in action ? effectProblem(action, gameData) : undefined;
+};
+
 /** The expressions an action needs, checking it is allowed on this display. */
 const actionSources = (
   action: GameAction,
@@ -158,16 +179,8 @@ const actionSources = (
   target: DisplayToCompile,
   gameData: GameData,
 ): [string, string][] => {
-  const challengeAction = CHALLENGE_ACTIONS.find((name) => name in action);
-  if (challengeAction && !target.isChallenge) {
-    throw new Error(`${where}: ${challengeAction} can only be used on a challenge display`);
-  }
-  if ("finishReset" in action && !target.isReset) {
-    throw new Error(`${where}: finishReset can only be used on a reset display`);
-  }
-  if ("enterStage" in action && !gameData.stages.some((stage) => stage.id === action.enterStage)) {
-    throw new Error(`${where}: there is no stage "${action.enterStage}"`);
-  }
+  const problem = actionProblem(action, target, gameData);
+  if (isDefined(problem)) throw new Error(`${where}: ${problem}`);
   if ("set" in action) return Object.entries(action.set).map(([key, source]) => [source, `${where}.set.${key}`]);
   if ("answer" in action) return [[action.answer, `${where}.answer`]];
   return [];
@@ -293,14 +306,35 @@ const applyAnswer = (state: GameState, { stageId, challengeId }: ShownDisplay, a
   return completeChallenge(state, stageId!, challengeId!);
 };
 
+/** Adds a sound or reward to those waiting for the game to play them. */
+const queueEffect = (state: GameState, effect: GameEffectAction): GameState => {
+  const { effects, nextEffectId } = state.session;
+  return {
+    ...state,
+    session: { ...state.session, effects: [...effects, { id: nextEffectId, effect }], nextEffectId: nextEffectId + 1 },
+  };
+};
+
 /** Marks a reset display finished, revealing what it was shown for. */
 const finishReset = (state: GameState, scope: DisplayScope): GameState =>
   state.session.finishedResets.includes(scope)
     ? state
     : { ...state, session: { ...state.session, finishedResets: [...state.session.finishedResets, scope] } };
 
-/** Applies one action. Challenge actions are only on challenge displays, as checked when the game loads. */
+/** Applies one action, to the game or (for finishing a reset display, and sounds and rewards) to the session. */
 const applyAction = (run: RuleRun, state: GameState, action: GameAction, where: string): GameState => {
+  if ("finishReset" in action) return finishReset(state, run.display.scope);
+  if ("sound" in action || "reward" in action) return queueEffect(state, action);
+  return applyGameAction(run, state, action, where);
+};
+
+/** Applies one action to the game. Challenge actions are only on challenge displays, as checked when the game loads. */
+const applyGameAction = (
+  run: RuleRun,
+  state: GameState,
+  action: Exclude<GameAction, GameFinishResetAction | GameEffectAction>,
+  where: string,
+): GameState => {
   const { scope, stageId, challengeId } = run.display;
   if ("set" in action) return applySet(run, state, action.set, where);
   if ("resetState" in action) return { ...state, displayStates: _.omit(state.displayStates, scope) };
@@ -311,7 +345,6 @@ const applyAction = (run: RuleRun, state: GameState, action: GameAction, where: 
     return done ? state : completeChallenge(state, stageId!, challengeId!);
   }
   if ("resetChallenge" in action) return resetChallenge(state, stageId!, challengeId!);
-  if ("finishReset" in action) return finishReset(state, scope);
   return enterStage(state, action.enterStage) ?? state;
 };
 

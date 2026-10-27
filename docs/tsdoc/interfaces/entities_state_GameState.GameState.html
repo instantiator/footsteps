@@ -16,7 +16,7 @@
 </div></section>
 <div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">GameState</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#current">current</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{</span><br/>        <span class="tsd-kind-property">overviewDisplay</span><span class="tsd-signature-symbol">:</span> <a href="../types/entities_data_displays_GameDisplayData.GameOverviewDisplayPurpose.html" class="tsd-signature-type tsd-kind-type-alias">GameOverviewDisplayPurpose</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">null</span><span class="tsd-signature-symbol">;</span><br/>        <span class="tsd-kind-property">stageId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">null</span><span class="tsd-signature-symbol">;</span><br/>    <span class="tsd-signature-symbol">}</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#displaystates">displayStates</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/entities_state_GameState.DisplayScope.html" class="tsd-signature-type tsd-kind-type-alias">DisplayScope</a><span class="tsd-signature-symbol">,</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#gamedata">gameData</a><span class="tsd-signature-symbol">:</span> <a href="entities_data_GameData.GameData.html" class="tsd-signature-type tsd-kind-interface">GameData</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#session">session</a><span class="tsd-signature-symbol">:</span> <a href="entities_state_GameState.GameSession.html" class="tsd-signature-type tsd-kind-interface">GameSession</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#stages">stages</a><span class="tsd-signature-symbol">:</span> <a href="entities_state_GameStageState.GameStageState.html" class="tsd-signature-type tsd-kind-interface">GameStageState</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L24">entities/state/GameState.ts:24</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L36">entities/state/GameState.ts:36</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -50,35 +50,35 @@
 <div class="tsd-comment tsd-typography"><p>The stage being played, or null while an overview is showing.</p>
 </div></li></ul></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L30">entities/state/GameState.ts:30</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L42">entities/state/GameState.ts:42</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="displaystates"><span>display<wbr/>States</span><a href="#displaystates" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">displayStates</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/entities_state_GameState.DisplayScope.html" class="tsd-signature-type tsd-kind-type-alias">DisplayScope</a><span class="tsd-signature-symbol">,</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></div>
 <div class="tsd-comment tsd-typography"><p>Each display's own state, by scope. A display with no entry uses its component's <code>initialState</code>.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L37">entities/state/GameState.ts:37</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L49">entities/state/GameState.ts:49</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="gamedata"><span>game<wbr/>Data</span><a href="#gamedata" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">gameData</span><span class="tsd-signature-symbol">:</span> <a href="entities_data_GameData.GameData.html" class="tsd-signature-type tsd-kind-interface">GameData</a></div>
 <div class="tsd-comment tsd-typography"><p>The authored definition of the game being played.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L26">entities/state/GameState.ts:26</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L38">entities/state/GameState.ts:38</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="session"><span>session</span><a href="#session" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">session</span><span class="tsd-signature-symbol">:</span> <a href="entities_state_GameState.GameSession.html" class="tsd-signature-type tsd-kind-interface">GameSession</a></div>
 <div class="tsd-comment tsd-typography"><p>What lasts only while the game is open.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L39">entities/state/GameState.ts:39</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L51">entities/state/GameState.ts:51</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="stages"><span>stages</span><a href="#stages" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">stages</span><span class="tsd-signature-symbol">:</span> <a href="entities_state_GameStageState.GameStageState.html" class="tsd-signature-type tsd-kind-interface">GameStageState</a><span class="tsd-signature-symbol">[]</span></div>
 <div class="tsd-comment tsd-typography"><p>Progress for each stage, in authored order.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L28">entities/state/GameState.ts:28</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L40">entities/state/GameState.ts:40</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

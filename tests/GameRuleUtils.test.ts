@@ -103,6 +103,15 @@ describe("compileGameRules", () => {
     expect(() => compileGameRules(gameWithRules([{ on, do: [] }]))).toThrow(message);
   });
 
+  it("rejects a sound the game has no resource for, and a negative delay", () => {
+    const missing: GameRule = { on: { start: true }, do: [{ sound: "nope" }] };
+    expect(() => compileGameRules(gameWithRules([missing]))).toThrow(
+      `${OVERVIEW}.do[0]: there is no resource "nope" to play`,
+    );
+    const early: GameRule = { on: { start: true }, do: [{ reward: { animation: "stars" }, delayMs: -1 }] };
+    expect(() => compileGameRules(gameWithRules([early]))).toThrow(`${OVERVIEW}.do[0]: delayMs can't be negative`);
+  });
+
   it("rejects a negative forMs", () => {
     const rule: GameRule = { on: { when: "true", forMs: -1 }, do: [] };
     expect(() => compileGameRules(gameWithRules([rule]))).toThrow(`${OVERVIEW}.on.forMs: a duration can't be negative`);
@@ -180,6 +189,22 @@ describe("rule engine", () => {
     state.stages[stageIndex].challengeStates[challengeIndex].succeeded;
 
   describe("actions", () => {
+    it("queues sounds and rewards for the game to play, with growing ids, leaving the rest of the game alone", () => {
+      const rule: GameRule = {
+        on: { start: true },
+        do: [{ sound: "pop" }, { reward: { animation: "stars" }, delayMs: 500 }],
+      };
+      const state = fireAll(fireAll(playing([rule])));
+      expect(state.session.effects).toEqual([
+        { id: 1, effect: { sound: "pop" } },
+        { id: 2, effect: { reward: { animation: "stars" }, delayMs: 500 } },
+        { id: 3, effect: { sound: "pop" } },
+        { id: 4, effect: { reward: { animation: "stars" }, delayMs: 500 } },
+      ]);
+      expect(state.session.nextEffectId).toBe(5);
+      expect(state.displayStates).toEqual({});
+    });
+
     it("sets every key from the state before the action", () => {
       const state = playing([{ on: { start: true }, do: [{ set: { a: "state.b", b: "state.a" } }] }], {
         a: 1,

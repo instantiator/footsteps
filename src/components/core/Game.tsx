@@ -1,8 +1,10 @@
 import _ from "lodash";
 import { useReward } from "partycles";
-import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useMediaQuery } from "@uidotdev/usehooks";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { GameOverviewDisplayPurpose } from "../../entities/data/displays/GameDisplayData";
 import type { GameChallengeId } from "../../entities/data/GameChallengeData";
+import type { GameRewardData } from "../../entities/data/GameData";
 import type { GameChallengeAnswerValidation } from "../../entities/data/GameChallengeSolution";
 import type { GameStageId } from "../../entities/data/GameStageData";
 import type { DisplayScope, GameState } from "../../entities/state/GameState";
@@ -27,6 +29,7 @@ import {
   type LayeredGameDisplayRenderData,
 } from "./logic/RenderDataUtils";
 import { playAudio } from "./sfx/AudioUtils";
+import RewardBurst from "./sfx/RewardBurst";
 import { useGameRules } from "./GameRulesHook";
 import { useWakeLock } from "./WakeLockHook";
 
@@ -49,7 +52,7 @@ const completedStageIds = (gameState: GameState): GameStageId[] =>
   gameState.stages.filter((s) => s.completion === "completed").map((s) => s.stage.id);
 
 /** Rewards completed stages, and plays music and sound effects as the player moves around the game, as the game data says. */
-function useGameFeedback() {
+function useGameFeedback(reducedMotion: boolean) {
   const { gameState } = useGameState();
   const { resources } = useGameData();
   const { playMusic } = useGameMusic();
@@ -67,12 +70,12 @@ function useGameFeedback() {
   useEffect(() => {
     const newProgress = completedStageIds(gameState);
     if (!_.isEqual(newProgress, progressTracker.current)) {
-      if (isDefined(rewardData)) reward();
+      if (isDefined(rewardData) && !reducedMotion) reward();
       const completed = resourceUrl(resources, sounds?.stageCompletedSoundResource);
       if (isDefined(completed)) playAudio(completed);
       progressTracker.current = newProgress;
     }
-  }, [gameState, reward, rewardData, resources, sounds]);
+  }, [gameState, reward, rewardData, resources, sounds, reducedMotion]);
 
   useEffect(() => {
     const overviewDisplay = gameState.current.overviewDisplay;
@@ -91,6 +94,54 @@ function useGameFeedback() {
     if (isDefined(stageId) && isDefined(opened)) playAudio(opened);
     stageIdTracker.current = stageId;
   }, [gameState, resources, sounds]);
+}
+
+/** A celebration a rule asked for, while it shows. */
+interface ShownReward {
+  id: number;
+  reward: GameRewardData;
+}
+
+/**
+ * Plays the sounds and rewards rules queue: each once, after its `delayMs`, alongside any others, then drops it from
+ * the queue. Rewards aren't shown to players who prefer reduced motion; their sounds still play.
+ * @returns the rewards showing now, to render
+ */
+function useRuleEffects(reducedMotion: boolean) {
+  const { gameState, setGameState } = useGameState();
+  const { resources } = useGameData();
+  const [shown, setShown] = useState<ShownReward[]>([]);
+  // The highest id played; ids only grow, so a queue worked out twice (as React may) plays nothing twice
+  const playedRef = useRef(0);
+  const timersRef = useRef(new Set<ReturnType<typeof setTimeout>>());
+  const { effects } = gameState.session;
+
+  useEffect(() => {
+    const fresh = effects.filter(({ id }) => id > playedRef.current);
+    if (fresh.length === 0) return;
+    playedRef.current = Math.max(...fresh.map(({ id }) => id));
+    for (const { id, effect } of fresh) {
+      const timer = setTimeout(() => {
+        timersRef.current.delete(timer);
+        if ("sound" in effect) void playAudio(resources[effect.sound]);
+        else if (!reducedMotion) setShown((rewards) => [...rewards, { id, reward: effect.reward }]);
+      }, effect.delayMs ?? 0);
+      timersRef.current.add(timer);
+    }
+    const played = playedRef.current;
+    setGameState((state) => ({
+      ...state,
+      session: { ...state.session, effects: state.session.effects.filter(({ id }) => id > played) },
+    }));
+  }, [effects, resources, reducedMotion, setGameState]);
+
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => timers.forEach((timer) => clearTimeout(timer));
+  }, []);
+
+  const done = useCallback((id: number) => setShown((rewards) => rewards.filter((reward) => reward.id !== id)), []);
+  return { shown, done };
 }
 
 /**
@@ -187,7 +238,9 @@ export default function Game() {
   const { debug } = useAppConfig();
   const { gameId, resources } = useGameData();
   const { gameState } = useGameState();
-  useGameFeedback();
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  useGameFeedback(reducedMotion);
+  const ruleRewards = useRuleEffects(reducedMotion);
   useTitleScreenKeys();
   useWakeLock(!gameState.stages.every((stage) => stage.completion === "completed"));
 
@@ -219,6 +272,9 @@ export default function Game() {
         id="reward-element"
         style={{ position: "absolute", top: "50vh", left: "50vw", width: 0, height: 0, pointerEvents: "none" }}
       />
+      {ruleRewards.shown.map(({ id, reward }) => (
+        <RewardBurst key={id} id={id} reward={reward} onDone={() => ruleRewards.done(id)} />
+      ))}
       <GameLayersLayout
         debug={debug}
         gameLayers={layers}

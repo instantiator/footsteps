@@ -1,6 +1,6 @@
 import { GameOverviewPurposeSequence } from "../../components/core/logic/GameClickUtils";
 import { isDefined } from "../../util/ObjectUtils";
-import type { GameOverviewDisplayPurpose } from "../data/displays/GameDisplayData";
+import type { GameEffectAction, GameOverviewDisplayPurpose } from "../data/displays/GameDisplayData";
 import type { GameData } from "../data/GameData";
 import type { GameStageId } from "../data/GameStageData";
 import type { GameStageState } from "./GameStageState";
@@ -11,14 +11,26 @@ import type { GameStageState } from "./GameStageState";
  */
 export type DisplayScope = string;
 
+/** A sound or reward a rule asked for, waiting for the game to play it. */
+export interface QueuedEffect {
+  /** Identifies it, so it is played once however often the state is worked out; ids only grow. */
+  id: number;
+  /** What to play. */
+  effect: GameEffectAction;
+}
+
 /** What lasts only while the game is open, and is never saved with its progress. */
 export interface GameSession {
   /** The scopes of the reset displays finished since the game was loaded. */
   finishedResets: DisplayScope[];
+  /** Sounds and rewards rules have asked for, until the game plays them. */
+  effects: QueuedEffect[];
+  /** The id the next queued effect gets. */
+  nextEffectId: number;
 }
 
 /** A session with nothing in it, as a game starts or loads. */
-export const newGameSession = (): GameSession => ({ finishedResets: [] });
+export const newGameSession = (): GameSession => ({ finishedResets: [], effects: [], nextEffectId: 1 });
 
 /** Runtime progress of a game: its definition, per-stage progress, what is currently showing, and display states. */
 export interface GameState {

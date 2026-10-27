@@ -2,6 +2,8 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameData } from "../src/entities/data/GameData";
+import type { GameAction } from "../src/entities/data/displays/GameDisplayData";
+import { useGameState } from "../src/providers/GameStateHook";
 import Game from "../src/components/core/Game";
 import type GameLayersLayout from "../src/components/core/layout/GameLayersLayout";
 import { completeChallenge } from "../src/components/core/logic/GameStateUtils";
@@ -10,11 +12,18 @@ import { saveGameState } from "../src/entities/state/GameStateStorage";
 import { SMALL_GAME_ID, smallGame, smallRepository } from "./data/SmallGame";
 import GameProviders from "./helpers/GameProviders";
 import { stubMediaPlayback } from "./helpers/media";
+import { setReducedMotion } from "./helpers/motion";
 import { FakeWakeLockSentinel, stubWakeLock } from "./helpers/wakeLock";
 
 const { rewardSpy, useRewardSpy } = vi.hoisted(() => {
   const rewardSpy = vi.fn(() => Promise.resolve());
-  return { rewardSpy, useRewardSpy: vi.fn(() => ({ reward: rewardSpy, isAnimating: false })) };
+  return {
+    rewardSpy,
+    useRewardSpy: vi.fn<(target: string, animation: string, config?: object) => object>(() => ({
+      reward: rewardSpy,
+      isAnimating: false,
+    })),
+  };
 });
 vi.mock("partycles", () => ({ useReward: useRewardSpy }));
 
@@ -293,9 +302,74 @@ describe("Game sounds and reward", () => {
   it("triggers the configured reward once when a stage is completed", async () => {
     renderVariant({ ...withAudio, reward: { animation: "confetti", particleCount: 50 } });
     await enterStage(1);
+    setReducedMotion(false); // after entering, which then cuts straight to the stage
     answer("custard");
     await vi.waitFor(() => expect(rewardSpy).toHaveBeenCalledTimes(1));
     expect(useRewardSpy).toHaveBeenCalledWith("reward-element", "confetti", { particleCount: 50 });
+  });
+
+  it("doesn't show the stage reward to players who prefer reduced motion, but plays its sound", async () => {
+    renderVariant({ ...withAudio, sounds, reward: { animation: "confetti", particleCount: 50 } });
+    await enterStage(1);
+    answer("custard");
+    await vi.waitFor(() => expect(playedSources()).toContain("https://sounds.example/completed.mp3"));
+    expect(rewardSpy).not.toHaveBeenCalled();
+  });
+
+  describe("from rules", () => {
+    /** The small game with audio, whose stages overview plays the given effects as it starts. */
+    const withEffects = (effects: GameAction[]): GameData => {
+      const [overview, ...others] = withAudio.displays;
+      const rules = [...(overview.component.rules ?? []), { on: { start: true as const }, do: effects }];
+      return { ...withAudio, displays: [{ ...overview, component: { ...overview.component, rules } }, ...others] };
+    };
+
+    /** How many effects are waiting in the queue. */
+    function QueuedEffects() {
+      const { gameState } = useGameState();
+      return <output data-testid="queued">{gameState.session.effects.length}</output>;
+    }
+
+    const renderEffects = (effects: GameAction[]) =>
+      render(
+        <GameProviders repository={{ games: { [SMALL_GAME_ID]: withEffects(effects) } }} gameId={SMALL_GAME_ID}>
+          <Game />
+          <QueuedEffects />
+        </GameProviders>,
+      );
+
+    const opened = () => playedSources().filter((source) => source.endsWith("/opened.mp3"));
+    const burstsOf = (animation: string) =>
+      useRewardSpy.mock.calls.filter(([id, shown]) => String(id).startsWith("reward-burst-") && shown === animation);
+
+    it("plays a rule's sound and shows its reward together, once each, then drops them from the queue", async () => {
+      setReducedMotion(false);
+      renderEffects([{ sound: "opened" }, { reward: { animation: "stars", particleCount: 20 } }]);
+
+      await vi.waitFor(() => expect(opened()).toHaveLength(1));
+      await vi.waitFor(() => expect(rewardSpy).toHaveBeenCalledTimes(1));
+      expect(burstsOf("stars")[0][2]).toEqual({ particleCount: 20 });
+      await vi.waitFor(() => expect(screen.getByTestId("queued")).toHaveTextContent("0"));
+
+      // Dropping them from the queue changed the state, and played nothing again
+      expect(opened()).toHaveLength(1);
+      expect(rewardSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("waits each effect's delayMs before playing it", async () => {
+      renderEffects([{ sound: "opened", delayMs: 300 }]);
+      await screen.findByText("Small Game");
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      expect(opened()).toEqual([]);
+      await vi.waitFor(() => expect(opened()).toHaveLength(1));
+    });
+
+    it("doesn't show a rule's reward to players who prefer reduced motion, but plays its sound", async () => {
+      renderEffects([{ sound: "opened" }, { reward: { animation: "stars" } }]);
+      await vi.waitFor(() => expect(opened()).toHaveLength(1));
+      await vi.waitFor(() => expect(screen.getByTestId("queued")).toHaveTextContent("0"));
+      expect(burstsOf("stars")).toEqual([]);
+    });
   });
 
   it("doesn't replay the reward or sound for stages completed before the game was continued", async () => {
