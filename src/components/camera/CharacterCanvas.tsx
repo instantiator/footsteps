@@ -153,8 +153,75 @@ const statsReporter = (onStats?: (stats: FrameStats) => void) => {
   };
 };
 
+/** A frame given to the model. */
+interface Detection {
+  /** When the frame was taken, in milliseconds. */
+  timestamp: number;
+  /** What the model found, and when it returned. */
+  result: Promise<{ detected: VisionFrame; inferenceEnd: number }>;
+}
+
+/**
+ * Each model's frame in progress, so a loop that replaces another (eg. when the mask type changes) waits for the old
+ * loop's frame rather than asking a model that is busy.
+ */
+const modelWork = new WeakMap<FootstepsVisionModelImplementation, Promise<unknown>>();
+
+/**
+ * Gives the model the video's frames, one at a time: each call to `next` gives it the newest frame at once if the model
+ * hasn't had it, or else the next frame as it arrives. So a failed frame waits for a new one, rather than retrying.
+ * @returns how to give the model the next frame, and how to stop
+ */
+const videoDetections = (model: FootstepsVisionModelImplementation, video: HTMLVideoElement, inputWidth: number) => {
+  let cancelled = false;
+  let cancelFrame: (() => void) | undefined;
+  let newFrame = true;
+  let onNewFrame: (() => void) | undefined;
+
+  const watchFrames = () => {
+    cancelFrame = onNextFrame(video, () => {
+      if (cancelled) return;
+      newFrame = true;
+      onNewFrame?.();
+      watchFrames();
+    });
+  };
+  watchFrames();
+
+  const detect = (): Detection => {
+    newFrame = false;
+    onNewFrame = undefined;
+    const timestamp = performance.now();
+    const work = async () => {
+      try {
+        return { detected: await detectFrame(model, video, inputWidth, timestamp), inferenceEnd: performance.now() };
+      } finally {
+        if (modelWork.get(model) === result) modelWork.delete(model);
+      }
+    };
+    // Straight to the model when it is free, so it starts before the loop reports the frame before
+    const previous = modelWork.get(model);
+    const result = previous ? previous.then(work, work) : work();
+    modelWork.set(model, result);
+    result.catch(() => undefined); // a failure is handled where the loop awaits it, after the frame before is drawn
+    return { timestamp, result };
+  };
+
+  const next = (): Promise<Detection> =>
+    newFrame ? Promise.resolve(detect()) : new Promise((resolve) => (onNewFrame = () => resolve(detect())));
+
+  const cancel = () => {
+    cancelled = true;
+    cancelFrame?.();
+  };
+  return { next, cancel };
+};
+
 /**
  * Tracks the people in each video frame: reports players and feet, then draws their silhouettes.
+ *
+ * The loop is pipelined: as soon as the model returns a frame, it is given the next one, and the frame it returned is
+ * reported and drawn while it works. Only one frame is with the model at a time.
  * @returns a function that stops the loop
  */
 const startTrackingLoop = (
@@ -172,18 +239,14 @@ const startTrackingLoop = (
   }: LoopHandlers,
 ): (() => void) => {
   let cancelled = false;
-  let cancelFrame: (() => void) | undefined;
+  const detections = videoDetections(model, video, inputWidth);
   const ctx = canvas.getContext("2d");
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   const reportStats = statsReporter(onStats);
   const tracker = smoothing ? new PersonTracker() : null;
 
-  const trackOnce = async () => {
-    const timestamp = performance.now();
-    const detected = await detectFrame(model, video, inputWidth, timestamp);
-    if (cancelled) return; // the model may have been disposed while this frame was tracked
-    const inferenceEnd = performance.now();
+  const reportAndDraw = async (timestamp: number, detected: VisionFrame, inferenceEnd: number) => {
     const frame = tracker ? tracker.update(detected) : detected;
     const players = playersOf(frame, offScreenThreshold_percent);
     const trackEnd = performance.now();
@@ -201,23 +264,27 @@ const startTrackingLoop = (
 
   // A failed frame is skipped rather than ending the loop; only the first failure is logged, as it may repeat every frame
   let warned = false;
-  const trackFrame = async () => {
-    if (cancelled) return;
+  const run = async (detection: Promise<Detection>) => {
+    let next: Promise<Detection> | undefined;
     try {
-      await trackOnce();
+      const { timestamp, result } = await detection;
+      const { detected, inferenceEnd } = await result;
+      if (cancelled) return; // the model may have been disposed while this frame was tracked
+      next = detections.next();
+      await reportAndDraw(timestamp, detected, inferenceEnd);
     } catch (error) {
       // A frame cut short by the loop stopping (eg. the model disposed) is expected, not a failure
       if (!warned && !cancelled) console.warn("Skipped a camera frame that could not be tracked:", error);
       warned = true;
     }
-    if (!cancelled) cancelFrame = onNextFrame(video, trackFrame);
+    if (!cancelled) run(next ?? detections.next());
   };
 
-  trackFrame();
+  run(detections.next());
   return () => {
     cancelled = true;
     setTrackingFps(null);
-    cancelFrame?.();
+    detections.cancel();
   };
 };
 
