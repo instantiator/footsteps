@@ -171,19 +171,20 @@ The trigger names the elements (any CSS selector), which interactions it accepts
 must be inside an element. `threshold` defaults to `1`. Any display that is showing can have them, including a
 stage's shared display and its challenges.
 
-| Interaction   | Detected from                                       |
-| ------------- | --------------------------------------------------- |
-| `click`       | A mouse click, or Enter/Space on a focused element  |
-| `mouse-enter` | The mouse moving onto the element (not the camera)  |
-| `mouse-exit`  | The mouse moving off the element (not the camera)   |
-| `hand-enter`  | Either hand                                         |
-| `foot-enter`  | Either foot                                         |
-| `head-enter`  | The head                                            |
-| `body-enter`  | The whole silhouette                                |
-| `any-enter`   | Any single body part, or the whole silhouette       |
-| `jump`        | A jump that takes off from and lands on the element |
-| `jump-from`   | A jump that takes off from the element              |
-| `jump-onto`   | A jump that lands on the element                    |
+| Interaction                                                    | Detected from                                       |
+| -------------------------------------------------------------- | --------------------------------------------------- |
+| `click`                                                        | A mouse click, or Enter/Space on a focused element  |
+| `mouse-enter`                                                  | The mouse moving onto the element (not the camera)  |
+| `mouse-exit`                                                   | The mouse moving off the element (not the camera)   |
+| `hand-enter`                                                   | Either hand                                         |
+| `foot-enter`                                                   | Either foot                                         |
+| `head-enter`                                                   | The head                                            |
+| `body-enter`                                                   | The whole silhouette                                |
+| `any-enter`                                                    | Any single body part, or the whole silhouette       |
+| `hand-exit`, `foot-exit`, `head-exit`, `body-exit`, `any-exit` | The matching `-enter` no longer holding             |
+| `jump`                                                         | A jump that takes off from and lands on the element |
+| `jump-from`                                                    | A jump that takes off from the element              |
+| `jump-onto`                                                    | A jump that lands on the element                    |
 
 A **body part** is a region of the player's silhouette. A hand or foot is a disc around its key point, scaled to
 the player's head; the head is the box its top, bottom and sides span; the body is the whole silhouette. A
@@ -196,6 +197,11 @@ Interactions are **edge-triggered**: one fires when the player has met the condi
 they hold it. Moving away re-arms it, so a second approach fires again. A player who already
 meets the condition when their monitor starts (when camera mode starts, after a display change, or on
 coming back into view) must move away and back first.
+
+With `holdMs` on the trigger, an `-enter` fires only once the player has also held it that long; moving away
+before then starts the wait again. An **`-exit`** fires when an `-enter` that fired stops holding for
+`visionStableFrames` frames, or when the player who held it leaves the camera's view (once the tracker drops
+them). Clearing the monitors for a transition doesn't fire exits.
 
 ### Jumps
 
@@ -256,7 +262,8 @@ Add `?debug=true` to the URL to turn on the `debug` setting. In camera mode that
 - shows a colour key under the preview;
 - shows the frame rate, the time each step takes (inference, tracking, monitors, drawing), and the people, hands and
   feet found, over the silhouette (`showFps` shows this too);
-- draws a green dot where each person's feet were found.
+- draws a green dot where each person's feet were found, and a faded green ring for a player the tracker is
+  holding while they are missed (they can't interact until found again).
 
 Lower a rule's `threshold` when testing interactions, and use the feet dots to see where the
 camera thinks the player is. Changing the debug setting restarts the tracking loop with the new

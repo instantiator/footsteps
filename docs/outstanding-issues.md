@@ -114,7 +114,9 @@ expressions can't see how many players there are, or which player did what, and 
 across frames while tracking holds.
 
 **Act when:** a game needs a condition over all players (or a count of them). Then design player counts (and possibly
-per-player identities) for `event` or `game`, and the trigger that uses them.
+per-player identities) for `event` or `game`, and the trigger that uses them. Session state (`GameState.session`,
+which isn't saved) is the place for per-player bookkeeping like this, as identities don't survive a reload. The lava
+reset display waits for any one player on the start, for this reason.
 
 ## Displays can't share state
 
@@ -248,3 +250,19 @@ the runner image, and may disagree with a local install. Every other tool is pin
 
 **Act when:** a shellcheck finding appears in CI but not locally (or the reverse). Then install a
 pinned shellcheck release in `check.yaml`, as actionlint is.
+
+## No volume setting for sounds
+
+Rule sounds (`sound` actions) and the game's sound effects play at full volume; only the music fades. There is no
+volume setting for a game, a sound, or the player.
+
+**Act when:** players or testers ask to turn sounds down, or a game mixes loud and quiet sounds. Then add a
+`volume` to `sound` actions and a player-facing volume control, applied in `playAudio`.
+
+## Rules can't follow an effect ending
+
+`sound` and `reward` actions don't hold anything up, and nothing fires when they finish. A game can only line
+rules up with an effect by its `delayMs` and a matching `after` or `every`.
+
+**Act when:** a game needs to act when a sound or animation ends (eg. reveal a display after a fanfare). Then add
+an `effectEnd` trigger, naming the effect, fired by `useRuleEffects` in `Game.tsx`.

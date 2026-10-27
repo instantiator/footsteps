@@ -24,3 +24,4 @@ Published as HTML at <https://instantiator.dev/footsteps/docs/>, with the API re
 - [0006 Display rules and state](ADRs/0006-display-rules-and-state.md)
 - [0007 Camera flicker](ADRs/0007-camera-flicker.md)
 - [0008 Jump detection](ADRs/0008-jump-detection.md)
+- [0009 Reset displays and rule effects](ADRs/0009-reset-displays-and-rule-effects.md)
