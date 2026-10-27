@@ -93,6 +93,28 @@ const frameTargets = (canvas: HTMLCanvasElement, players: PlayerFrame[], rules: 
   return result;
 };
 
+/**
+ * Gives each player's frame to their monitor, making monitors for new players and dropping those of players gone.
+ * A held player is only drawn: their monitor waits, keeping any jump in progress, for them to be found again.
+ */
+const updateMonitors = (
+  monitors: Map<number, PlayerMonitor>,
+  players: PlayerFrame[],
+  update: (monitor: PlayerMonitor, player: PlayerFrame) => void,
+  createMonitor: () => PlayerMonitor,
+): void => {
+  for (const player of players) {
+    if (player.held) continue;
+    let monitor = monitors.get(player.id);
+    if (!monitor) monitors.set(player.id, (monitor = createMonitor()));
+    update(monitor, player);
+  }
+  const seen = new Set(players.map((player) => player.id));
+  for (const playerId of Array.from(monitors.keys())) {
+    if (!seen.has(playerId)) monitors.delete(playerId);
+  }
+};
+
 /** What {@link usePlayerInteractions} gives the layout. */
 interface PlayerInteractions {
   /** The character canvas's element, for converting screen bounds into mask pixels. */
@@ -149,31 +171,20 @@ export function usePlayerInteractions(
   const handlePlayers = useCallback(
     (players: PlayerFrame[], timestamp: number) => {
       const canvas = canvasRef.current;
-      const emit = callbackRef.current;
       const monitors = monitorsRef.current;
-      if (!enabledRef.current || !canvas || !emit || players.length === 0) {
+      if (!enabledRef.current || !canvas || !callbackRef.current || players.length === 0) {
         monitors.clear();
         return;
       }
 
       const { targets, sources } = frameTargets(canvas, players, rulesRef.current ?? []);
       sourcesRef.current = sources;
-      const seen = new Set<number>();
-      for (const player of players) {
-        seen.add(player.id);
-        let monitor = monitors.get(player.id);
-        if (!monitor) {
-          monitor = new PlayerMonitor((event: PlayerMonitorEvent) => {
-            const source = sourcesRef.current.get(event.key);
-            if (source) callbackRef.current?.({ ...source, interaction: event.interaction });
-          }, stableFramesRef.current);
-          monitors.set(player.id, monitor);
-        }
-        monitor.update(player, targets, timestamp);
-      }
-      for (const playerId of Array.from(monitors.keys())) {
-        if (!seen.has(playerId)) monitors.delete(playerId);
-      }
+      const createMonitor = () =>
+        new PlayerMonitor((event: PlayerMonitorEvent) => {
+          const source = sourcesRef.current.get(event.key);
+          if (source) callbackRef.current?.({ ...source, interaction: event.interaction });
+        }, stableFramesRef.current);
+      updateMonitors(monitors, players, (monitor, player) => monitor.update(player, targets, timestamp), createMonitor);
     },
     [canvasRef],
   );

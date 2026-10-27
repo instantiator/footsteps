@@ -29,6 +29,12 @@ describe("silhouettePixels", () => {
     expect(alpha).toEqual([255, 0, 255, 0]);
   });
 
+  it("draws a held person as opaque as they are held, and overlaps at the more opaque", () => {
+    const fading = { ...person(0, [0, 1]), held: { opacity: 0.5 } };
+    const alpha = rgba(silhouettePixels(frame(fading, person(1, [1])))).map((pixel) => pixel[3]);
+    expect(alpha).toEqual([128, 255, 0, 0]);
+  });
+
   it("fills the buffer it is given, clearing the last frame's silhouette from it", () => {
     const buffer = silhouettePixels(frame(person(0, [0, 1])));
     const reused = silhouettePixels(frame(person(0, [3])), buffer);

@@ -3,7 +3,7 @@ import type { AppConfig } from "../../config/AppConfig";
 import useAppConfig from "../../providers/AppConfigHook";
 import { createVisionModel } from "../../vision/createVisionModel";
 import type { FootstepsVisionModelImplementation } from "../../vision/FootstepsVisionModelImplementation";
-import { PersonTracker } from "../../vision/Tracking";
+import { PersonTracker, type HoldTimes } from "../../vision/Tracking";
 import type { VisionFrame } from "../../vision/VisionTypes";
 import { feetOf, type FeetPositions } from "./CameraSupport";
 import { drawPeople, type DrawStyle, type MaskType } from "./DrawPeople";
@@ -77,11 +77,11 @@ const playersOf = ({ width, height, people }: VisionFrame, offScreenThreshold_pe
     feet: feetOf(person, width, height, offScreenThreshold_percent),
   }));
 
-/** The feet of the players that are on screen, keyed by player id. */
+/** The feet of the players that are on screen, keyed by player id; held players' feet are only where they were. */
 const feetPositionsOf = (players: PlayerFrame[]): FeetPositions => {
   const feetPositions: FeetPositions = {};
-  for (const { id, feet } of players) {
-    if (feet) feetPositions[id] = feet;
+  for (const { id, feet, held } of players) {
+    if (feet && !held) feetPositions[id] = feet;
   }
   return feetPositions;
 };
@@ -130,6 +130,8 @@ type LoopHandlers = Pick<
   drawStyle: DrawStyle;
   /** Keeps player ids stable and smooths key points between frames. */
   smoothing: boolean;
+  /** How long a player the model loses is still shown; needs smoothing. */
+  hold: HoldTimes;
   /** The widest frame the model is given; see {@link detectFrame}. */
   inputWidth: number;
   /** Called at most every {@link STATS_INTERVAL_MS} with the loop's speed; omitted when nobody is looking. */
@@ -235,6 +237,7 @@ const startTrackingLoop = (
     onPlayersChange,
     drawStyle,
     smoothing,
+    hold,
     inputWidth,
     onStats,
   }: LoopHandlers,
@@ -245,7 +248,7 @@ const startTrackingLoop = (
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   const reportStats = statsReporter(onStats);
-  const tracker = smoothing ? new PersonTracker() : null;
+  const tracker = smoothing ? new PersonTracker(hold) : null;
 
   const reportAndDraw = (timestamp: number, detected: VisionFrame, inferenceEnd: number) => {
     const frame = tracker ? tracker.update(detected) : detected;
@@ -256,7 +259,7 @@ const startTrackingLoop = (
     const monitorEnd = performance.now();
     // The 2D context is missing in some environments (eg. tests); the reports above still happen
     if (ctx) drawPeople(video, frame, ctx, drawStyle);
-    reportStats(frame, timestamp, inferenceEnd, {
+    reportStats(detected, timestamp, inferenceEnd, {
       trackMs: trackEnd - inferenceEnd,
       monitorMs: monitorEnd - trackEnd,
       drawMs: performance.now() - monitorEnd,
@@ -323,13 +326,14 @@ export default function CharacterCanvas({
   ...loopProps
 }: CharacterCanvasProps) {
   const config = useAppConfig();
-  // Debug and feathering only change how players are drawn, so changing them keeps the loaded model
-  const modelKey = JSON.stringify({ ...config, debug: false, cameraFeatherPx: 0 });
+  // These only change how players are drawn, so changing them keeps the loaded model
+  const modelKey = JSON.stringify({ ...config, debug: false, cameraFeatherPx: 0, cameraHoldMs: 0, cameraFadeMs: 0 });
   const modelConfig = useMemo(() => JSON.parse(modelKey) as AppConfig, [modelKey]);
   const model = useVisionModel(loopProps.mediaStream, modelConfig);
   const smoothing = config.visionSmoothing;
   const inputWidth = config.visionInputWidth;
   const featherPx = config.cameraFeatherPx;
+  const { cameraHoldMs: holdMs, cameraFadeMs: fadeMs } = config;
   const [stats, setStats] = useState<FrameStats | null>(null);
   const internalCanvasRef = useRef<HTMLCanvasElement>(null);
   const canvas = canvasRef ?? internalCanvasRef;
@@ -346,6 +350,7 @@ export default function CharacterCanvas({
       onPlayersChange,
       drawStyle: { maskType, featherPx },
       smoothing,
+      hold: { holdMs, fadeMs },
       inputWidth,
       onStats,
     };
@@ -360,6 +365,8 @@ export default function CharacterCanvas({
     offScreenThreshold_percent,
     maskType,
     featherPx,
+    holdMs,
+    fadeMs,
     smoothing,
     inputWidth,
     showStats,

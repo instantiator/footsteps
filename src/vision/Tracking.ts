@@ -50,11 +50,21 @@ export class OneEuroFilter {
   }
 }
 
+/** How long someone the model loses is still shown where they were, then how long they take to fade out. */
+export interface HoldTimes {
+  /** Milliseconds shown as they were. */
+  holdMs: number;
+  /** Milliseconds fading out after that. */
+  fadeMs: number;
+}
+
 /** A person seen in earlier frames. */
 interface Track {
   id: number;
   centre: Point;
   lastSeen: number;
+  /** The person as last seen, to show while the model has lost them. */
+  last: VisionPerson;
   /** An x and y filter per key point, reset whenever the point goes missing. */
   filters: Partial<Record<KeyPointName, [OneEuroFilter, OneEuroFilter]>>;
 }
@@ -81,29 +91,53 @@ const distanceSquared = (a: Point, b: Point): number => (a.x - b.x) ** 2 + (a.y 
  * Follows people from frame to frame: each keeps their id while they stay in view, and their key points are smoothed.
  *
  * People are matched to the previous frame's greedily, nearest first, by the centres of their silhouettes.
+ *
+ * Someone the model loses for a moment (a track with nobody matched to it) is held: their last silhouette is shown
+ * for a while, then fades. Someone who moved is matched where they now are, so holding never leaves a trail.
  */
 export class PersonTracker {
   private tracks: Track[] = [];
   private nextId = 0;
+  private readonly hold: HoldTimes;
 
-  /** The frame with each person's id made stable and their key points smoothed. */
+  /** @param hold how long to keep showing someone the model loses; nobody is held by default */
+  constructor(hold: HoldTimes = { holdMs: 0, fadeMs: 0 }) {
+    this.hold = hold;
+  }
+
+  /** The frame with each person's id made stable and their key points smoothed, and anyone held added. */
   update(frame: VisionFrame): VisionFrame {
     const { width, timestamp } = frame;
-    this.tracks = this.tracks.filter((track) => timestamp - track.lastSeen <= TRACK_TIMEOUT_MS);
+    const timeout = Math.max(TRACK_TIMEOUT_MS, this.hold.holdMs + this.hold.fadeMs);
+    this.tracks = this.tracks.filter((track) => timestamp - track.lastSeen <= timeout);
     const centres = frame.people.map((person) => centreOf(person, width));
     const owners = this.match(centres, width);
+    const seen = new Set<Track>();
 
     const people = frame.people.map((person, index) => {
       let track = owners.get(index);
       if (!track) {
-        track = { id: this.nextId++, centre: centres[index] ?? { x: 0, y: 0 }, lastSeen: timestamp, filters: {} };
+        track = { id: this.nextId++, centre: { x: 0, y: 0 }, lastSeen: timestamp, last: person, filters: {} };
         this.tracks.push(track);
       }
       track.centre = centres[index] ?? track.centre;
       track.lastSeen = timestamp;
-      return { ...person, id: track.id, keyPoints: this.smooth(track, person.keyPoints, timestamp) };
+      track.last = { ...person, id: track.id, keyPoints: this.smooth(track, person.keyPoints, timestamp) };
+      seen.add(track);
+      return track.last;
     });
-    return { ...frame, people };
+    return { ...frame, people: [...people, ...this.held(seen, timestamp)] };
+  }
+
+  /** The people lost this frame who are still held, drawn as they were last seen, fading once the hold is over. */
+  private held(seen: Set<Track>, timestamp: number): VisionPerson[] {
+    const { holdMs, fadeMs } = this.hold;
+    return this.tracks.flatMap((track) => {
+      if (seen.has(track)) return [];
+      const age = timestamp - track.lastSeen;
+      const opacity = age <= holdMs ? 1 : fadeMs > 0 ? 1 - (age - holdMs) / fadeMs : 0;
+      return opacity > 0 ? [{ ...track.last, held: { opacity } }] : [];
+    });
   }
 
   /** Pairs people with existing tracks, nearest first, within reach; returns the track for each matched person. */

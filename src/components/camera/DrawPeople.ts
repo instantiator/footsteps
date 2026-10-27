@@ -23,7 +23,7 @@ const TINTED_PARTS: BodyPart[] = [
 ];
 
 /**
- * RGBA pixels, opaque wherever anyone is, for cutting the people out of the video.
+ * RGBA pixels, opaque wherever anyone is (or as opaque as a held person is), for cutting the people out of the video.
  * @param pixels a buffer to fill, reused between frames; a new one if omitted
  */
 export const silhouettePixels = (
@@ -31,8 +31,9 @@ export const silhouettePixels = (
   pixels: Uint8ClampedArray<ArrayBuffer> = new Uint8ClampedArray(width * height * 4),
 ): Uint8ClampedArray<ArrayBuffer> => {
   pixels.fill(0);
-  for (const { mask } of people) {
-    for (let i = 0; i < mask.length; i++) if (mask[i] === 1) pixels[i * 4 + 3] = 255;
+  for (const { mask, held } of people) {
+    const alpha = Math.round(255 * (held?.opacity ?? 1));
+    for (let i = 0; i < mask.length; i++) if (mask[i] === 1) pixels[i * 4 + 3] = Math.max(pixels[i * 4 + 3], alpha);
   }
   return pixels;
 };

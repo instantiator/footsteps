@@ -555,6 +555,21 @@ describe("GameLayersLayout camera interactions", () => {
     expect(onPlayerInteraction).toHaveBeenCalledTimes(2);
   });
 
+  it("never fires for a held player, and keeps their monitor until they are found again", async () => {
+    const onPlayerInteraction = vi.fn();
+    const { container, canvas } = await renderWithCamera({ cameraRules: [handRule()], onPlayerInteraction });
+    stubRect(canvas, new DOMRect(0, 0, 100, 100));
+    stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 50, 50));
+
+    sendPlayers([playerWithHandAt(0, 7)], 900);
+    sendPlayers([{ ...playerWithHandAt(6, 1), held: { opacity: 1 } }]); // where they last were, not where they are
+    expect(onPlayerInteraction).not.toHaveBeenCalled();
+
+    // Found again with the hand inside: the monitor that saw it outside reports it moving in
+    sendPlayers([playerWithHandAt(6, 1)], 1100);
+    expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith(handOnThing(container));
+  });
+
   it("maps element bounds using the canvas's position on the page", async () => {
     const onPlayerInteraction = vi.fn();
     const { container, canvas } = await renderWithCamera({

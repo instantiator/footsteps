@@ -50,6 +50,47 @@ describe("PersonTracker ids", () => {
   });
 });
 
+describe("PersonTracker holding", () => {
+  const hold = { holdMs: 400, fadeMs: 300 };
+
+  it("holds someone the model loses, as they were, then fades them out, then lets them go", () => {
+    const tracker = new PersonTracker(hold);
+    const [seen] = tracker.update(frame(0, personAt(0, 20))).people;
+
+    const [held] = tracker.update(frame(200)).people;
+    expect(held).toMatchObject({ id: seen.id, held: { opacity: 1 } });
+    expect(held.mask).toBe(seen.mask);
+
+    expect(tracker.update(frame(550)).people[0].held?.opacity).toBeCloseTo(0.5);
+    expect(tracker.update(frame(700)).people).toEqual([]);
+  });
+
+  it("shows someone found again as themselves, with the same id, not held", () => {
+    const tracker = new PersonTracker(hold);
+    const [seen] = tracker.update(frame(0, personAt(0, 20))).people;
+    tracker.update(frame(200));
+
+    const found = tracker.update(frame(400, personAt(0, 22))).people;
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatchObject({ id: seen.id });
+    expect(found[0].held).toBeUndefined();
+  });
+
+  it("follows someone who moves, leaving nobody held behind them", () => {
+    const tracker = new PersonTracker(hold);
+    tracker.update(frame(0, personAt(0, 20)));
+    const people = tracker.update(frame(33, personAt(0, 30))).people;
+    expect(people).toHaveLength(1);
+    expect(people[0].held).toBeUndefined();
+  });
+
+  it("holds nobody by default", () => {
+    const tracker = new PersonTracker();
+    tracker.update(frame(0, personAt(0, 20)));
+    expect(tracker.update(frame(33)).people).toEqual([]);
+  });
+});
+
 describe("PersonTracker smoothing", () => {
   it("damps jitter in a key point", () => {
     const tracker = new PersonTracker();
