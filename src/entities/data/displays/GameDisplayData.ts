@@ -163,10 +163,17 @@ export interface GameTransitionEndTrigger {
   target: string;
 }
 
-/** An expression turning from false to true. */
+/** An expression turning from false to true, or staying true for a while after that. */
 export interface GameWhenTrigger {
   /** Fires on each change from false to true, after any state or game change. */
   when: GameExpressionSource;
+  /**
+   * Fires once the expression has stayed true this many milliseconds after changing to true, rather than straight
+   * away. Turning false, or the display being hidden, starts it again.
+   *
+   * @minimum 0
+   */
+  forMs?: number;
 }
 
 /** Repeatedly, while the display is shown. */

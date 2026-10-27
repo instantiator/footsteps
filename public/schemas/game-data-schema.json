@@ -912,8 +912,13 @@
             "description": "What makes a rule fire."
         },
         "GameWhenTrigger": {
-            "description": "An expression turning from false to true.",
+            "description": "An expression turning from false to true, or staying true for a while after that.",
             "properties": {
+                "forMs": {
+                    "description": "Fires once the expression has stayed true this many milliseconds after changing to true, rather than straight\naway. Turning false, or the display being hidden, starts it again.",
+                    "minimum": 0,
+                    "type": "number"
+                },
                 "when": {
                     "description": "Fires on each change from false to true, after any state or game change.",
                     "type": "string"

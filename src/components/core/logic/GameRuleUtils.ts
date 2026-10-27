@@ -9,6 +9,7 @@ import {
   type GameRule,
   type PointerInteraction,
   type GameTrigger,
+  type GameWhenTrigger,
 } from "../../../entities/data/displays/GameDisplayData";
 import { toGameSnapshot } from "../../../entities/state/GameSnapshot";
 import type { DisplayScope, GameState } from "../../../entities/state/GameState";
@@ -127,6 +128,12 @@ const checkHold = (trigger: GameInteractTrigger, where: string): void => {
   if (isDefined(other)) throw new Error(`${where}: only entering interactions can be held, not "${other}"`);
 };
 
+/** A `when` trigger's expression, checking its `forMs`. */
+const whenSources = (trigger: GameWhenTrigger, where: string): [string, string][] => {
+  if ((trigger.forMs ?? 0) < 0) throw new Error(`${where}.forMs: a duration can't be negative`);
+  return [[trigger.when, `${where}.when`]];
+};
+
 /** The selector and expressions a trigger needs, checking any fixed duration. */
 const triggerSources = (trigger: GameTrigger, where: string): [string, string][] => {
   if ("interact" in trigger) {
@@ -137,7 +144,7 @@ const triggerSources = (trigger: GameTrigger, where: string): [string, string][]
     checkSelector(trigger.target, `${where}.target`);
     return [];
   }
-  if ("when" in trigger) return [[trigger.when, `${where}.when`]];
+  if ("when" in trigger) return whenSources(trigger, where);
   const duration = "every" in trigger ? trigger.every : "after" in trigger ? trigger.after : undefined;
   if (typeof duration === "string") return [[duration, where]];
   if (typeof duration === "number" && duration < 0) throw new Error(`${where}: a duration can't be negative`);
@@ -335,7 +342,10 @@ export const fireRules = (
   }, state);
 };
 
-/** Each `when` rule's last value, keyed `<scope>#<rule index>`, for spotting false-to-true changes. */
+/** The key of a `when` rule in {@link WhenEdges}. */
+export const whenKey = (scope: DisplayScope, ruleIndex: number): string => `${scope}#${ruleIndex}`;
+
+/** Each `when` rule's last value, keyed by {@link whenKey}, for spotting false-to-true changes. */
 export type WhenEdges = ReadonlyMap<string, boolean>;
 
 /** The outcome of one round of `when` rules. */
@@ -359,10 +369,12 @@ const whenRound = (env: RuleEnvironment, state: GameState, edges: WhenEdges, fir
   for (const display of getShownDisplays(state)) {
     (display.component.rules ?? []).forEach((rule, ruleIndex) => {
       if (!("when" in rule.on)) return;
-      const key = `${display.scope}#${ruleIndex}`;
+      const key = whenKey(display.scope, ruleIndex);
       const where = `${display.scope} › rules[${ruleIndex}].on.when`;
       const value = Boolean(evaluate({ env, display, event: NO_EVENT }, state, rule.on.when, where));
-      if (fire && edges.get(key) === false && value) firing.push([display, ruleIndex, key]);
+      // A rule held for a while is fired by the game's timers, once it has stayed true
+      const immediate = !isDefined(rule.on.forMs);
+      if (fire && immediate && edges.get(key) === false && value) firing.push([display, ruleIndex, key]);
       values.set(key, value);
     });
   }

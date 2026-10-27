@@ -103,6 +103,11 @@ describe("compileGameRules", () => {
     expect(() => compileGameRules(gameWithRules([{ on, do: [] }]))).toThrow(message);
   });
 
+  it("rejects a negative forMs", () => {
+    const rule: GameRule = { on: { when: "true", forMs: -1 }, do: [] };
+    expect(() => compileGameRules(gameWithRules([rule]))).toThrow(`${OVERVIEW}.on.forMs: a duration can't be negative`);
+  });
+
   it("rejects a negative duration", () => {
     const rule: GameRule = { on: { after: -1 }, do: [] };
     expect(() => compileGameRules(gameWithRules([rule]))).toThrow("can't be negative");

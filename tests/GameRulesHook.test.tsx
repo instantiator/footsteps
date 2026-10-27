@@ -205,6 +205,63 @@ describe("useGameRules", () => {
     });
   });
 
+  describe("when held for a while (forMs)", () => {
+    const heldRule: GameRule = { on: { when: "state.ready", forMs: 1000 }, do: [{ set: { done: "state.done + 1" } }] };
+    const waiting = (initialState = { ready: false, done: 0 }) => {
+      const rules = renderRules(rulesGame({ [TITLE]: { rules: [heldRule], initialState } }));
+      const ready = (value: boolean) =>
+        rules.set((state) => ({
+          ...state,
+          displayStates: {
+            ...state.displayStates,
+            [TITLE]: { ...initialState, ...state.displayStates[TITLE], ready: value },
+          },
+        }));
+      const done = () => (rules.displayState(TITLE) as { done?: number } | undefined)?.done ?? 0;
+      return { rules, ready, done };
+    };
+
+    it("fires once the expression has stayed true for the time, and not before", () => {
+      const { ready, done } = waiting();
+      ready(true);
+      advance(999);
+      expect(done()).toBe(0);
+      advance(1);
+      expect(done()).toBe(1);
+      advance(5000);
+      expect(done()).toBe(1);
+    });
+
+    it("doesn't fire if the expression turns false first, and counts again from turning true", () => {
+      const { ready, done } = waiting();
+      ready(true);
+      advance(600);
+      ready(false);
+      advance(600);
+      expect(done()).toBe(0);
+      ready(true);
+      advance(999);
+      expect(done()).toBe(0);
+      advance(1);
+      expect(done()).toBe(1);
+    });
+
+    it("doesn't fire once the display is hidden", () => {
+      const { rules, ready, done } = waiting();
+      ready(true);
+      rules.go("game-overview-stages");
+      advance(5000);
+      rules.go("game-overview-title");
+      expect(done()).toBe(0);
+    });
+
+    it("doesn't count an expression that is already true when the display is shown", () => {
+      const { done } = waiting({ ready: true, done: 0 });
+      advance(5000);
+      expect(done()).toBe(0);
+    });
+  });
+
   describe("start", () => {
     it("fires once each time the display is shown, keeping state while hidden", () => {
       const rules = renderRules(rulesGame({ [STAGES]: { rules: [count()], initialState: { n: 0 } } }));

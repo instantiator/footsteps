@@ -14,6 +14,7 @@ import {
   type RuleEnvironment,
   type RuleEvent,
   type WhenEdges,
+  whenKey,
 } from "./logic/GameRuleUtils";
 import { getShownDisplays, overviewScope, type ShownDisplay } from "./logic/RenderDataUtils";
 import { displayRoots, matchTarget, type DisplayDomEvent } from "./logic/TemplateUtils";
@@ -221,14 +222,63 @@ function useMouseHolds(gameState: GameState, fire: FireRules) {
   );
 }
 
-/** After any change, fires the `when` rules that have become true; skipped if the state moved on meanwhile. */
-function useWhenRules(env: RuleEnvironment, gameState: GameState, setGameState: Dispatch<SetStateAction<GameState>>) {
+/** Waits for `when` rules with `forMs`, by {@link whenKey}. */
+type HeldWhens = Map<string, ReturnType<typeof setTimeout>>;
+
+/**
+ * Starts a wait for each shown `when` rule with `forMs` that has just turned true, and cancels those whose rule has
+ * turned false or whose display is no longer shown. A wait that runs its course fires its rule.
+ * @param edges each rule's value before the change, and each shown rule's value now
+ */
+const followHeldWhens = (
+  state: GameState,
+  { before, after }: { before: WhenEdges; after: WhenEdges },
+  waits: HeldWhens,
+  fire: FireRules,
+) => {
+  for (const [key, timer] of waits) {
+    if (after.get(key) === true) continue;
+    clearTimeout(timer);
+    waits.delete(key);
+  }
+  for (const { scope, component } of getShownDisplays(state)) {
+    (component.rules ?? []).forEach(({ on }, ruleIndex) => {
+      const key = whenKey(scope, ruleIndex);
+      if (!("when" in on) || !isDefined(on.forMs) || waits.has(key)) return;
+      if (before.get(key) !== false || after.get(key) !== true) return;
+      const timer = setTimeout(() => {
+        waits.delete(key);
+        fire(scope, (_, index) => (index === ruleIndex ? NO_EVENT : undefined));
+      }, on.forMs);
+      waits.set(key, timer);
+    });
+  }
+};
+
+/**
+ * After any change, fires the `when` rules that have become true; skipped if the state moved on meanwhile. A rule with
+ * `forMs` fires once it has stayed true that long (see {@link followHeldWhens}).
+ */
+function useWhenRules(
+  env: RuleEnvironment,
+  gameState: GameState,
+  setGameState: Dispatch<SetStateAction<GameState>>,
+  fire: FireRules,
+) {
   const edgesRef = useRef<WhenEdges>(new Map());
+  const waitsRef = useRef<HeldWhens>(new Map());
   useEffect(() => {
-    const result = runWhens(env, gameState, edgesRef.current);
+    const before = edgesRef.current;
+    const result = runWhens(env, gameState, before);
     edgesRef.current = result.edges;
+    followHeldWhens(gameState, { before, after: result.edges }, waitsRef.current, fire);
     if (result.state !== gameState) setGameState((previous) => (previous === gameState ? result.state : previous));
-  }, [env, gameState, setGameState]);
+  }, [env, gameState, setGameState, fire]);
+
+  useEffect(() => {
+    const waits = waitsRef.current;
+    return () => waits.forEach((timer) => clearTimeout(timer));
+  }, []);
 }
 
 /** What {@link useGameRules} gives the game. */
@@ -265,7 +315,7 @@ export function useGameRules(): GameRules {
   );
   useDisplayLifecycles(env, gameState, stateRef, fire);
   const mouseHolds = useMouseHolds(gameState, fire);
-  useWhenRules(env, gameState, setGameState);
+  useWhenRules(env, gameState, setGameState, fire);
 
   /** Fires a display's rules for an event in its template. A click no rule takes moves on from the title screen. */
   const onDisplayEvent = useCallback(
