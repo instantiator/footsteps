@@ -71,7 +71,30 @@ const COVERAGE_GROUPS: Record<CoverageInteraction, PartGroup> = {
   "head-enter": "head",
   "body-enter": "body",
   "any-enter": "any",
+  "hand-exit": "hand",
+  "foot-exit": "foot",
+  "head-exit": "head",
+  "body-exit": "body",
+  "any-exit": "any",
 };
+
+/** The groups a target's coverage interactions look for, each once. */
+const groupsOf = (interactions: readonly string[]): Set<PartGroup> =>
+  new Set(interactions.filter(isCoverageInteraction).map((interaction) => COVERAGE_GROUPS[interaction]));
+
+/** One group of body parts over one target, as followed from frame to frame. */
+interface Presence {
+  /** The target's key. */
+  key: string;
+  /** The group of body parts. */
+  group: PartGroup;
+  /** Frames in a row the group has been over the target; {@link ALREADY_HELD} if it was over when the monitor was armed. */
+  streak: number;
+  /** Whether it stayed over the target long enough to have entered it, so it can leave. */
+  entered: boolean;
+  /** Frames in a row an entered group has been away. */
+  away: number;
+}
 
 /** What one frame means for a target's coverage. */
 interface TargetCoverage {
@@ -158,11 +181,10 @@ export class PlayerMonitor {
   private readonly onEvent: (event: PlayerMonitorEvent) => void;
   /** Frames an interaction must hold before it fires. */
   private readonly stableFrames: number;
-  /**
-   * How many frames in a row each interaction has held, keyed `${key}:${interaction}`;
-   * {@link ALREADY_HELD} for one that held before the monitor was armed.
-   */
-  private held = new Map<string, number>();
+  /** Each group of body parts over each target, keyed `${key}:${group}`, while it is over or has entered. */
+  private presence = new Map<string, Presence>();
+  /** The targets of the latest frame, to know which exits a released player fires. */
+  private targets: Record<string, MonitorTarget> = {};
   /** Whether a frame has been seen, so coverage on later frames can count as beginning. */
   private armed = false;
   private readonly jump: JumpDetector;
@@ -192,7 +214,7 @@ export class PlayerMonitor {
    * @param timestamp when the frame was taken, in milliseconds
    */
   update(frame: PlayerFrame, targets: Record<string, MonitorTarget>, timestamp: number): void {
-    const held = new Map<string, number>();
+    const presence = new Map<string, Presence>();
     const feetOn = new Set<string>();
 
     for (const [key, target] of Object.entries(targets)) {
@@ -202,11 +224,12 @@ export class PlayerMonitor {
         threshold: clampThreshold(target.threshold),
         visible: visibility(frame, target),
       };
-      this.reportCovered(key, target, coverage, held);
+      this.reportCoverage(key, target, coverage, presence);
       if (target.interactions.some(isJumpInteraction) && isCovered("foot", coverage)) feetOn.add(key);
     }
 
-    this.held = held;
+    this.presence = presence;
+    this.targets = targets;
     this.armed = true;
     this.followJump(frame, targets, feetOn, timestamp);
   }
@@ -229,22 +252,49 @@ export class PlayerMonitor {
     if (!this.jump.airborne) this.takeoffKeys = feetOn;
   }
 
-  /** Reports each coverage interaction that has held for long enough (once armed), and counts those that are holding. */
-  private reportCovered(
+  /**
+   * Reports the player as gone: fires the exits of everything they had entered, as if they left it, and forgets it.
+   * (Not for interactions pausing, when nothing has been left.)
+   */
+  release(): void {
+    for (const { key, group, entered } of this.presence.values()) {
+      if (entered) this.report(key, `${group}-exit`, this.targets[key]);
+    }
+    this.presence.clear();
+  }
+
+  /** Follows each group of body parts the target looks for over it, and reports it entering and leaving. */
+  private reportCoverage(
     targetKey: string,
     target: MonitorTarget,
     coverage: TargetCoverage,
-    held: Map<string, number>,
+    presence: Map<string, Presence>,
   ): void {
-    for (const interaction of target.interactions) {
-      if (!isCoverageInteraction(interaction)) continue;
-      if (!isCovered(COVERAGE_GROUPS[interaction], coverage)) continue;
-
-      const heldKey = `${targetKey}:${interaction}`;
-      const previous = this.held.get(heldKey) ?? 0;
-      const streak = !this.armed || previous === ALREADY_HELD ? ALREADY_HELD : previous + 1;
-      held.set(heldKey, streak);
-      if (streak === this.stableFrames) this.onEvent({ key: targetKey, interaction });
+    for (const group of groupsOf(target.interactions)) {
+      const presenceKey = `${targetKey}:${group}`;
+      const before = this.presence.get(presenceKey);
+      const now = isCovered(group, coverage) ? this.stay(targetKey, group, before) : this.leave(before);
+      if (isDefined(now)) presence.set(presenceKey, now);
+      const [wasIn, isIn] = [before?.entered === true, now?.entered === true];
+      if (wasIn !== isIn) this.report(targetKey, `${group}-${isIn ? "enter" : "exit"}`, target);
     }
+  }
+
+  /** A group over the target this frame: its streak grows, and it enters once the streak is long enough. */
+  private stay(key: string, group: PartGroup, before: Presence | undefined): Presence {
+    const streak = !this.armed || before?.streak === ALREADY_HELD ? ALREADY_HELD : (before?.streak ?? 0) + 1;
+    const entered = before?.entered === true || (streak !== ALREADY_HELD && streak >= this.stableFrames);
+    return { key, group, streak, entered, away: 0 };
+  }
+
+  /** A group away from the target this frame: forgotten unless it entered, which leaves once it has been away long enough. */
+  private leave(before: Presence | undefined): Presence | undefined {
+    if (before?.entered !== true || before.away + 1 >= this.stableFrames) return undefined;
+    return { ...before, away: before.away + 1 };
+  }
+
+  /** Reports an interaction with a target, if the target accepts it. */
+  private report(key: string, interaction: CoverageInteraction, target: MonitorTarget | undefined): void {
+    if (target?.interactions.includes(interaction) === true) this.onEvent({ key, interaction });
   }
 }

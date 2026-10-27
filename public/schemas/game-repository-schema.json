@@ -713,11 +713,16 @@
                             "items": {
                                 "enum": [
                                     "any-enter",
+                                    "any-exit",
                                     "body-enter",
+                                    "body-exit",
                                     "click",
                                     "foot-enter",
+                                    "foot-exit",
                                     "hand-enter",
+                                    "hand-exit",
                                     "head-enter",
+                                    "head-exit",
                                     "jump",
                                     "jump-from",
                                     "jump-onto",
@@ -731,11 +736,16 @@
                         {
                             "enum": [
                                 "any-enter",
+                                "any-exit",
                                 "body-enter",
+                                "body-exit",
                                 "click",
                                 "foot-enter",
+                                "foot-exit",
                                 "hand-enter",
+                                "hand-exit",
                                 "head-enter",
+                                "head-exit",
                                 "jump",
                                 "jump-from",
                                 "jump-onto",

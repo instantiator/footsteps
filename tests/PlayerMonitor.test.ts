@@ -326,6 +326,51 @@ describe("PlayerMonitor jumps", () => {
   });
 });
 
+describe("PlayerMonitor exits", () => {
+  const INOUT = { "the-element": target(["hand-enter", "hand-exit"], 0) };
+  const inside = handFrame([[1, 1]]);
+  const outside = handFrame([[8, 8]]);
+  const ENTERED = { key: "the-element", interaction: "hand-enter" };
+  const EXITED = { key: "the-element", interaction: "hand-exit" };
+
+  /** A monitor needing the given frames, armed by an empty frame, fed the given frames 16 ms apart. */
+  const run = (frames: PlayerFrame[], stableFrames = 1, targets: Record<string, MonitorTarget> = INOUT) => {
+    const events: PlayerMonitorEvent[] = [];
+    const monitor = new PlayerMonitor((event) => events.push(event), stableFrames);
+    monitor.update(frame([]), {}, 0);
+    frames.forEach((f, i) => monitor.update(f, targets, (i + 1) * 16));
+    return { events, monitor };
+  };
+
+  it("fires an exit when a part that entered leaves", () => {
+    expect(run([inside, inside, outside]).events).toEqual([ENTERED, EXITED]);
+  });
+
+  it("fires an exit for an element that only accepts exits, once a part has entered it", () => {
+    expect(run([outside, inside, outside], 1, { "the-element": target(["hand-exit"], 0) }).events).toEqual([EXITED]);
+  });
+
+  it("fires no exit for a part that never entered, including one already over the element when it started", () => {
+    const events: PlayerMonitorEvent[] = [];
+    const monitor = new PlayerMonitor((event) => events.push(event));
+    [inside, inside, outside].forEach((f, i) => monitor.update(f, INOUT, i * 16));
+    expect(events).toEqual([]);
+  });
+
+  it("ignores a part away for fewer frames than it needs, and exits once it has been away long enough", () => {
+    expect(run([inside, inside, outside, inside, inside], 2).events).toEqual([ENTERED]);
+    expect(run([inside, inside, outside, outside], 2).events).toEqual([ENTERED, EXITED]);
+  });
+
+  it("fires the exits of everything entered when the player is released, as they have gone", () => {
+    const { events, monitor } = run([inside]);
+    monitor.release();
+    expect(events).toEqual([ENTERED, EXITED]);
+    monitor.release();
+    expect(events).toHaveLength(2);
+  });
+});
+
 describe("PlayerMonitor stable frames", () => {
   const handTarget = { "the-element": target(["hand-enter"], 0) };
   const inside = handFrame([[1, 1]]);

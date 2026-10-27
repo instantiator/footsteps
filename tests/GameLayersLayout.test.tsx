@@ -555,6 +555,31 @@ describe("GameLayersLayout camera interactions", () => {
     expect(onPlayerInteraction).toHaveBeenCalledTimes(2);
   });
 
+  it("fires the exits of a player who has gone, but not when interactions pause", async () => {
+    setReducedMotion(false); // so a display change fades, pausing interactions
+    const onPlayerInteraction = vi.fn();
+    const inOut = handRule({ interactions: ["hand-enter", "hand-exit"] });
+    const { container, canvas, rerender } = await renderWithCamera({ cameraRules: [inOut], onPlayerInteraction });
+    stubRect(canvas, new DOMRect(0, 0, 100, 100));
+    stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 50, 50));
+    const exited = { ...handOnThing(container), interaction: "hand-exit" };
+
+    sendPlayers([playerWithHandAt(0, 7)], 900);
+    sendPlayers([playerWithHandAt(6, 1)]);
+    sendPlayers([], 1100);
+    expect(onPlayerInteraction).toHaveBeenLastCalledWith(exited);
+
+    // In again, then the display changes: interactions pause, and the hand hasn't left anything
+    sendPlayers([playerWithHandAt(0, 7)], 1200);
+    sendPlayers([playerWithHandAt(6, 1)], 1300);
+    onPlayerInteraction.mockClear();
+    const camera = { enabled: true, preview: true };
+    vi.useFakeTimers();
+    rerender(layout({ camera, cameraRules: [inOut], onPlayerInteraction, displayKey: "next" }));
+    sendPlayers([], 1400);
+    expect(onPlayerInteraction).not.toHaveBeenCalled();
+  });
+
   it("never fires for a held player, and keeps their monitor until they are found again", async () => {
     const onPlayerInteraction = vi.fn();
     const { container, canvas } = await renderWithCamera({ cameraRules: [handRule()], onPlayerInteraction });

@@ -95,7 +95,7 @@ const frameTargets = (canvas: HTMLCanvasElement, players: PlayerFrame[], rules: 
 };
 
 /**
- * Gives each player's frame to their monitor, making monitors for new players and dropping those of players gone.
+ * Gives each player's frame to their monitor, making monitors for new players and releasing those of players gone.
  * A held player is only drawn: their monitor waits, keeping any jump in progress, for them to be found again.
  */
 const updateMonitors = (
@@ -111,8 +111,10 @@ const updateMonitors = (
     update(monitor, player);
   }
   const seen = new Set(players.map((player) => player.id));
-  for (const playerId of Array.from(monitors.keys())) {
-    if (!seen.has(playerId)) monitors.delete(playerId);
+  for (const [playerId, monitor] of Array.from(monitors)) {
+    if (seen.has(playerId)) continue;
+    monitor.release(); // they have gone, so they have left whatever they were in
+    monitors.delete(playerId);
   }
 };
 
@@ -175,12 +177,16 @@ export function usePlayerInteractions(
     (players: PlayerFrame[], timestamp: number) => {
       const canvas = canvasRef.current;
       const monitors = monitorsRef.current;
-      if (!enabledRef.current || !canvas || !callbackRef.current || players.length === 0) {
+      // While interactions pause nothing has been left, so the monitors are dropped without releasing them
+      if (!enabledRef.current || !canvas || !callbackRef.current) {
         monitors.clear();
         return;
       }
 
-      const { targets, sources } = frameTargets(canvas, players, rulesRef.current ?? []);
+      const { targets, sources } =
+        players.length > 0
+          ? frameTargets(canvas, players, rulesRef.current ?? [])
+          : { targets: {}, sources: sourcesRef.current };
       sourcesRef.current = sources;
       const createMonitor = () =>
         new PlayerMonitor(

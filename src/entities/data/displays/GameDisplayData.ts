@@ -24,7 +24,7 @@ export type GameDisplayComponentData =
 
 /**
  * Every way a player can interact with an element in a display. `<part>-enter` fires when a body part comes over the
- * element. Jumps fire as the player lands: `jump` when they took off from and landed on the element, `jump-from` when
+ * element, and `<part>-exit` when it leaves again. Jumps fire as the player lands: `jump` when they took off from and landed on the element, `jump-from` when
  * they took off from it, and `jump-onto` when they landed on it.
  */
 export const GAME_INTERACTIONS = [
@@ -36,6 +36,11 @@ export const GAME_INTERACTIONS = [
   "head-enter",
   "body-enter",
   "any-enter",
+  "hand-exit",
+  "foot-exit",
+  "head-exit",
+  "body-exit",
+  "any-exit",
   "jump",
   "jump-from",
   "jump-onto",
