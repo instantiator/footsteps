@@ -22,9 +22,22 @@ export type GameDisplayPurpose = GameOverviewDisplayPurpose | GameChallengeDispl
 export type GameDisplayComponentData =
   GameDisplayTemplateComponentData | GameDisplayDialogComponentData | GameDisplayScrollComponentData;
 
-/** A way a player can interact with an element in a display. */
+/**
+ * A way a player can interact with an element in a display. Jumps fire as the player lands: `jump` when they took off
+ * from and landed on the element, `jump-from` when they took off from it, and `jump-onto` when they landed on it.
+ */
 export type GameInteraction =
-  "click" | "mouse-enter" | "mouse-exit" | "hand" | "foot" | "body" | "head" | "jump" | "any";
+  | "click"
+  | "mouse-enter"
+  | "mouse-exit"
+  | "hand"
+  | "foot"
+  | "body"
+  | "head"
+  | "jump"
+  | "jump-from"
+  | "jump-onto"
+  | "any";
 
 /** The interactions made with a mouse or other pointer, rather than through the camera. */
 export const POINTER_INTERACTIONS = ["click", "mouse-enter", "mouse-exit"] as const;

@@ -33,6 +33,18 @@ export interface AppConfig {
   cameraFadeMs: number;
   /** Fills parts of a player the model missed for a frame (eg. their legs) from the frame before (needs smoothing). */
   cameraFillGaps: boolean;
+  /** How far the feet must rise for a jump, as a fraction of the player's height. */
+  jumpMinRise: number;
+  /** How far the feet may wander while standing, as a fraction of the player's height. */
+  jumpStill: number;
+  /** How long the feet must be on the ground before a take-off counts, in milliseconds. */
+  jumpMinGroundedMs: number;
+  /** The longest the feet may still be rising after leaving the ground, in milliseconds. */
+  jumpMaxRiseMs: number;
+  /** The longest a jump may take from leaving the ground to landing, in milliseconds. */
+  jumpMaxAirtimeMs: number;
+  /** How much of the rise the feet must come back down to land (0–1). */
+  jumpMinDescent: number;
   /** BodyPix's backbone: ResNet50 is more accurate, MobileNetV1 faster. */
   bodypixArchitecture: "ResNet50" | "MobileNetV1";
   /** BodyPix's output stride: smaller is finer and slower. ResNet50 has 16 and 32, MobileNetV1 8 and 16; else 16. */
@@ -66,6 +78,12 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   cameraHoldMs: 400,
   cameraFadeMs: 300,
   cameraFillGaps: false,
+  jumpMinRise: 0.04,
+  jumpStill: 0.02,
+  jumpMinGroundedMs: 100,
+  jumpMaxRiseMs: 500,
+  jumpMaxAirtimeMs: 1000,
+  jumpMinDescent: 0.5,
   bodypixArchitecture: "MobileNetV1",
   bodypixOutputStride: 16,
   bodypixQuantBytes: 2,
@@ -118,6 +136,12 @@ const PARSERS: { [K in keyof AppConfig]: Parser<AppConfig[K]> } = {
   cameraHoldMs: int(0),
   cameraFadeMs: int(0),
   cameraFillGaps: bool,
+  jumpMinRise: fraction,
+  jumpStill: fraction,
+  jumpMinGroundedMs: int(0),
+  jumpMaxRiseMs: int(0),
+  jumpMaxAirtimeMs: int(0),
+  jumpMinDescent: fraction,
   bodypixArchitecture: oneOf("ResNet50", "MobileNetV1"),
   bodypixOutputStride: oneOf(8, 16, 32),
   bodypixQuantBytes: oneOf(1, 2, 4),

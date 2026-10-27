@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, type RefObject } from "react";
 import type { DisplayScope } from "../../../entities/state/GameState";
 import useAppConfig from "../../../providers/AppConfigHook";
 import { maskRectForElement, screenPointForMaskPoint } from "../../camera/CameraSupport";
+import { jumpSettingsOf } from "../../camera/JumpDetector";
 import {
   PlayerMonitor,
   type CameraInteraction,
@@ -140,9 +141,10 @@ export function usePlayerInteractions(
   onPlayerInteraction: ((event: CameraRuleEvent) => void) | undefined,
   enabled: boolean,
 ): PlayerInteractions {
-  const { visionSmoothing, visionStableFrames } = useAppConfig();
-  const stableFrames = visionSmoothing ? visionStableFrames : 1;
+  const config = useAppConfig();
+  const stableFrames = config.visionSmoothing ? config.visionStableFrames : 1;
   const stableFramesRef = useRef(stableFrames);
+  const jumpRef = useRef(jumpSettingsOf(config));
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const monitorsRef = useRef(new Map<number, PlayerMonitor>());
   const rulesRef = useRef(cameraRules);
@@ -160,7 +162,8 @@ export function usePlayerInteractions(
 
   useEffect(() => {
     stableFramesRef.current = stableFrames;
-  }, [stableFrames]);
+    jumpRef.current = jumpSettingsOf(config);
+  }, [stableFrames, config]);
 
   // Interactions pause during display changes; fresh monitors afterwards ignore whatever already holds
   useEffect(() => {
@@ -180,10 +183,14 @@ export function usePlayerInteractions(
       const { targets, sources } = frameTargets(canvas, players, rulesRef.current ?? []);
       sourcesRef.current = sources;
       const createMonitor = () =>
-        new PlayerMonitor((event: PlayerMonitorEvent) => {
-          const source = sourcesRef.current.get(event.key);
-          if (source) callbackRef.current?.({ ...source, interaction: event.interaction });
-        }, stableFramesRef.current);
+        new PlayerMonitor(
+          (event: PlayerMonitorEvent) => {
+            const source = sourcesRef.current.get(event.key);
+            if (source) callbackRef.current?.({ ...source, interaction: event.interaction });
+          },
+          stableFramesRef.current,
+          jumpRef.current,
+        );
       updateMonitors(monitors, players, (monitor, player) => monitor.update(player, targets, timestamp), createMonitor);
     },
     [canvasRef],

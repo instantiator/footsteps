@@ -562,6 +562,8 @@
                                 "hand",
                                 "head",
                                 "jump",
+                                "jump-from",
+                                "jump-onto",
                                 "mouse-enter",
                                 "mouse-exit"
                             ],
@@ -588,7 +590,7 @@
             "type": "object"
         },
         "GameInteraction": {
-            "description": "A way a player can interact with an element in a display.",
+            "description": "A way a player can interact with an element in a display. Jumps fire as the player lands: `jump` when they took off\nfrom and landed on the element, `jump-from` when they took off from it, and `jump-onto` when they landed on it.",
             "enum": [
                 "any",
                 "body",
@@ -597,6 +599,8 @@
                 "hand",
                 "head",
                 "jump",
+                "jump-from",
+                "jump-onto",
                 "mouse-enter",
                 "mouse-exit"
             ],
