@@ -101,27 +101,27 @@
   cursor: pointer;
 }
 /* The balloon colours, in the order they cycle: red, green, yellow, blue, magenta, cyan */
-.colour-0 {
+.balloon-body[data-colour="0"] {
   --balloon-light: #ffb3b3;
   --balloon-base: #e02424;
 }
-.colour-1 {
+.balloon-body[data-colour="1"] {
   --balloon-light: #b8f5c4;
   --balloon-base: #16a34a;
 }
-.colour-2 {
+.balloon-body[data-colour="2"] {
   --balloon-light: #fff7b0;
   --balloon-base: #eab308;
 }
-.colour-3 {
+.balloon-body[data-colour="3"] {
   --balloon-light: #b3ccff;
   --balloon-base: #1d4ed8;
 }
-.colour-4 {
+.balloon-body[data-colour="4"] {
   --balloon-light: #ffb3f0;
   --balloon-base: #c026d3;
 }
-.colour-5 {
+.balloon-body[data-colour="5"] {
   --balloon-light: #b3f7ff;
   --balloon-base: #06b6d4;
 }

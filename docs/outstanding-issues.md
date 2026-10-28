@@ -8,6 +8,12 @@ TypeScript 7.0.2 is the latest release, but typescript-eslint 8.71.2 (latest) ac
 
 **Act when:** `npm view typescript-eslint peerDependencies.typescript` accepts 7.x. Then bump `typescript` and run `dev-qual/scripts/check.sh` with a clean cache (`rm -rf node_modules/.tmp`).
 
+## Knip unused-code check is not set up
+
+aislop 0.19 reports `knip/skipped` because Knip isn't installed; the notice is accepted in `.aislop/ci-baseline.json`. A trial `npx knip` run lists 11 unused files, 11 unused exports, 33 unused exported types, 4 unused and 2 unlisted dependencies, each needing a keep-or-delete decision.
+
+**Act when:** the next clean-up pass, or when dead code is suspected. Add `knip` to devDependencies, resolve or configure its findings, then drop the `knip/skipped` entry from the baseline with `aislop baseline prune`.
+
 ## No captions for game audio
 
 `GameDisplayMediaData` has no field for captions, so `GameAudioComponent` can't render a `<track>`. The jsx-a11y `media-has-caption` finding is disabled with that reason. The camera preview's `<video>` is exempt for good: it's a silent live feed of the player.

@@ -148,7 +148,7 @@ describe("rules demo, played by camera", () => {
     await start();
     await startBalloons();
     expect($("#balloon-0")).toHaveStyle({ left: "45%" });
-    expect($("#balloon-0 .balloon-body")).toHaveClass("colour-0");
+    expect($("#balloon-0 .balloon-body")).toHaveAttribute("data-colour", "0");
 
     touch("#balloon-0", "hand-enter");
     await waitFor(() => expect($("#balloon-0")).toHaveClass("popping"));
@@ -157,7 +157,7 @@ describe("rules demo, played by camera", () => {
     act(() => void $("#balloon-0 .balloon-body")!.dispatchEvent(popEnd));
 
     await waitFor(() => expect($("#balloon-1")).toHaveStyle({ left: "47%" }));
-    expect($("#balloon-1 .balloon-body")).toHaveClass("colour-1");
+    expect($("#balloon-1 .balloon-body")).toHaveAttribute("data-colour", "1");
   });
 
   /** Stands on the lava's reset display's start, and waits for the floor to be revealed. */
