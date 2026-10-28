@@ -1,0 +1,313 @@
+import _ from "lodash";
+import type { GameId } from "../../../entities/data/GameData";
+import type {
+  GameAction,
+  GameEffectAction,
+  GameFinishResetAction,
+  GameInteraction,
+  GameInteractTrigger,
+  PointerInteraction,
+  GameTrigger,
+} from "../../../entities/data/displays/GameDisplayData";
+import { toGameSnapshot } from "../../../entities/state/GameSnapshot";
+import type { DisplayScope, GameState } from "../../../entities/state/GameState";
+import { enterStage } from "./GameClickUtils";
+import {
+  compileGameExpression,
+  evaluateGameExpression,
+  type ExpressionContext,
+  type GameExpression,
+} from "./GameExpressionUtils";
+import { findChallengeState } from "./GameDataUtils";
+import { completeChallenge, forgetFinishedResets, resetChallenge, validateAnswer } from "./GameStateUtils";
+import { getDisplaySlots, getDisplayState, getShownDisplays, type ShownDisplay } from "./RenderDataUtils";
+import { matchTarget, type DisplayDomEvent } from "./TemplateUtils";
+import { isDefined } from "../../../util/ObjectUtils";
+
+/** Every expression in a game's rules, compiled once when the game loads, by source text. */
+export type GameExpressions = ReadonlyMap<string, GameExpression>;
+
+/** Whether an interaction is one of entering an element, which can be held: `mouse-enter`, or a camera `-enter`. */
+export const isEntering = (interaction: GameInteraction): boolean => interaction.endsWith("-enter");
+
+/** Shows again the reset displays set to show before every showing, of the displays the game has just started showing. */
+const showEveryShowResets = (previous: GameState | undefined, next: GameState): GameState => {
+  const wasSlot = new Set(isDefined(previous) ? getDisplaySlots(previous).map((slot) => slot.scope) : []);
+  const showAgain = getDisplaySlots(next)
+    .filter(({ scope, display }) => display.resetDisplay?.showOn === "every-show" && !wasSlot.has(scope))
+    .map(({ scope }) => scope);
+  return showAgain.length > 0 ? forgetFinishedResets(next, showAgain) : next;
+};
+
+/**
+ * Prepares displays as they are shown. It runs on every game state change, in the same update, so a display never
+ * renders its old state:
+ * - a display whose reset display shows before every showing shows it again;
+ * - a reset display, or a display with `resetStateOnShow`, returns to its `initialState`.
+ * @param previous the state before the change, or undefined when the game starts
+ */
+export const applyShowResets = (previous: GameState | undefined, next: GameState): GameState => {
+  const prepared = showEveryShowResets(previous, next);
+  const wasShown = new Set(isDefined(previous) ? getShownDisplays(previous).map((d) => d.scope) : []);
+  const resets = getShownDisplays(prepared).filter(
+    (d) =>
+      (d.isReset === true || d.component.resetStateOnShow === true) &&
+      !wasShown.has(d.scope) &&
+      Object.hasOwn(prepared.displayStates, d.scope),
+  );
+  if (resets.length === 0) return prepared;
+  const displayStates = { ...prepared.displayStates };
+  for (const { scope } of resets) delete displayStates[scope];
+  return { ...prepared, displayStates };
+};
+
+/** What rules need besides the game state: the game's id (for the snapshot) and its compiled expressions. */
+export interface RuleEnvironment {
+  /** The game's id in the repository. */
+  gameId: GameId;
+  /** The game's compiled expressions, by source. */
+  expressions: GameExpressions;
+}
+
+/** The element an element trigger matched, as expressions see it in `event`. */
+export type RuleEvent = ExpressionContext["event"];
+
+/** The `event` for triggers that don't concern an element. */
+export const NO_EVENT: RuleEvent = { id: "", interaction: "" };
+
+/** Most `when` rounds that may fire in a row before the chain counts as a loop and is stopped. */
+export const MAX_WHEN_CHAIN = 10;
+
+/** One rule firing: the environment, the display it belongs to, and the event it fired with. */
+interface RuleRun {
+  /** The game's id and compiled expressions. */
+  env: RuleEnvironment;
+  /** The display whose rule it is. */
+  display: ShownDisplay;
+  /** What expressions see as `event`. */
+  event: RuleEvent;
+}
+
+/** Evaluates an expression source for a display, compiling it if it wasn't compiled at load (eg. in tests). */
+const evaluate = ({ env, display, event }: RuleRun, state: GameState, source: string, where: string): unknown => {
+  const context: ExpressionContext = {
+    state: getDisplayState(state, display.scope, display.component),
+    data: display.component.data,
+    game: toGameSnapshot(env.gameId, state),
+    event,
+  };
+  return evaluateGameExpression(env.expressions.get(source) ?? compileGameExpression(source, where), context, where);
+};
+
+/** Sets the display's state keys to their expressions' values, all worked out from the state before the action. */
+const applySet = (run: RuleRun, state: GameState, values: Record<string, string>, where: string): GameState => {
+  const updates = _.omitBy(
+    _.mapValues(values, (source, key) => evaluate(run, state, source, `${where}.set.${key}`)),
+    _.isUndefined,
+  );
+  const { scope, component } = run.display;
+  return {
+    ...state,
+    displayStates: { ...state.displayStates, [scope]: { ...getDisplayState(state, scope, component), ...updates } },
+  };
+};
+
+/** Submits an answer to the display's challenge; a correct one completes it, as a typed answer does. */
+const applyAnswer = (state: GameState, { stageId, challengeId }: ShownDisplay, answer: unknown): GameState => {
+  const challengeState = findChallengeState(state, stageId!, challengeId!);
+  if (challengeState.succeeded || validateAnswer(challengeState.challenge, String(answer)) !== true) return state;
+  return completeChallenge(state, stageId!, challengeId!);
+};
+
+/** Adds a sound or reward to those waiting for the game to play them. */
+const queueEffect = (state: GameState, effect: GameEffectAction): GameState => {
+  const { effects, nextEffectId } = state.session;
+  return {
+    ...state,
+    session: { ...state.session, effects: [...effects, { id: nextEffectId, effect }], nextEffectId: nextEffectId + 1 },
+  };
+};
+
+/** Marks a reset display finished, revealing what it was shown for. */
+const finishReset = (state: GameState, scope: DisplayScope): GameState =>
+  state.session.finishedResets.includes(scope)
+    ? state
+    : { ...state, session: { ...state.session, finishedResets: [...state.session.finishedResets, scope] } };
+
+/** Applies one action, to the game or (for finishing a reset display, and sounds and rewards) to the session. */
+const applyAction = (run: RuleRun, state: GameState, action: GameAction, where: string): GameState => {
+  if ("finishReset" in action) return finishReset(state, run.display.scope);
+  if ("sound" in action || "reward" in action) return queueEffect(state, action);
+  return applyGameAction(run, state, action, where);
+};
+
+/** Applies one action to the game. Challenge actions are only on challenge displays, as checked when the game loads. */
+const applyGameAction = (
+  run: RuleRun,
+  state: GameState,
+  action: Exclude<GameAction, GameFinishResetAction | GameEffectAction>,
+  where: string,
+): GameState => {
+  const { scope, stageId, challengeId } = run.display;
+  if ("set" in action) return applySet(run, state, action.set, where);
+  if ("resetState" in action) return { ...state, displayStates: _.omit(state.displayStates, scope) };
+  if ("answer" in action)
+    return applyAnswer(state, run.display, evaluate(run, state, action.answer, `${where}.answer`));
+  if ("completeChallenge" in action) {
+    const done = findChallengeState(state, stageId!, challengeId!).succeeded;
+    return done ? state : completeChallenge(state, stageId!, challengeId!);
+  }
+  if ("resetChallenge" in action) return resetChallenge(state, stageId!, challengeId!);
+  return enterStage(state, action.enterStage) ?? state;
+};
+
+/** Applies one rule of a display: checks its `if`, then applies its actions in order. */
+const applyRule = (run: RuleRun, state: GameState, ruleIndex: number): GameState => {
+  const rule = run.display.component.rules![ruleIndex];
+  const where = `${run.display.scope} › rules[${ruleIndex}]`;
+  if (isDefined(rule.if) && !evaluate(run, state, rule.if, `${where}.if`)) return state;
+  return rule.do.reduce((current, action, a) => applyAction(run, current, action, `${where}.do[${a}]`), state);
+};
+
+/**
+ * Fires the rules of one shown display that `pick` chooses, in order.
+ * @param pick the event a rule fires with, or undefined if its trigger doesn't match
+ * @returns the new state; the given state, unchanged, if the display isn't shown or no rule changed anything
+ */
+export const fireRules = (
+  env: RuleEnvironment,
+  state: GameState,
+  scope: DisplayScope,
+  pick: (trigger: GameTrigger, ruleIndex: number) => RuleEvent | undefined,
+): GameState => {
+  const display = getShownDisplays(state).find((d) => d.scope === scope);
+  if (!isDefined(display)) return state;
+  return (display.component.rules ?? []).reduce((current, rule, ruleIndex) => {
+    const event = pick(rule.on, ruleIndex);
+    return isDefined(event) ? applyRule({ env, display, event }, current, ruleIndex) : current;
+  }, state);
+};
+
+/** The key of a `when` rule in {@link WhenEdges}. */
+export const whenKey = (scope: DisplayScope, ruleIndex: number): string => `${scope}#${ruleIndex}`;
+
+/** Each `when` rule's last value, keyed by {@link whenKey}, for spotting false-to-true changes. */
+export type WhenEdges = ReadonlyMap<string, boolean>;
+
+/** The outcome of one round of `when` rules. */
+export interface WhenRound {
+  /** The state after the rules that fired. */
+  state: GameState;
+  /** Each shown `when` rule's value in the state the round started from. */
+  edges: WhenEdges;
+  /** The keys of the rules that fired. */
+  fired: string[];
+}
+
+/**
+ * Evaluates the `when` rules of the shown displays against one state, then fires those that changed from false to
+ * true, in order. A rule seen for the first time (its display has just been shown) only records its value.
+ * @param fire false to only record values
+ */
+const whenRound = (env: RuleEnvironment, state: GameState, edges: WhenEdges, fire = true): WhenRound => {
+  const values = new Map<string, boolean>();
+  const firing: [ShownDisplay, number, string][] = [];
+  for (const display of getShownDisplays(state)) {
+    (display.component.rules ?? []).forEach((rule, ruleIndex) => {
+      if (!("when" in rule.on)) return;
+      const key = whenKey(display.scope, ruleIndex);
+      const where = `${display.scope} › rules[${ruleIndex}].on.when`;
+      const value = Boolean(evaluate({ env, display, event: NO_EVENT }, state, rule.on.when, where));
+      // A rule held for a while is fired by the game's timers, once it has stayed true
+      const immediate = !isDefined(rule.on.forMs);
+      if (fire && immediate && edges.get(key) === false && value) firing.push([display, ruleIndex, key]);
+      values.set(key, value);
+    });
+  }
+  const next = firing.reduce(
+    (current, [display, ruleIndex]) => applyRule({ env, display, event: NO_EVENT }, current, ruleIndex),
+    state,
+  );
+  return { state: next, edges: values, fired: firing.map(([, , key]) => key) };
+};
+
+/**
+ * Runs `when` rules after a change until none fire. A `set` can make another `when` fire, so a chain longer than
+ * {@link MAX_WHEN_CHAIN} rounds is logged, naming the rules still firing, and stopped. Its values are then recorded
+ * against the final state, so the loop doesn't restart on the next change.
+ */
+export const runWhens = (env: RuleEnvironment, state: GameState, edges: WhenEdges): Omit<WhenRound, "fired"> => {
+  let round: WhenRound = { state, edges, fired: [] };
+  for (let step = 0; step < MAX_WHEN_CHAIN; step++) {
+    round = whenRound(env, round.state, round.edges);
+    if (round.fired.length === 0) return round;
+  }
+  console.error(`when rules still firing after ${MAX_WHEN_CHAIN} rounds, so stopped: ${round.fired.join(", ")}`);
+  return { state: round.state, edges: whenRound(env, round.state, round.edges, false).edges };
+};
+
+/** The interactions an interact trigger accepts, as a list. */
+export const triggerInteractions = (trigger: GameInteractTrigger): GameInteraction[] =>
+  Array.isArray(trigger.interact) ? trigger.interact : [trigger.interact];
+
+/** The pointer interaction each kind of DOM event is. */
+const POINTER_EVENT_INTERACTIONS: Partial<Record<DisplayDomEvent["kind"], PointerInteraction>> = {
+  click: "click",
+  mouseOver: "mouse-enter",
+  mouseOut: "mouse-exit",
+};
+
+/**
+ * The element a pointer event fires an interact trigger for: one matching its selector that the click happened in,
+ * or that the mouse entered or left. Moving between an element's own children neither enters nor leaves it.
+ */
+const pointerTarget = (trigger: GameInteractTrigger, event: DisplayDomEvent, interaction: PointerInteraction) => {
+  if (!triggerInteractions(trigger).includes(interaction)) return undefined;
+  const element = matchTarget(event, trigger.target);
+  return isDefined(element) && isDefined(event.related) && element.contains(event.related) ? undefined : element;
+};
+
+/** Whether a trigger names this animation or transition end. */
+const namesEvent = (trigger: GameTrigger, event: DisplayDomEvent): boolean =>
+  (event.kind === "animationEnd" && "animationEnd" in trigger && trigger.animationEnd === event.name) ||
+  (event.kind === "transitionEnd" && "transitionEnd" in trigger && trigger.transitionEnd === event.name);
+
+/**
+ * Whether a DOM event inside a display fires a rule's trigger: a click on, or the mouse entering or leaving, an
+ * element matching an interact trigger that accepts it, or the end of the named animation or transition on a
+ * matching element.
+ * @returns the event the rule fires with, or undefined if it doesn't fire
+ */
+export const matchDisplayEvent = (trigger: GameTrigger, event: DisplayDomEvent): RuleEvent | undefined => {
+  const interaction = POINTER_EVENT_INTERACTIONS[event.kind];
+  if (isDefined(interaction)) {
+    const element = "interact" in trigger ? pointerTarget(trigger, event, interaction) : undefined;
+    return isDefined(element) ? { id: element.id, interaction } : undefined;
+  }
+  const element = namesEvent(trigger, event) && "target" in trigger ? matchTarget(event, trigger.target) : undefined;
+  return isDefined(element) ? { id: element.id, interaction: "" } : undefined;
+};
+
+/** The shortest gap between `every` firings, so a tiny or zero interval can't flood the game with updates. */
+export const MIN_EVERY_MS = 50;
+
+/**
+ * How long an `every` or `after` rule waits, worked out now: a number, or an expression over the display's state.
+ * @returns milliseconds, or undefined (after logging) if the value isn't a usable number
+ */
+export const ruleDelay = (
+  env: RuleEnvironment,
+  state: GameState,
+  display: ShownDisplay,
+  ruleIndex: number,
+): number | undefined => {
+  const trigger = display.component.rules![ruleIndex].on;
+  const value = "every" in trigger ? trigger.every : "after" in trigger ? trigger.after : undefined;
+  const where = `${display.scope} › rules[${ruleIndex}].on`;
+  const ms = typeof value === "string" ? evaluate({ env, display, event: NO_EVENT }, state, value, where) : value;
+  if (typeof ms !== "number" || !Number.isFinite(ms) || ms < 0) {
+    console.error(`${where}: a duration must be a number of milliseconds, not ${String(ms)}`);
+    return undefined;
+  }
+  return "every" in trigger ? Math.max(ms, MIN_EVERY_MS) : ms;
+};

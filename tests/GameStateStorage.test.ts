@@ -210,3 +210,32 @@ describe("GameStateStorage", () => {
     expect(loaded?.stages.map((stage) => stage.availability)).toEqual(["unlocked", "unlocked", "unlocked"]);
   });
 });
+
+describe("GameStateStorage display states", () => {
+  const scope = "challenge:stage-1:stage-1-challenge-1:challenge-in-progress";
+
+  it("round trips display states, dropping scopes the game doesn't have", () => {
+    const state: GameState = {
+      ...createBlankGameState(simpleGameData),
+      displayStates: { [scope]: { score: 2, open: true }, "challenge:stage-9:nope:challenge-title": { x: 1 } },
+    };
+    saveGameState(GAME_ID, state);
+
+    expect(loadGameState(GAME_ID, simpleGameData)?.displayStates).toEqual({ [scope]: { score: 2, open: true } });
+  });
+
+  it("loads progress saved before displays had state", () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(storedProgress));
+
+    const loaded = loadGameState(GAME_ID, simpleGameData);
+
+    expect(loaded?.stages[0].challengeStates[0].succeeded).toBe(true);
+    expect(loaded?.displayStates).toEqual({});
+  });
+
+  it("drops a display state that isn't an object", () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...storedProgress, displayStates: { [scope]: 3 } }));
+
+    expect(loadGameState(GAME_ID, simpleGameData)?.displayStates).toEqual({});
+  });
+});

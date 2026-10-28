@@ -11,14 +11,21 @@
 <li><a href="../modules/components_camera_CameraSupport.html">components/camera/CameraSupport</a></li>
 <li><a href="" aria-current="page">FeetPositions</a></li></ul>
 <h1>Type Alias FeetPositions</h1></div>
-<div class="tsd-signature"><span class="tsd-kind-type-alias">FeetPositions</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-signature-symbol">[</span><span class="tsd-kind-index-signature">personId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">]:</span> <a href="../interfaces/components_camera_CameraSupport.FootPosition.html" class="tsd-signature-type tsd-kind-interface">FootPosition</a> <span class="tsd-signature-symbol">}</span></div>
+<div class="tsd-signature"><span class="tsd-kind-type-alias">FeetPositions</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-signature-symbol">[</span><span class="tsd-kind-index-signature">personId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">]:</span> <a href="../interfaces/components_camera_CameraSupport.FootPosition.html" class="tsd-signature-type tsd-kind-interface">FootPosition</a> <span class="tsd-signature-symbol">&amp;</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">held</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span> <span class="tsd-signature-symbol">}</span> <span class="tsd-signature-symbol">}</span></div>
 <div class="tsd-comment tsd-typography"><p>Each tracked person's feet position, keyed by their index in the segmentation.</p>
 </div>
 <div class="tsd-type-declaration">
 <h4>Type Declaration</h4>
 <ul class="tsd-parameters">
 <li class="tsd-parameter-index-signature">
-<h5><span class="tsd-signature-symbol">[</span><span class="tsd-kind-parameter">personId</span>: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">]:</span> <a href="../interfaces/components_camera_CameraSupport.FootPosition.html" class="tsd-signature-type tsd-kind-interface">FootPosition</a></h5></li></ul></div><aside class="tsd-sources">
+<h5><span class="tsd-signature-symbol">[</span><span class="tsd-kind-parameter">personId</span>: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">]:</span> <a href="../interfaces/components_camera_CameraSupport.FootPosition.html" class="tsd-signature-type tsd-kind-interface">FootPosition</a> <span class="tsd-signature-symbol">&amp;</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">held</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span> <span class="tsd-signature-symbol">}</span></h5>
+<div class="tsd-type-declaration">
+<h4>Type Declaration</h4>
+<ul class="tsd-parameters">
+<li class="tsd-parameter">
+<h5><code class="tsd-tag">Optional</code><span class="tsd-kind-property">held</span><span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">boolean</span></h5>
+<div class="tsd-comment tsd-typography"><p>Whether the model has lost the person for a moment, so this is where their feet last were.</p>
+</div></li></ul></div></li></ul></div><aside class="tsd-sources">
 <ul>
 <li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/CameraSupport.ts#L19">components/camera/CameraSupport.ts:19</a></li></ul></aside></div>
 <div class="col-sidebar">

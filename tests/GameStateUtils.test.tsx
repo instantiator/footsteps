@@ -3,6 +3,7 @@ import {
   completeChallenge,
   getActiveStageStateChallenges,
   getRecommendedStageId,
+  resetChallenge,
   validateAnswer,
 } from "../src/components/core/logic/GameStateUtils";
 import type { GameChallengeData } from "../src/entities/data/GameChallengeData";
@@ -322,5 +323,43 @@ describe("getRecommendedStageId edge cases", () => {
     const state = threeStages(["game-overview-title"]);
     const allDone: GameState = { ...state, stages: state.stages.map((s) => ({ ...s, completion: "completed" })) };
     expect(getRecommendedStageId(allDone)).toBeNull();
+  });
+});
+
+describe("resetChallenge", () => {
+  const scope = (challengeId: string) => `challenge:stage-2:${challengeId}:challenge-in-progress`;
+
+  it("unsolves the challenge, recomputes its stage, and clears only its displays' states", () => {
+    const solved = completeChallenge(
+      completeChallenge(
+        completeChallenge(simpleGameState, "stage-1", "stage-1-challenge-1"),
+        "stage-2",
+        "stage-2-challenge-1",
+      ),
+      "stage-2",
+      "stage-2-challenge-2",
+    );
+    const state = {
+      ...solved,
+      displayStates: { [scope("stage-2-challenge-1")]: { n: 1 }, [scope("stage-2-challenge-2")]: { n: 2 } },
+    };
+
+    const reset = resetChallenge(state, "stage-2", "stage-2-challenge-1");
+
+    const stage = reset.stages.find((s) => s.stage.id === "stage-2")!;
+    expect(stage.challengeStates.map((c) => c.succeeded)).toEqual([false, true]);
+    expect(stage.completion).toBe("partial");
+    expect(stage.availability).toBe("unlocked");
+    expect(reset.displayStates).toEqual({ [scope("stage-2-challenge-2")]: { n: 2 } });
+    expect(reset.current).toEqual(state.current);
+  });
+
+  it("makes a stage with nothing solved ready again", () => {
+    const state = completeChallenge(simpleGameState, "stage-1", "stage-1-challenge-1");
+    expect(resetChallenge(state, "stage-1", "stage-1-challenge-1").stages[0].completion).toBe("ready");
+  });
+
+  it("throws for a challenge the stage doesn't have", () => {
+    expect(() => resetChallenge(simpleGameState, "stage-1", "nope")).toThrow("nope");
   });
 });

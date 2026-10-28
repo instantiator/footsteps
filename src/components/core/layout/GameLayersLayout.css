@@ -9,6 +9,20 @@
   }
 }
 
+/*
+ * Only what a template draws, and a display's own controls, take pointer events, so a click (or the camera)
+ * reaches whatever is drawn beneath empty space. :where() keeps this at zero specificity, so an author's
+ * pointer-events: none on a decorative element wins.
+ */
+.templateContent,
+.templateBody {
+  pointer-events: none;
+}
+:where(.templateBody *),
+:where(.templateContent > :not(.templateBody)) {
+  pointer-events: auto;
+}
+
 .outerStyle {
   position: absolute;
   top: 0;

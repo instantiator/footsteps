@@ -1,4 +1,5 @@
 import { useContext, useMemo, type ReactNode } from "react";
+import { compileGameRules } from "../components/core/logic/GameRuleCompile";
 import type { GameId } from "../entities/data/GameData";
 import { isDefined } from "../util/ObjectUtils";
 import { resolveResources } from "../util/ResourceUtils";
@@ -26,12 +27,21 @@ export function GameDataProvider({ id, children, loadingView }: React.PropsWithC
   const { data, loadingState } = useMemo((): { data?: GameDataContextType; loadingState: GameDataLoadingState } => {
     if (!repository.ready) return { loadingState: "waiting-for-repository" };
     if (!isDefined(game)) return { loadingState: "not-found" };
+    let resources: Record<string, string>;
     try {
-      const resources = resolveResources(game.resources, repositorySource);
-      return { data: { gameId: id, gameData: game, resources }, loadingState: "ready" };
+      resources = resolveResources(game.resources, repositorySource);
     } catch (err) {
       console.error("Error loading game resources:", err);
       return { loadingState: "resource-error" };
+    }
+    try {
+      return {
+        data: { gameId: id, gameData: game, resources, expressions: compileGameRules(game) },
+        loadingState: "ready",
+      };
+    } catch (err) {
+      console.error("Error in game rules:", err);
+      return { loadingState: "rules-error" };
     }
   }, [repository.ready, game, id, repositorySource]);
 

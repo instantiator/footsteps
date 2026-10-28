@@ -1,6 +1,7 @@
 import { isDefined } from "../../../util/ObjectUtils";
 import type { GameAnswerFunction } from "../Game";
 import type { GameDisplayRenderData } from "../logic/RenderDataUtils";
+import type { DisplayDomEvent } from "../logic/TemplateUtils";
 import GameDisplayDialogComponent from "./GameDisplayDialogComponent";
 import GameDisplayScrollComponent from "./GameDisplayScrollComponent";
 import GameDisplayTemplateComponent from "./GameDisplayTemplateComponent";
@@ -15,13 +16,20 @@ interface GameDisplayComponentProps {
   layerHint: LayerHint;
   /** Called when the player submits an answer in the display. */
   onAnswer?: GameAnswerFunction;
+  /** Called with events inside the display's templates, for its rules. */
+  onDisplayEvent?: (event: DisplayDomEvent) => void;
 }
 
 /**
  * Renders one half (the layer hint) of a display, using the template, dialog or scroll component to suit its type,
  * and the background or foreground source and styles to suit the hint.
  */
-export default function GameDisplayComponent({ render, layerHint, onAnswer }: GameDisplayComponentProps) {
+export default function GameDisplayComponent({
+  render,
+  layerHint,
+  onAnswer,
+  onDisplayEvent,
+}: GameDisplayComponentProps) {
   const component = render.component;
   const background = layerHint === "background";
   const common = {
@@ -29,6 +37,8 @@ export default function GameDisplayComponent({ render, layerHint, onAnswer }: Ga
     containerStyle: background ? component.backgroundStyle : component.foregroundStyle,
     templateStyle: background ? component.backgroundTemplateStyle : component.foregroundTemplateStyle,
     templateData: render.templateData,
+    scope: render.scope,
+    onDisplayEvent,
   };
   if (component.type === "template") return <GameDisplayTemplateComponent {...common} />;
 

@@ -42,10 +42,10 @@ const partFrame = (part: Part, pixels: [x: number, y: number][], feet: FootPosit
 /** A frame whose silhouette is the given pixels, all of them a hand. */
 const handFrame = (pixels: [x: number, y: number][]) => partFrame("leftHand", pixels);
 
-/** A feet position at the given height (% of the frame). */
-const feetAt = (percentY: number): FootPosition => ({
-  absolute: { x: 0, y: 0 },
-  percent: { x: 50, y: percentY },
+/** A feet position at the given height in mask pixels. */
+const feetAt = (y: number): FootPosition => ({
+  absolute: { x: 5, y },
+  percent: { x: 50, y: (100 * y) / HEIGHT },
 });
 
 /** The left half of the mask. */
@@ -70,7 +70,7 @@ describe("PlayerMonitor first frame", () => {
   it("ignores what already holds on its first frame, and fires once it begins again", () => {
     const events: PlayerMonitorEvent[] = [];
     const monitor = new PlayerMonitor((event) => events.push(event));
-    const targets = { "the-element": target(["hand"], 0) };
+    const targets = { "the-element": target(["hand-enter"], 0) };
 
     monitor.update(handFrame([[1, 1]]), targets, 0);
     monitor.update(handFrame([[1, 1]]), targets, 100);
@@ -78,20 +78,20 @@ describe("PlayerMonitor first frame", () => {
 
     monitor.update(handFrame([[8, 8]]), targets, 200);
     monitor.update(handFrame([[1, 1]]), targets, 300);
-    expect(events).toEqual([{ elementId: "the-element", interaction: "hand" }]);
+    expect(events).toEqual([{ key: "the-element", interaction: "hand-enter" }]);
   });
 });
 
 describe("PlayerMonitor coverage", () => {
   it.each([
-    ["hand", "leftHand"],
-    ["hand", "rightHand"],
-    ["foot", "leftFoot"],
-    ["head", "head"],
+    ["hand-enter", "leftHand"],
+    ["hand-enter", "rightHand"],
+    ["foot-enter", "leftFoot"],
+    ["head-enter", "head"],
   ] as const)("fires a %s interaction when the %s is inside", (interaction, part) => {
     const { events, monitor } = monitorWithEvents();
     monitor.update(partFrame(part, [[1, 1]]), { "the-element": target([interaction], 0) }, 0);
-    expect(events).toEqual([{ elementId: "the-element", interaction }]);
+    expect(events).toEqual([{ key: "the-element", interaction }]);
   });
 
   it("counts the whole silhouette for a body interaction, with no key points placed", () => {
@@ -101,10 +101,10 @@ describe("PlayerMonitor coverage", () => {
         [1, 1],
         [2, 2],
       ]),
-      { "the-element": target(["body"], 1) },
+      { "the-element": target(["body-enter"], 1) },
       0,
     );
-    expect(events).toEqual([{ elementId: "the-element", interaction: "body" }]);
+    expect(events).toEqual([{ key: "the-element", interaction: "body-enter" }]);
   });
 
   it("applies the threshold to each part separately for an any interaction", () => {
@@ -120,8 +120,8 @@ describe("PlayerMonitor coverage", () => {
       null,
       1,
     );
-    monitor.update(handAndFoot, { "the-element": target(["any"], 1) }, 0);
-    expect(events).toEqual([{ elementId: "the-element", interaction: "any" }]);
+    monitor.update(handAndFoot, { "the-element": target(["any-enter"], 1) }, 0);
+    expect(events).toEqual([{ key: "the-element", interaction: "any-enter" }]);
   });
 });
 
@@ -137,8 +137,8 @@ describe("PlayerMonitor part groups", () => {
       null,
       0,
     );
-    monitor.update(hands, { "the-element": target(["hand"], 1) }, 0);
-    expect(events).toEqual([{ elementId: "the-element", interaction: "hand" }]);
+    monitor.update(hands, { "the-element": target(["hand-enter"], 1) }, 0);
+    expect(events).toEqual([{ key: "the-element", interaction: "hand-enter" }]);
   });
 });
 
@@ -146,7 +146,7 @@ describe("PlayerMonitor thresholds", () => {
   /** Whether a hand pixel inside and another outside fires at the given threshold. */
   const firesAt = (threshold: number, pixels: [number, number][]) => {
     const { events, monitor } = monitorWithEvents();
-    monitor.update(handFrame(pixels), { "the-element": target(["hand"], threshold) }, 0);
+    monitor.update(handFrame(pixels), { "the-element": target(["hand-enter"], threshold) }, 0);
     return events.length === 1;
   };
 
@@ -206,7 +206,7 @@ describe("PlayerMonitor thresholds", () => {
 });
 
 describe("PlayerMonitor edge triggering", () => {
-  const handTarget = { "the-element": target(["hand"], 0) };
+  const handTarget = { "the-element": target(["hand-enter"], 0) };
   const inside = handFrame([[1, 1]]);
   const outside = handFrame([[8, 8]]);
 
@@ -229,8 +229,8 @@ describe("PlayerMonitor edge triggering", () => {
   it("reports two elements independently", () => {
     const { events, monitor } = monitorWithEvents();
     const targets = {
-      "left-element": target(["hand"], 0),
-      "right-element": target(["hand"], 0, { left: 5, top: 0, right: 10, bottom: 10 }),
+      "left-element": target(["hand-enter"], 0),
+      "right-element": target(["hand-enter"], 0, { left: 5, top: 0, right: 10, bottom: 10 }),
     };
     monitor.update(
       handFrame([
@@ -241,8 +241,8 @@ describe("PlayerMonitor edge triggering", () => {
       0,
     );
     expect(events).toEqual([
-      { elementId: "left-element", interaction: "hand" },
-      { elementId: "right-element", interaction: "hand" },
+      { key: "left-element", interaction: "hand-enter" },
+      { key: "right-element", interaction: "hand-enter" },
     ]);
   });
 
@@ -262,93 +262,144 @@ describe("PlayerMonitor edge triggering", () => {
 });
 
 describe("PlayerMonitor jumps", () => {
-  /** The left half of the mask, which the feet are inside of or outside of. */
-  const jumpTargets = { "the-element": target(["jump"], 0) };
+  /** Elements on the left (A) and right (B) halves of the mask, accepting every jump interaction. */
+  const JUMPS = ["jump", "jump-from", "jump-onto"];
+  const targets = {
+    a: target(JUMPS, 0),
+    b: target(JUMPS, 0, { left: 5, top: 0, right: 10, bottom: 10 }),
+  };
 
-  /** A jump frame: the feet are at the given height, inside the element unless `inside` is false. */
-  const jumpFrame = (percentY: number, inside = true): PlayerFrame =>
-    partFrame("leftFoot", [inside ? [1, 1] : [8, 8]], feetAt(percentY));
+  /** A frame with the feet at the given height (mask pixels; the player is 5 tall), standing on A or B. */
+  const feetFrame = (y: number | null, on: "a" | "b" = "a"): PlayerFrame =>
+    partFrame("leftFoot", [on === "a" ? [1, 1] : [8, 8]], y === null ? null : feetAt(y));
 
-  /** Feeds a sequence of (height, inside) samples, 100 ms apart, and returns the reported events. */
-  const run = (samples: [percentY: number, inside?: boolean][]) => {
+  /** Feeds frames 100 ms apart, and returns the events reported. */
+  const run = (frames: PlayerFrame[], jumpTargets: Record<string, MonitorTarget> = targets) => {
     const { events, monitor } = monitorWithEvents();
-    samples.forEach(([percentY, inside], index) =>
-      monitor.update(jumpFrame(percentY, inside), jumpTargets, index * 100),
-    );
+    frames.forEach((frame, index) => monitor.update(frame, jumpTargets, (index + 1) * 100));
     return events;
   };
 
-  const JUMPED = [{ elementId: "the-element", interaction: "jump" }];
+  /** Standing for long enough to take off. */
+  const STAND = [feetFrame(9), feetFrame(9)];
 
-  it("fires once for a rise, fall and rest inside the element", () => {
-    expect(run([[50], [40], [30], [40], [40]])).toEqual(JUMPED);
+  it("fires jump, jump-from and jump-onto for a jump that takes off from and lands on the same element", () => {
+    expect(run([...STAND, feetFrame(8), feetFrame(9)])).toEqual([
+      { key: "a", interaction: "jump" },
+      { key: "a", interaction: "jump-from" },
+      { key: "a", interaction: "jump-onto" },
+    ]);
   });
 
-  it("does not treat stillness at rest as a jump", () => {
-    expect(run([[50], [50], [50]])).toEqual([]);
+  it("fires jump-from where the feet took off, and jump-onto where they landed, for a jump between elements", () => {
+    expect(run([...STAND, feetFrame(8, "b"), feetFrame(9, "b")])).toEqual([
+      { key: "a", interaction: "jump-from" },
+      { key: "b", interaction: "jump-onto" },
+    ]);
   });
 
-  it("ignores downward motion before the player has risen", () => {
-    expect(run([[40], [50], [50]])).toEqual([]);
+  it("fires nothing for standing still, or for walking from one element to another", () => {
+    expect(run([...STAND, feetFrame(9), feetFrame(9, "b"), feetFrame(9, "b")])).toEqual([]);
   });
 
-  it("does not complete while the player is still moving", () => {
-    expect(run([[50], [40], [50], [60], [70]])).toEqual([]);
+  it("still lands a jump when the feet are lost for a frame in the air", () => {
+    expect(run([...STAND, feetFrame(8), feetFrame(null), feetFrame(9, "b")])).toEqual([
+      { key: "a", interaction: "jump-from" },
+      { key: "b", interaction: "jump-onto" },
+    ]);
   });
 
-  it("keeps the sequence while the player briefly leaves the element", () => {
-    expect(run([[50], [40], [50, false], [60], [60]])).toEqual(JUMPED);
+  it("fires only the jump interactions an element accepts", () => {
+    const onlyOnto = { a: target(["jump-onto", "hand-enter"], 0) };
+    expect(run([...STAND, feetFrame(8), feetFrame(9)], onlyOnto)).toEqual([{ key: "a", interaction: "jump-onto" }]);
   });
 
-  it("abandons a sequence that leaves the element for longer than the window", () => {
-    const { events, monitor } = monitorWithEvents();
-    monitor.update(jumpFrame(50), jumpTargets, 0);
-    monitor.update(jumpFrame(40), jumpTargets, 100);
-    monitor.update(jumpFrame(60, false), jumpTargets, 1700);
-    monitor.update(jumpFrame(60), jumpTargets, 1800);
+  it("fires again for a second jump", () => {
+    expect(run([...STAND, feetFrame(8), feetFrame(9), feetFrame(9), feetFrame(8), feetFrame(9)])).toHaveLength(6);
+  });
+
+  it("measures a jump against the player's height, from their feet to the top of their head", () => {
+    // A rise of 0.3px is 6% of a 5px player, more than the 4% needed, but only 3% of a 10px one
+    const tall = (y: number) => frame([[1, 1]], { ...placed("leftFoot"), headTop: { x: 5, y: y - 10 } }, feetAt(y));
+    expect(run([tall(9), tall(9), tall(8.7), tall(9)])).toEqual([]);
+    expect(run([...STAND, feetFrame(8.7), feetFrame(9)])).toHaveLength(3);
+  });
+});
+
+describe("PlayerMonitor exits", () => {
+  const INOUT = { "the-element": target(["hand-enter", "hand-exit"], 0) };
+  const inside = handFrame([[1, 1]]);
+  const outside = handFrame([[8, 8]]);
+  const ENTERED = { key: "the-element", interaction: "hand-enter" };
+  const EXITED = { key: "the-element", interaction: "hand-exit" };
+
+  /** A monitor needing the given frames, armed by an empty frame, fed the given frames 16 ms apart. */
+  const run = (frames: PlayerFrame[], stableFrames = 1, targets: Record<string, MonitorTarget> = INOUT) => {
+    const events: PlayerMonitorEvent[] = [];
+    const monitor = new PlayerMonitor((event) => events.push(event), stableFrames);
+    monitor.update(frame([]), {}, 0);
+    frames.forEach((f, i) => monitor.update(f, targets, (i + 1) * 16));
+    return { events, monitor };
+  };
+
+  it("fires an exit when a part that entered leaves", () => {
+    expect(run([inside, inside, outside]).events).toEqual([ENTERED, EXITED]);
+  });
+
+  it("fires an exit for an element that only accepts exits, once a part has entered it", () => {
+    expect(run([outside, inside, outside], 1, { "the-element": target(["hand-exit"], 0) }).events).toEqual([EXITED]);
+  });
+
+  it("fires no exit for a part that never entered, including one already over the element when it started", () => {
+    const events: PlayerMonitorEvent[] = [];
+    const monitor = new PlayerMonitor((event) => events.push(event));
+    [inside, inside, outside].forEach((f, i) => monitor.update(f, INOUT, i * 16));
     expect(events).toEqual([]);
   });
 
-  it("abandons a sequence that never comes to rest", () => {
+  it("ignores a part away for fewer frames than it needs, and exits once it has been away long enough", () => {
+    expect(run([inside, inside, outside, inside, inside], 2).events).toEqual([ENTERED]);
+    expect(run([inside, inside, outside, outside], 2).events).toEqual([ENTERED, EXITED]);
+  });
+
+  it("fires the exits of everything entered when the player is released, as they have gone", () => {
+    const { events, monitor } = run([inside]);
+    monitor.release();
+    expect(events).toEqual([ENTERED, EXITED]);
+    monitor.release();
+    expect(events).toHaveLength(2);
+  });
+});
+
+describe("PlayerMonitor holds", () => {
+  const holdTarget = { "the-element": { ...target(["hand-enter"], 0), holdMs: 500 } };
+  const inside = handFrame([[1, 1]]);
+  const outside = handFrame([[8, 8]]);
+
+  it("fires once the part has stayed over the element for the target's hold, and not before", () => {
     const { events, monitor } = monitorWithEvents();
-    monitor.update(jumpFrame(50), jumpTargets, 0);
-    monitor.update(jumpFrame(40), jumpTargets, 100);
-    monitor.update(jumpFrame(50), jumpTargets, 200);
-    monitor.update(jumpFrame(80), jumpTargets, 1700);
+    monitor.update(inside, holdTarget, 100);
+    monitor.update(inside, holdTarget, 599);
     expect(events).toEqual([]);
+    monitor.update(inside, holdTarget, 600);
+    monitor.update(inside, holdTarget, 900);
+    expect(events).toEqual([{ key: "the-element", interaction: "hand-enter" }]);
   });
 
-  it("treats motion under the speed threshold as still", () => {
-    expect(run([[50], [40], [50], [50.2]])).toEqual(JUMPED);
-  });
-
-  it("does not advance the sequence without a feet position", () => {
+  it("starts the hold again when the part leaves before it is over", () => {
     const { events, monitor } = monitorWithEvents();
-    monitor.update(jumpFrame(50), jumpTargets, 0);
-    monitor.update(jumpFrame(40), jumpTargets, 100);
-    monitor.update(partFrame("leftFoot", [[1, 1]]), jumpTargets, 200);
-    monitor.update(jumpFrame(40), jumpTargets, 300);
-    monitor.update(jumpFrame(40), jumpTargets, 400);
+    monitor.update(inside, holdTarget, 100);
+    monitor.update(outside, holdTarget, 400);
+    monitor.update(inside, holdTarget, 500);
+    monitor.update(inside, holdTarget, 900);
     expect(events).toEqual([]);
-  });
-
-  it("does not fire for an element that does not accept jumps", () => {
-    const { events, monitor } = monitorWithEvents();
-    const targets = { "the-element": target(["hand"], 0) };
-    monitor.update(jumpFrame(50), targets, 0);
-    monitor.update(jumpFrame(40), targets, 100);
-    monitor.update(jumpFrame(50), targets, 200);
-    monitor.update(jumpFrame(50), targets, 300);
-    expect(events).toEqual([]);
-  });
-
-  it("fires again for a second complete sequence", () => {
-    expect(run([[50], [40], [30], [40], [40], [50], [40], [50], [50]])).toHaveLength(2);
+    monitor.update(inside, holdTarget, 1000);
+    expect(events).toHaveLength(1);
   });
 });
 
 describe("PlayerMonitor stable frames", () => {
-  const handTarget = { "the-element": target(["hand"], 0) };
+  const handTarget = { "the-element": target(["hand-enter"], 0) };
   const inside = handFrame([[1, 1]]);
   const outside = handFrame([[8, 8]]);
 
@@ -373,7 +424,7 @@ describe("PlayerMonitor stable frames", () => {
     expect(events).toEqual([]);
     monitor.update(inside, handTarget, 32);
     monitor.update(inside, handTarget, 48);
-    expect(events).toEqual([{ elementId: "the-element", interaction: "hand" }]);
+    expect(events).toEqual([{ key: "the-element", interaction: "hand-enter" }]);
   });
 
   it("never fires for an interaction already holding when it started, until it lets go", () => {
@@ -383,5 +434,57 @@ describe("PlayerMonitor stable frames", () => {
     expect(events).toEqual([]);
     [outside, inside, inside].forEach((f, i) => monitor.update(f, handTarget, 100 + i * 16));
     expect(events).toHaveLength(1);
+  });
+});
+
+describe("PlayerMonitor covering", () => {
+  /** A target that is on top only where `onTop` says, recording the points it was asked about. */
+  const coverable = (interactions: string[], onTop: (point: { x: number; y: number }) => boolean) => {
+    const asked: { x: number; y: number }[] = [];
+    const isTopmostAt = (point: { x: number; y: number }) => {
+      asked.push(point);
+      return onTop(point);
+    };
+    return { asked, target: { ...target(interactions, 0), isTopmostAt } };
+  };
+
+  it("doesn't fire where something covers the element", () => {
+    const { events, monitor } = monitorWithEvents();
+    monitor.update(handFrame([[1, 1]]), { "the-element": coverable(["hand-enter"], () => false).target }, 100);
+    expect(events).toEqual([]);
+  });
+
+  it("fires where the element is on top, asking about a point inside both the hand and the element", () => {
+    const { events, monitor } = monitorWithEvents();
+    const { asked, target: onTop } = coverable(["hand-enter"], () => true);
+    monitor.update(handFrame([[1, 1]]), { "the-element": onTop }, 100);
+    expect(events).toEqual([{ key: "the-element", interaction: "hand-enter" }]);
+    expect(asked.length).toBeGreaterThan(0);
+    for (const { x, y } of asked) {
+      expect(x).toBeGreaterThanOrEqual(LEFT_HALF.left);
+      expect(x).toBeLessThanOrEqual(LEFT_HALF.right);
+      expect(y).toBeGreaterThanOrEqual(LEFT_HALF.top);
+      expect(y).toBeLessThanOrEqual(LEFT_HALF.bottom);
+    }
+  });
+
+  it("asks about each part at most once a frame, however many interactions share it", () => {
+    const { monitor } = monitorWithEvents();
+    // Nothing is on top, so every interaction checks every part it has; the hand and body have different centres
+    const { asked, target: covered } = coverable(["hand-enter", "any-enter", "body-enter"], () => false);
+    monitor.update(frame([[1, 1]], { leftHand: { x: 1, y: 1 } }, null, 0), { "the-element": covered }, 100);
+    expect(asked).toEqual([
+      { x: 1.5, y: 1.5 },
+      { x: 2.5, y: 5 },
+    ]);
+  });
+
+  it("doesn't count a jump onto a covered element", () => {
+    const { events, monitor } = monitorWithEvents();
+    const covered = { "the-element": coverable(["jump"], () => false).target };
+    [9, 9, 8, 9].forEach((y, index) =>
+      monitor.update(partFrame("leftFoot", [[1, 1]], feetAt(y)), covered, (index + 1) * 100),
+    );
+    expect(events).toEqual([]);
   });
 });

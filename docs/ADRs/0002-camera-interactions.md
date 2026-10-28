@@ -1,6 +1,6 @@
 # ADR 0002: Camera interactions and per-display camera settings
 
-- Status: Accepted
+- Status: Accepted; superseded in part by [ADR 0006](0006-display-rules-and-state.md) (camera targets come from rule selectors, and covered elements don't respond), and by [ADR 0008](0008-jump-detection.md) (jump detection)
 - Date: 2026-10-22
 
 ## Context
@@ -85,6 +85,8 @@ about the canvas centre before it is scaled into mask pixels. Without that step,
 left would trigger an element on the right.
 
 ### Jump sequence
+
+Superseded by [ADR 0008](0008-jump-detection.md), which measures how far the feet move rather than how fast.
 
 | Phase     | Moves to              | When                                                                 |
 | --------- | --------------------- | -------------------------------------------------------------------- |

@@ -1,8 +1,12 @@
 import { createContext } from "react";
+import type { GameExpressions } from "../components/core/logic/GameRuleUtils";
 import type { GameData, GameId } from "../entities/data/GameData";
 
-/** Where the game data has got to: waiting for the repository, ready, no such game, or its resources failed to resolve. */
-export type GameDataLoadingState = "waiting-for-repository" | "ready" | "not-found" | "resource-error";
+/**
+ * Where the game data has got to: waiting for the repository, ready, no such game, its resources failed to resolve,
+ * or its rules failed to compile.
+ */
+export type GameDataLoadingState = "waiting-for-repository" | "ready" | "not-found" | "resource-error" | "rules-error";
 
 /** How loading the requested game is going. */
 export interface GameDataLoadingContextType {
@@ -18,6 +22,8 @@ export interface GameDataContextType {
   gameId: GameId;
   /** The game's resource URLs, resolved to absolute URLs by resource name. */
   resources: Record<string, string>;
+  /** Every expression in the game's rules, compiled. */
+  expressions: GameExpressions;
 }
 
 /** The loading state; available whether or not the game has loaded. */

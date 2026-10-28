@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import type { AppConfig } from "../../config/AppConfig";
+import { DEFAULT_APP_CONFIG, type AppConfig } from "../../config/AppConfig";
 import useAppConfig from "../../providers/AppConfigHook";
+import { isDefined } from "../../util/ObjectUtils";
 import { createVisionModel } from "../../vision/createVisionModel";
 import type { FootstepsVisionModelImplementation } from "../../vision/FootstepsVisionModelImplementation";
-import { PersonTracker } from "../../vision/Tracking";
+import { PersonTracker, type HoldTimes } from "../../vision/Tracking";
 import type { VisionFrame } from "../../vision/VisionTypes";
 import { feetOf, type FeetPositions } from "./CameraSupport";
 import { drawPeople, type MaskType } from "./DrawPeople";
-import { frameQuality, FrameStatsRecorder, type FrameStats } from "./FrameStats";
+import { frameQuality, FrameStatsRecorder, type FrameStats, type FrameSteps } from "./FrameStats";
 import { setTrackingFps } from "./TrackingFpsStore";
 import type { PlayerFrame } from "./PlayerMonitor";
 
@@ -33,7 +34,7 @@ interface CharacterCanvasProps {
   style?: React.CSSProperties;
   /** How to draw the silhouette; see {@link drawPeople}. Defaults to "binary". */
   maskType?: MaskType;
-  /** Shows the loop's frame rate and inference time, which benchmarks also read from its data attributes. */
+  /** Shows the loop's frame rate and the time each step takes, which benchmarks also read from its data attributes. */
   showStats?: boolean;
 }
 
@@ -77,11 +78,11 @@ const playersOf = ({ width, height, people }: VisionFrame, offScreenThreshold_pe
     feet: feetOf(person, width, height, offScreenThreshold_percent),
   }));
 
-/** The feet of the players that are on screen, keyed by player id. */
+/** The feet of the players that are on screen, keyed by player id; a held player's are flagged, as where they were. */
 const feetPositionsOf = (players: PlayerFrame[]): FeetPositions => {
   const feetPositions: FeetPositions = {};
-  for (const { id, feet } of players) {
-    if (feet) feetPositions[id] = feet;
+  for (const { id, feet, held } of players) {
+    if (feet) feetPositions[id] = isDefined(held) ? { ...feet, held: true } : feet;
   }
   return feetPositions;
 };
@@ -126,17 +127,142 @@ type LoopHandlers = Pick<
   CharacterCanvasProps,
   "offScreenThreshold_percent" | "onFeetPositionsChange" | "onPlayersChange"
 > & {
+  /** How the silhouettes are tinted. */
   maskType: MaskType;
-  /** Keeps player ids stable and smooths key points between frames. */
-  smoothing: boolean;
-  /** The widest frame the model is given; see {@link detectFrame}. */
-  inputWidth: number;
+  /** How the loop follows, holds and draws players. */
+  settings: LoopSettings;
   /** Called at most every {@link STATS_INTERVAL_MS} with the loop's speed; omitted when nobody is looking. */
   onStats?: (stats: FrameStats) => void;
 };
 
+/** The app config settings the tracking loop uses. */
+interface LoopSettings {
+  /** Keeps player ids stable and smooths key points between frames. */
+  smoothing: boolean;
+  /** How long a player the model loses is still shown; needs smoothing. */
+  hold: HoldTimes;
+  /** Whether to fill parts of a player the model missed from the frame before; needs smoothing. */
+  fillGaps: boolean;
+  /** The widest frame the model is given; see {@link detectFrame}. */
+  inputWidth: number;
+  /** How far the silhouette's edges fade out, in canvas pixels. */
+  featherPx: number;
+}
+
+/** The loop's settings from the app config, the same object until one of them changes. */
+const useLoopSettings = (config: AppConfig): LoopSettings => {
+  const { visionSmoothing, cameraHoldMs, cameraFadeMs, cameraFillGaps, visionInputWidth, cameraFeatherPx } = config;
+  return useMemo(
+    () => ({
+      smoothing: visionSmoothing,
+      hold: { holdMs: cameraHoldMs, fadeMs: cameraFadeMs },
+      fillGaps: cameraFillGaps,
+      inputWidth: visionInputWidth,
+      featherPx: cameraFeatherPx,
+    }),
+    [visionSmoothing, cameraHoldMs, cameraFadeMs, cameraFillGaps, visionInputWidth, cameraFeatherPx],
+  );
+};
+
+/** Settings that only change how players are drawn or held, not which model runs. */
+const DRAWING_SETTINGS = ["debug", "cameraFeatherPx", "cameraHoldMs", "cameraFadeMs", "cameraFillGaps"] as const;
+
+/** The config the model is made from, the same object while only {@link DRAWING_SETTINGS} change, so the model is kept. */
+const useModelConfig = (config: AppConfig): AppConfig => {
+  const modelKey = JSON.stringify({
+    ...config,
+    ...Object.fromEntries(DRAWING_SETTINGS.map((key) => [key, DEFAULT_APP_CONFIG[key]])),
+  });
+  return useMemo(() => JSON.parse(modelKey) as AppConfig, [modelKey]);
+};
+
+/**
+ * Records each frame's timings, and reports the loop's speed at most every {@link STATS_INTERVAL_MS}.
+ * @returns a function to call once per frame, after it has been drawn
+ */
+const statsReporter = (onStats?: (stats: FrameStats) => void) => {
+  const recorder = new FrameStatsRecorder();
+  let shownAt = 0;
+  return (frame: VisionFrame, start: number, inferenceEnd: number, steps: FrameSteps) => {
+    recorder.record(start, inferenceEnd, steps);
+    const timing = recorder.timing();
+    const now = performance.now();
+    if (!timing || now - shownAt < STATS_INTERVAL_MS) return;
+    shownAt = now;
+    setTrackingFps(timing.fps);
+    onStats?.({ ...timing, ...frameQuality(frame) });
+  };
+};
+
+/** A frame given to the model. */
+interface Detection {
+  /** When the frame was taken, in milliseconds. */
+  timestamp: number;
+  /** What the model found, and when it returned. */
+  result: Promise<{ detected: VisionFrame; inferenceEnd: number }>;
+}
+
+/**
+ * Each model's frame in progress, so a loop that replaces another (eg. when the mask type changes) waits for the old
+ * loop's frame rather than asking a model that is busy.
+ */
+const modelWork = new WeakMap<FootstepsVisionModelImplementation, Promise<unknown>>();
+
+/**
+ * Gives the model the video's frames, one at a time: each call to `next` gives it the newest frame at once if the model
+ * hasn't had it, or else the next frame as it arrives. So a failed frame waits for a new one, rather than retrying.
+ * @returns how to give the model the next frame, and how to stop
+ */
+const videoDetections = (model: FootstepsVisionModelImplementation, video: HTMLVideoElement, inputWidth: number) => {
+  let cancelled = false;
+  let cancelFrame: (() => void) | undefined;
+  let newFrame = true;
+  let onNewFrame: (() => void) | undefined;
+
+  const watchFrames = () => {
+    cancelFrame = onNextFrame(video, () => {
+      if (cancelled) return;
+      newFrame = true;
+      onNewFrame?.();
+      watchFrames();
+    });
+  };
+  watchFrames();
+
+  const detect = (): Detection => {
+    newFrame = false;
+    onNewFrame = undefined;
+    const timestamp = performance.now();
+    const work = async () => {
+      try {
+        return { detected: await detectFrame(model, video, inputWidth, timestamp), inferenceEnd: performance.now() };
+      } finally {
+        if (modelWork.get(model) === result) modelWork.delete(model);
+      }
+    };
+    // Straight to the model when it is free, so it starts before the loop reports the frame before
+    const previous = modelWork.get(model);
+    const result = previous ? previous.then(work, work) : work();
+    modelWork.set(model, result);
+    result.catch(() => undefined); // a failure is handled where the loop awaits it, after the frame before is drawn
+    return { timestamp, result };
+  };
+
+  const next = (): Promise<Detection> =>
+    newFrame ? Promise.resolve(detect()) : new Promise((resolve) => (onNewFrame = () => resolve(detect())));
+
+  const cancel = () => {
+    cancelled = true;
+    cancelFrame?.();
+  };
+  return { next, cancel };
+};
+
 /**
  * Tracks the people in each video frame: reports players and feet, then draws their silhouettes.
+ *
+ * The loop is pipelined: as soon as the model returns a frame, it is given the next one, and the frame it returned is
+ * reported and drawn while it works. Only one frame is with the model at a time.
  * @returns a function that stops the loop
  */
 const startTrackingLoop = (
@@ -148,68 +274,69 @@ const startTrackingLoop = (
     onFeetPositionsChange,
     onPlayersChange,
     maskType,
-    smoothing,
-    inputWidth,
+    settings: { smoothing, hold, fillGaps, inputWidth, featherPx },
     onStats,
   }: LoopHandlers,
 ): (() => void) => {
   let cancelled = false;
-  let cancelFrame: (() => void) | undefined;
+  const detections = videoDetections(model, video, inputWidth);
   const ctx = canvas.getContext("2d");
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
-  const recorder = new FrameStatsRecorder();
-  const tracker = smoothing ? new PersonTracker() : null;
-  let statsShownAt = 0;
+  const reportStats = statsReporter(onStats);
+  const tracker = smoothing ? new PersonTracker(hold, fillGaps) : null;
 
-  const trackOnce = async () => {
-    const timestamp = performance.now();
-    const detected = await detectFrame(model, video, inputWidth, timestamp);
-    if (cancelled) return; // the model may have been disposed while this frame was tracked
-    const inferenceEnd = performance.now();
-    recorder.record(timestamp, inferenceEnd);
+  const reportAndDraw = (timestamp: number, detected: VisionFrame, inferenceEnd: number) => {
     const frame = tracker ? tracker.update(detected) : detected;
-    const timing = recorder.timing();
-    if (timing && inferenceEnd - statsShownAt >= STATS_INTERVAL_MS) {
-      statsShownAt = inferenceEnd;
-      setTrackingFps(timing.fps);
-      onStats?.({ ...timing, ...frameQuality(frame) });
-    }
     const players = playersOf(frame, offScreenThreshold_percent);
+    const trackEnd = performance.now();
     onPlayersChange?.(players, timestamp);
     onFeetPositionsChange?.(feetPositionsOf(players));
+    const monitorEnd = performance.now();
     // The 2D context is missing in some environments (eg. tests); the reports above still happen
-    if (ctx) await drawPeople(video, frame, ctx, maskType);
+    if (ctx) drawPeople(video, frame, ctx, { maskType, featherPx });
+    reportStats(detected, timestamp, inferenceEnd, {
+      trackMs: trackEnd - inferenceEnd,
+      monitorMs: monitorEnd - trackEnd,
+      drawMs: performance.now() - monitorEnd,
+    });
   };
 
   // A failed frame is skipped rather than ending the loop; only the first failure is logged, as it may repeat every frame
   let warned = false;
-  const trackFrame = async () => {
-    if (cancelled) return;
+  const run = async (detection: Promise<Detection>) => {
+    let next: Promise<Detection> | undefined;
     try {
-      await trackOnce();
+      const { timestamp, result } = await detection;
+      const { detected, inferenceEnd } = await result;
+      if (cancelled) return; // the model may have been disposed while this frame was tracked
+      next = detections.next();
+      reportAndDraw(timestamp, detected, inferenceEnd);
     } catch (error) {
       // A frame cut short by the loop stopping (eg. the model disposed) is expected, not a failure
       if (!warned && !cancelled) console.warn("Skipped a camera frame that could not be tracked:", error);
       warned = true;
     }
-    if (!cancelled) cancelFrame = onNextFrame(video, trackFrame);
+    if (!cancelled) run(next ?? detections.next());
   };
 
-  trackFrame();
+  run(detections.next());
   return () => {
     cancelled = true;
     setTrackingFps(null);
-    cancelFrame?.();
+    detections.cancel();
   };
 };
 
-/** The loop's frame rate and inference time; benchmarks read the data attributes. */
+/** The loop's frame rate, the time each step takes, and what the frame found; benchmarks read the data attributes. */
 const FrameStatsReadout = ({ stats }: { stats: FrameStats }) => (
   <output
     className="vision-stats"
     data-fps={stats.fps.toFixed(1)}
     data-inference-ms={stats.inferenceMs.toFixed(1)}
+    data-track-ms={stats.trackMs.toFixed(1)}
+    data-monitor-ms={stats.monitorMs.toFixed(1)}
+    data-draw-ms={stats.drawMs.toFixed(1)}
     data-people={stats.people}
     data-hands={stats.hands}
     data-feet={stats.feet}
@@ -235,12 +362,8 @@ export default function CharacterCanvas({
   ...loopProps
 }: CharacterCanvasProps) {
   const config = useAppConfig();
-  // Debug only changes how players are drawn, so toggling it keeps the loaded model
-  const modelKey = JSON.stringify({ ...config, debug: false });
-  const modelConfig = useMemo(() => JSON.parse(modelKey) as AppConfig, [modelKey]);
-  const model = useVisionModel(loopProps.mediaStream, modelConfig);
-  const smoothing = config.visionSmoothing;
-  const inputWidth = config.visionInputWidth;
+  const model = useVisionModel(loopProps.mediaStream, useModelConfig(config));
+  const settings = useLoopSettings(config);
   const [stats, setStats] = useState<FrameStats | null>(null);
   const internalCanvasRef = useRef<HTMLCanvasElement>(null);
   const canvas = canvasRef ?? internalCanvasRef;
@@ -256,8 +379,7 @@ export default function CharacterCanvas({
       onFeetPositionsChange,
       onPlayersChange,
       maskType,
-      smoothing,
-      inputWidth,
+      settings,
       onStats,
     };
     return startTrackingLoop(model, video, canvasElement, handlers);
@@ -270,8 +392,7 @@ export default function CharacterCanvas({
     onPlayersChange,
     offScreenThreshold_percent,
     maskType,
-    smoothing,
-    inputWidth,
+    settings,
     showStats,
   ]);
 

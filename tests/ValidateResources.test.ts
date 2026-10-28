@@ -315,34 +315,6 @@ describe("resource names", () => {
   });
 });
 
-describe("stage links", () => {
-  /** A stages overview linking each element id to the given stage. */
-  const stagesOverview = (links: Record<string, string>): GameOverviewDisplay => ({
-    purpose: "game-overview-stages",
-    component: { type: "template", data: {} },
-    clickIdToStageId: Object.fromEntries(Object.entries(links).map(([elementId, stage]) => [elementId, { stage }])),
-  });
-
-  const stages: GameData["stages"] = [
-    { id: "stage-1", challenges: [] },
-    { id: "stage-2", challenges: [] },
-  ];
-
-  it("accepts links to the game's stages", async () => {
-    const game = gameWith({ stages, displays: [stagesOverview({ "link-1": "stage-1", "link-2": "stage-2" })] });
-
-    expect((await checkGame(game, optionsWith())).problems).toEqual([]);
-  });
-
-  it("reports a link to a stage the game doesn't have", async () => {
-    const game = gameWith({ stages, displays: [stagesOverview({ "link-1": "stage-1", "link-9": "stage-9" })] });
-
-    expect((await checkGame(game, optionsWith())).problems).toEqual([
-      { path: "displays[0].clickIdToStageId.link-9.stage", message: 'refers to undefined stage "stage-9"' },
-    ]);
-  });
-});
-
 describe("checkRepository", () => {
   it("checks every game and prefixes each path with its game id", async () => {
     const repository: GameRepository = {

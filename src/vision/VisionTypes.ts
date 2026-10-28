@@ -35,6 +35,19 @@ export interface VisionPerson {
   keyPoints: KeyPoints;
   /** The radius of a hand or foot, in pixels, scaled to the person's size in the frame. */
   scale: number;
+  /**
+   * Set when the model has lost the person for a moment and the tracker is still showing where they last were.
+   * Held people are only drawn, never interacted with.
+   */
+  held?: {
+    /** How opaque to draw them (0–1), falling as they fade out. */
+    opacity: number;
+  };
+  /**
+   * The silhouette to draw, when the tracker filled gaps in `mask` from the frame before (eg. legs missed for a
+   * frame). Drawing only: interactions use `mask`.
+   */
+  filled?: Uint8Array;
 }
 
 /**

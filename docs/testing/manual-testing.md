@@ -100,29 +100,28 @@ the silhouette must keep working when the preview is off.
 
 ## Each camera interaction
 
-Interactions are declared on the overview display's `clickIdToStageId` entries. For example, to
-make stage 1 respond to a hand at half coverage:
+Interactions are declared by display rules (see [rules and state](../game-data.md#rules-and-state)). For example,
+to make stage 1 respond to a hand at half coverage, change the stage link's rule on the overview display:
 
 ```json
-"stages-link-stage-1": {
-  "stage": "stage-1",
-  "interactions": ["hand"],
-  "threshold": 0.5
+{
+  "on": { "interact": ["hand-enter"], "target": "#stages-link-stage-1", "threshold": 0.5 },
+  "do": [{ "enterStage": "stage-1" }]
 }
 ```
 
 The threshold is the fraction of the body part that must be inside the element (0–1, default 1).
 An interaction fires once when it starts, and re-arms when the body part leaves the element.
 
-| Interaction | How to perform it                                            | Expected                                           |
-| ----------- | ------------------------------------------------------------ | -------------------------------------------------- |
-| `click`     | Click the element, or focus it and press Enter or Space      | Enters the stage, as before                        |
-| `hand`      | Put a hand over the element                                  | Enters the stage once, when the threshold is met   |
-| `foot`      | Put a foot over the element                                  | Enters the stage once, when the threshold is met   |
-| `head`      | Put your head over the element                               | Enters the stage once, when the threshold is met   |
-| `body`      | Cover the element with any part of your body                 | Enters the stage once, when the threshold is met   |
-| `any`       | Cover the element with any single body part                  | Enters the stage once, when the threshold is met   |
-| `jump`      | Stand inside the element, jump up, and land or settle inside | Enters the stage once, when the sequence completes |
+| Interaction  | How to perform it                                            | Expected                                           |
+| ------------ | ------------------------------------------------------------ | -------------------------------------------------- |
+| `click`      | Click the element, or focus it and press Enter or Space      | Enters the stage, as before                        |
+| `hand-enter` | Put a hand over the element                                  | Enters the stage once, when the threshold is met   |
+| `foot-enter` | Put a foot over the element                                  | Enters the stage once, when the threshold is met   |
+| `head-enter` | Put your head over the element                               | Enters the stage once, when the threshold is met   |
+| `body-enter` | Cover the element with any part of your body                 | Enters the stage once, when the threshold is met   |
+| `any-enter`  | Cover the element with any single body part                  | Enters the stage once, when the threshold is met   |
+| `jump`       | Stand inside the element, jump up, and land or settle inside | Enters the stage once, when the sequence completes |
 
 A jump must happen within 1.5 seconds: rise, fall, then come to rest with the feet still inside the
 element. Moving outside during the sequence is allowed, but the feet must return to complete it.
@@ -132,6 +131,31 @@ such as `0.2`. Confirm that holding still fires only once, and that moving away 
 
 - [ ] Complete a stage while standing with a hand over the next stage's link. When the overview
       fades back in, the stage does not open until you move the hand away and back.
+
+## The rules demo
+
+`rules-demo` exercises display rules and state, reset displays, sounds and rewards, and turns the camera on for its stages overview and both stages.
+Play it once with the mouse and once with the camera (`?debug=true` shows where your hands and feet are found).
+
+- [ ] **Toggle:** click the yellow switch on the stages overview, then touch it with a hand. It slides between two
+      places each time, rather than jumping.
+- [ ] **State is kept:** move the switch, open a stage, close it again: the switch is where you left it, and
+      still is after a reload.
+- [ ] **Bulb:** hold a hand (or the mouse) over the bulb on the stages overview: it lights, and goes out when you
+      take the hand away, or step out of the camera's view.
+- [ ] **Balloons countdown:** open the balloons: "Get ready… 3, 2, 1" counts down with a tick each second, then
+      the balloons start. It counts down again each time the stage opens.
+- [ ] **Balloons:** balloons fall one at a time, swaying. Click one, then pop one with a hand: it bursts where it
+      is with a pop sound, the score goes up, and a new one appears at the top, in a different place and the next colour (red, green, yellow, blue, magenta, cyan, then red again). A balloon that reaches the bottom bursts there with
+      no score. At 10 the stage completes.
+- [ ] **Balloons start afresh:** close the balloons stage partway and open it again: the score is back to 0.
+- [ ] **Lava:** opening the lava asks you to return to the start. Step on it: a chime and sparkles, "Get ready!",
+      and about 3 s later the floor fades in. Step on a lava pool: you are asked back to the start. Step on the
+      door's base: fireworks and a fanfare, and the stage completes. Reload partway: you are asked for the start
+      again. The same works by walking the mouse over them.
+- [ ] **Reduced motion:** with the system's reduce-motion setting on, the sounds still play but there are no
+      sparkles or fireworks.
+- [ ] **Covering:** with the HUD over part of the game, a hand under the HUD's buttons does not count.
 
 ## Without a working camera
 
@@ -155,19 +179,22 @@ scripts/run-browser-tests.sh
 - The config uses port `5180` and reuses a dev server already running there.
 - On macOS the config enables Metal and WebGPU, because headless Chromium otherwise falls back to
   software WebGL and tracking becomes too slow to test.
+- `E2E_STATIC=1 scripts/run-browser-tests.sh` runs the suite against the static build (`npm run build` and
+  `npm run preview`) instead of the dev server. The rules demo specs need no vision model.
 - A failure writes a trace under `test-results/`. Open it with
   `npx playwright show-trace test-results/<test>/trace.zip`.
 
 What the suite proves:
 
-| Test                                                | Proves                                                              |
-| --------------------------------------------------- | ------------------------------------------------------------------- |
-| Landing page starts the game at `/play`             | The landing page and route split work in a real browser             |
-| Shows the preview and runs the silhouette loop      | The fake camera reaches the preview, and segmentation draws frames  |
-| Debug changes the mask type                         | The loop survives the mask-type change with no model errors         |
-| Preview off keeps the camera running                | Hiding the preview does not stop segmentation                       |
-| Camera-off display stops, returning reacquires      | The track ends on the camera-off display, and a live stream returns |
-| Switching the fake camera image changes the preview | The harness controls the image the app receives                     |
+| Test                                                | Proves                                                                                                                                                                                                                                                               |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Landing page starts the game at `/play`             | The landing page and route split work in a real browser                                                                                                                                                                                                              |
+| Shows the preview and runs the silhouette loop      | The fake camera reaches the preview, and segmentation draws frames                                                                                                                                                                                                   |
+| Debug changes the mask type                         | The loop survives the mask-type change with no model errors                                                                                                                                                                                                          |
+| Preview off keeps the camera running                | Hiding the preview does not stop segmentation                                                                                                                                                                                                                        |
+| Camera-off display stops, returning reacquires      | The track ends on the camera-off display, and a live stream returns                                                                                                                                                                                                  |
+| Switching the fake camera image changes the preview | The harness controls the image the app receives                                                                                                                                                                                                                      |
+| Rules demo (`rules.spec.ts`)                        | The toggle, bulb, balloons and lava play by mouse; the balloons count down and the lava asks for the start first, again after lava and a reload; display state is kept, and resets on show; the mouse passes through empty foreground but not through drawn elements |
 
 The suite does not prove that a physical camera works, that a real player's body is segmented
 accurately, or that the model download succeeds on every network. Cover those with the manual

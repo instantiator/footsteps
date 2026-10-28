@@ -1,11 +1,38 @@
 import { GameOverviewPurposeSequence } from "../../components/core/logic/GameClickUtils";
 import { isDefined } from "../../util/ObjectUtils";
-import type { GameOverviewDisplayPurpose } from "../data/displays/GameDisplayData";
+import type { GameEffectAction, GameOverviewDisplayPurpose } from "../data/displays/GameDisplayData";
 import type { GameData } from "../data/GameData";
 import type { GameStageId } from "../data/GameStageData";
 import type { GameStageState } from "./GameStageState";
 
-/** Runtime progress of a game: its definition, per-stage progress, and what is currently showing. */
+/**
+ * Identifies one display, and so its state: `overview:<purpose>`, `stage:<stageId>:shared`, or
+ * `challenge:<stageId>:<challengeId>:<purpose>`. A display's reset display adds `/reset` to its scope.
+ */
+export type DisplayScope = string;
+
+/** A sound or reward a rule asked for, waiting for the game to play it. */
+export interface QueuedEffect {
+  /** Identifies it, so it is played once however often the state is worked out; ids only grow. */
+  id: number;
+  /** What to play. */
+  effect: GameEffectAction;
+}
+
+/** What lasts only while the game is open, and is never saved with its progress. */
+export interface GameSession {
+  /** The scopes of the reset displays finished since the game was loaded. */
+  finishedResets: DisplayScope[];
+  /** Sounds and rewards rules have asked for, until the game plays them. */
+  effects: QueuedEffect[];
+  /** The id the next queued effect gets. */
+  nextEffectId: number;
+}
+
+/** A session with nothing in it, as a game starts or loads. */
+export const newGameSession = (): GameSession => ({ finishedResets: [], effects: [], nextEffectId: 1 });
+
+/** Runtime progress of a game: its definition, per-stage progress, what is currently showing, and display states. */
 export interface GameState {
   /** The authored definition of the game being played. */
   gameData: GameData;
@@ -18,6 +45,10 @@ export interface GameState {
     /** The overview display showing when no stage is active. */
     overviewDisplay: GameOverviewDisplayPurpose | null;
   };
+  /** Each display's own state, by scope. A display with no entry uses its component's `initialState`. */
+  displayStates: Record<DisplayScope, Record<string, unknown>>;
+  /** What lasts only while the game is open. */
+  session: GameSession;
 }
 
 /**
@@ -50,5 +81,7 @@ export function createBlankGameState(game: GameData): GameState {
       stageId: null,
       overviewDisplay,
     },
+    displayStates: {},
+    session: newGameSession(),
   };
 }

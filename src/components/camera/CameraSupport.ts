@@ -17,7 +17,10 @@ export const getCameraStream = async (size?: { width: number; height: number }) 
 
 /** Each tracked person's feet position, keyed by their index in the segmentation. */
 export type FeetPositions = {
-  [personId: number]: FootPosition;
+  [personId: number]: FootPosition & {
+    /** Whether the model has lost the person for a moment, so this is where their feet last were. */
+    held?: boolean;
+  };
 };
 
 /** A person's feet position, both in pixels and as a percentage of the frame. */
@@ -87,6 +90,20 @@ export const maskRectForElement = (
   if (right <= left || bottom <= top) return EMPTY_MASK_RECT;
   return { left, top, right, bottom };
 };
+
+/**
+ * Converts a point in mask pixels to the viewport point it is drawn at: the inverse of {@link maskRectForElement},
+ * mirrored the same way. The point is taken at the centre of its pixel.
+ */
+export const screenPointForMaskPoint = (
+  point: Point,
+  canvasRect: Rect,
+  maskWidth: number,
+  maskHeight: number,
+): Point => ({
+  x: canvasRect.right - ((point.x + 0.5) / maskWidth) * (canvasRect.right - canvasRect.left),
+  y: canvasRect.top + ((point.y + 0.5) / maskHeight) * (canvasRect.bottom - canvasRect.top),
+});
 
 /**
  * Where a person's feet are: midway between the feet the model placed, at the lower foot's height.

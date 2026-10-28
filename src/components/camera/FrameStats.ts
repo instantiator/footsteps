@@ -9,7 +9,19 @@ export interface FrameTiming {
   fps: number;
   /** Median time the model took per frame, in milliseconds. */
   inferenceMs: number;
+  /** Median time spent following people between frames, in milliseconds. */
+  trackMs: number;
+  /** Median time the interaction monitors took, in milliseconds. */
+  monitorMs: number;
+  /** Median time drawing the silhouettes took, in milliseconds. */
+  drawMs: number;
 }
+
+/** How long each step after the model took for one frame, in milliseconds. */
+export type FrameSteps = Pick<FrameTiming, "trackMs" | "monitorMs" | "drawMs">;
+
+/** Step timings for a frame that only measured the model. */
+const NO_STEPS: FrameSteps = { trackMs: 0, monitorMs: 0, drawMs: 0 };
 
 /** What a frame found: enough to compare models without a hand-labelled answer. */
 export interface FrameQuality {
@@ -39,18 +51,22 @@ const median = (values: number[]): number => {
 export class FrameStatsRecorder {
   private readonly ends: number[] = [];
   private readonly inference: number[] = [];
+  private readonly steps: FrameSteps[] = [];
 
   /**
    * Records one completed frame.
    * @param start when the model was given the frame, in milliseconds
    * @param inferenceEnd when the model returned
+   * @param steps how long each step after the model took
    */
-  record(start: number, inferenceEnd: number): void {
+  record(start: number, inferenceEnd: number, steps: FrameSteps = NO_STEPS): void {
     this.ends.push(inferenceEnd);
     this.inference.push(inferenceEnd - start);
+    this.steps.push(steps);
     if (this.ends.length > WINDOW) {
       this.ends.shift();
       this.inference.shift();
+      this.steps.shift();
     }
   }
 
@@ -58,7 +74,13 @@ export class FrameStatsRecorder {
   timing(): FrameTiming | null {
     if (this.ends.length < 2) return null;
     const seconds = (this.ends[this.ends.length - 1] - this.ends[0]) / 1000;
-    return { fps: seconds > 0 ? (this.ends.length - 1) / seconds : 0, inferenceMs: median(this.inference) };
+    return {
+      fps: seconds > 0 ? (this.ends.length - 1) / seconds : 0,
+      inferenceMs: median(this.inference),
+      trackMs: median(this.steps.map((step) => step.trackMs)),
+      monitorMs: median(this.steps.map((step) => step.monitorMs)),
+      drawMs: median(this.steps.map((step) => step.drawMs)),
+    };
   }
 }
 

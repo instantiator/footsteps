@@ -103,30 +103,24 @@ interface GameReferences {
   problems: ResourceProblem[];
 }
 
-/** Visits every display in the game with its path relative to the game. */
-function eachDisplay(game: GameData, visit: (display: GameDisplayBase, path: string) => void): void {
-  game.displays.forEach((display, index) => visit(display, `displays[${index}]`));
+/** A display to visit: one of the game's displays, or a reset display. */
+type VisitedDisplay = Pick<GameDisplayBase, "component" | "resetDisplay">;
+
+/** Visits every display in the game, and their reset displays, with its path relative to the game. */
+function eachDisplay(game: GameData, visit: (display: VisitedDisplay, path: string) => void): void {
+  const visitWithResets = (display: VisitedDisplay, path: string): void => {
+    visit(display, path);
+    if (display.resetDisplay) visitWithResets(display.resetDisplay, `${path}.resetDisplay`);
+  };
+  game.displays.forEach((display, index) => visitWithResets(display, `displays[${index}]`));
   game.stages.forEach((stage, stageIndex) => {
-    stage.displays?.forEach((display, index) => visit(display, `stages[${stageIndex}].displays[${index}]`));
+    stage.displays?.forEach((display, index) => visitWithResets(display, `stages[${stageIndex}].displays[${index}]`));
     stage.challenges.forEach((challenge, challengeIndex) => {
       challenge.displays.forEach((display, index) =>
-        visit(display, `stages[${stageIndex}].challenges[${challengeIndex}].displays[${index}]`),
+        visitWithResets(display, `stages[${stageIndex}].challenges[${challengeIndex}].displays[${index}]`),
       );
     });
   });
-}
-
-/** Overview elements whose interaction names a stage the game doesn't have, which would fail when used. */
-function stageLinkProblems(game: GameData): ResourceProblem[] {
-  const stageIds = new Set(game.stages.map((stage) => stage.id));
-  return game.displays.flatMap((display, index) =>
-    Object.entries(display.clickIdToStageId ?? {})
-      .filter(([, target]) => !stageIds.has(target.stage))
-      .map(([elementId, target]) => ({
-        path: `displays[${index}].clickIdToStageId.${elementId}.stage`,
-        message: `refers to undefined stage "${target.stage}"`,
-      })),
-  );
 }
 
 /** Collects every resource path, template source and resource name a game refers to. */
@@ -252,7 +246,7 @@ function createChecker(options: CheckOptions) {
     const { targets, names, problems } = collectReferences(game);
     const checked: CheckCounts = { files: 0, urls: 0, names: 0 };
     const definitions = game.resources ?? {};
-    const found = [...problems, ...stageLinkProblems(game)].map((problem) => ({
+    const found = problems.map((problem) => ({
       ...problem,
       path: at(prefix, problem.path),
     }));
@@ -282,7 +276,7 @@ function createChecker(options: CheckOptions) {
   return checkOne;
 }
 
-/** Checks one game's resource paths, template sources, resource names and stage links. */
+/** Checks one game's resource paths, template sources and resource names. */
 export async function checkGame(game: GameData, options: CheckOptions): Promise<CheckResult> {
   return createChecker(options)(game, "");
 }

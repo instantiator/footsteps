@@ -55,3 +55,32 @@ export const parseLines = (text: string | undefined): string[] => {
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 };
+
+/** Something that happened inside a display's template that rules can respond to. */
+export interface DisplayDomEvent {
+  /** A click (or key activation), the mouse moving over or out of an element, or the end of a CSS animation or transition. */
+  kind: "click" | "mouseOver" | "mouseOut" | "animationEnd" | "transitionEnd";
+  /** The element the event happened on. */
+  target: Element;
+  /** The display's template container, where matching stops. */
+  root: Element;
+  /** The animation's name, or the transitioned property. */
+  name?: string;
+  /** For mouse moves: the element the mouse came from (over) or went to (out), if any. */
+  related?: Element | null;
+}
+
+/**
+ * The element matching a selector that the event happened in: the target itself or its nearest matching ancestor,
+ * inside the display's container (never the container itself).
+ */
+export const matchTarget = ({ target, root }: Pick<DisplayDomEvent, "target" | "root">, selector: string) => {
+  const element = target.closest(selector);
+  return element !== null && element !== root && root.contains(element) ? element : undefined;
+};
+
+/** The template containers of a display (its background and foreground), by its scope. */
+export const displayRoots = (scope: string): Element[] =>
+  Array.from(document.querySelectorAll("[data-display-scope]")).filter(
+    (element) => element instanceof HTMLElement && element.dataset.displayScope === scope,
+  );

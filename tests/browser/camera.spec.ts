@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { MODEL_TIMEOUT, openCameraGame } from "./fixtures/cameraGame";
+import { peoplePhotoUrls } from "./fixtures/people/people";
 
 const streamCount = (page: Page) => page.evaluate(() => window.__fakeCamera.streams.length);
 const trackState = (page: Page, index: number) =>
@@ -122,3 +123,68 @@ test("plays on by clicks when the camera is busy", async ({ page }) => {
 
   await expect(page.getByRole("button", { name: "Close challenge" })).toBeVisible();
 });
+
+/** How many of the silhouette canvas's pixels are partly see-through, as feathered edges are. */
+const partlyClearPixels = (page: Page) =>
+  page.evaluate(() => {
+    const canvas = document.querySelector<HTMLCanvasElement>("#character-canvas-container canvas");
+    const pixels = canvas?.getContext("2d")?.getImageData(0, 0, canvas.width, canvas.height).data ?? [];
+    let count = 0;
+    for (let i = 3; i < pixels.length; i += 4) if (pixels[i] > 0 && pixels[i] < 255) count++;
+    return count;
+  });
+
+for (const featherPx of [3, 0]) {
+  test(`draws the silhouette with ${featherPx ? "feathered" : "hard"} edges when cameraFeatherPx is ${featherPx}`, async ({
+    page,
+  }) => {
+    test.setTimeout(MODEL_TIMEOUT + 30_000);
+    await openCameraGame(page, { query: `?cameraFeatherPx=${featherPx}`, photos: peoplePhotoUrls() });
+    await page.evaluate(() => window.__fakeCamera.setImage("photo:jumping-side-on"));
+    await expect.poll(() => drawCount(page), { timeout: MODEL_TIMEOUT }).toBeGreaterThan(2);
+
+    if (featherPx) await expect.poll(() => partlyClearPixels(page), { timeout: MODEL_TIMEOUT }).toBeGreaterThan(100);
+    else {
+      await page.waitForTimeout(2000); // long enough for the person to be found and drawn
+      expect(await partlyClearPixels(page)).toBeLessThan(100); // only scaling's few soft pixels
+    }
+  });
+}
+
+/**
+ * Shows an empty room for a moment, as if the model lost the player, and gives the fewest silhouette pixels seen on
+ * any animation frame meanwhile.
+ */
+const fewestPixelsWhileLost = (page: Page, lostMs: number) =>
+  page.evaluate(async (ms) => {
+    const canvas = document.querySelector<HTMLCanvasElement>("#character-canvas-container canvas")!;
+    const context = canvas.getContext("2d")!;
+    window.__fakeCamera.setImage("room");
+    let fewest = Infinity;
+    for (const until = performance.now() + ms; performance.now() < until;) {
+      await new Promise(requestAnimationFrame);
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      let count = 0;
+      for (let i = 3; i < pixels.length; i += 4) if (pixels[i] > 0) count++;
+      fewest = Math.min(fewest, count);
+    }
+    window.__fakeCamera.setImage("photo:jumping-side-on");
+    return fewest;
+  }, lostMs);
+
+for (const holding of [true, false]) {
+  test(`${holding ? "holds" : "drops"} a player the model loses for a moment when holding is ${holding ? "on" : "off"}`, async ({
+    page,
+  }) => {
+    test.setTimeout(MODEL_TIMEOUT + 30_000);
+    const query = holding ? "" : "?cameraHoldMs=0&cameraFadeMs=0";
+    await openCameraGame(page, { query, photos: peoplePhotoUrls() });
+    await page.evaluate(() => window.__fakeCamera.setImage("photo:jumping-side-on"));
+    await expect.poll(() => partlyClearPixels(page), { timeout: MODEL_TIMEOUT }).toBeGreaterThan(0); // found and drawn
+
+    const fewest = await fewestPixelsWhileLost(page, 250);
+
+    if (holding) expect(fewest).toBeGreaterThan(0);
+    else expect(fewest).toBe(0);
+  });
+}

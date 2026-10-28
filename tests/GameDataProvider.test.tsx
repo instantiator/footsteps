@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { useContext } from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { GameData, GameResourceDefinitions } from "../src/entities/data/GameData";
 import type { GameRepository } from "../src/entities/GameRepository";
 import type { GameSource } from "../src/entities/GameSource";
@@ -99,5 +99,25 @@ describe("GameDataProvider", () => {
     renderProvider(rawSource({ g: gameWith({ pic: { type: "relative", target: "pic.png" } }) }), "g");
     expect(screen.getByText("loading: resource-error")).toBeInTheDocument();
     expect(screen.queryByRole("status", { name: "game" })).toBeNull();
+  });
+
+  it("reports a rules-error for a rule expression that doesn't compile", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const broken: GameData = {
+      ...gameWith(),
+      displays: [
+        {
+          purpose: "game-overview-title",
+          component: { type: "scroll", contents: [], data: {}, rules: [{ on: { when: "1 +" }, do: [] }] },
+        },
+      ],
+    };
+    renderProvider(rawSource({ g: broken }), "g");
+    expect(screen.getByText("loading: rules-error")).toBeInTheDocument();
+    expect(error).toHaveBeenCalledWith(
+      "Error in game rules:",
+      expect.objectContaining({ message: expect.stringContaining("rules[0].on.when") }),
+    );
+    error.mockRestore();
   });
 });

@@ -1,37 +1,124 @@
 import { useCallback, useEffect, useRef, type RefObject } from "react";
-import {
-  DEFAULT_INTERACTIONS,
-  DEFAULT_INTERACTION_THRESHOLD,
-  type GameInteractionTarget,
-} from "../../../entities/data/displays/GameDisplayData";
+import type { DisplayScope } from "../../../entities/state/GameState";
 import useAppConfig from "../../../providers/AppConfigHook";
-import { maskRectForElement } from "../../camera/CameraSupport";
+import { maskRectForElement, screenPointForMaskPoint } from "../../camera/CameraSupport";
+import { jumpSettingsOf } from "../../camera/JumpDetector";
 import {
   PlayerMonitor,
+  type CameraInteraction,
   type MonitorTarget,
   type PlayerFrame,
   type PlayerMonitorEvent,
 } from "../../camera/PlayerMonitor";
+import { displayRoots } from "../logic/TemplateUtils";
 
-/** The current players, as mask-space targets for each configured element that is on screen. */
-const monitorTargets = (
-  canvas: HTMLCanvasElement,
-  players: PlayerFrame[],
-  interactionTargets: Record<string, GameInteractionTarget>,
-): Record<string, MonitorTarget> => {
+/** A rule the camera can fire: which display it belongs to, and the elements and interactions it watches. */
+export interface CameraRuleTarget {
+  /** The display the rule belongs to. */
+  scope: DisplayScope;
+  /** The rule's position in the display's rules. */
+  ruleIndex: number;
+  /** CSS selector for the elements, run inside the display's templates every frame. */
+  selector: string;
+  /** The camera interactions that fire the rule. */
+  interactions: CameraInteraction[];
+  /** The fraction of the body part that must be inside the element (0–1). */
+  threshold: number;
+  /** Whether the element counts even where something else covers it. */
+  includeCovered: boolean;
+  /** How long, in milliseconds, a body part must stay over the element before it enters. */
+  holdMs: number;
+}
+
+/** A camera interaction with an element a rule watches. */
+export interface CameraRuleEvent {
+  /** The display the rule belongs to. */
+  scope: DisplayScope;
+  /** The rule's position in the display's rules. */
+  ruleIndex: number;
+  /** The element the player interacted with. */
+  element: Element;
+  /** What the player did. */
+  interaction: CameraInteraction;
+}
+
+/** Generated keys for elements without an `id`, dropped with the element. */
+const generatedKeys = new WeakMap<Element, string>();
+let nextGeneratedKey = 0;
+
+/**
+ * A key for an element that stays the same while the element does, so the monitors remember interactions with it
+ * between frames: its `id`, or a generated key. (An element without an `id` that a re-render replaces gets a new
+ * key, and so counts as new.)
+ */
+const elementKey = (element: Element): string => {
+  if (element.id) return `id:${element.id}`;
+  let key = generatedKeys.get(element);
+  if (key === undefined) generatedKeys.set(element, (key = `el:${nextGeneratedKey++}`));
+  return key;
+};
+
+/** This frame's targets, by key, and which rule and element each key stands for. */
+interface FrameTargets {
+  /** What the monitors check, by key. */
+  targets: Record<string, MonitorTarget>;
+  /** The rule and element behind each key. */
+  sources: Map<string, Omit<CameraRuleEvent, "interaction">>;
+}
+
+/**
+ * The elements the camera rules watch, found by their selectors in the displays shown now, as mask-space targets.
+ * Elements can come, go and move between frames.
+ */
+const frameTargets = (canvas: HTMLCanvasElement, players: PlayerFrame[], rules: CameraRuleTarget[]): FrameTargets => {
   const canvasRect = canvas.getBoundingClientRect();
   const { width, height } = players[0];
-  const targets: Record<string, MonitorTarget> = {};
-  for (const [elementId, target] of Object.entries(interactionTargets)) {
-    const element = document.getElementById(elementId);
-    if (!element) continue; // the display that the target belongs to is not the one on screen
-    targets[elementId] = {
-      rect: maskRectForElement(element.getBoundingClientRect(), canvasRect, width, height),
-      interactions: target.interactions ?? DEFAULT_INTERACTIONS,
-      threshold: target.threshold ?? DEFAULT_INTERACTION_THRESHOLD,
-    };
+  const result: FrameTargets = { targets: {}, sources: new Map() };
+  for (const rule of rules) {
+    for (const element of displayRoots(rule.scope).flatMap((root) =>
+      Array.from(root.querySelectorAll(rule.selector)),
+    )) {
+      const key = `${rule.scope}#${rule.ruleIndex}#${elementKey(element)}`;
+      const isTopmostAt = (point: { x: number; y: number }) => {
+        const { x, y } = screenPointForMaskPoint(point, canvasRect, width, height);
+        const hit = document.elementFromPoint(x, y);
+        return hit !== null && element.contains(hit);
+      };
+      result.targets[key] = {
+        rect: maskRectForElement(element.getBoundingClientRect(), canvasRect, width, height),
+        interactions: rule.interactions,
+        threshold: rule.threshold,
+        holdMs: rule.holdMs,
+        isTopmostAt: rule.includeCovered ? undefined : isTopmostAt,
+      };
+      result.sources.set(key, { scope: rule.scope, ruleIndex: rule.ruleIndex, element });
+    }
   }
-  return targets;
+  return result;
+};
+
+/**
+ * Gives each player's frame to their monitor, making monitors for new players and releasing those of players gone.
+ * A held player is only drawn: their monitor waits, keeping any jump in progress, for them to be found again.
+ */
+const updateMonitors = (
+  monitors: Map<number, PlayerMonitor>,
+  players: PlayerFrame[],
+  update: (monitor: PlayerMonitor, player: PlayerFrame) => void,
+  createMonitor: () => PlayerMonitor,
+): void => {
+  for (const player of players) {
+    if (player.held) continue;
+    let monitor = monitors.get(player.id);
+    if (!monitor) monitors.set(player.id, (monitor = createMonitor()));
+    update(monitor, player);
+  }
+  const seen = new Set(players.map((player) => player.id));
+  for (const [playerId, monitor] of Array.from(monitors)) {
+    if (seen.has(playerId)) continue;
+    monitor.release(); // they have gone, so they have left whatever they were in
+    monitors.delete(playerId);
+  }
 };
 
 /** What {@link usePlayerInteractions} gives the layout. */
@@ -44,33 +131,35 @@ interface PlayerInteractions {
 
 /**
  * Feeds each camera frame to one monitor per player, turning body parts into interactions with
- * the elements currently on screen.
+ * the elements the camera rules watch.
  *
  * The returned frame handler never changes: the character canvas restarts segmentation whenever its
  * callbacks change, so the latest targets and event handler are read from refs instead.
  *
- * @param interactionTargets the elements the camera can interact with, by element id
+ * @param cameraRules the rules the camera can fire, for the displays shown now
  * @param onPlayerInteraction called for each interaction that begins
  * @param enabled whether interactions are running; switching it off clears the monitors
  * @returns the character canvas's ref, and the stable frame handler to give it
  */
 export function usePlayerInteractions(
-  interactionTargets: Record<string, GameInteractionTarget> | undefined,
-  onPlayerInteraction: ((event: PlayerMonitorEvent) => void) | undefined,
+  cameraRules: CameraRuleTarget[] | undefined,
+  onPlayerInteraction: ((event: CameraRuleEvent) => void) | undefined,
   enabled: boolean,
 ): PlayerInteractions {
-  const { visionSmoothing, visionStableFrames } = useAppConfig();
-  const stableFrames = visionSmoothing ? visionStableFrames : 1;
+  const config = useAppConfig();
+  const stableFrames = config.visionSmoothing ? config.visionStableFrames : 1;
   const stableFramesRef = useRef(stableFrames);
+  const jumpRef = useRef(jumpSettingsOf(config));
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const monitorsRef = useRef(new Map<number, PlayerMonitor>());
-  const targetsRef = useRef(interactionTargets);
+  const rulesRef = useRef(cameraRules);
+  const sourcesRef = useRef<FrameTargets["sources"]>(new Map());
   const callbackRef = useRef(onPlayerInteraction);
   const enabledRef = useRef(enabled);
 
   useEffect(() => {
-    targetsRef.current = interactionTargets;
-  }, [interactionTargets]);
+    rulesRef.current = cameraRules;
+  }, [cameraRules]);
 
   useEffect(() => {
     callbackRef.current = onPlayerInteraction;
@@ -78,7 +167,8 @@ export function usePlayerInteractions(
 
   useEffect(() => {
     stableFramesRef.current = stableFrames;
-  }, [stableFrames]);
+    jumpRef.current = jumpSettingsOf(config);
+  }, [stableFrames, config]);
 
   // Interactions pause during display changes; fresh monitors afterwards ignore whatever already holds
   useEffect(() => {
@@ -89,27 +179,28 @@ export function usePlayerInteractions(
   const handlePlayers = useCallback(
     (players: PlayerFrame[], timestamp: number) => {
       const canvas = canvasRef.current;
-      const emit = callbackRef.current;
       const monitors = monitorsRef.current;
-      if (!enabledRef.current || !canvas || !emit || players.length === 0) {
+      // While interactions pause nothing has been left, so the monitors are dropped without releasing them
+      if (!enabledRef.current || !canvas || !callbackRef.current) {
         monitors.clear();
         return;
       }
 
-      const targets = monitorTargets(canvas, players, targetsRef.current ?? {});
-      const seen = new Set<number>();
-      for (const player of players) {
-        seen.add(player.id);
-        let monitor = monitors.get(player.id);
-        if (!monitor) {
-          monitor = new PlayerMonitor((event) => callbackRef.current?.(event), stableFramesRef.current);
-          monitors.set(player.id, monitor);
-        }
-        monitor.update(player, targets, timestamp);
-      }
-      for (const playerId of Array.from(monitors.keys())) {
-        if (!seen.has(playerId)) monitors.delete(playerId);
-      }
+      const { targets, sources } =
+        players.length > 0
+          ? frameTargets(canvas, players, rulesRef.current ?? [])
+          : { targets: {}, sources: sourcesRef.current };
+      sourcesRef.current = sources;
+      const createMonitor = () =>
+        new PlayerMonitor(
+          (event: PlayerMonitorEvent) => {
+            const source = sourcesRef.current.get(event.key);
+            if (source) callbackRef.current?.({ ...source, interaction: event.interaction });
+          },
+          stableFramesRef.current,
+          jumpRef.current,
+        );
+      updateMonitors(monitors, players, (monitor, player) => monitor.update(player, targets, timestamp), createMonitor);
     },
     [canvasRef],
   );

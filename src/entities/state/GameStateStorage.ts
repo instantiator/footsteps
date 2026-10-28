@@ -2,9 +2,11 @@ import type { GameChallengeId } from "../data/GameChallengeData";
 import type { GameId, GameData } from "../data/GameData";
 import type { GameOverviewDisplayPurpose } from "../data/displays/GameDisplayData";
 import type { GameStageId } from "../data/GameStageData";
+import { stageCompletion } from "../../components/core/logic/GameStateUtils";
+import { allDisplayScopes } from "../../components/core/logic/RenderDataUtils";
 import { isDefined } from "../../util/ObjectUtils";
-import { createBlankGameState, type GameState } from "./GameState";
-import type { GameStageAvailabilityState, GameStageCompletionState, GameStageState } from "./GameStageState";
+import { createBlankGameState, newGameSession, type GameState } from "./GameState";
+import type { GameStageAvailabilityState, GameStageState } from "./GameStageState";
 
 /** The version of the saved progress format; older or newer versions are ignored. */
 const STORAGE_VERSION = 1;
@@ -12,7 +14,7 @@ const STORAGE_VERSION = 1;
 /** Prefix for a game's saved progress key in local storage. */
 const STORAGE_PREFIX = "footsteps:game-state:";
 
-/** A game's saved progress: which challenges are solved, and what the player was looking at. */
+/** A game's saved progress: which challenges are solved, what the player was looking at, and display states. */
 interface StoredGameProgress {
   /** The saved format's version. */
   version: number;
@@ -27,6 +29,8 @@ interface StoredGameProgress {
     /** The overview display that was showing, if any. */
     overviewDisplay: GameOverviewDisplayPurpose | null;
   };
+  /** Each display's own state, by scope. Read as empty from progress saved before displays had state. */
+  displayStates: GameState["displayStates"];
 }
 
 /** The local storage key for a game's progress. */
@@ -98,6 +102,15 @@ const parseStages = (value: unknown, gameData: GameData): Record<GameStageId, Ga
   return stages;
 };
 
+/** Keeps the saved display states of displays the game still has; anything malformed is dropped. */
+const parseDisplayStates = (value: unknown, gameData: GameData): GameState["displayStates"] => {
+  if (!isRecord(value)) return {};
+  const scopes = allDisplayScopes(gameData);
+  return Object.fromEntries(
+    Object.entries(value).flatMap(([scope, state]) => (scopes.has(scope) && isRecord(state) ? [[scope, state]] : [])),
+  );
+};
+
 /**
  * Reads and validates saved progress against the current game.
  * Returns undefined when the progress is corrupt, a different version or game, or no longer matches the game's stages.
@@ -116,7 +129,13 @@ const parseProgress = (raw: string, gameId: GameId, gameData: GameData): StoredG
   const current = parseCurrent(parsed.current, gameData);
   if (!isDefined(stages) || !isDefined(current)) return undefined;
 
-  return { version: STORAGE_VERSION, gameId, stages, current };
+  return {
+    version: STORAGE_VERSION,
+    gameId,
+    stages,
+    current,
+    displayStates: parseDisplayStates(parsed.displayStates, gameData),
+  };
 };
 
 /** Rebuilds the game state, deriving stage completion and availability from the saved progress. */
@@ -127,12 +146,7 @@ const stateFromProgress = (progress: StoredGameProgress, gameData: GameData): Ga
       challenge,
       succeeded: succeeded.has(challenge.id),
     }));
-    const completion: GameStageCompletionState = challengeStates.every((challenge) => challenge.succeeded)
-      ? "completed"
-      : challengeStates.some((challenge) => challenge.succeeded)
-        ? "partial"
-        : "ready";
-    return { stage, challengeStates, completion, availability: "locked" };
+    return { stage, challengeStates, completion: stageCompletion(challengeStates), availability: "locked" };
   });
 
   const sequential = gameData.config?.sequential ?? true;
@@ -152,7 +166,13 @@ const stateFromProgress = (progress: StoredGameProgress, gameData: GameData): Ga
       : null;
   const overviewDisplay = progress.current.overviewDisplay ?? createBlankGameState(gameData).current.overviewDisplay;
 
-  return { gameData, stages, current: { stageId: currentStageId, overviewDisplay } };
+  return {
+    gameData,
+    stages,
+    current: { stageId: currentStageId, overviewDisplay },
+    displayStates: progress.displayStates,
+    session: newGameSession(),
+  };
 };
 
 /**
@@ -175,6 +195,7 @@ export const saveGameState = (gameId: GameId, gameState: GameState): void => {
     gameId,
     stages,
     current: { ...gameState.current },
+    displayStates: gameState.displayStates,
   };
   try {
     storage.setItem(storageKey(gameId), JSON.stringify(progress));

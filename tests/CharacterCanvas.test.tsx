@@ -111,6 +111,19 @@ describe("CharacterCanvas", () => {
     expect(container.querySelector("output.vision-stats") !== null).toBe(showStats);
   });
 
+  it("shows how long each step of a frame took, for the benchmark to read", async () => {
+    const onPlayersChange = vi.fn();
+    const { container } = renderCanvas({ onPlayersChange, showStats: true });
+    await waitFor(() => expect(onPlayersChange).toHaveBeenCalled());
+    await act(async () => runNextFrame());
+
+    await waitFor(() => expect(container.querySelector("output.vision-stats")).not.toBeNull());
+    const readout = container.querySelector("output.vision-stats")!;
+    for (const step of ["inference", "track", "monitor", "draw"]) {
+      expect(Number(readout.getAttribute(`data-${step}-ms`))).toBeGreaterThanOrEqual(0);
+    }
+  });
+
   it("publishes the tracking frame rate for the HUD, and clears it when tracking stops", async () => {
     const seen: (number | null)[] = [];
     const publish = vi.spyOn(fpsStore, "setTrackingFps").mockImplementation((fps) => void seen.push(fps));
@@ -140,6 +153,19 @@ describe("CharacterCanvas", () => {
 
     await waitFor(() => expect(onFeetPositionsChange).toHaveBeenCalled());
     expect(Object.keys(onFeetPositionsChange.mock.calls[0][0])).toEqual(["0", "1"]);
+  });
+
+  it("reports the feet of a player the model has lost for a moment, flagged as held", async () => {
+    const onFeetPositionsChange = vi.fn<(feetPositions: FeetPositions) => void>();
+    model.people = 1;
+    renderCanvas({ onFeetPositionsChange });
+    await waitFor(() => expect(onFeetPositionsChange).toHaveBeenCalled());
+    expect(onFeetPositionsChange.mock.calls[0][0][0].held).toBeUndefined();
+
+    model.people = 0; // lost by the model, so held by the tracker
+    await act(async () => runNextFrame());
+    await waitFor(() => expect(onFeetPositionsChange).toHaveBeenCalledTimes(2));
+    expect(onFeetPositionsChange.mock.calls[1][0][0]).toMatchObject({ held: true, percent: { y: 87.5 } });
   });
 
   it("skips a frame that fails to be tracked, and carries on with the next", async () => {
@@ -279,6 +305,102 @@ describe("CharacterCanvas", () => {
       renderWithInputWidth(wideVideo, 0);
       await waitFor(() => expect(model.detect).toHaveBeenCalledWith(wideVideo, expect.any(Number)));
       expect(createImageBitmap).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("with a model whose frames are finished by hand", () => {
+    /** Frames given to the model, each finished by hand. */
+    let pending: { finish: () => void; fail: () => void }[];
+    let inFlight: number;
+    let mostInFlight: number;
+    /** What happened, in order: each frame given to the model, and each frame reported. */
+    let events: string[];
+
+    beforeEach(() => {
+      [pending, inFlight, mostInFlight, events] = [[], 0, 0, []];
+      model.detect.mockImplementation(
+        (_source: unknown, timestamp: number) =>
+          new Promise<VisionFrame>((resolve, reject) => {
+            events.push("detect");
+            mostInFlight = Math.max(mostInFlight, ++inFlight);
+            const settle = (outcome: () => void) => () => {
+              inFlight--;
+              outcome();
+            };
+            pending.push({
+              finish: settle(() => resolve(fakeFrame(1, timestamp))),
+              fail: settle(() => reject(new Error("no frame"))),
+            });
+          }),
+      );
+    });
+
+    /** Lets the model finish (or fail) its oldest frame, and the loop act on it. */
+    const settleDetection = async (outcome: "finish" | "fail" = "finish") => {
+      await waitFor(() => expect(pending.length).toBeGreaterThan(0));
+      await act(async () => pending.shift()![outcome]());
+    };
+
+    /** A new frame from the camera. */
+    const videoFrame = () => act(async () => runNextFrame());
+
+    it("gives the model the next frame before reporting and drawing the one it returned, one frame at a time", async () => {
+      renderCanvas({ onPlayersChange: () => void events.push("report") });
+      await waitFor(() => expect(pending).toHaveLength(1));
+
+      await videoFrame(); // the camera moves on while the model works
+      await settleDetection();
+      await videoFrame();
+      await settleDetection();
+
+      expect(events.slice(0, 5)).toEqual(["detect", "detect", "report", "detect", "report"]);
+      expect(mostInFlight).toBe(1);
+    });
+
+    it("waits for a new camera frame, rather than retrying at once, after a frame fails", async () => {
+      vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      renderCanvas({ onPlayersChange: vi.fn() });
+
+      await settleDetection("fail");
+      expect(model.detect).toHaveBeenCalledTimes(1);
+
+      await videoFrame();
+      await waitFor(() => expect(model.detect).toHaveBeenCalledTimes(2));
+    });
+
+    it("waits for the old loop's frame before a replacing loop gives the model one", async () => {
+      const onPlayersChange = vi.fn();
+      const { rerender } = renderCanvas({ onPlayersChange, maskType: "binary" });
+      await waitFor(() => expect(pending).toHaveLength(1));
+
+      rerender(
+        <CharacterCanvas
+          video={video}
+          mediaStream={mediaStream}
+          onPlayersChange={onPlayersChange}
+          maskType="colored"
+        />,
+      );
+      await videoFrame();
+      expect(model.detect).toHaveBeenCalledTimes(1);
+
+      await settleDetection();
+      await waitFor(() => expect(model.detect).toHaveBeenCalledTimes(2));
+      expect(mostInFlight).toBe(1);
+    });
+
+    it("gives the model no more frames once stopped", async () => {
+      const { unmount } = renderCanvas({ onPlayersChange: vi.fn() });
+      await waitFor(() => expect(pending).toHaveLength(1));
+      await videoFrame();
+      await settleDetection();
+      await waitFor(() => expect(model.detect).toHaveBeenCalledTimes(2));
+
+      unmount();
+      await settleDetection();
+
+      expect(model.detect).toHaveBeenCalledTimes(2);
+      expect(queuedFrames.size).toBe(0);
     });
   });
 });

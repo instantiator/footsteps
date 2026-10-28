@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import type { ComponentProps, ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type CharacterCamera from "../src/components/camera/CharacterCamera";
@@ -6,7 +6,7 @@ import type CharacterCanvas from "../src/components/camera/CharacterCanvas";
 import type { PlayerFrame } from "../src/components/camera/PlayerMonitor";
 import GameLayersLayout from "../src/components/core/layout/GameLayersLayout";
 import type { AppConfig } from "../src/config/AppConfig";
-import type { GameInteractionTarget } from "../src/entities/data/displays/GameDisplayData";
+import type { CameraRuleTarget } from "../src/components/core/layout/PlayerInteractionHook";
 import { noKeyPoints } from "../src/vision/VisionTypes";
 import { SMALL_GAME_ID, smallRepository } from "./data/SmallGame";
 import GameProviders from "./helpers/GameProviders";
@@ -59,8 +59,18 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+/** The scope the test layers' overview display has, so camera rules can find its elements. */
+const SCOPE = "overview:game-overview-stages";
+
 const layers = {
-  overview: { backgroundLayerNodes: undefined, foregroundLayerNodes: [<span key="o" id="overview-thing" />] },
+  overview: {
+    backgroundLayerNodes: undefined,
+    foregroundLayerNodes: [
+      <div key="o" data-display-scope={SCOPE}>
+        <span id="overview-thing" />
+      </div>,
+    ],
+  },
   challenges: { backgroundLayerNodes: undefined, foregroundLayerNodes: [<span key="c" id="challenge-thing" />] },
 };
 
@@ -83,29 +93,35 @@ const playerWithHandAt = (x: number, y: number): PlayerFrame => {
   return { id: 0, mask, keyPoints: { ...noKeyPoints(), leftHand: { x, y } }, scale: 0, width, height, feet: null };
 };
 
+/** A camera rule watching the overview's element for hands, ignoring covering (jsdom can't hit-test). */
+const handRule = (overrides: Partial<CameraRuleTarget> = {}): CameraRuleTarget => ({
+  scope: SCOPE,
+  ruleIndex: 0,
+  selector: "#overview-thing",
+  interactions: ["hand-enter"],
+  threshold: 1,
+  includeCovered: true,
+  holdMs: 0,
+  ...overrides,
+});
+
+/** What the layout reports when a hand touches the overview's element. */
+const handOnThing = (container: HTMLElement) => ({
+  scope: SCOPE,
+  ruleIndex: 0,
+  element: container.querySelector("#overview-thing"),
+  interaction: "hand-enter",
+});
+
 const stubRect = (element: Element, rect: DOMRect) => vi.spyOn(element, "getBoundingClientRect").mockReturnValue(rect);
 
 describe("GameLayersLayout", () => {
-  it.each([
-    ["overview-thing", "overview"],
-    ["challenge-thing", "challenges"],
-  ])("reports a click on #%s as coming from the %s layer", (targetId, layerId) => {
-    const onElementClick = vi.fn<(layerId: string, targetId: string) => boolean>();
-    const { container } = renderLayout({ onElementClick });
-    fireEvent.click(container.querySelector(`#${targetId}`)!);
-    expect(onElementClick).toHaveBeenCalledExactlyOnceWith(layerId, targetId);
-  });
-
-  it("ignores clicks on elements with no id", () => {
-    const onElementClick = vi.fn<(layerId: string, targetId: string) => boolean>();
-    renderLayout({
-      onElementClick,
-      gameLayers: {
-        overview: { backgroundLayerNodes: undefined, foregroundLayerNodes: [<span key="n">anonymous</span>] },
-      },
-    });
-    fireEvent.click(screen.getByText("anonymous"));
-    expect(onElementClick).not.toHaveBeenCalled();
+  it("lets pointer events through the display layers, so displays handle their own", () => {
+    const { container } = renderLayout();
+    expect(container.querySelectorAll('[id$="ground-container"]').length).toBeGreaterThan(0);
+    for (const layer of container.querySelectorAll('[id$="ground-container"], [id*="-grid"]')) {
+      expect(layer.className, layer.id).toContain("noClicks");
+    }
   });
 
   it("shows the debug layer only when debugging", () => {
@@ -145,6 +161,24 @@ describe("GameLayersLayout", () => {
     renderLayout({ camera: { enabled: true, preview: true }, debug: true });
     await screen.findByTestId("canvas");
     expect(received.canvas.at(-1)?.maskType).toBe("colored");
+  });
+
+  it("doesn't re-render the game for each camera frame unless the debug overlay shows the feet", async () => {
+    renderLayout({ camera: { enabled: true, preview: true }, debug: false });
+    await screen.findByTestId("canvas");
+    const canvas = received.canvas.at(-1)!;
+    expect(canvas.onFeetPositionsChange).toBeUndefined();
+    const renders = received.canvas.length;
+
+    act(() => canvas.onPlayersChange?.([playerWithHandAt(1, 1)], 0));
+
+    expect(received.canvas).toHaveLength(renders);
+  });
+
+  it("reports the feet to the debug overlay when debugging", async () => {
+    renderLayout({ camera: { enabled: true, preview: true }, debug: true });
+    await screen.findByTestId("canvas");
+    expect(received.canvas.at(-1)?.onFeetPositionsChange).toBeDefined();
   });
 
   it("hides the preview, but keeps the camera and canvas, when the preview is off", async () => {
@@ -445,7 +479,7 @@ describe("GameLayersLayout camera interactions", () => {
   it("reports a camera interaction when a body part covers an element", async () => {
     const onPlayerInteraction = vi.fn();
     const { container, canvas } = await renderWithCamera({
-      interactionTargets: { "overview-thing": { stage: "stage-1", interactions: ["hand"] } },
+      cameraRules: [handRule()],
       onPlayerInteraction,
     });
     stubRect(canvas, new DOMRect(0, 0, 100, 100));
@@ -455,13 +489,13 @@ describe("GameLayersLayout camera interactions", () => {
     sendPlayers([playerWithHandAt(0, 7)], 900); // outside the element, so the hand then moves in
     sendPlayers([playerWithHandAt(6, 1)]);
 
-    expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith({ elementId: "overview-thing", interaction: "hand" });
+    expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith(handOnThing(container));
   });
 
   it("waits for the configured number of frames before reporting an interaction", async () => {
     const onPlayerInteraction = vi.fn();
     const { container, canvas } = await renderWithCamera(
-      { interactionTargets: { "overview-thing": { stage: "stage-1", interactions: ["hand"] } }, onPlayerInteraction },
+      { cameraRules: [handRule()], onPlayerInteraction },
       { visionSmoothing: true, visionStableFrames: 2 },
     );
     stubRect(canvas, new DOMRect(0, 0, 100, 100));
@@ -472,13 +506,13 @@ describe("GameLayersLayout camera interactions", () => {
     expect(onPlayerInteraction).not.toHaveBeenCalled(); // one frame could be a flicker
 
     sendPlayers([playerWithHandAt(6, 1)], 1100);
-    expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith({ elementId: "overview-thing", interaction: "hand" });
+    expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith(handOnThing(container));
   });
 
   it("ignores a hand that is already inside the element when the camera starts", async () => {
     const onPlayerInteraction = vi.fn();
     const { container, canvas } = await renderWithCamera({
-      interactionTargets: { "overview-thing": { stage: "stage-1", interactions: ["hand"] } },
+      cameraRules: [handRule()],
       onPlayerInteraction,
     });
     stubRect(canvas, new DOMRect(0, 0, 100, 100));
@@ -493,7 +527,7 @@ describe("GameLayersLayout camera interactions", () => {
   it("reports nothing when the target's element is not in the document", async () => {
     const onPlayerInteraction = vi.fn();
     const { container, canvas } = await renderWithCamera({
-      interactionTargets: { "not-on-screen": { stage: "stage-1", interactions: ["hand"] } },
+      cameraRules: [handRule({ selector: "#not-on-screen" })],
       onPlayerInteraction,
     });
     stubRect(canvas, new DOMRect(0, 0, 100, 100));
@@ -507,7 +541,7 @@ describe("GameLayersLayout camera interactions", () => {
   it("fires again when a player leaves and comes back", async () => {
     const onPlayerInteraction = vi.fn();
     const { container, canvas } = await renderWithCamera({
-      interactionTargets: { "overview-thing": { stage: "stage-1", interactions: ["hand"] } },
+      cameraRules: [handRule()],
       onPlayerInteraction,
     });
     stubRect(canvas, new DOMRect(0, 0, 100, 100));
@@ -522,10 +556,50 @@ describe("GameLayersLayout camera interactions", () => {
     expect(onPlayerInteraction).toHaveBeenCalledTimes(2);
   });
 
+  it("fires the exits of a player who has gone, but not when interactions pause", async () => {
+    setReducedMotion(false); // so a display change fades, pausing interactions
+    const onPlayerInteraction = vi.fn();
+    const inOut = handRule({ interactions: ["hand-enter", "hand-exit"] });
+    const { container, canvas, rerender } = await renderWithCamera({ cameraRules: [inOut], onPlayerInteraction });
+    stubRect(canvas, new DOMRect(0, 0, 100, 100));
+    stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 50, 50));
+    const exited = { ...handOnThing(container), interaction: "hand-exit" };
+
+    sendPlayers([playerWithHandAt(0, 7)], 900);
+    sendPlayers([playerWithHandAt(6, 1)]);
+    sendPlayers([], 1100);
+    expect(onPlayerInteraction).toHaveBeenLastCalledWith(exited);
+
+    // In again, then the display changes: interactions pause, and the hand hasn't left anything
+    sendPlayers([playerWithHandAt(0, 7)], 1200);
+    sendPlayers([playerWithHandAt(6, 1)], 1300);
+    onPlayerInteraction.mockClear();
+    const camera = { enabled: true, preview: true };
+    vi.useFakeTimers();
+    rerender(layout({ camera, cameraRules: [inOut], onPlayerInteraction, displayKey: "next" }));
+    sendPlayers([], 1400);
+    expect(onPlayerInteraction).not.toHaveBeenCalled();
+  });
+
+  it("never fires for a held player, and keeps their monitor until they are found again", async () => {
+    const onPlayerInteraction = vi.fn();
+    const { container, canvas } = await renderWithCamera({ cameraRules: [handRule()], onPlayerInteraction });
+    stubRect(canvas, new DOMRect(0, 0, 100, 100));
+    stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 50, 50));
+
+    sendPlayers([playerWithHandAt(0, 7)], 900);
+    sendPlayers([{ ...playerWithHandAt(6, 1), held: { opacity: 1 } }]); // where they last were, not where they are
+    expect(onPlayerInteraction).not.toHaveBeenCalled();
+
+    // Found again with the hand inside: the monitor that saw it outside reports it moving in
+    sendPlayers([playerWithHandAt(6, 1)], 1100);
+    expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith(handOnThing(container));
+  });
+
   it("maps element bounds using the canvas's position on the page", async () => {
     const onPlayerInteraction = vi.fn();
     const { container, canvas } = await renderWithCamera({
-      interactionTargets: { "overview-thing": { stage: "stage-1", interactions: ["hand"] } },
+      cameraRules: [handRule()],
       onPlayerInteraction,
     });
     // The canvas sits away from the origin; the element covers its top-left quarter
@@ -544,10 +618,7 @@ describe("GameLayersLayout camera interactions", () => {
   it("ignores camera interactions while a display change is fading", async () => {
     setReducedMotion(false);
     const onPlayerInteraction = vi.fn();
-    const interactionTargets: Record<string, GameInteractionTarget> = {
-      "overview-thing": { stage: "stage-1", interactions: ["hand"] },
-    };
-    const props = { interactionTargets, onPlayerInteraction, displayKey: "old" };
+    const props = { cameraRules: [handRule()], onPlayerInteraction, displayKey: "old" };
     const { container, canvas, rerender } = await renderWithCamera(props);
     stubRect(canvas, new DOMRect(0, 0, 100, 100));
     stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 50, 50));
@@ -564,6 +635,130 @@ describe("GameLayersLayout camera interactions", () => {
 
     sendPlayers([playerWithHandAt(0, 7)], 1100);
     sendPlayers([playerWithHandAt(6, 1)], 1200);
-    expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith({ elementId: "overview-thing", interaction: "hand" });
+    expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith(handOnThing(container));
+  });
+});
+
+describe("GameLayersLayout camera rules", () => {
+  /** What `document.elementFromPoint` returns; jsdom has no layout, so the tests decide what is on top. */
+  let topmost: Element | null = null;
+  beforeEach(() => {
+    topmost = null;
+    Object.defineProperty(document, "elementFromPoint", { configurable: true, value: () => topmost });
+  });
+  afterEach(() => {
+    Reflect.deleteProperty(document, "elementFromPoint");
+  });
+
+  /** Balloons, two with no id, in the overview display, and a cover over them. */
+  const balloons = (count = 2) => ({
+    overview: {
+      backgroundLayerNodes: undefined,
+      foregroundLayerNodes: [
+        <div key="o" data-display-scope={SCOPE}>
+          {Array.from({ length: count }, (_, i) => (
+            <span key={i} className="balloon" data-n={i} />
+          ))}
+          <span id="cover" />
+        </div>,
+      ],
+    },
+  });
+
+  const renderRules = async (cameraRules: CameraRuleTarget[], gameLayers = balloons()) => {
+    const onPlayerInteraction = vi.fn();
+    const view = renderLayout({
+      camera: { enabled: true, preview: true },
+      cameraRules,
+      onPlayerInteraction,
+      gameLayers,
+    });
+    await screen.findByTestId("canvas");
+    stubRect(view.container.querySelector("canvas")!, new DOMRect(0, 0, 100, 100));
+    const stubAll = () =>
+      view.container.querySelectorAll(".balloon").forEach((el) => stubRect(el, new DOMRect(0, 0, 50, 50)));
+    stubAll();
+    return { ...view, onPlayerInteraction, stubAll };
+  };
+  const send = (players: PlayerFrame[], timestamp: number) =>
+    act(() => received.canvas.at(-1)!.onPlayersChange!(players, timestamp));
+  /** A hand moving from outside the balloons onto them. */
+  const handIn = (from = 900) => {
+    send([playerWithHandAt(0, 7)], from);
+    send([playerWithHandAt(6, 1)], from + 100);
+  };
+  const balloonRule = (overrides: Partial<CameraRuleTarget> = {}) =>
+    handRule({ selector: ".balloon", includeCovered: false, ...overrides });
+
+  it("fires for every element a class selector matches, including those without an id", async () => {
+    const { container, onPlayerInteraction } = await renderRules([balloonRule({ includeCovered: true })]);
+    handIn();
+    expect(onPlayerInteraction.mock.calls.map(([event]) => event.element)).toEqual(
+      Array.from(container.querySelectorAll(".balloon")),
+    );
+  });
+
+  it("keeps an element's key across frames, so a hand that stays doesn't fire again", async () => {
+    const { onPlayerInteraction } = await renderRules([balloonRule({ includeCovered: true })], balloons(1));
+    handIn();
+    send([playerWithHandAt(6, 1)], 1100);
+    send([playerWithHandAt(6, 1)], 1200);
+    expect(onPlayerInteraction).toHaveBeenCalledOnce();
+  });
+
+  it("counts an element added after the first frame, or one replaced, as new", async () => {
+    const { container, onPlayerInteraction, rerender, stubAll } = await renderRules(
+      [balloonRule({ includeCovered: true })],
+      balloons(0),
+    );
+    send([playerWithHandAt(6, 1)], 900);
+    rerender(
+      layout({
+        camera: { enabled: true, preview: true },
+        cameraRules: [balloonRule({ includeCovered: true })],
+        onPlayerInteraction,
+        gameLayers: balloons(1),
+      }),
+    );
+    stubAll();
+    send([playerWithHandAt(6, 1)], 1000);
+    expect(onPlayerInteraction).toHaveBeenCalledOnce();
+
+    const first = container.querySelector(".balloon")!;
+    first.replaceWith(first.cloneNode());
+    stubAll();
+    send([playerWithHandAt(6, 1)], 1100);
+    expect(onPlayerInteraction).toHaveBeenCalledTimes(2);
+  });
+
+  it("ignores an element that something else covers, as a click would", async () => {
+    const { container, onPlayerInteraction } = await renderRules([balloonRule()], balloons(1));
+    topmost = container.querySelector("#cover");
+    handIn();
+    expect(onPlayerInteraction).not.toHaveBeenCalled();
+  });
+
+  it("fires for an element on top, or with something inside it on top", async () => {
+    const { container, onPlayerInteraction } = await renderRules([balloonRule()], balloons(1));
+    const balloon = container.querySelector(".balloon")!;
+    const inner = balloon.appendChild(document.createElement("b"));
+    topmost = inner;
+    handIn();
+    expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ element: balloon }));
+  });
+
+  it("ignores covering for a rule with includeCovered", async () => {
+    const { container, onPlayerInteraction } = await renderRules([balloonRule({ includeCovered: true })], balloons(1));
+    topmost = container.querySelector("#cover");
+    handIn();
+    expect(onPlayerInteraction).toHaveBeenCalledOnce();
+  });
+
+  it("only looks in the rule's own display", async () => {
+    const { onPlayerInteraction } = await renderRules([
+      balloonRule({ includeCovered: true, scope: "stage:s1:shared" }),
+    ]);
+    handIn();
+    expect(onPlayerInteraction).not.toHaveBeenCalled();
   });
 });

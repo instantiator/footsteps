@@ -21,10 +21,13 @@ export const smallGame: GameData = {
   displays: [
     {
       purpose: "game-overview-stages",
-      clickIdToStageId: { "stage-link-stage-1": { stage: "stage-1" }, "stage-link-stage-2": { stage: "stage-2" } },
       component: {
         type: "template",
         data: {},
+        rules: ["stage-1", "stage-2"].map((stageId) => ({
+          on: { interact: "click", target: `#stage-link-${stageId}` },
+          do: [{ enterStage: stageId }],
+        })),
         foregroundTemplate: {
           sourceType: "embedded",
           content:

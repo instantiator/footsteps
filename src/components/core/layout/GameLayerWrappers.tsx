@@ -1,4 +1,5 @@
 import { Fragment, type CSSProperties, type ReactNode } from "react";
+import useAppConfig from "../../../providers/AppConfigHook";
 import { isDefined } from "../../../util/ObjectUtils";
 import CameraDebugOverlay from "../../camera/CameraDebugOverlay";
 import type { FeetPositions } from "../../camera/CameraSupport";
@@ -44,8 +45,6 @@ export interface LayerNodeProps {
   onPlayersChange?: (players: PlayerFrame[], timestamp: number) => void;
   /** Whether debug aids (colour key, coloured mask) are shown. */
   debug?: boolean;
-  /** Called with clicks on elements in the layer; `layerIdOverride` replaces the layer's own id as the source. */
-  clickHandler?: (event: React.SyntheticEvent<HTMLElement>, layerIdOverride?: string) => void;
   /** The display components to render in the layer, one per grid column. */
   nodes?: ReactNode[];
   /** Whether the game uses the camera. */
@@ -57,30 +56,11 @@ export interface LayerNodeProps {
 }
 
 /**
- * Treats Enter or Space on a focused template element marked `role="button"` like a click on it.
- * Other elements (text inputs, native buttons) keep their own key handling.
- */
-const isTemplateButtonActivation = (event: React.KeyboardEvent<HTMLElement>): boolean =>
-  (event.key === "Enter" || event.key === " ") && (event.target as HTMLElement).getAttribute("role") === "button";
-
-/**
  * A background or foreground layer of the overview, stage or challenges: its display components in a
- * {@link GameChallengeGrid}, with clicks and key presses delegated to the click handler.
+ * {@link GameChallengeGrid}. The layer lets pointer events through; each display handles its own.
  */
-export const GameLayerWrapper = ({ nodes, style, zIndex, clickHandler, layer, layerHint }: LayerNodeProps) => (
-  // Delegates clicks and key presses from elements inside game-authored templates, which are the real controls
-  // oxlint-disable-next-line jsx-a11y/no-static-element-interactions
-  <div
-    id={`${layer!}-${layerHint!}-container`}
-    className="outerStyle noClicks"
-    style={{ ...style, zIndex: zIndex }}
-    onClick={(event) => clickHandler?.(event, layer!)}
-    onKeyDown={(event) => {
-      if (!isTemplateButtonActivation(event)) return;
-      event.preventDefault(); // stop Space scrolling the page
-      clickHandler?.(event, layer!);
-    }}
-  >
+export const GameLayerWrapper = ({ nodes, style, zIndex, layer, layerHint }: LayerNodeProps) => (
+  <div id={`${layer!}-${layerHint!}-container`} className="outerStyle noClicks" style={{ ...style, zIndex: zIndex }}>
     {isDefined(nodes) && (
       <GameChallengeGrid layer={layer!} layerHint={layerHint!} className="innerStyle noClicks">
         {nodes.map((node, index) => (
@@ -121,17 +101,10 @@ export const CharacterCameraLayerWrapper = ({
   </div>
 );
 
-/** Layer holding the debug overlay: feet markers when the camera is enabled. */
-export const DebugLayerWrapper = ({ style, zIndex, clickHandler, feetPositions, cameraEnabled }: LayerNodeProps) => (
-  // Debug-only overlay that delegates clicks, as GameLayerWrapper does
-  // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-  <div
-    id="debug-overlay-container"
-    className="outerStyle noClicks"
-    onClick={(event) => clickHandler?.(event, undefined)}
-    style={{ ...style, zIndex: zIndex }}
-  >
-    {cameraEnabled && <CameraDebugOverlay className="innerStyle childClicksOnly" feetPositions={feetPositions} />}
+/** Layer holding the debug overlay: feet markers when the camera is enabled. They take no pointer events, so they never cover what the player touches. */
+export const DebugLayerWrapper = ({ style, zIndex, feetPositions, cameraEnabled }: LayerNodeProps) => (
+  <div id="debug-overlay-container" className="outerStyle noClicks" style={{ ...style, zIndex: zIndex }}>
+    {cameraEnabled && <CameraDebugOverlay className="innerStyle noClicks" feetPositions={feetPositions} />}
   </div>
 );
 
@@ -146,22 +119,26 @@ export const CharacterCanvasLayerWrapper = ({
   canvasRef,
   onPlayersChange,
   debug,
-}: LayerNodeProps) => (
-  // Clicks pass through to the game layers beneath; the silhouette is decoration
-  <div id="character-canvas-container" className="outerStyle noClicks">
-    <CharacterCanvas
-      video={video ?? null}
-      mediaStream={characterStream}
-      className="innerStyle"
-      style={{ ...style, transform: "scaleX(-1)", aspectRatio: aspectRatio, zIndex }}
-      onFeetPositionsChange={setFeetPositions}
-      onPlayersChange={onPlayersChange}
-      canvasRef={canvasRef}
-      maskType={debug ? "colored" : "binary"}
-      showStats={debug}
-    />
-  </div>
-);
+}: LayerNodeProps) => {
+  const { showFps } = useAppConfig();
+  return (
+    // Clicks pass through to the game layers beneath; the silhouette is decoration
+    <div id="character-canvas-container" className="outerStyle noClicks">
+      <CharacterCanvas
+        video={video ?? null}
+        mediaStream={characterStream}
+        className="innerStyle"
+        style={{ ...style, transform: "scaleX(-1)", aspectRatio: aspectRatio, zIndex }}
+        // Only the debug overlay shows the feet; reporting them otherwise would re-render the game every frame
+        onFeetPositionsChange={debug ? setFeetPositions : undefined}
+        onPlayersChange={onPlayersChange}
+        canvasRef={canvasRef}
+        maskType={debug ? "colored" : "binary"}
+        showStats={debug || showFps}
+      />
+    </div>
+  );
+};
 
 /** Top layer, holding the {@link HeadsUpDisplay}. */
 export const HudLayerWrapper = ({ style, zIndex }: LayerNodeProps) => (

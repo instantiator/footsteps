@@ -98,18 +98,67 @@
               "backgroundSize": "cover",
               "backgroundPosition": "center"
             },
-            "data": {}
+            "data": {},
+            "rules": [
+              {
+                "on": {
+                  "interact": ["click", "hand-enter", "jump"],
+                  "target": "#stages-link-stage-1",
+                  "threshold": 0.5
+                },
+                "do": [{ "enterStage": "stage-1" }]
+              },
+              {
+                "on": {
+                  "interact": ["click", "hand-enter", "jump"],
+                  "target": "#stages-link-stage-2",
+                  "threshold": 0.5
+                },
+                "do": [{ "enterStage": "stage-2" }]
+              },
+              {
+                "on": {
+                  "interact": ["click", "hand-enter", "jump"],
+                  "target": "#stages-link-stage-3",
+                  "threshold": 0.5
+                },
+                "do": [{ "enterStage": "stage-3" }]
+              },
+              {
+                "on": {
+                  "interact": ["click", "hand-enter", "jump"],
+                  "target": "#stages-link-stage-4",
+                  "threshold": 0.5
+                },
+                "do": [{ "enterStage": "stage-4" }]
+              },
+              {
+                "on": {
+                  "interact": ["click", "hand-enter", "jump"],
+                  "target": "#stages-link-stage-5",
+                  "threshold": 0.5
+                },
+                "do": [{ "enterStage": "stage-5" }]
+              },
+              {
+                "on": {
+                  "interact": ["click", "hand-enter", "jump"],
+                  "target": "#stages-link-stage-6",
+                  "threshold": 0.5
+                },
+                "do": [{ "enterStage": "stage-6" }]
+              },
+              {
+                "on": {
+                  "interact": ["click", "hand-enter", "jump"],
+                  "target": "#stages-link-stage-7",
+                  "threshold": 0.5
+                },
+                "do": [{ "enterStage": "stage-7" }]
+              }
+            ]
           },
-          "camera": { "enabled": true },
-          "clickIdToStageId": {
-            "stages-link-stage-1": { "stage": "stage-1", "interactions": ["click", "hand", "jump"], "threshold": 0.5 },
-            "stages-link-stage-2": { "stage": "stage-2", "interactions": ["click", "hand", "jump"], "threshold": 0.5 },
-            "stages-link-stage-3": { "stage": "stage-3", "interactions": ["click", "hand", "jump"], "threshold": 0.5 },
-            "stages-link-stage-4": { "stage": "stage-4", "interactions": ["click", "hand", "jump"], "threshold": 0.5 },
-            "stages-link-stage-5": { "stage": "stage-5", "interactions": ["click", "hand", "jump"], "threshold": 0.5 },
-            "stages-link-stage-6": { "stage": "stage-6", "interactions": ["click", "hand", "jump"], "threshold": 0.5 },
-            "stages-link-stage-7": { "stage": "stage-7", "interactions": ["click", "hand", "jump"], "threshold": 0.5 }
-          }
+          "camera": { "enabled": true }
         }
       ],
       "stages": [
@@ -410,6 +459,215 @@
         "borderRadius": "20px",
         "boxShadow": "rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px"
       }
+    },
+    "rules-demo": {
+      "id": "rules-demo",
+      "title": "Rules demo",
+      "description": "Pop balloons and cross a floor of lava: a demonstration of display rules and state, by mouse or camera.",
+      "modules": { "camera": { "enabled": false } },
+      "config": { "sequential": false, "autoAdvanceStages": false },
+      "stylesheets": ["demo-css"],
+      "resources": {
+        "demo-css": { "type": "local", "target": "games/rules-demo/rules-demo.css" },
+        "chime": { "type": "local", "target": "games/rules-demo/chime.wav" },
+        "tick": { "type": "local", "target": "games/rules-demo/tick.wav" },
+        "pop": { "type": "local", "target": "games/rules-demo/pop.wav" },
+        "fanfare": { "type": "local", "target": "games/rules-demo/fanfare.wav" }
+      },
+      "displays": [
+        {
+          "purpose": "game-overview-title",
+          "component": {
+            "type": "template",
+            "data": {},
+            "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/title.hbs" },
+            "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+          }
+        },
+        {
+          "purpose": "game-overview-stages",
+          "camera": { "enabled": true },
+          "component": {
+            "type": "template",
+            "data": { "names": { "balloons": "Balloons", "lava": "The floor is lava" } },
+            "initialState": { "position": 1, "lit": false },
+            "rules": [
+              {
+                "on": { "interact": ["hand-enter", "mouse-enter"], "target": "#bulb", "threshold": 0.3 },
+                "do": [{ "set": { "lit": "true" } }]
+              },
+              {
+                "on": { "interact": ["hand-exit", "mouse-exit"], "target": "#bulb", "threshold": 0.3 },
+                "do": [{ "set": { "lit": "false" } }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-balloons", "threshold": 0.5 },
+                "do": [{ "enterStage": "balloons" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-lava", "threshold": 0.5 },
+                "do": [{ "enterStage": "lava" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#switch", "threshold": 0.5 },
+                "do": [{ "set": { "position": "if state.position == 1 then 2 else 1" } }]
+              }
+            ],
+            "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/stages.hbs" },
+            "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+          }
+        }
+      ],
+      "stages": [
+        {
+          "id": "balloons",
+          "challenges": [
+            {
+              "id": "pop-balloons",
+              "solution": { "answers": [] },
+              "displays": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "camera": { "enabled": true },
+                  "component": {
+                    "type": "template",
+                    "data": { "target": 10 },
+                    "initialState": {
+                      "score": 0,
+                      "balloonIndex": 0,
+                      "popping": false,
+                      "dropMs": 4000,
+                      "left": 45,
+                      "colour": 0
+                    },
+                    "resetStateOnShow": true,
+                    "rules": [
+                      {
+                        "on": { "interact": ["hand-enter", "click"], "target": ".balloon", "threshold": 0.3 },
+                        "if": "not state.popping",
+                        "do": [{ "set": { "popping": "true", "score": "state.score + 1" } }, { "sound": "pop" }]
+                      },
+                      {
+                        "on": { "animationEnd": "fall", "target": ".balloon" },
+                        "do": [{ "set": { "popping": "true" } }]
+                      },
+                      {
+                        "on": { "animationEnd": "pop", "target": ".balloon" },
+                        "do": [
+                          {
+                            "set": {
+                              "popping": "false",
+                              "balloonIndex": "state.balloonIndex + 1",
+                              "left": "((state.balloonIndex + 1) * 37) mod 70 + 10",
+                              "colour": "(state.balloonIndex + 1) mod 6"
+                            }
+                          }
+                        ]
+                      },
+                      { "on": { "when": "state.score >= data.target" }, "do": [{ "completeChallenge": true }] }
+                    ],
+                    "foregroundTemplate": {
+                      "sourceType": "relative",
+                      "templateSource": "games/rules-demo/balloons.hbs"
+                    },
+                    "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+                  },
+                  "resetDisplay": {
+                    "showOn": "every-show",
+                    "component": {
+                      "type": "template",
+                      "data": {},
+                      "initialState": { "count": 3 },
+                      "rules": [
+                        { "on": { "start": true }, "do": [{ "sound": "tick" }] },
+                        {
+                          "on": { "every": 1000 },
+                          "do": [{ "set": { "count": "state.count - 1" } }, { "sound": "tick" }]
+                        },
+                        { "on": { "after": 3000 }, "do": [{ "finishReset": true }] }
+                      ],
+                      "foregroundTemplate": {
+                        "sourceType": "relative",
+                        "templateSource": "games/rules-demo/balloons-ready.hbs"
+                      },
+                      "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "lava",
+          "challenges": [
+            {
+              "id": "cross-the-floor",
+              "solution": { "answers": [] },
+              "displays": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "camera": { "enabled": true },
+                  "component": {
+                    "type": "template",
+                    "data": {},
+                    "initialState": { "done": false },
+                    "resetStateOnShow": true,
+                    "rules": [
+                      {
+                        "on": { "interact": ["foot-enter", "mouse-enter"], "target": ".lava", "threshold": 0.3 },
+                        "if": "not state.done",
+                        "do": [{ "resetChallenge": true }]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter", "mouse-enter"], "target": "#door-base", "threshold": 0.3 },
+                        "if": "not state.done",
+                        "do": [
+                          { "set": { "done": "true" } },
+                          { "completeChallenge": true },
+                          { "sound": "fanfare" },
+                          { "reward": { "animation": "fireworks", "particleCount": 150 } }
+                        ]
+                      }
+                    ],
+                    "backgroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/lava.hbs" },
+                    "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
+                  },
+                  "resetDisplay": {
+                    "component": {
+                      "type": "template",
+                      "data": {},
+                      "initialState": { "ready": false },
+                      "rules": [
+                        {
+                          "on": {
+                            "interact": ["foot-enter", "mouse-enter"],
+                            "target": "#reset-start",
+                            "threshold": 0.3
+                          },
+                          "if": "not state.ready",
+                          "do": [
+                            { "set": { "ready": "true" } },
+                            { "sound": "chime" },
+                            { "reward": { "animation": "sparkles", "particleCount": 60 } }
+                          ]
+                        },
+                        { "on": { "when": "state.ready", "forMs": 3000 }, "do": [{ "finishReset": true }] }
+                      ],
+                      "backgroundTemplate": {
+                        "sourceType": "relative",
+                        "templateSource": "games/rules-demo/lava-reset.hbs"
+                      },
+                      "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "gameContainerStyle": { "fontFamily": "system-ui, sans-serif" }
     }
   }
 }

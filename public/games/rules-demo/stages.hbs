@@ -1,0 +1,17 @@
+<div class="demo-screen">
+  <h1>Choose a stage</h1>
+  <div class="demo-stages">
+    {{#each gameState.stages}}
+    <div
+      id="stage-link-{{stage.id}}"
+      class="demo-stage-link{{#if showCompleted}} completed{{/if}}"
+      role="button"
+      tabindex="0">
+      {{oneIndex}}. {{lookup @root.data.names stage.id}}{{#if showCompleted}} ✓{{/if}}
+    </div>
+    {{/each}}
+  </div>
+  <p class="demo-hint">Click or touch the switch to move it. Hold a hand (or the mouse) over the bulb to light it.</p>
+  <div id="switch" class="demo-switch position-{{state.position}}" role="button" tabindex="0"></div>
+  <div id="bulb" class="demo-bulb{{#if state.lit}} lit{{/if}}"></div>
+</div>
