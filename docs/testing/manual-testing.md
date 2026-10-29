@@ -32,7 +32,7 @@ Open <http://localhost:5173/game/magic-trifle>.
 - [ ] Walking around moves the silhouette with you.
 - [ ] The page shows no errors in the browser console.
 
-Now add `?debug=true` to the URL and reload.
+Now add `?debug=true` to the URL and reload ([Configuration](../configuration.md) lists every setting).
 
 - [ ] Each player is tinted, with their head, hands and feet in their own colours, and a colour key
       appears below the preview.
