@@ -16,13 +16,6 @@
       "count": 1
     },
     {
-      "rule": "react/set-state-in-effect",
-      "engine": "lint",
-      "file": "src/components/camera/CharacterCanvas.tsx",
-      "fingerprint": "39b7c53760753683",
-      "count": 1
-    },
-    {
       "rule": "jsx-a11y/media-has-caption",
       "engine": "lint",
       "file": "src/components/core/display/GameAudioComponent.tsx",
@@ -34,20 +27,20 @@
       "engine": "lint",
       "file": "src/components/core/layout/GameLayerWrappers.tsx",
       "fingerprint": "d70b8e28e0ce8716",
-      "count": 2
+      "count": 1
     },
     {
       "rule": "jsx-a11y/no-static-element-interactions",
       "engine": "lint",
       "file": "src/components/core/layout/GameLayerWrappers.tsx",
       "fingerprint": "d70b8e28e0ce8716",
-      "count": 2
+      "count": 1
     },
     {
-      "rule": "security/dangerously-set-innerhtml",
-      "engine": "security",
-      "file": "src/components/core/display/GameDisplayTemplateComponent.tsx",
-      "fingerprint": "561b51a472ef737e",
+      "rule": "knip/skipped",
+      "engine": "code-quality",
+      "file": "package.json",
+      "fingerprint": "message:afa23e90d1b253b4",
       "count": 1
     }
   ]
