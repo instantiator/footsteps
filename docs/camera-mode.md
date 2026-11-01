@@ -127,33 +127,9 @@ game's elements underneath. Each element's `id` says what a click or camera inte
 
 ## Configuration
 
-Camera and vision settings are app config: set per environment in the committed `.env` files (`.env`, then
-`.env.development`, `.env.test` or `.env.production`), or for one visit by a URL query named after the setting.
-An untracked `.env.local` holds personal overrides. `src/config/AppConfig.ts` documents every setting.
-
-| Setting (`.env` / query)                           | Default                             | What it does                                                           |
-| -------------------------------------------------- | ----------------------------------- | ---------------------------------------------------------------------- |
-| `VITE_DEBUG` / `debug`                             | `false`                             | Debugging aids; see [debugging](#debugging)                            |
-| `VITE_SHOW_FPS` / `showFps`                        | on in development, off in the build | The camera tracking's frame rate in the HUD, while a camera is tracked |
-| `VITE_VISION_MODEL` / `visionModel`                | `bodypix`                           | `bodypix`, `mediapipe` or `movenet`; see ADR 0005                      |
-| `VITE_VISION_BACKEND` / `visionBackend`            | `webgpu`                            | tfjs backend for BodyPix and MoveNet; WebGPU falls back to WebGL       |
-| `VITE_VISION_WORKER` / `visionWorker`              | `true`                              | Runs the model in a web worker                                         |
-| `VITE_VISION_MAX_PEOPLE` / `visionMaxPeople`       | `4`                                 | The most players a model looks for                                     |
-| `VITE_VISION_SMOOTHING` / `visionSmoothing`        | `true`                              | Stable player ids, smoothed key points, and the stable-frames rule     |
-| `VITE_VISION_STABLE_FRAMES` / `visionStableFrames` | `2`                                 | Frames an interaction must hold before it fires                        |
-| `VITE_CAMERA_WIDTH`, `VITE_CAMERA_HEIGHT`          | `1280`, `720`                       | The camera resolution asked for                                        |
-| `VITE_VISION_INPUT_WIDTH` / `visionInputWidth`     | `960`                               | The widest frame the model is given; `0` gives it full size            |
-| `VITE_BODYPIX_REFINE_STEPS` / `bodypixRefineSteps` | `3`                                 | Passes BodyPix makes to assign pixels to people                        |
-| `VITE_BODYPIX_*` / `bodypix*`                      | MobileNetV1                         | Architecture, output stride, weight bytes, resolution, and threshold   |
-| `VITE_MEDIAPIPE_VARIANT` / `mediapipeVariant`      | `full`                              | MediaPipe Pose's model size: `lite`, `full` or `heavy`                 |
-| `VITE_CAMERA_FEATHER_PX` / `cameraFeatherPx`       | `3`                                 | How far the silhouette's edges fade out, in canvas pixels; `0` is hard |
-| `VITE_CAMERA_HOLD_MS` / `cameraHoldMs`             | `400`                               | How long a player the model loses is still shown (needs smoothing)     |
-| `VITE_CAMERA_FADE_MS` / `cameraFadeMs`             | `300`                               | How long a held player then takes to fade out                          |
-| `VITE_CAMERA_FILL_GAPS` / `cameraFillGaps`         | `false`                             | Fills parts the model missed for a frame from the frame before         |
-| `VITE_JUMP_*` / `jump*`                            | see [jumps](#jumps)                 | What counts as a jump                                                  |
-
-For example, `?visionModel=mediapipe&visionWorker=false` tries MediaPipe Pose on the main thread. An invalid
-value is ignored with a console warning. [ADR 0004](ADRs/0004-vision-optimisations.md) and
+The vision model, camera and jump settings are app config, set in the `.env` files or for one visit in the URL
+query: see [Configuration](configuration.md). For example, `?visionModel=mediapipe&visionWorker=false` tries
+MediaPipe Pose on the main thread. [ADR 0004](ADRs/0004-vision-optimisations.md) and
 [ADR 0005](ADRs/0005-vision-models.md) explain the choices and measurements.
 
 ## How interactions work
@@ -217,15 +193,7 @@ landed.
 4. A rise still going after `jumpMaxRiseMs`, or a jump that doesn't land in time, is abandoned. Wherever the feet
    are then is the ground. This is how stepping back, which raises the feet in the image, is told from a jump.
 
-| Setting (`.env` / query)                          | Default | What it does                                      |
-| ------------------------------------------------- | ------- | ------------------------------------------------- |
-| `VITE_JUMP_MIN_RISE` / `jumpMinRise`              | `0.04`  | The rise needed (about 5 cm for a 1.3 m child)    |
-| `VITE_JUMP_STILL` / `jumpStill`                   | `0.02`  | How far standing feet may wander                  |
-| `VITE_JUMP_MIN_GROUNDED_MS` / `jumpMinGroundedMs` | `100`   | How long the feet must stand before a take-off    |
-| `VITE_JUMP_MAX_RISE_MS` / `jumpMaxRiseMs`         | `500`   | The longest the feet may keep rising              |
-| `VITE_JUMP_MAX_AIRTIME_MS` / `jumpMaxAirtimeMs`   | `1000`  | The longest from leaving the ground to landing    |
-| `VITE_JUMP_MIN_DESCENT` / `jumpMinDescent`        | `0.5`   | How much of the rise the feet must come back down |
-
+The settings' defaults are listed under [Configuration](configuration.md#jumps).
 [ADR 0008](ADRs/0008-jump-detection.md) explains the model and how the defaults were chosen.
 
 Clicks remain the keyboard-accessible route. A camera interaction fires the same rule a click would, through
@@ -256,7 +224,7 @@ counts as new, so give an `id` to elements whose interactions should carry over.
 
 ## Debugging
 
-Add `?debug=true` to the URL to turn on the `debug` setting. In camera mode that:
+Add `?debug=true` to the URL to turn on the [`debug` setting](configuration.md). In camera mode that:
 
 - tints each player differently, with their head, hands and feet in their own colours;
 - shows a colour key under the preview;
