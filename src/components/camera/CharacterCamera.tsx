@@ -2,7 +2,8 @@ import { useEffect, useRef, type Dispatch, type RefObject, type SetStateAction }
 import useAppConfig from "../../providers/AppConfigHook";
 import { isDefined } from "../../util/ObjectUtils";
 import { BODY_PART_STYLES } from "../../vision/BodyPart";
-import { getCameraStream } from "./CameraSupport";
+import { loadCameraChoice } from "./CameraChoice";
+import { getCameraStream, stopTracks } from "./CameraSupport";
 
 /** Props for {@link CharacterCamera}. State is held by the parent, so sibling components can share the video and stream. */
 interface CharacterCameraProps {
@@ -18,10 +19,9 @@ interface CharacterCameraProps {
   colorKey: boolean;
   /** Called when the camera can't start (refused, missing or busy). Keep it stable: a new one restarts the camera. */
   onError: () => void;
+  /** Whether to flip the preview like a mirror. */
+  mirror: boolean;
 }
-
-/** Stops every track in a stream, which turns the camera off. */
-const stopTracks = (stream: MediaStream) => stream.getTracks().forEach((track) => track.stop());
 
 /** Starts the camera once the video element exists: shares the stream once it is playing, and reports a failure. */
 function useCameraStart(
@@ -44,7 +44,8 @@ function useCameraStart(
     let cancelled = false;
     let opened: MediaStream | undefined;
     const start = async () => {
-      opened = await getCameraStream({ width, height });
+      // The choice is read only here: changing camera means going back to the landing page
+      opened = await getCameraStream({ width, height }, loadCameraChoice().deviceId);
       if (cancelled) return stopTracks(opened);
       element.srcObject = opened;
       await element.play();
@@ -67,7 +68,7 @@ function useCameraStart(
   useEffect(() => () => stream && stopTracks(stream), [stream]);
 }
 
-/** Captures the player's webcam into a small mirrored preview video, for the segmentation to read; optionally with a colour key. */
+/** Captures the player's webcam into a small preview video, for the segmentation to read; optionally with a colour key. */
 export default function CharacterCamera({
   stream,
   setStream,
@@ -76,6 +77,7 @@ export default function CharacterCamera({
   onAspectChange: setAspect,
   colorKey,
   onError,
+  mirror,
 }: CharacterCameraProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -93,7 +95,7 @@ export default function CharacterCamera({
         style={{
           width: "12vw",
           height: "auto",
-          transform: "scaleX(-1)",
+          transform: mirror ? "scaleX(-1)" : undefined,
           border: "solid 2px grey",
         }}
         autoPlay

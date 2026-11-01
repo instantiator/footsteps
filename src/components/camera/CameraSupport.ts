@@ -1,19 +1,37 @@
 import { isDefined } from "../../util/ObjectUtils";
 import type { Point, VisionPerson } from "../../vision/VisionTypes";
 
+/** Whether an error means the camera asked for isn't there (eg. unplugged), rather than that it was refused or busy. */
+const isMissingCamera = (error: unknown): boolean =>
+  typeof error === "object" &&
+  error !== null &&
+  "name" in error &&
+  (error.name === "OverconstrainedError" || error.name === "NotFoundError");
+
 /**
  * Asks the player for their webcam; rejects (after logging) if it is refused or unavailable.
  * @param size the resolution to ask for, which the camera may not give; the camera's default if omitted
+ * @param deviceId the camera to use, falling back to the system default if it has gone; the system default if omitted
  */
-export const getCameraStream = async (size?: { width: number; height: number }) => {
-  const video = size ? { width: { ideal: size.width }, height: { ideal: size.height } } : true;
+export const getCameraStream = async (size?: { width: number; height: number }, deviceId?: string) => {
+  const sized = size ? { width: { ideal: size.width }, height: { ideal: size.height } } : {};
+  const defaultCamera = () => navigator.mediaDevices.getUserMedia({ video: size ? sized : true });
   try {
-    return await navigator.mediaDevices.getUserMedia({ video });
+    if (deviceId === undefined) return await defaultCamera();
+    try {
+      return await navigator.mediaDevices.getUserMedia({ video: { ...sized, deviceId: { exact: deviceId } } });
+    } catch (err) {
+      if (!isMissingCamera(err)) throw err;
+      return await defaultCamera();
+    }
   } catch (err) {
     console.error("Error accessing the camera: ", err);
     throw err;
   }
 };
+
+/** Stops every track in a stream, which turns the camera off. */
+export const stopTracks = (stream: MediaStream) => stream.getTracks().forEach((track) => track.stop());
 
 /** Each tracked person's feet position, keyed by their index in the segmentation. */
 export type FeetPositions = {
@@ -53,6 +71,14 @@ export interface Rect {
   bottom: number;
 }
 
+/** A mask's size, in pixels. */
+export interface MaskSize {
+  /** Pixels across. */
+  width: number;
+  /** Pixels down. */
+  height: number;
+}
+
 /** A rectangle in mask pixels, with whole-pixel bounds and an exclusive `right` and `bottom`. */
 export type MaskRect = Rect;
 
@@ -65,7 +91,7 @@ const clampPixel = (value: number, max: number): number => Math.min(Math.max(Mat
 /**
  * Converts an element's viewport rectangle into the segmentation mask's pixel bounds.
  *
- * The silhouette canvas is drawn mirrored (`scaleX(-1)`), so the mask's x axis runs opposite to the
+ * When the silhouette canvas is drawn mirrored (`scaleX(-1)`), the mask's x axis runs opposite to the
  * screen's: an element on the left of the screen covers the right of the mask. The mask may also be
  * a different size from the canvas, so both axes are scaled between them.
  *
@@ -74,16 +100,18 @@ const clampPixel = (value: number, max: number): number => Math.min(Math.max(Mat
 export const maskRectForElement = (
   elementRect: Rect,
   canvasRect: Rect,
-  maskWidth: number,
-  maskHeight: number,
+  { width: maskWidth, height: maskHeight }: MaskSize,
+  mirrored: boolean,
 ): MaskRect => {
   const canvasWidth = canvasRect.right - canvasRect.left;
   const canvasHeight = canvasRect.bottom - canvasRect.top;
   if (canvasWidth <= 0 || canvasHeight <= 0 || maskWidth <= 0 || maskHeight <= 0) return EMPTY_MASK_RECT;
 
-  // Mirror x about the canvas centre, because the canvas shows the mask flipped
-  const left = clampPixel(((canvasRect.right - elementRect.right) / canvasWidth) * maskWidth, maskWidth);
-  const right = clampPixel(((canvasRect.right - elementRect.left) / canvasWidth) * maskWidth, maskWidth);
+  // A mirrored canvas shows the mask flipped about its centre
+  const fromLeft = mirrored ? canvasRect.right - elementRect.right : elementRect.left - canvasRect.left;
+  const fromRight = mirrored ? canvasRect.right - elementRect.left : elementRect.right - canvasRect.left;
+  const left = clampPixel((fromLeft / canvasWidth) * maskWidth, maskWidth);
+  const right = clampPixel((fromRight / canvasWidth) * maskWidth, maskWidth);
   const top = clampPixel(((elementRect.top - canvasRect.top) / canvasHeight) * maskHeight, maskHeight);
   const bottom = clampPixel(((elementRect.bottom - canvasRect.top) / canvasHeight) * maskHeight, maskHeight);
 
@@ -92,16 +120,18 @@ export const maskRectForElement = (
 };
 
 /**
- * Converts a point in mask pixels to the viewport point it is drawn at: the inverse of {@link maskRectForElement},
- * mirrored the same way. The point is taken at the centre of its pixel.
+ * Converts a point in mask pixels to the viewport point it is drawn at: the inverse of {@link maskRectForElement}.
+ * The point is taken at the centre of its pixel.
  */
 export const screenPointForMaskPoint = (
   point: Point,
   canvasRect: Rect,
-  maskWidth: number,
-  maskHeight: number,
+  { width: maskWidth, height: maskHeight }: MaskSize,
+  mirrored: boolean,
 ): Point => ({
-  x: canvasRect.right - ((point.x + 0.5) / maskWidth) * (canvasRect.right - canvasRect.left),
+  x: mirrored
+    ? canvasRect.right - ((point.x + 0.5) / maskWidth) * (canvasRect.right - canvasRect.left)
+    : canvasRect.left + ((point.x + 0.5) / maskWidth) * (canvasRect.right - canvasRect.left),
   y: canvasRect.top + ((point.y + 0.5) / maskHeight) * (canvasRect.bottom - canvasRect.top),
 });
 

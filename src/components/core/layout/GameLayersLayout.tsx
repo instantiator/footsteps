@@ -10,6 +10,7 @@ import {
   type SetStateAction,
 } from "react";
 import { isDefined } from "../../../util/ObjectUtils";
+import { loadCameraChoice } from "../../camera/CameraChoice";
 import type { FeetPositions } from "../../camera/CameraSupport";
 import type { PlayerFrame } from "../../camera/PlayerMonitor";
 import type { ResolvedCameraMode } from "../logic/CameraModeUtils";
@@ -98,7 +99,8 @@ function UpperDisplayLayers({
   debug,
   feetPositions,
   cameraEnabled,
-}: DisplayLayersProps & { debug?: boolean; feetPositions: FeetPositions; cameraEnabled: boolean }) {
+  mirror,
+}: DisplayLayersProps & { debug?: boolean; feetPositions: FeetPositions; cameraEnabled: boolean; mirror: boolean }) {
   return (
     <>
       <GameLayerWrapper
@@ -107,7 +109,9 @@ function UpperDisplayLayers({
         layer="challenges"
         layerHint="foreground"
       />
-      {debug && <DebugLayerWrapper zIndex={9} feetPositions={feetPositions} cameraEnabled={cameraEnabled} />}
+      {debug && (
+        <DebugLayerWrapper zIndex={9} feetPositions={feetPositions} cameraEnabled={cameraEnabled} mirror={mirror} />
+      )}
     </>
   );
 }
@@ -141,6 +145,8 @@ interface SceneProps {
   showPreview: boolean;
   /** Whether the layers can line up with a camera that has reported its shape. */
   show: boolean;
+  /** Whether the camera's picture is flipped like a mirror. */
+  mirror: boolean;
   /** Shows the debug overlay and the camera's colour key. */
   debug?: boolean;
   /** The webcam's video and stream, and what to do when the camera can't start. */
@@ -165,6 +171,7 @@ function Scene({
   cameraToMount,
   showPreview,
   show,
+  mirror,
   debug,
   media,
   aspectRatio,
@@ -174,6 +181,7 @@ function Scene({
   handlePlayers,
   setAspectRatio,
 }: SceneProps) {
+  const aids = { mirror, debug };
   return (
     <div
       className="gameScene"
@@ -191,7 +199,7 @@ function Scene({
           setFeetPositions={setFeetPositions}
           canvasRef={canvasRef}
           onPlayersChange={handlePlayers}
-          debug={debug}
+          {...aids}
         />
       )}
       {cameraToMount && (
@@ -204,13 +212,13 @@ function Scene({
           setAspectRatio={setAspectRatio}
           onCameraError={media.onCameraError}
           showPreview={showPreview}
-          debug={debug}
+          {...aids}
         />
       )}
       {show && (
         <UpperDisplayLayers
           layers={scene.layers}
-          debug={debug}
+          {...aids}
           feetPositions={feetPositions}
           cameraEnabled={scene.camera.enabled}
         />
@@ -260,6 +268,8 @@ export default function GameLayersLayout({
 }: GameLayersLayoutProps) {
   const [feetPositions, setFeetPositions] = useState<FeetPositions>({});
   const [cameraAspectRatio, setCameraAspectRatio] = useState<number>();
+  // Read once: changing it means going back to the landing page
+  const [mirror] = useState(() => loadCameraChoice().mirror);
   const { viewportRef, measureViewport, measureContainer } = useViewportMeasurements();
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const { camera, onCameraError } = useCameraFallback(requestedCamera);
@@ -286,6 +296,7 @@ export default function GameLayersLayout({
     cameraRules,
     onPlayerInteraction,
     scene.camera.enabled && !scene.transitioning,
+    mirror,
   );
 
   return (
@@ -300,6 +311,7 @@ export default function GameLayersLayout({
         cameraToMount={cameraToMount}
         showPreview={showPreview}
         show={show}
+        mirror={mirror}
         debug={debug}
         media={{ ...media, onCameraError }}
         aspectRatio={cameraAspectRatio}

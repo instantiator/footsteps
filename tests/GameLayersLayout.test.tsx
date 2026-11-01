@@ -1,6 +1,7 @@
 import { act, render, screen } from "@testing-library/react";
 import type { ComponentProps, ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { saveCameraChoice } from "../src/components/camera/CameraChoice";
 import type CharacterCamera from "../src/components/camera/CharacterCamera";
 import type CharacterCanvas from "../src/components/camera/CharacterCanvas";
 import type { PlayerFrame } from "../src/components/camera/PlayerMonitor";
@@ -457,6 +458,10 @@ describe("GameLayersLayout display transitions", () => {
 });
 
 describe("GameLayersLayout camera interactions", () => {
+  // These tests describe the mask's positions for a camera facing the player
+  beforeEach(() => saveCameraChoice({ mirror: true }));
+  afterEach(() => localStorage.clear());
+
   /** Renders the layout with the camera on and the given targets, and returns its canvas. */
   const renderWithCamera = async (
     props: Partial<ComponentProps<typeof GameLayersLayout>> = {},
@@ -490,6 +495,35 @@ describe("GameLayersLayout camera interactions", () => {
     sendPlayers([playerWithHandAt(6, 1)]);
 
     expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith(handOnThing(container));
+  });
+
+  it("reports the interaction on the same side of the mask when the camera isn't mirrored", async () => {
+    saveCameraChoice({ mirror: false });
+    const onPlayerInteraction = vi.fn();
+    const { container, canvas } = await renderWithCamera({
+      cameraRules: [handRule()],
+      onPlayerInteraction,
+    });
+    stubRect(canvas, new DOMRect(0, 0, 100, 100));
+    stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 50, 50));
+
+    sendPlayers([playerWithHandAt(6, 7)], 900);
+    sendPlayers([playerWithHandAt(0, 1)]);
+
+    expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith(handOnThing(container));
+  });
+
+  it("flips the silhouette and preview when the camera is mirrored", async () => {
+    await renderWithCamera();
+    expect(received.canvas.at(-1)?.style?.transform).toBe("scaleX(-1)");
+    expect(received.camera.at(-1)?.mirror).toBe(true);
+  });
+
+  it("doesn't flip the silhouette or preview when the camera isn't mirrored", async () => {
+    saveCameraChoice({ mirror: false });
+    await renderWithCamera();
+    expect(received.canvas.at(-1)?.style?.transform).toBeUndefined();
+    expect(received.camera.at(-1)?.mirror).toBe(false);
   });
 
   it("waits for the configured number of frames before reporting an interaction", async () => {
@@ -640,6 +674,10 @@ describe("GameLayersLayout camera interactions", () => {
 });
 
 describe("GameLayersLayout camera rules", () => {
+  // These tests describe the mask's positions for a camera facing the player
+  beforeEach(() => saveCameraChoice({ mirror: true }));
+  afterEach(() => localStorage.clear());
+
   /** What `document.elementFromPoint` returns; jsdom has no layout, so the tests decide what is on top. */
   let topmost: Element | null = null;
   beforeEach(() => {

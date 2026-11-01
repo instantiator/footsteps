@@ -6,6 +6,7 @@ import { isDefined } from "../../util/ObjectUtils";
 import GameStylesheets from "../core/GameStylesheets";
 import "./GamePanel.css";
 import "./GameLanding.css";
+import CameraPicker from "./CameraPicker";
 import GamePermissionPanel from "./GamePermissionPanel";
 import { useGamePermissions } from "./useGamePermissions";
 
@@ -38,7 +39,9 @@ export default function GameLanding() {
           <h1>{gameData.title}</h1>
           <p>{gameData.description}</p>
         </div>
-        <GamePermissionPanel permissions={permissions} states={states} granting={granting} onGrant={grant} />
+        <GamePermissionPanel permissions={permissions} states={states} granting={granting} onGrant={grant}>
+          {states.camera === "granted" && <CameraPicker />}
+        </GamePermissionPanel>
       </div>
       <div className="game-landing-actions">
         {isDefined(savedState) && (

@@ -36,15 +36,21 @@ export const stubPermissionQuery = (result: PermissionQueryResult) => {
   };
 };
 
-/** Replaces `navigator.mediaDevices.getUserMedia` with a stub that resolves a fake stream or rejects. */
+/** Replaces `navigator.mediaDevices` with stubs: `getUserMedia` resolves a fake stream or rejects, and no cameras list. */
 export const stubGetUserMedia = (error?: Error) => {
   const original = Object.getOwnPropertyDescriptor(navigator, "mediaDevices");
-  const getUserMedia = vi.fn<() => Promise<MediaStream>>();
+  const getUserMedia = vi.fn<(constraints: MediaStreamConstraints) => Promise<MediaStream>>();
+  const enumerateDevices = vi.fn<() => Promise<MediaDeviceInfo[]>>().mockResolvedValue([]);
   if (error) getUserMedia.mockRejectedValue(error);
   else getUserMedia.mockResolvedValue(new FakeMediaStream());
-  Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: { getUserMedia } });
+  const events = new EventTarget();
+  const value = Object.assign(events, { getUserMedia, enumerateDevices });
+  Object.defineProperty(navigator, "mediaDevices", { configurable: true, value });
   return {
     getUserMedia,
+    enumerateDevices,
+    /** Tells the page that the cameras changed. */
+    changeDevices: () => events.dispatchEvent(new Event("devicechange")),
     restore: () => {
       if (original) Object.defineProperty(navigator, "mediaDevices", original);
       else Reflect.deleteProperty(navigator, "mediaDevices");

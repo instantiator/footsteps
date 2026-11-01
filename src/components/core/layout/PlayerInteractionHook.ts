@@ -70,9 +70,14 @@ interface FrameTargets {
  * The elements the camera rules watch, found by their selectors in the displays shown now, as mask-space targets.
  * Elements can come, go and move between frames.
  */
-const frameTargets = (canvas: HTMLCanvasElement, players: PlayerFrame[], rules: CameraRuleTarget[]): FrameTargets => {
+const frameTargets = (
+  canvas: HTMLCanvasElement,
+  players: PlayerFrame[],
+  rules: CameraRuleTarget[],
+  mirrored: boolean,
+): FrameTargets => {
   const canvasRect = canvas.getBoundingClientRect();
-  const { width, height } = players[0];
+  const [mask] = players;
   const result: FrameTargets = { targets: {}, sources: new Map() };
   for (const rule of rules) {
     for (const element of displayRoots(rule.scope).flatMap((root) =>
@@ -80,12 +85,12 @@ const frameTargets = (canvas: HTMLCanvasElement, players: PlayerFrame[], rules: 
     )) {
       const key = `${rule.scope}#${rule.ruleIndex}#${elementKey(element)}`;
       const isTopmostAt = (point: { x: number; y: number }) => {
-        const { x, y } = screenPointForMaskPoint(point, canvasRect, width, height);
+        const { x, y } = screenPointForMaskPoint(point, canvasRect, mask, mirrored);
         const hit = document.elementFromPoint(x, y);
         return hit !== null && element.contains(hit);
       };
       result.targets[key] = {
-        rect: maskRectForElement(element.getBoundingClientRect(), canvasRect, width, height),
+        rect: maskRectForElement(element.getBoundingClientRect(), canvasRect, mask, mirrored),
         interactions: rule.interactions,
         threshold: rule.threshold,
         holdMs: rule.holdMs,
@@ -139,12 +144,14 @@ interface PlayerInteractions {
  * @param cameraRules the rules the camera can fire, for the displays shown now
  * @param onPlayerInteraction called for each interaction that begins
  * @param enabled whether interactions are running; switching it off clears the monitors
+ * @param mirrored whether the character canvas shows the mask flipped; fixed for the hook's lifetime
  * @returns the character canvas's ref, and the stable frame handler to give it
  */
 export function usePlayerInteractions(
   cameraRules: CameraRuleTarget[] | undefined,
   onPlayerInteraction: ((event: CameraRuleEvent) => void) | undefined,
   enabled: boolean,
+  mirrored: boolean,
 ): PlayerInteractions {
   const config = useAppConfig();
   const stableFrames = config.visionSmoothing ? config.visionStableFrames : 1;
@@ -188,7 +195,7 @@ export function usePlayerInteractions(
 
       const { targets, sources } =
         players.length > 0
-          ? frameTargets(canvas, players, rulesRef.current ?? [])
+          ? frameTargets(canvas, players, rulesRef.current ?? [], mirrored)
           : { targets: {}, sources: sourcesRef.current };
       sourcesRef.current = sources;
       const createMonitor = () =>
@@ -202,7 +209,7 @@ export function usePlayerInteractions(
         );
       updateMonitors(monitors, players, (monitor, player) => monitor.update(player, targets, timestamp), createMonitor);
     },
-    [canvasRef],
+    [canvasRef, mirrored],
   );
 
   return { canvasRef, handlePlayers };
