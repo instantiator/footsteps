@@ -73,14 +73,16 @@ React Router re-reads the query when the URL changes, so a setting can be change
 
 ### Camera
 
-| Query             | Default | Values       | What it does                                                           |
-| ----------------- | ------- | ------------ | ---------------------------------------------------------------------- |
-| `cameraWidth`     | `1280`  | whole number | The camera resolution asked for; the camera may give something else    |
-| `cameraHeight`    | `720`   | whole number | See `cameraWidth`                                                      |
-| `cameraFeatherPx` | `3`     | whole number | How far the silhouette's edges fade out, in canvas pixels; `0` is hard |
-| `cameraHoldMs`    | `400`   | whole number | How long a player the model loses is still shown (needs smoothing)     |
-| `cameraFadeMs`    | `300`   | whole number | How long a held player then takes to fade out                          |
-| `cameraFillGaps`  | `false` | boolean      | Fills parts the model missed for a frame from the frame before         |
+| Query                 | Default | Values       | What it does                                                                                |
+| --------------------- | ------- | ------------ | ------------------------------------------------------------------------------------------- |
+| `cameraWidth`         | `1280`  | whole number | The camera resolution asked for; the camera may give something else                         |
+| `cameraHeight`        | `720`   | whole number | See `cameraWidth`                                                                           |
+| `cameraFeatherPx`     | `3`     | whole number | How far the silhouette's edges fade out, in canvas pixels; `0` is hard                      |
+| `cameraHoldMs`        | `400`   | whole number | How long a player the model loses is still shown (needs smoothing)                          |
+| `cameraFadeMs`        | `300`   | whole number | How long a held player then takes to fade out                                               |
+| `cameraFillGaps`      | `false` | boolean      | Fills parts the model missed for a frame from the frame before                              |
+| `cameraDepthWindowMs` | `700`   | whole number | How long a player's lowest ground point is kept, so a jump doesn't change their depth       |
+| `cameraDepthDeadband` | `2`     | whole number | How far a player's ground point must move to change their depth, in % of the scene's height |
 
 [ADR 0007](ADRs/0007-camera-flicker.md) explains holding, fading and filling gaps.
 

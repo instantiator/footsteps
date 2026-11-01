@@ -16,7 +16,7 @@ import GameChallengeGrid from "./GameChallengeGrid";
  */
 export interface LayerNodeProps {
   /** Stacking order of the layer; see `GameLayersLayout`. */
-  zIndex: number;
+  zIndex?: number;
   /** Extra style for the layer's container. */
   style?: CSSProperties;
   /** The webcam video's aspect ratio, used to size the character canvas to match. */

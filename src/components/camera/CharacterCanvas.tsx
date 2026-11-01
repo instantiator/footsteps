@@ -7,9 +7,10 @@ import type { FootstepsVisionModelImplementation } from "../../vision/FootstepsV
 import { PersonTracker, type HoldTimes } from "../../vision/Tracking";
 import type { VisionFrame } from "../../vision/VisionTypes";
 import { feetOf, type FeetPositions } from "./CameraSupport";
-import { drawPeople, type MaskType } from "./DrawPeople";
+import { drawPeople, type DrawStyle, type MaskType } from "./DrawPeople";
 import { frameQuality, FrameStatsRecorder, type FrameStats, type FrameSteps } from "./FrameStats";
 import { PlayerCanvases } from "./PlayerCanvases";
+import { depthZIndex, drawDepthLine, PlayerDepths, type DepthSettings } from "./PlayerDepth";
 import { setTrackingFps } from "./TrackingFpsStore";
 import type { PlayerFrame } from "./PlayerMonitor";
 
@@ -148,11 +149,14 @@ interface LoopSettings {
   inputWidth: number;
   /** How far the silhouette's edges fade out, in canvas pixels. */
   featherPx: number;
+  /** How a player's depth follows them. */
+  depth: DepthSettings;
 }
 
 /** The loop's settings from the app config, the same object until one of them changes. */
 const useLoopSettings = (config: AppConfig): LoopSettings => {
   const { visionSmoothing, cameraHoldMs, cameraFadeMs, cameraFillGaps, visionInputWidth, cameraFeatherPx } = config;
+  const { cameraDepthWindowMs, cameraDepthDeadband } = config;
   return useMemo(
     () => ({
       smoothing: visionSmoothing,
@@ -160,13 +164,31 @@ const useLoopSettings = (config: AppConfig): LoopSettings => {
       fillGaps: cameraFillGaps,
       inputWidth: visionInputWidth,
       featherPx: cameraFeatherPx,
+      depth: { windowMs: cameraDepthWindowMs, deadband: cameraDepthDeadband },
     }),
-    [visionSmoothing, cameraHoldMs, cameraFadeMs, cameraFillGaps, visionInputWidth, cameraFeatherPx],
+    [
+      visionSmoothing,
+      cameraHoldMs,
+      cameraFadeMs,
+      cameraFillGaps,
+      visionInputWidth,
+      cameraFeatherPx,
+      cameraDepthWindowMs,
+      cameraDepthDeadband,
+    ],
   );
 };
 
 /** Settings that only change how players are drawn or held, not which model runs. */
-const DRAWING_SETTINGS = ["debug", "cameraFeatherPx", "cameraHoldMs", "cameraFadeMs", "cameraFillGaps"] as const;
+const DRAWING_SETTINGS = [
+  "debug",
+  "cameraFeatherPx",
+  "cameraHoldMs",
+  "cameraFadeMs",
+  "cameraFillGaps",
+  "cameraDepthWindowMs",
+  "cameraDepthDeadband",
+] as const;
 
 /** The config the model is made from, the same object while only {@link DRAWING_SETTINGS} change, so the model is kept. */
 const useModelConfig = (config: AppConfig): AppConfig => {
@@ -259,6 +281,26 @@ const videoDetections = (model: FootstepsVisionModelImplementation, video: HTMLV
   return { next, cancel };
 };
 
+/** Draws each player on their own canvas, sorted to their depth, with a line showing it when debugging. */
+const drawPlayers = (
+  video: HTMLVideoElement,
+  frame: VisionFrame,
+  { canvases, depths }: { canvases: PlayerCanvases; depths: PlayerDepths },
+  style: DrawStyle,
+) => {
+  const debugging = style.maskType !== "binary";
+  const playerDepths = depths.update(frame, debugging);
+  canvases.draw(frame, (playerCanvas, playerFrame) => {
+    const playerDepth = playerDepths.get(playerFrame.people[0]?.id);
+    if (playerDepth !== undefined) playerCanvas.style.zIndex = String(depthZIndex(playerDepth));
+    // The 2D context is missing in some environments (eg. tests); the reports above still happen
+    const ctx = playerCanvas.getContext("2d");
+    if (!ctx) return;
+    drawPeople(video, playerFrame, ctx, style);
+    if (debugging && playerDepth !== undefined) drawDepthLine(ctx, playerDepth);
+  });
+};
+
 /**
  * Tracks the people in each video frame: reports players and feet, then draws each one's silhouette on their own canvas.
  *
@@ -275,7 +317,7 @@ const startTrackingLoop = (
     onFeetPositionsChange,
     onPlayersChange,
     maskType,
-    settings: { smoothing, hold, fillGaps, inputWidth, featherPx },
+    settings: { smoothing, hold, fillGaps, inputWidth, featherPx, depth },
     onStats,
   }: LoopHandlers,
 ): (() => void) => {
@@ -284,6 +326,7 @@ const startTrackingLoop = (
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
   const canvases = new PlayerCanvases(canvas);
+  const depths = new PlayerDepths(canvas, depth);
   const reportStats = statsReporter(onStats);
   const tracker = smoothing ? new PersonTracker(hold, fillGaps) : null;
 
@@ -294,11 +337,7 @@ const startTrackingLoop = (
     onPlayersChange?.(players, timestamp);
     onFeetPositionsChange?.(feetPositionsOf(players));
     const monitorEnd = performance.now();
-    canvases.draw(frame, (playerCanvas, playerFrame) => {
-      // The 2D context is missing in some environments (eg. tests); the reports above still happen
-      const ctx = playerCanvas.getContext("2d");
-      if (ctx) drawPeople(video, playerFrame, ctx, { maskType, featherPx });
-    });
+    drawPlayers(video, frame, { canvases, depths }, { maskType, featherPx });
     reportStats(detected, timestamp, inferenceEnd, {
       trackMs: trackEnd - inferenceEnd,
       monitorMs: monitorEnd - trackEnd,
@@ -330,6 +369,7 @@ const startTrackingLoop = (
     setTrackingFps(null);
     detections.cancel();
     canvases.removeExtras();
+    depths.clearItems();
   };
 };
 

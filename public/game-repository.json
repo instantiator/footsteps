@@ -489,7 +489,7 @@
           "camera": { "requirement": "enabled" },
           "component": {
             "type": "template",
-            "data": { "names": { "balloons": "Balloons", "lava": "The floor is lava" } },
+            "data": { "names": { "balloons": "Balloons", "lava": "The floor is lava", "depth": "Walk around" } },
             "initialState": { "position": 1, "lit": false },
             "rules": [
               {
@@ -507,6 +507,10 @@
               {
                 "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-lava", "threshold": 0.5 },
                 "do": [{ "enterStage": "lava" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-depth", "threshold": 0.5 },
+                "do": [{ "enterStage": "depth" }]
               },
               {
                 "on": { "interact": ["click", "hand-enter"], "target": "#switch", "threshold": 0.5 },
@@ -660,6 +664,33 @@
                       },
                       "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
                     }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "depth",
+          "challenges": [
+            {
+              "id": "walk-around",
+              "solution": { "answers": [] },
+              "displays": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "camera": { "requirement": "enabled" },
+                  "component": {
+                    "type": "template",
+                    "data": {},
+                    "rules": [
+                      {
+                        "on": { "interact": ["click"], "target": "#depth-done" },
+                        "do": [{ "completeChallenge": true }]
+                      }
+                    ],
+                    "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/depth.hbs" },
+                    "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
                   }
                 }
               ]
