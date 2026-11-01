@@ -9,6 +9,7 @@ import type { VisionFrame } from "../../vision/VisionTypes";
 import { feetOf, type FeetPositions } from "./CameraSupport";
 import { drawPeople, type MaskType } from "./DrawPeople";
 import { frameQuality, FrameStatsRecorder, type FrameStats, type FrameSteps } from "./FrameStats";
+import { PlayerCanvases } from "./PlayerCanvases";
 import { setTrackingFps } from "./TrackingFpsStore";
 import type { PlayerFrame } from "./PlayerMonitor";
 
@@ -259,7 +260,7 @@ const videoDetections = (model: FootstepsVisionModelImplementation, video: HTMLV
 };
 
 /**
- * Tracks the people in each video frame: reports players and feet, then draws their silhouettes.
+ * Tracks the people in each video frame: reports players and feet, then draws each one's silhouette on their own canvas.
  *
  * The loop is pipelined: as soon as the model returns a frame, it is given the next one, and the frame it returned is
  * reported and drawn while it works. Only one frame is with the model at a time.
@@ -280,9 +281,9 @@ const startTrackingLoop = (
 ): (() => void) => {
   let cancelled = false;
   const detections = videoDetections(model, video, inputWidth);
-  const ctx = canvas.getContext("2d");
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
+  const canvases = new PlayerCanvases(canvas);
   const reportStats = statsReporter(onStats);
   const tracker = smoothing ? new PersonTracker(hold, fillGaps) : null;
 
@@ -293,8 +294,11 @@ const startTrackingLoop = (
     onPlayersChange?.(players, timestamp);
     onFeetPositionsChange?.(feetPositionsOf(players));
     const monitorEnd = performance.now();
-    // The 2D context is missing in some environments (eg. tests); the reports above still happen
-    if (ctx) drawPeople(video, frame, ctx, { maskType, featherPx });
+    canvases.draw(frame, (playerCanvas, playerFrame) => {
+      // The 2D context is missing in some environments (eg. tests); the reports above still happen
+      const ctx = playerCanvas.getContext("2d");
+      if (ctx) drawPeople(video, playerFrame, ctx, { maskType, featherPx });
+    });
     reportStats(detected, timestamp, inferenceEnd, {
       trackMs: trackEnd - inferenceEnd,
       monitorMs: monitorEnd - trackEnd,
@@ -325,6 +329,7 @@ const startTrackingLoop = (
     cancelled = true;
     setTrackingFps(null);
     detections.cancel();
+    canvases.removeExtras();
   };
 };
 

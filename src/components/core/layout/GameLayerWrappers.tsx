@@ -132,7 +132,7 @@ export const CharacterCanvasLayerWrapper = ({
   const { showFps } = useAppConfig();
   return (
     // Clicks pass through to the game layers beneath; the silhouette is decoration
-    <div id="character-canvas-container" className="outerStyle noClicks">
+    <div id="character-canvas-container" className="outerStyle noClicks characterCanvasStack">
       <CharacterCanvas
         video={video ?? null}
         mediaStream={characterStream}

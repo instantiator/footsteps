@@ -56,10 +56,10 @@ export const tintPixels = (
 ): Uint8ClampedArray<ArrayBuffer> => {
   const { width, height, people } = frame;
   pixels.fill(0);
-  people.forEach((person, index) => {
+  people.forEach((person) => {
     const { mask } = person;
     if (maskType === "colored") {
-      const tint = PERSON_TINTS[index % PERSON_TINTS.length];
+      const tint = PERSON_TINTS[person.id % PERSON_TINTS.length];
       for (let i = 0; i < mask.length; i++) if (mask[i] === 1) paint(pixels, i, tint);
     }
     for (const part of TINTED_PARTS) {

@@ -54,6 +54,17 @@
   pointer-events: none;
 }
 
+/* One canvas per player, laid over each other */
+.characterCanvasStack {
+  display: grid;
+  grid-template-rows: 100%;
+  justify-items: center;
+}
+
+.characterCanvasStack > canvas {
+  grid-area: 1 / 1;
+}
+
 .hudStyle {
   position: absolute;
   top: 0;

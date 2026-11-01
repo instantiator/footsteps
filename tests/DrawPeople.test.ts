@@ -23,6 +23,15 @@ const { r, g, b, a } = BODY_PART_STYLES.leftHand.color;
 const HAND = [r, g, b, a];
 const CLEAR = [0, 0, 0, 0];
 
+describe("tintPixels for a coloured mask", () => {
+  it("picks the tint by the person's id, not where they are in the list", () => {
+    const alone = rgba(tintPixels(frame(person(1, [0])), "colored"));
+    const second = rgba(tintPixels(frame(person(0, [1]), person(1, [0])), "colored"));
+    expect(alone[0]).toEqual(second[0]);
+    expect(rgba(tintPixels(frame(person(0, [0])), "colored"))[0]).not.toEqual(alone[0]);
+  });
+});
+
 describe("silhouettePixels", () => {
   it("is opaque wherever anyone is, and clear elsewhere", () => {
     const alpha = rgba(silhouettePixels(frame(person(0, [0]), person(1, [2])))).map((pixel) => pixel[3]);
