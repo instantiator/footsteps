@@ -1,7 +1,8 @@
 #!/bin/bash
 # Run by dev-qual's pre-commit hook after the fast gate. Runs the project's own
 # checks (scripts/pre-commit-checks.sh), then regenerates the API docs and the
-# JSON schemas when their sources are staged, and stages the result with the commit.
+# JSON schemas and licence report when their sources are staged, and stages the
+# result with the commit.
 # TypeDoc treats warnings as errors, so an undocumented export blocks the commit.
 
 set -e
@@ -19,4 +20,9 @@ fi
 if grep -qE '^(src/entities/|generate-schemas\.sh$|tsconfig\.schema\.json$)' <<<"$STAGED"; then
   bash generate-schemas.sh >/dev/null
   git add public/schemas
+fi
+
+if grep -qE '^(package(-lock)?\.json$|generate-license-report\.sh$)' <<<"$STAGED"; then
+  bash generate-license-report.sh >/dev/null
+  git add src/assets/license-report.json
 fi
