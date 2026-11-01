@@ -137,6 +137,63 @@ describe("PersonTracker gap filling", () => {
     expect(person.filled?.[legPixel(20)]).toBe(0);
   });
 
+  describe("with key points the model misplaced", () => {
+    const stillPoint = { x: 20, y: 5 };
+    /** A person at column 20 with every key point still, then whichever the test throws elsewhere. */
+    const withPoints = (thrown: Partial<VisionPerson["keyPoints"]> = {}): VisionPerson => ({
+      ...personAt(0, 20),
+      keyPoints: {
+        leftFoot: stillPoint,
+        rightFoot: stillPoint,
+        leftHand: stillPoint,
+        rightHand: stillPoint,
+        headTop: stillPoint,
+        headBottom: stillPoint,
+        headLeft: stillPoint,
+        headRight: stillPoint,
+        ...thrown,
+      },
+    });
+    /** Whether any filled pixel is further than the person's own width from them. */
+    const hasFarCopy = ({ filled }: VisionPerson) =>
+      Array.from(filled ?? []).some((pixel, i) => pixel === 1 && Math.abs((i % WIDTH) - 20) > 7);
+
+    it("doesn't shift the fill for a stray key point", () => {
+      const tracker = new PersonTracker(undefined, true);
+      tracker.update(frame(0, withPoints()));
+      const [person] = tracker.update(frame(33, withPoints({ leftHand: { x: 80, y: 5 } }))).people;
+      expect(person.filled).toBeDefined();
+      expect(hasFarCopy(person)).toBe(false);
+    });
+
+    it("doesn't place a copy far away when the head points jump together", () => {
+      const jumped = { x: 60, y: 5 };
+      const tracker = new PersonTracker(undefined, true);
+      tracker.update(frame(0, withPoints()));
+      const thrown = { headTop: jumped, headBottom: jumped, headLeft: jumped, headRight: jumped };
+      const [person] = tracker.update(frame(33, withPoints(thrown))).people;
+      expect(hasFarCopy(person)).toBe(false);
+    });
+
+    it("skips the fill when every key point jumps too far", () => {
+      const jumped = { x: 60, y: 5 };
+      const tracker = new PersonTracker(undefined, true);
+      tracker.update(frame(0, withPoints()));
+      const thrown = {
+        leftFoot: jumped,
+        rightFoot: jumped,
+        leftHand: jumped,
+        rightHand: jumped,
+        headTop: jumped,
+        headBottom: jumped,
+        headLeft: jumped,
+        headRight: jumped,
+      };
+      const [person] = tracker.update(frame(33, withPoints(thrown))).people;
+      expect(person.filled).toBeUndefined();
+    });
+  });
+
   it("fills nothing when off", () => {
     const tracker = new PersonTracker();
     tracker.update(frame(0, personAt(0, 20)));
