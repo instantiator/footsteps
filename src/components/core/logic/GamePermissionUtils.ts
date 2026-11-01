@@ -17,14 +17,14 @@ export const gamePermissionLabel = (id: GamePermissionId): string => PERMISSION_
 
 /** Whether any part of the game enables camera mode. */
 const gameUsesCamera = (gameData: GameData): boolean => {
-  if (gameData.modules?.camera?.enabled === true) return true;
+  if (gameData.modules?.camera?.requirement) return true;
 
   const displays = [
     ...gameData.displays,
     ...gameData.stages.flatMap((stage) => stage.displays ?? []),
     ...gameData.stages.flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.displays)),
   ];
-  return displays.some((display) => display.camera?.enabled === true);
+  return displays.some((display) => Boolean(display.camera?.requirement));
 };
 
 /** The permissions a game needs before it starts, in the order to show them. */

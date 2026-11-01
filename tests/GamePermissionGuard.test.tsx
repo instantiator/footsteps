@@ -10,7 +10,7 @@ import { simpleGameData } from "./data/SampleGameState";
 import { stubGetUserMedia, stubPermissionQuery, type PermissionQueryResult } from "./helpers/permissions";
 
 const GAME_ID = "camera-game";
-const cameraGame: GameData = { ...simpleGameData, modules: { camera: { enabled: true } } };
+const cameraGame: GameData = { ...simpleGameData, modules: { camera: { requirement: "enabled" } } };
 
 const restores: (() => void)[] = [];
 

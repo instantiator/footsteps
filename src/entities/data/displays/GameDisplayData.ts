@@ -61,8 +61,11 @@ export const DEFAULT_INTERACTION_THRESHOLD = 1;
 
 /** Camera mode settings for one display; unset fields fall back to broader displays. */
 export interface GameDisplayCameraData {
-  /** Whether camera mode is on while this display shows. */
-  enabled?: boolean;
+  /**
+   * Whether camera mode is on while this display shows, and how much the game depends on it: `"enabled"` lets the
+   * player start the game without granting the camera, while `"required"` doesn't.
+   */
+  requirement?: "enabled" | "required" | false;
   /** Whether the webcam preview shows while this display shows. */
   preview?: boolean;
 }

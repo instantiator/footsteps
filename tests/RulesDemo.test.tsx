@@ -49,7 +49,7 @@ const demo = (change: (game: GameData) => void): GameData => {
     ...game.displays,
     ...game.stages.flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.displays)),
   ].flatMap(withResets)) {
-    display.camera = { enabled: false };
+    display.camera = { requirement: false };
     if (display.component.type !== "template") continue;
     display.component.foregroundTemplate = inline(display.component.foregroundTemplate);
     display.component.backgroundTemplate = inline(display.component.backgroundTemplate);

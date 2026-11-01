@@ -1,23 +1,6 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "definitions": {
-        "CameraModuleData": {
-            "description": "Settings for the camera module, which layers the player's camera view into the game.",
-            "properties": {
-                "enabled": {
-                    "description": "Whether the module is switched on for this game.",
-                    "type": "boolean"
-                },
-                "preview": {
-                    "description": "Whether the webcam preview shows. Defaults to `true`.",
-                    "type": "boolean"
-                }
-            },
-            "required": [
-                "enabled"
-            ],
-            "type": "object"
-        },
         "GameAction": {
             "anyOf": [
                 {
@@ -260,7 +243,7 @@
                     "description": "Optional modules to switch on for this game.",
                     "properties": {
                         "camera": {
-                            "$ref": "#/definitions/CameraModuleData",
+                            "$ref": "#/definitions/GameDisplayCameraData",
                             "description": "Layers the player's camera view into the game."
                         }
                     },
@@ -331,13 +314,17 @@
         "GameDisplayCameraData": {
             "description": "Camera mode settings for one display; unset fields fall back to broader displays.",
             "properties": {
-                "enabled": {
-                    "description": "Whether camera mode is on while this display shows.",
-                    "type": "boolean"
-                },
                 "preview": {
                     "description": "Whether the webcam preview shows while this display shows.",
                     "type": "boolean"
+                },
+                "requirement": {
+                    "description": "Whether camera mode is on while this display shows, and how much the game depends on it: `\"enabled\"` lets the\nplayer start the game without granting the camera, while `\"required\"` doesn't.",
+                    "enum": [
+                        "enabled",
+                        false,
+                        "required"
+                    ]
                 }
             },
             "type": "object"

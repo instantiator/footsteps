@@ -1,3 +1,4 @@
+import type { GameDisplayCameraData } from "../../../entities/data/displays/GameDisplayData";
 import type { GameData } from "../../../entities/data/GameData";
 import { isDefined } from "../../../util/ObjectUtils";
 import type { LayeredGameDisplayRenderData } from "./RenderDataUtils";
@@ -13,20 +14,26 @@ export interface ResolvedCameraMode {
 /** A camera setting that can be resolved by inheritance. */
 type CameraModeField = keyof ResolvedCameraMode;
 
-/** Anything that can declare camera settings: a display or the game's module. */
-type CameraModeSource = Partial<Record<CameraModeField, boolean>>;
-
 /** The value a setting takes when nothing sets it. */
 const CAMERA_MODE_DEFAULTS: ResolvedCameraMode = { enabled: false, preview: true };
 
+/** What a display or the game's module declares for a setting, if anything. */
+const declaredValue = (field: CameraModeField, source: GameDisplayCameraData | undefined): boolean | undefined => {
+  if (field === "preview") return source?.preview;
+  return isDefined(source?.requirement) ? source.requirement !== false : undefined;
+};
+
 /** The active challenges' values for one field, in display order. */
 const challengeValues = (field: CameraModeField, renderData: LayeredGameDisplayRenderData): boolean[] =>
-  (renderData.challengesRenderData ?? []).map((challenge) => challenge.camera?.[field]).filter(isDefined);
+  (renderData.challengesRenderData ?? []).map((challenge) => declaredValue(field, challenge.camera)).filter(isDefined);
 
 /** The first value the given sources declare for the field, if any. */
-const firstDeclared = (field: CameraModeField, ...sources: (CameraModeSource | undefined)[]): boolean | undefined => {
+const firstDeclared = (
+  field: CameraModeField,
+  ...sources: (GameDisplayCameraData | undefined)[]
+): boolean | undefined => {
   for (const source of sources) {
-    const value = source?.[field];
+    const value = declaredValue(field, source);
     if (isDefined(value)) return value;
   }
   return undefined;
@@ -63,7 +70,7 @@ const resolveCameraField = (
  *
  * Any active challenge that enables a setting wins. If none does, an explicit challenge
  * setting disables it. If no challenge declares the setting, the stage, then the overview,
- * then the game's camera module decide.
+ * then the game's camera module decide. Both `"enabled"` and `"required"` turn camera mode on.
  *
  * NB. The preview is always off while camera mode is off.
  */

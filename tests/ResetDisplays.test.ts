@@ -88,9 +88,9 @@ describe("reset displays", () => {
 
   it("take their parent's camera settings, with their own over them", () => {
     const data = gameWithReset(resetDisplay("get-ready", { camera: { preview: false } }));
-    data.stages[0].challenges[0].displays[0].camera = { enabled: true, preview: true };
+    data.stages[0].challenges[0].displays[0].camera = { requirement: "enabled", preview: true };
     const [render] = getLayeredRenderData(playing(data), {}, "reset-test").challengesRenderData!;
-    expect(render.camera).toEqual({ enabled: true, preview: false });
+    expect(render.camera).toEqual({ requirement: "enabled", preview: false });
   });
 
   describe("showing again", () => {

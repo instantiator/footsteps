@@ -44,7 +44,7 @@ const gameWithStageDisplay: GameData = {
           displays: [
             {
               purpose: "shared",
-              camera: { enabled: true },
+              camera: { requirement: "enabled" },
               component: { type: "template", data: {}, foregroundTemplate: { sourceType: "embedded", content: "" } },
             },
           ],
@@ -59,14 +59,14 @@ describe("requiredGamePermissions", () => {
   });
 
   it("needs the camera when the game module enables it", () => {
-    const game: GameData = { ...smallGame, modules: { camera: { enabled: true } } };
+    const game: GameData = { ...smallGame, modules: { camera: { requirement: "enabled" } } };
     expect(requiredGamePermissions(game)).toEqual(["camera"]);
   });
 
   it("needs the camera when an overview display enables it", () => {
     const game: GameData = {
       ...smallGame,
-      displays: smallGame.displays.map((display) => ({ ...display, camera: { enabled: true } })),
+      displays: smallGame.displays.map((display) => ({ ...display, camera: { requirement: "enabled" } })),
     };
     expect(requiredGamePermissions(game)).toEqual(["camera"]);
   });
@@ -82,7 +82,7 @@ describe("requiredGamePermissions", () => {
         ...stage,
         challenges: stage.challenges.map((challenge) => ({
           ...challenge,
-          displays: challenge.displays.map((display) => ({ ...display, camera: { enabled: true } })),
+          displays: challenge.displays.map((display) => ({ ...display, camera: { requirement: "enabled" } })),
         })),
       })),
     };

@@ -49,7 +49,7 @@ const repositoryServed = () =>
     });
   });
 
-const cameraGame: GameData = { ...simpleGameData, modules: { camera: { enabled: true } } };
+const cameraGame: GameData = { ...simpleGameData, modules: { camera: { requirement: "enabled" } } };
 
 describe("LocalGame", () => {
   it("plays the game with the routed id once the local repository loads", async () => {
