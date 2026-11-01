@@ -10,7 +10,7 @@ GameData
 ├── tileGraphic?                       resource name of the tile's background image (see Landing tile)
 ├── gameContainerStyle                 applied to the game's outer container
 ├── config?                            { sequential, autoAdvanceStages }
-├── modules?.camera?                   { enabled, preview? }: show the player's camera silhouette
+├── modules?.camera?                   { requirement?, preview? }: show the player's camera silhouette
 ├── resources?                         name → { type, target }        (see Resources)
 ├── sounds?                            resource names of music and sound effects (see Sounds)
 ├── reward?                            { animation, particleCount? }: celebration on stage completion
@@ -55,18 +55,24 @@ takes moves on to the stages overview. Clicks remain the keyboard-accessible rou
 
 ```json
 "modules": {
-  "camera": { "enabled": true, "preview": true }
+  "camera": { "requirement": "enabled", "preview": true }
 }
 ```
 
+`requirement` is `"enabled"` (camera mode is on, and the game can start without the camera), `"required"` (camera mode
+is on, and the game can't start until the camera permission is granted), or `false` (camera mode is off).
+
+Elements in a challenge's foreground can have a `data-depth`, so that players pass in front of and behind them: see
+[player depth](camera-mode.md#player-depth).
+
 `preview` defaults to `true`. Any display can override either setting with
-`"camera": { "enabled": false }` or `{ "preview": false }`; an unset field inherits from broader
+`"camera": { "requirement": false }` or `{ "preview": false }`; an unset field inherits from broader
 displays.
 
 Camera mode and its preview resolve separately, most specific first:
 
-1. Any active challenge that sets it to `true` wins.
-2. Otherwise, any active challenge that sets it to `false` wins.
+1. Any active challenge that turns it on wins.
+2. Otherwise, any active challenge that turns it off wins.
 3. Otherwise, the open stage's `shared` display.
 4. Otherwise, the overview display.
 5. Otherwise, the game's `modules.camera`.

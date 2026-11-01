@@ -24,22 +24,22 @@ background when the game names no graphic. The game's title and description sit 
 translucent panel style as the home-page tiles, and the page uses the game's
 `gameContainerStyle.fontFamily`.
 
-Below the description is a permissions panel. At the bottom right are the game controls:
+Below the description is a permissions panel, if the game uses the camera, with the
+[camera choice](camera-mode.md#choosing-a-camera) once it is granted. At the bottom right are the game controls:
 
 - **New game** always appears. It clears this game's saved progress and starts a fresh game.
 - **Continue** appears only when valid saved progress exists, and resumes it.
 
-Both buttons stay disabled until every required permission has been granted and the initial checks
-have finished.
+Both buttons stay disabled until the initial checks have finished, and until every permission the game requires has
+been granted.
 
 ## Permissions
 
-A game needs the camera permission when either:
+A game uses the camera when `modules.camera.requirement`, or the `camera.requirement` of any overview, stage `shared`,
+challenge or reset display, is `"enabled"` or `"required"`. It requires the camera when any of them is `"required"`.
+A game that doesn't use the camera shows no permissions panel.
 
-- `modules.camera.enabled` is `true`, or
-- any overview, stage `shared`, or challenge display sets `camera.enabled: true`.
-
-The landing page asks the browser for each required permission with
+The landing page asks the browser for each permission the game uses with
 `navigator.permissions.query({ name: "camera" })`. A granted permission gets a check mark. Once
 checked, anything else gets a Grant button.
 
@@ -48,9 +48,10 @@ again. A successful request is remembered for the tab in `sessionStorage`, and c
 unless the browser later reports it as denied. So a browser that cannot report the camera permission
 (the Permissions API is missing or rejects the name) needs one Grant click per tab.
 
-The play route repeats the check so a bookmark or typed URL cannot skip the landing page. It allows
-play only when the permission is granted (including a grant remembered for the tab), and redirects to
-the landing page otherwise.
+The play route repeats the check for a required permission, so a bookmark or typed URL cannot skip the landing page.
+It allows play only when the permission is granted (including a grant remembered for the tab), and redirects to
+the landing page otherwise. A game that only enables the camera can start without a grant. The browser asks when the
+first camera display appears, and if the player refuses, the game plays on by clicks.
 
 ## Saved progress
 
@@ -95,6 +96,7 @@ nothing.
 | `src/pages/LocalGameLanding.tsx`                   | Loads the local repository and game for the landing route    |
 | `src/components/landing/GameLanding.tsx`           | Landing layout, background, and New/Continue controls        |
 | `src/components/landing/GamePermissionPanel.tsx`   | Permission list, states, and Grant buttons                   |
+| `src/components/landing/CameraPicker.tsx`          | Camera dropdown, mirror checkbox, and live preview           |
 | `src/components/landing/useGamePermissions.ts`     | Checks, grants, and gates the landing controls               |
 | `src/components/core/logic/GamePermissionUtils.ts` | Camera requirement scan, permission query, and request       |
 | `src/components/core/GamePermissionGuard.tsx`      | Direct-play permission guard and landing redirect            |

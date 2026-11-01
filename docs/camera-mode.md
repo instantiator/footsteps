@@ -4,7 +4,8 @@ Camera mode makes the player the game's character. A body-segmentation model cut
 webcam picture and layers their silhouette into the game's scenes, so they move through the artwork
 as they move in front of the camera.
 
-It is optional. A game can switch it on for the whole game, and any display can override it.
+It is optional. A game can switch it on for the whole game, and any display can override it. It is built for a
+camera behind and a little above the player, with the screen in front, and also works with one facing them.
 
 ## Switching it on
 
@@ -12,9 +13,17 @@ For a whole game, add the camera module to its data:
 
 ```json
 "modules": {
-  "camera": { "enabled": true, "preview": true }
+  "camera": { "requirement": "enabled", "preview": true }
 }
 ```
+
+`requirement` says whether camera mode is on, and how much the game depends on it:
+
+| Value        | Camera mode | Starting the game                                                     |
+| ------------ | ----------- | --------------------------------------------------------------------- |
+| `"enabled"`  | on          | The landing page offers the camera, but the game can start without it |
+| `"required"` | on          | The game can't start until the camera permission is granted           |
+| `false`      | off         | The camera isn't mentioned, unless another display uses it            |
 
 `preview` is optional and defaults to `true`. Set it to `false` to run the camera without showing the
 small webcam preview.
@@ -22,7 +31,7 @@ small webcam preview.
 Any display (overview, stage `shared`, or challenge) can override either setting:
 
 ```json
-"camera": { "enabled": false, "preview": false }
+"camera": { "requirement": false, "preview": false }
 ```
 
 Both fields are optional, so a display can change one without the other. The data shape is in
@@ -30,8 +39,8 @@ Both fields are optional, so a display can change one without the other. The dat
 
 Camera mode is resolved separately for each setting, most specific first:
 
-1. If any active challenge sets it to `true`, it is on.
-2. Otherwise, if any active challenge sets it to `false`, it is off.
+1. If any active challenge turns it on, it is on.
+2. Otherwise, if any active challenge turns it off, it is off.
 3. Otherwise, the open stage's `shared` display decides.
 4. Otherwise, the overview display decides.
 5. Otherwise, the game's `modules.camera` decides.
@@ -42,24 +51,39 @@ The preview is always off while camera mode is off. The code is `resolveCameraMo
 
 ## Permission
 
-A game that enables camera mode anywhere needs the camera permission before it starts. Its landing
-page scans the game data, asks the browser for the permission, and shows a Grant button until it is
-granted. New game and Continue stay disabled until then. See [Playing a game](game-play.md#permissions)
-for the full flow.
+A game's landing page scans the game data, reset displays included. If anything uses the camera, it asks the browser
+for the permission and shows a Grant button until it is granted. If anything requires the camera, New game and
+Continue stay disabled until then. See [Playing a game](game-play.md#permissions) for the full flow.
 
-A direct visit to `/game/:id/play` repeats the check and returns to the landing page when the
+A direct visit to `/game/:id/play` repeats the check for a required camera, and returns to the landing page when the
 permission is anything but granted. A grant made on the landing page in the same tab counts, even
 when the browser cannot report it. If the camera still fails to start in play (for example because
-another app is using it), the game carries on without it, playable by clicks.
+another app is using it, or an optional camera was refused), the game carries on without it, playable by clicks.
+
+## Choosing a camera
+
+Once the permission is granted, the landing page offers a dropdown of the cameras the browser lists, with a mark on
+the current choice, a "Mirror picture" checkbox, and a live preview. Browsers only name the cameras after a grant, so
+none of this shows before one. The choice is saved in `localStorage`, and only the browser ever sees it.
+
+- **System default** is the first choice, and the starting one. It follows the system: the landing page checks when
+  the cameras change and when the page regains focus. Browsers don't name a default camera, so a new first camera in
+  the list counts as a new default.
+- **A chosen camera** stays chosen. If it is unplugged, the landing page goes back to the system default.
+- **In play**, the game reads the choice once. It doesn't follow any changes: to change camera, return to the landing
+  page. If the chosen camera has gone by then, the game uses the system default.
+
+**Mirroring** is off by default, for a camera behind the player: they see themselves from behind, and step right to
+move right. Turn it on for a camera facing the player, so the picture behaves like a mirror.
 
 ## What the player sees
 
-- **Their own silhouette.** The player is cut out of the webcam picture and shown in the game,
-  mirrored like a selfie camera. They are not a drawn character: everything that is not them is
-  removed.
-- **A small preview** in the top-right corner, also mirrored, so they can line themselves up.
+- **Their own silhouette.** The player is cut out of the webcam picture and shown in the game. They are not a drawn
+  character: everything that is not them is removed. It is flipped if the player chose to mirror the picture.
+- **A small preview** in the top-right corner, flipped the same way, so they can line themselves up.
   It can be hidden with `preview: false`.
-- **The game's artwork** behind them, and a challenge's foreground in front of them.
+- **The game's artwork** behind them, and a challenge's foreground in front of them, or around them if its items have
+  [depths](#player-depth).
 - **The HUD** in the top-right: "Close challenge", "To title", and the fullscreen button.
 
 An ordinary display change fades the old display out over 1s, swaps, then fades the new one in over
@@ -93,21 +117,48 @@ visible until the swap.
 | 3        | stage background      | the open stage's shared artwork                         |
 | 4        | stage foreground      | its clickable parts, still behind the player            |
 | 5        | challenge backgrounds | the active challenges, side by side                     |
-| 6        | character silhouette  | the cut-out player (`CharacterCanvas`)                  |
-| 7        | webcam preview        | the small mirrored video (`CharacterCamera`)            |
-| 8        | challenge foregrounds | the only foregrounds drawn **in front of** the player   |
+| 6        | depth stack           | the players and challenge foregrounds, sorted together  |
+| 7        | webcam preview        | the small video (`CharacterCamera`)                     |
 | 9        | debug overlay         | feet markers; only with `?debug=true` and the camera on |
 | 10       | HUD                   | the application's buttons (`HeadsUpDisplay`)            |
 
 Backgrounds sit behind the player, so they seem to stand inside the scene. A challenge's foreground
-sits in front, which lets a game put a doorway over them, for example.
+sits in front, which lets a game put a doorway over them, for example, unless an item has a depth.
+
+## Player depth
+
+A player can pass in front of and behind a challenge's foreground items. Give an item a `data-depth`: the height of
+the floor where it stands, as a percentage of the scene, from 0 at the top to 100 at the bottom. Usually that is the
+bottom of the item:
+
+```html
+<div id="tree" data-depth="60" style="position: absolute; bottom: 40%">…</div>
+```
+
+A player standing lower on the screen than 60 is nearer the camera, so they are drawn in front of the tree. Standing
+higher, they are drawn behind it. Each player is sorted separately. An item with no `data-depth` stays in front of every player.
+The "Walk around" stage of the rules demo shows this.
+
+- **Only challenge foregrounds can be sorted.** Overview and stage foregrounds stay behind the player, because they
+  must stay beneath challenge backgrounds.
+- **Don't wrap items in a layer of their own.** If something in the template around an item creates a CSS stacking context (for
+  example with `transform`, `opacity` below 1, or `isolation`), the item can't be sorted with the players. A `transform`
+  on the item itself is fine.
+- **It assumes a camera looking down at a flat floor.** Someone whose legs are hidden will seem further away than they
+  are.
+
+A player's depth comes from the bottom of their silhouette, because models often can't find feet from behind. It keeps
+the lowest point of the last `cameraDepthWindowMs`, so a jump doesn't look like walking away: stepping nearer shows at
+once, and stepping away shows after that time. It ignores moves smaller than `cameraDepthDeadband`, so a player on an
+item's line doesn't flicker. A display with no `data-depth` items doesn't do this work. [ADR
+0010](ADRs/0010-player-tracking-from-behind.md) explains the choice and the alternatives.
 
 The layers ignore the mouse (`pointer-events: none`), including the silhouette, so clicks reach the
 game's elements underneath. Each element's `id` says what a click or camera interaction does.
 
 ## How the silhouette is made
 
-1. `CharacterCamera` asks for the webcam (1280×720 by default) with `navigator.mediaDevices.getUserMedia`, puts
+1. `CharacterCamera` asks for the chosen webcam (1280×720 by default) with `navigator.mediaDevices.getUserMedia`, puts
    the stream in a `<video>`, and shares the video and stream with the rest of the layout.
 2. `CharacterCanvas` creates the configured vision model with `createVisionModel` (see
    [configuration](#configuration)), once while there is a stream. By default this is BodyPix MobileNetV1 on
@@ -117,10 +168,10 @@ game's elements underneath. Each element's `id` says what a click or camera inte
    frame, and the frame it returned is reported and drawn while it works. A `PersonTracker` keeps each person's id
    stable between frames and smooths their key points. It also holds someone the model loses for a moment where
    they were, then fades them out, so the silhouette doesn't flicker ([ADR 0007](ADRs/0007-camera-flicker.md)).
-4. `drawPeople` (`DrawPeople.ts`) draws the video onto a canvas and keeps only the people, with their edges
-   blurred by `cameraFeatherPx`. `binary` keeps the players' own colours; `colored` tints each person and their head, hands and feet; `extremities` tints only
-   the hands and feet.
-5. The canvas is mirrored with a CSS transform, so the player's left is their left on screen. The masks are in
+4. For each player, `drawPeople` (`DrawPeople.ts`) draws the video onto their own canvas (`PlayerCanvases.ts`) and
+   keeps only that player, with their edges blurred by `cameraFeatherPx`. `binary` keeps the players' own colours; `colored` tints each person and their head, hands and feet; `extremities` tints only
+   the hands and feet. The first player uses the original canvas, and others get copies laid over it.
+5. If the player chose to mirror the picture, the canvases are flipped with a CSS transform. The masks are always in
    the camera's own (unmirrored) orientation.
 6. When the stream goes away, the model is disposed and the loop is cancelled. Starting a new stream loads a
    fresh model.
@@ -215,7 +266,7 @@ ignore whatever holds on their first frame, so a held hand cannot fire as the ne
 and the frame's timestamp. Each frame, `usePlayerInteractions` runs every camera rule's selector inside its
 display's templates (found by `data-display-scope`), so elements can appear, move and disappear between frames. It
 builds a mask-space rectangle for each element, keeps one `PlayerMonitor` per player, and passes the monitors'
-events to `useGameRules`. The rectangle conversion mirrors the x axis to match the canvas, and
+events to `useGameRules`. The rectangle conversion mirrors the x axis if the canvas is mirrored, and
 `screenPointForMaskPoint` maps back for the covering check.
 
 The monitors remember each element by a key: its `id`, or a key generated for an element without one (held in a
@@ -231,7 +282,8 @@ Add `?debug=true` to the URL to turn on the [`debug` setting](configuration.md).
 - shows the frame rate, the time each step takes (inference, tracking, monitors, drawing), and the people, hands and
   feet found, over the silhouette (`showFps` shows this too);
 - draws a green dot where each person's feet were found, and a faded green ring for a player the tracker is
-  holding while they are missed (they can't interact until found again).
+  holding while they are missed (they can't interact until found again);
+- draws a bright green line across the scene at each player's [depth](#player-depth).
 
 Lower a rule's `threshold` when testing interactions, and use the feet dots to see where the
 camera thinks the player is. Changing the debug setting restarts the tracking loop with the new
@@ -244,6 +296,10 @@ toggling it.
 | ----------------------------------------------------- | --------------------------------------------------------------------------------- |
 | `src/config/AppConfig.ts`                             | the settings, their defaults, and reading them from `.env` and the URL            |
 | `src/components/camera/CharacterCamera.tsx`           | webcam stream and the preview video                                               |
+| `src/components/camera/CameraChoice.ts`               | the saved camera choice and mirror setting                                        |
+| `src/components/landing/CameraPicker.tsx`             | the landing page's dropdown, checkbox and preview (`useCameraPicker.ts`)          |
+| `src/components/camera/PlayerCanvases.ts`             | one canvas per player                                                             |
+| `src/components/camera/PlayerDepth.ts`                | each player's depth, and sorting players and items by it                          |
 | `src/components/camera/CharacterCanvas.tsx`           | tracking loop; draws the silhouettes; reports players and feet; the stats readout |
 | `src/components/camera/DrawPeople.ts`                 | cuts the people out of the video, and tints them for debugging                    |
 | `src/components/camera/PlayerMonitor.ts`              | turns body-part coverage and feet into edge-triggered interactions                |
@@ -266,7 +322,8 @@ toggling it.
 
 ## Testing
 
-Unit tests cover the camera resolution (`tests/CameraModeUtils.test.ts`), the monitor and its jump
+Unit tests cover the camera choice (`tests/CameraPicker.test.tsx`), player depth (`tests/Depth.test.ts`), per-player
+canvases (`tests/PlayerCanvases.test.ts`), the camera resolution (`tests/CameraModeUtils.test.ts`), the monitor and its jump
 interactions (`tests/PlayerMonitor.test.ts`), jump detection (`tests/JumpDetector.test.ts`), mask rectangles and feet (`tests/CameraSupport.test.ts`), the
 tracking loop (`tests/CharacterCanvas.test.tsx`), the config (`tests/AppConfig*.test.ts*`), each vision
 model and the worker proxy (`tests/*Model.test.ts`, `tests/VisionWorkerProxy.test.ts`), the body-part

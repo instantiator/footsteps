@@ -11,12 +11,12 @@ this covers what only a person in front of a camera can confirm.
 
 ```json
 "modules": {
-  "camera": { "enabled": true, "preview": true }
+  "camera": { "requirement": "required", "preview": true }
 }
 ```
 
 Revert the module change when you have finished. The committed game leaves `modules.camera` off, but
-one of its displays turns the camera on, so the landing page still requires camera permission.
+one of its displays turns the camera on, so the landing page still offers the camera, without requiring it.
 
 ## Camera smoke test
 
@@ -26,8 +26,12 @@ Open <http://localhost:5173/game/magic-trifle>.
       description.
 - [ ] The permissions panel lists Camera, with a Grant button, and New game is disabled.
 - [ ] Click Grant and allow the camera. The panel shows a check mark, and New game becomes enabled.
+- [ ] A dropdown lists your cameras, with a mark on "System default", and a live preview shows.
+- [ ] Choose another camera (if you have one): the preview switches, and the mark moves. Reload: it is still chosen.
+- [ ] Unplug the chosen camera: the dropdown goes back to the system default.
+- [ ] Tick "Mirror picture": the preview flips.
 - [ ] Click New game. The URL changes to `/game/magic-trifle/play`.
-- [ ] A small preview appears in the top right, mirrored like a selfie camera.
+- [ ] A small preview appears in the top right, flipped if you ticked "Mirror picture".
 - [ ] The player's silhouette replaces the room around them, as a black cut-out.
 - [ ] Walking around moves the silhouette with you.
 - [ ] The page shows no errors in the browser console.
@@ -44,16 +48,17 @@ Now add `?debug=true` to the URL and reload ([Configuration](../configuration.md
 
 ## Landing, progress, and keep-awake
 
-Turn camera mode off everywhere for this section: set `modules.camera.enabled` to `false` and set
-every display's `camera.enabled` to `false`. The committed game has one display that turns the camera
+Turn camera mode off everywhere for this section: set `modules.camera.requirement` to `false` and set
+every display's `camera.requirement` to `false`. The committed game has one display that turns the camera
 on, so changing only the module is not enough.
 
-- [ ] `/game/magic-trifle` says "No permissions needed." and New game is enabled.
+- [ ] `/game/magic-trifle` shows no permissions panel, and New game is enabled.
 - [ ] Complete a challenge, return to `/game/magic-trifle`, and Continue appears.
 - [ ] Continue opens `/game/magic-trifle/play` at the saved stage.
 - [ ] New game clears the saved progress: after it, Continue is gone on the next landing visit.
-- [ ] Re-enable a camera display, clear the site's camera permission, and visit
-      `/game/magic-trifle/play` directly: it returns to the landing page.
+- [ ] Set a camera display's `requirement` to `"required"`, clear the site's camera permission, and visit
+      `/game/magic-trifle/play` directly: it returns to the landing page, and New game is disabled until you grant
+      the camera. With `"enabled"`, it plays, and asks for the camera when the first camera display appears.
 - [ ] While a game is open and incomplete, the device does not sleep or dim the screen. Completing
       the last stage releases the wake lock; check the browser console for wake-lock warnings if the
       device still sleeps.
@@ -86,14 +91,14 @@ Camera mode is resolved display by display: any active challenge that enables it
 explicit challenge setting, then the stage's shared display, then the overview display, then the
 game's `modules.camera` setting applies.
 
-| Check                                               | How                                                                                              | Expected                                              |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
-| The title screen uses the game default              | Load the game                                                                                    | Camera as configured in `modules.camera`              |
-| A stage can turn the camera off                     | Add `"camera": { "enabled": false }` to `stages[].displays[0]` for `stage-1`                     | Entering stage 1 removes the preview and silhouette   |
-| Returning reacquires the camera                     | Close the challenge from the stage above                                                         | Preview and silhouette return, with a fresh stream    |
-| The preview can hide while the camera keeps working | Set `"preview": false` on the same display                                                       | The preview container is hidden, the silhouette moves |
-| A challenge can override its stage                  | Add `"camera": { "enabled": true }` to one challenge display, and `false` to the stage's display | Entering that challenge turns the camera on           |
-| A challenge that says nothing inherits its stage    | Remove the challenge's `camera` setting and enable the stage's display                           | Entering the challenge keeps the camera on            |
+| Check                                               | How                                                                                                       | Expected                                              |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| The title screen uses the game default              | Load the game                                                                                             | Camera as configured in `modules.camera`              |
+| A stage can turn the camera off                     | Add `"camera": { "requirement": false }` to `stages[].displays[0]` for `stage-1`                          | Entering stage 1 removes the preview and silhouette   |
+| Returning reacquires the camera                     | Close the challenge from the stage above                                                                  | Preview and silhouette return, with a fresh stream    |
+| The preview can hide while the camera keeps working | Set `"preview": false` on the same display                                                                | The preview container is hidden, the silhouette moves |
+| A challenge can override its stage                  | Add `"camera": { "requirement": "enabled" }` to one challenge display, and `false` to the stage's display | Entering that challenge turns the camera on           |
+| A challenge that says nothing inherits its stage    | Remove the challenge's `camera` setting and enable the stage's display                                    | Entering the challenge keeps the camera on            |
 
 The preview is hidden with CSS rather than unmounted: the `<video>` is the segmentation source, so
 the silhouette must keep working when the preview is off.
@@ -132,9 +137,31 @@ such as `0.2`. Confirm that holding still fires only once, and that moving away 
 - [ ] Complete a stage while standing with a hand over the next stage's link. When the overview
       fades back in, the stage does not open until you move the hand away and back.
 
+## From behind
+
+The way the game is meant to be played, and not yet tested. Put the camera behind you, a little above and looking
+down, so it can see your head and your feet everywhere you'll stand, with the screen in front. Choose that camera on
+the landing page, with "Mirror picture" off. Record the results in
+[ADR 0010](../ADRs/0010-player-tracking-from-behind.md), as its choices depend on them.
+
+Play the rules demo with `?debug=true`:
+
+- [ ] **Direction:** step right. You move right on screen.
+- [ ] **Depth:** open "Walk around". Walk from the back of the area to the front, past each post. You pass behind a
+      post while the green line across you is above its foot, and in front when it is below.
+- [ ] **Jumps:** jump beside a post. You stay on the same side of it.
+- [ ] **Standing on a line:** stand with your feet level with a post's foot. You don't flicker in front of and behind it.
+      If you do, raise `cameraDepthDeadband`. If walking away feels slow to show, lower `cameraDepthWindowMs`.
+- [ ] **Two players:** one stands behind a post, the other in front.
+- [ ] **What the models find:** note how many hands and feet the readout finds, and how often. Repeat with
+      `&visionModel=mediapipe` and `&visionModel=movenet`.
+- [ ] **Interactions:** check `hand-enter`, `foot-enter`, `head-enter` and jumps on the stages overview and the lava.
+      Head and foot points may fail from behind, as the models look for faces and feet.
+- [ ] **Gap filling:** add `&cameraFillGaps=true` and move around. No copy of your outline appears away from you.
+
 ## The rules demo
 
-`rules-demo` exercises display rules and state, reset displays, sounds and rewards, and turns the camera on for its stages overview and both stages.
+`rules-demo` exercises display rules and state, reset displays, sounds and rewards, and turns the camera on for its stages overview and all its stages.
 Play it once with the mouse and once with the camera (`?debug=true` shows where your hands and feet are found).
 
 - [ ] **Toggle:** click the yellow switch on the stages overview, then touch it with a hand. It slides between two
@@ -153,6 +180,7 @@ Play it once with the mouse and once with the camera (`?debug=true` shows where 
       and about 3 s later the floor fades in. Step on a lava pool: you are asked back to the start. Step on the
       door's base: fireworks and a fanfare, and the stage completes. Reload partway: you are asked for the start
       again. The same works by walking the mouse over them.
+- [ ] **Walk around:** see [From behind](#from-behind). "Done" completes the stage.
 - [ ] **Reduced motion:** with the system's reduce-motion setting on, the sounds still play but there are no
       sparkles or fireworks.
 - [ ] **Covering:** with the HUD over part of the game, a hand under the HUD's buttons does not count.

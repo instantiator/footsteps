@@ -84,7 +84,9 @@ React Router re-reads the query when the URL changes, so a setting can be change
 | `cameraDepthWindowMs` | `700`   | whole number | How long a player's lowest ground point is kept, so a jump doesn't change their depth       |
 | `cameraDepthDeadband` | `2`     | whole number | How far a player's ground point must move to change their depth, in % of the scene's height |
 
-[ADR 0007](ADRs/0007-camera-flicker.md) explains holding, fading and filling gaps.
+[ADR 0007](ADRs/0007-camera-flicker.md) explains holding, fading and filling gaps, and
+[ADR 0010](ADRs/0010-player-tracking-from-behind.md) how a player's depth is found. Which camera to use, and whether to
+mirror it, aren't app config: the player chooses them on the [landing page](camera-mode.md#choosing-a-camera).
 
 ### Jumps
 
