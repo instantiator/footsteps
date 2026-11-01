@@ -4,6 +4,7 @@ import {
   gamePermissionLabel,
   requestGamePermission,
   requiredGamePermissions,
+  usedGamePermissions,
 } from "../src/components/core/logic/GamePermissionUtils";
 import type { GameData } from "../src/entities/data/GameData";
 import { smallGame } from "./data/SmallGame";
@@ -44,7 +45,7 @@ const gameWithStageDisplay: GameData = {
           displays: [
             {
               purpose: "shared",
-              camera: { requirement: "enabled" },
+              camera: { requirement: "required" },
               component: { type: "template", data: {}, foregroundTemplate: { sourceType: "embedded", content: "" } },
             },
           ],
@@ -54,35 +55,74 @@ const gameWithStageDisplay: GameData = {
 };
 
 describe("requiredGamePermissions", () => {
-  it("needs no permissions when the game never enables the camera", () => {
+  it("needs no permissions when the game never uses the camera", () => {
     expect(requiredGamePermissions(smallGame)).toEqual([]);
+    expect(usedGamePermissions(smallGame)).toEqual([]);
   });
 
-  it("needs the camera when the game module enables it", () => {
+  it("uses the camera, but doesn't need it, when it is only enabled", () => {
     const game: GameData = { ...smallGame, modules: { camera: { requirement: "enabled" } } };
-    expect(requiredGamePermissions(game)).toEqual(["camera"]);
+    expect(usedGamePermissions(game)).toEqual(["camera"]);
+    expect(requiredGamePermissions(game)).toEqual([]);
   });
 
-  it("needs the camera when an overview display enables it", () => {
+  it("neither uses nor needs the camera when everything turns it off", () => {
+    const game: GameData = { ...smallGame, modules: { camera: { requirement: false } } };
+    expect(usedGamePermissions(game)).toEqual([]);
+    expect(requiredGamePermissions(game)).toEqual([]);
+  });
+
+  it("needs the camera when one display requires it and another only enables it", () => {
+    const [overview, ...others] = smallGame.displays;
     const game: GameData = {
       ...smallGame,
-      displays: smallGame.displays.map((display) => ({ ...display, camera: { requirement: "enabled" } })),
+      modules: { camera: { requirement: "enabled" } },
+      displays: [{ ...overview, camera: { requirement: "required" } }, ...others],
     };
     expect(requiredGamePermissions(game)).toEqual(["camera"]);
   });
 
-  it("needs the camera when a stage display enables it", () => {
+  it("needs the camera when a nested reset display requires it", () => {
+    const component = smallGame.displays[0].component;
+    const [overview, ...others] = smallGame.displays;
+    const game: GameData = {
+      ...smallGame,
+      displays: [
+        {
+          ...overview,
+          resetDisplay: { component, resetDisplay: { component, camera: { requirement: "required" } } },
+        },
+        ...others,
+      ],
+    };
+    expect(requiredGamePermissions(game)).toEqual(["camera"]);
+  });
+
+  it("needs the camera when the game module requires it", () => {
+    const game: GameData = { ...smallGame, modules: { camera: { requirement: "required" } } };
+    expect(requiredGamePermissions(game)).toEqual(["camera"]);
+  });
+
+  it("needs the camera when an overview display requires it", () => {
+    const game: GameData = {
+      ...smallGame,
+      displays: smallGame.displays.map((display) => ({ ...display, camera: { requirement: "required" } })),
+    };
+    expect(requiredGamePermissions(game)).toEqual(["camera"]);
+  });
+
+  it("needs the camera when a stage display requires it", () => {
     expect(requiredGamePermissions(gameWithStageDisplay)).toEqual(["camera"]);
   });
 
-  it("needs the camera when a challenge display enables it", () => {
+  it("needs the camera when a challenge display requires it", () => {
     const game: GameData = {
       ...smallGame,
       stages: smallGame.stages.map((stage) => ({
         ...stage,
         challenges: stage.challenges.map((challenge) => ({
           ...challenge,
-          displays: challenge.displays.map((display) => ({ ...display, camera: { requirement: "enabled" } })),
+          displays: challenge.displays.map((display) => ({ ...display, camera: { requirement: "required" } })),
         })),
       })),
     };

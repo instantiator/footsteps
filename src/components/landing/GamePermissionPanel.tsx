@@ -6,7 +6,7 @@ import {
 
 /** Props for {@link GamePermissionPanel}. */
 interface GamePermissionPanelProps {
-  /** The permissions the game needs. */
+  /** The permissions the game can use. */
   permissions: GamePermissionId[];
   /** Each permission's last known browser state, once checked. */
   states: Partial<Record<GamePermissionId, GamePermissionState>>;
@@ -16,15 +16,9 @@ interface GamePermissionPanelProps {
   onGrant: (id: GamePermissionId) => void;
 }
 
-/** The landing page's permissions panel: each required permission, its state, and a way to grant it. */
+/** The landing page's permissions panel, if the game uses any: each permission, its state, and a way to grant it. */
 export default function GamePermissionPanel({ permissions, states, granting, onGrant }: GamePermissionPanelProps) {
-  if (permissions.length === 0) {
-    return (
-      <div className="game-panel game-landing-panel">
-        <p>No permissions needed.</p>
-      </div>
-    );
-  }
+  if (permissions.length === 0) return null;
 
   return (
     <div className="game-panel game-landing-panel">
