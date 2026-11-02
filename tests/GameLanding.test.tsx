@@ -13,7 +13,8 @@ import { stubGetUserMedia, stubPermissionQuery, type PermissionQueryResult } fro
 
 const GAME_ID = "simple-game";
 
-const cameraGame: GameData = { ...simpleGameData, modules: { camera: { enabled: true } } };
+const cameraGame: GameData = { ...simpleGameData, modules: { camera: { requirement: "required" } } };
+const optionalCameraGame: GameData = { ...simpleGameData, modules: { camera: { requirement: "enabled" } } };
 
 /** A state with stage 1 complete and stage 2 partly complete. */
 const partlyComplete = (): GameState => {
@@ -98,10 +99,18 @@ describe("GameLanding", () => {
     expect(screen.getByText("Playing the game")).toBeInTheDocument();
   });
 
-  it("says when the game needs no permissions", () => {
+  it("shows no permissions panel when the game doesn't use the camera", () => {
     renderLanding();
 
-    expect(screen.getByText("No permissions needed.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Permissions" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New game" })).toBeEnabled();
+  });
+
+  it("offers the camera, but lets the player start without it, when it is only enabled", async () => {
+    permissionQuery("prompt");
+    renderLanding(optionalCameraGame);
+
+    expect(await screen.findByRole("button", { name: "Grant camera" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New game" })).toBeEnabled();
   });
 

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   gamePermissionLabel,
   type GamePermissionId,
@@ -6,7 +7,7 @@ import {
 
 /** Props for {@link GamePermissionPanel}. */
 interface GamePermissionPanelProps {
-  /** The permissions the game needs. */
+  /** The permissions the game can use. */
   permissions: GamePermissionId[];
   /** Each permission's last known browser state, once checked. */
   states: Partial<Record<GamePermissionId, GamePermissionState>>;
@@ -14,17 +15,19 @@ interface GamePermissionPanelProps {
   granting: GamePermissionId | null;
   /** Requests a permission from the browser. */
   onGrant: (id: GamePermissionId) => void;
+  /** What to show under the permissions, such as controls that need them. */
+  children?: ReactNode;
 }
 
-/** The landing page's permissions panel: each required permission, its state, and a way to grant it. */
-export default function GamePermissionPanel({ permissions, states, granting, onGrant }: GamePermissionPanelProps) {
-  if (permissions.length === 0) {
-    return (
-      <div className="game-panel game-landing-panel">
-        <p>No permissions needed.</p>
-      </div>
-    );
-  }
+/** The landing page's permissions panel, if the game uses any: each permission, its state, and a way to grant it. */
+export default function GamePermissionPanel({
+  permissions,
+  states,
+  granting,
+  onGrant,
+  children,
+}: GamePermissionPanelProps) {
+  if (permissions.length === 0) return null;
 
   return (
     <div className="game-panel game-landing-panel">
@@ -60,6 +63,7 @@ export default function GamePermissionPanel({ permissions, states, granting, onG
           );
         })}
       </ul>
+      {children}
     </div>
   );
 }

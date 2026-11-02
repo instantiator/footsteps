@@ -2,6 +2,13 @@ import { vi } from "vitest";
 
 /** A video track stand-in, for jsdom which has none; `stop` is a spy, so tests can see the camera turned off. */
 export class FakeMediaStreamTrack extends EventTarget implements MediaStreamTrack {
+  private readonly settings: MediaTrackSettings;
+
+  constructor(settings: MediaTrackSettings = {}) {
+    super();
+    this.settings = settings;
+  }
+
   contentHint = "";
   enabled = true;
   readonly id = "fake-track";
@@ -26,7 +33,7 @@ export class FakeMediaStreamTrack extends EventTarget implements MediaStreamTrac
     return {};
   }
   getSettings(): MediaTrackSettings {
-    return {};
+    return this.settings;
   }
 }
 

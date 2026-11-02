@@ -128,3 +128,31 @@
   cursor: not-allowed;
   opacity: 0.5;
 }
+
+/* The camera dropdown, mirror checkbox and live preview, under the camera permission */
+.game-camera-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.game-camera-picker label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.game-camera-picker select {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+}
+
+.game-camera-picker video {
+  width: 100%;
+  max-width: 20rem;
+  border: 2px solid #22303c;
+  border-radius: 0.5rem;
+  background: #22303c;
+}

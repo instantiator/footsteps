@@ -16,7 +16,7 @@ import GameChallengeGrid from "./GameChallengeGrid";
  */
 export interface LayerNodeProps {
   /** Stacking order of the layer; see `GameLayersLayout`. */
-  zIndex: number;
+  zIndex?: number;
   /** Extra style for the layer's container. */
   style?: CSSProperties;
   /** The webcam video's aspect ratio, used to size the character canvas to match. */
@@ -43,6 +43,8 @@ export interface LayerNodeProps {
   canvasRef?: React.RefObject<HTMLCanvasElement | null>;
   /** Called every frame with the people the camera found, and when the frame was taken. */
   onPlayersChange?: (players: PlayerFrame[], timestamp: number) => void;
+  /** Whether the camera's picture is flipped like a mirror. */
+  mirror?: boolean;
   /** Whether debug aids (colour key, coloured mask) are shown. */
   debug?: boolean;
   /** The display components to render in the layer, one per grid column. */
@@ -82,6 +84,7 @@ export const CharacterCameraLayerWrapper = ({
   setAspectRatio: onAspectChange,
   onCameraError,
   showPreview = true,
+  mirror,
   debug,
 }: LayerNodeProps) => (
   <div
@@ -97,18 +100,23 @@ export const CharacterCameraLayerWrapper = ({
       onAspectChange={onAspectChange!}
       colorKey={debug!}
       onError={onCameraError!}
+      mirror={mirror!}
     />
   </div>
 );
 
 /** Layer holding the debug overlay: feet markers when the camera is enabled. They take no pointer events, so they never cover what the player touches. */
-export const DebugLayerWrapper = ({ style, zIndex, feetPositions, cameraEnabled }: LayerNodeProps) => (
-  <div id="debug-overlay-container" className="outerStyle noClicks" style={{ ...style, zIndex: zIndex }}>
+export const DebugLayerWrapper = ({ style, zIndex, feetPositions, cameraEnabled, mirror }: LayerNodeProps) => (
+  <div
+    id="debug-overlay-container"
+    className="outerStyle noClicks"
+    style={{ ...style, zIndex: zIndex, transform: mirror ? "scaleX(-1)" : undefined }}
+  >
     {cameraEnabled && <CameraDebugOverlay className="innerStyle noClicks" feetPositions={feetPositions} />}
   </div>
 );
 
-/** Layer holding the player's mirrored silhouette ({@link CharacterCanvas}), which also reports their feet positions. */
+/** Layer holding the player's silhouette ({@link CharacterCanvas}), which also reports their feet positions. */
 export const CharacterCanvasLayerWrapper = ({
   style,
   zIndex,
@@ -118,17 +126,18 @@ export const CharacterCanvasLayerWrapper = ({
   setFeetPositions,
   canvasRef,
   onPlayersChange,
+  mirror,
   debug,
 }: LayerNodeProps) => {
   const { showFps } = useAppConfig();
   return (
     // Clicks pass through to the game layers beneath; the silhouette is decoration
-    <div id="character-canvas-container" className="outerStyle noClicks">
+    <div id="character-canvas-container" className="outerStyle noClicks characterCanvasStack">
       <CharacterCanvas
         video={video ?? null}
         mediaStream={characterStream}
         className="innerStyle"
-        style={{ ...style, transform: "scaleX(-1)", aspectRatio: aspectRatio, zIndex }}
+        style={{ ...style, transform: mirror ? "scaleX(-1)" : undefined, aspectRatio: aspectRatio, zIndex }}
         // Only the debug overlay shows the feet; reporting them otherwise would re-render the game every frame
         onFeetPositionsChange={debug ? setFeetPositions : undefined}
         onPlayersChange={onPlayersChange}

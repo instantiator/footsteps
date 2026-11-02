@@ -57,24 +57,36 @@ const inStage = (settings: CameraSettings = {}) => {
 };
 
 describe("resolveCameraMode", () => {
+  it("turns camera mode on for a required camera, as for an enabled one", () => {
+    expect(inStage({ game: { requirement: "required" } })).toEqual({ enabled: true, preview: true });
+    expect(inStage({ stage: { requirement: "required" } })).toEqual({ enabled: true, preview: true });
+  });
+
+  it("lets a challenge's false beat the stage's required", () => {
+    expect(inStage({ stage: { requirement: "required" }, challenges: [{ requirement: false }] })).toEqual({
+      enabled: false,
+      preview: false,
+    });
+  });
+
   it("is off, with no preview, when neither the game nor any display sets it", () => {
     expect(onOverview()).toEqual({ enabled: false, preview: false });
   });
 
   it("takes the game's settings when no display sets them", () => {
-    expect(inStage({ game: { enabled: true } })).toEqual({ enabled: true, preview: true });
-    expect(inStage({ game: { enabled: true, preview: false } })).toEqual({ enabled: true, preview: false });
+    expect(inStage({ game: { requirement: "enabled" } })).toEqual({ enabled: true, preview: true });
+    expect(inStage({ game: { requirement: "enabled", preview: false } })).toEqual({ enabled: true, preview: false });
   });
 
   it("lets any active challenge enable camera mode, even when the stage disables it", () => {
-    expect(inStage({ stage: { enabled: false }, challenges: [{ enabled: true }] })).toEqual({
+    expect(inStage({ stage: { requirement: false }, challenges: [{ requirement: "enabled" }] })).toEqual({
       enabled: true,
       preview: true,
     });
   });
 
   it("lets an explicit challenge disable camera mode when no challenge enables it", () => {
-    expect(inStage({ stage: { enabled: true }, challenges: [{ enabled: false }] })).toEqual({
+    expect(inStage({ stage: { requirement: "enabled" }, challenges: [{ requirement: false }] })).toEqual({
       enabled: false,
       preview: false,
     });
@@ -83,40 +95,50 @@ describe("resolveCameraMode", () => {
   it("enables camera mode when one of several active challenges enables it", () => {
     expect(
       inStage({
-        stage: { enabled: false },
-        challenges: [{ enabled: false }, { enabled: true }],
+        stage: { requirement: false },
+        challenges: [{ requirement: false }, { requirement: "enabled" }],
       }),
     ).toEqual({ enabled: true, preview: true });
   });
 
   it("inherits from the stage when no challenge declares camera mode", () => {
-    expect(inStage({ stage: { enabled: true }, challenges: [undefined] })).toEqual({ enabled: true, preview: true });
+    expect(inStage({ stage: { requirement: "enabled" }, challenges: [undefined] })).toEqual({
+      enabled: true,
+      preview: true,
+    });
   });
 
   it("inherits from the overview when neither challenge nor stage declares camera mode", () => {
-    expect(inStage({ overview: { enabled: true } })).toEqual({ enabled: true, preview: true });
+    expect(inStage({ overview: { requirement: "enabled" } })).toEqual({ enabled: true, preview: true });
   });
 
   it("lets a challenge turn the preview on over a stage that turns it off", () => {
-    expect(inStage({ game: { enabled: true }, stage: { preview: false }, challenges: [{ preview: true }] })).toEqual({
+    expect(
+      inStage({ game: { requirement: "enabled" }, stage: { preview: false }, challenges: [{ preview: true }] }),
+    ).toEqual({
       enabled: true,
       preview: true,
     });
   });
 
   it("lets an explicit challenge turn the preview off over a stage that turns it on", () => {
-    expect(inStage({ game: { enabled: true }, stage: { preview: true }, challenges: [{ preview: false }] })).toEqual({
+    expect(
+      inStage({ game: { requirement: "enabled" }, stage: { preview: true }, challenges: [{ preview: false }] }),
+    ).toEqual({
       enabled: true,
       preview: false,
     });
   });
 
   it("inherits the preview from the stage when no challenge declares it", () => {
-    expect(inStage({ game: { enabled: true }, stage: { preview: false } })).toEqual({ enabled: true, preview: false });
+    expect(inStage({ game: { requirement: "enabled" }, stage: { preview: false } })).toEqual({
+      enabled: true,
+      preview: false,
+    });
   });
 
   it("forces the preview off whenever camera mode is off", () => {
-    expect(onOverview({ game: { enabled: false, preview: true }, overview: { preview: true } })).toEqual({
+    expect(onOverview({ game: { requirement: false, preview: true }, overview: { preview: true } })).toEqual({
       enabled: false,
       preview: false,
     });

@@ -3,6 +3,9 @@
 - Status: Accepted; superseded in part by [ADR 0006](0006-display-rules-and-state.md) (camera targets come from rule selectors, and covered elements don't respond), and by [ADR 0008](0008-jump-detection.md) (jump detection)
 - Date: 2026-10-22
 
+Later changes: the `enabled` setting below is now `requirement`, and mirroring is now the player's choice. See
+[camera mode](../camera-mode.md).
+
 ## Context
 
 Camera mode was all-or-nothing: `GameData.modules.camera.enabled` switched it on for a whole game,

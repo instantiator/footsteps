@@ -66,9 +66,11 @@ a held player's monitor without updating it.
 
 With `cameraFillGaps`, each matched person gets `filled`: their mask combined with their previous raw mask, moved by
 how far they moved (`fillFromPrevious`). Only the frame before is used, so a part that has really gone is gone a frame
-later. The movement is the mean move of the key points (hands, feet, head) the model placed in both frames. The
+later. The movement is the median move of the key points (hands, feet, head) the model placed in both frames. The
 silhouette's centre is used only if there are none. The centre can't be relied on, because it jumps when the model
-misses a part, which is exactly when the fill is needed. Measured cost with one player: tracking goes from 1.1 to
+misses a part, which is exactly when the fill is needed. A frame that moved more than 5% of the frame's width goes
+unfilled: an unlimited mean let one stray pixel, which can throw all four BodyPix head points, draw a copy of the
+player far away. Measured cost with one player: tracking goes from 1.1 to
 2.0 ms per frame, with no change in fps.
 
 ### Testing

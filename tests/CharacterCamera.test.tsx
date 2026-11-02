@@ -1,5 +1,6 @@
 import { render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { saveCameraChoice } from "../src/components/camera/CameraChoice";
 import CharacterCamera from "../src/components/camera/CharacterCamera";
 import { FakeMediaStream, FakeMediaStreamTrack, stubMediaPlayback } from "./helpers/media";
 import { stubGetUserMedia } from "./helpers/permissions";
@@ -12,15 +13,16 @@ const renderCamera = () => {
     onAspectChange: vi.fn(),
     onError: vi.fn(),
   };
-  const view = render(<CharacterCamera stream={undefined} video={null} colorKey={false} {...props} />);
+  const view = render(<CharacterCamera stream={undefined} video={null} colorKey={false} mirror={false} {...props} />);
   const video = view.container.querySelector("video");
-  view.rerender(<CharacterCamera stream={undefined} video={video} colorKey={false} {...props} />);
+  view.rerender(<CharacterCamera stream={undefined} video={video} colorKey={false} mirror={false} {...props} />);
   return { ...view, ...props };
 };
 
 let camera: ReturnType<typeof stubGetUserMedia>;
 
 beforeEach(() => {
+  localStorage.clear();
   stubMediaPlayback();
   vi.spyOn(console, "warn").mockImplementation(() => undefined);
   vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -39,6 +41,28 @@ describe("CharacterCamera", () => {
     await waitFor(() => expect(setStream).toHaveBeenCalledTimes(1));
     expect(onAspectChange).toHaveBeenCalledTimes(1);
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("uses the camera chosen on the landing page", async () => {
+    saveCameraChoice({ deviceId: "rear", mirror: false });
+    camera = stubGetUserMedia();
+    const { setStream } = renderCamera();
+
+    await waitFor(() => expect(setStream).toHaveBeenCalledTimes(1));
+    expect(camera.getUserMedia).toHaveBeenCalledOnce();
+    expect(camera.getUserMedia.mock.calls[0][0]).toMatchObject({ video: { deviceId: { exact: "rear" } } });
+  });
+
+  it("stays on its camera when the cameras change during play", async () => {
+    camera = stubGetUserMedia();
+    const { setStream } = renderCamera();
+    await waitFor(() => expect(setStream).toHaveBeenCalledTimes(1));
+
+    saveCameraChoice({ deviceId: "other", mirror: false });
+    camera.changeDevices();
+    await Promise.resolve();
+
+    expect(camera.getUserMedia).toHaveBeenCalledOnce();
   });
 
   it("reports an error, rather than waiting forever, when the camera can't start", async () => {

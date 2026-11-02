@@ -54,6 +54,34 @@
   pointer-events: none;
 }
 
+/*
+ * The players and the challenge foreground, in one stacking context so they can be sorted among each other by depth.
+ * Nothing between here and them may form a stacking context of its own.
+ */
+.depthStack {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  isolation: isolate;
+  pointer-events: none;
+}
+
+/* z-index only applies to positioned elements; :where() keeps this from overriding an author's own position */
+:where([data-depth]) {
+  position: relative;
+}
+
+/* One canvas per player, laid over each other */
+.characterCanvasStack {
+  display: grid;
+  grid-template-rows: 100%;
+  justify-items: center;
+}
+
+.characterCanvasStack > canvas {
+  grid-area: 1 / 1;
+}
+
 .hudStyle {
   position: absolute;
   top: 0;

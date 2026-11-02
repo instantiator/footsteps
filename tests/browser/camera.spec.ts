@@ -188,3 +188,19 @@ for (const holding of [true, false]) {
     else expect(fewest).toBe(0);
   });
 }
+
+test("lays each player's canvas exactly over the others", async ({ page }) => {
+  await openCameraGame(page, { photos: peoplePhotoUrls() });
+  await expect(silhouetteCanvas(page)).toHaveCount(1, { timeout: MODEL_TIMEOUT });
+  await page.evaluate(() => window.__fakeCamera.setImage("photo:two-facing"));
+
+  await expect(silhouetteCanvas(page)).toHaveCount(2, { timeout: MODEL_TIMEOUT });
+  const [first, second] = await silhouetteCanvas(page).evaluateAll((canvases) =>
+    canvases.map((canvas) => canvas.getBoundingClientRect().toJSON() as Record<string, number>),
+  );
+  expect(first.width).toBeGreaterThan(0);
+  expect(second).toEqual(first);
+
+  await page.evaluate(() => window.__fakeCamera.setImage("room"));
+  await expect(silhouetteCanvas(page)).toHaveCount(1, { timeout: 10_000 });
+});

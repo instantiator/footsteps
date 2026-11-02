@@ -105,7 +105,7 @@ const openRulesDemoWithCamera = async (page: Page, query: string): Promise<void>
   await page.route("**/game-repository.json", async (route) => {
     const response = await route.fetch();
     const repository = (await response.json()) as GameRepository;
-    repository.games["rules-demo"].modules = { camera: { enabled: true, preview: false } };
+    repository.games["rules-demo"].modules = { camera: { requirement: "enabled", preview: false } };
     await route.fulfill({ response, json: repository });
   });
   await page.goto(`/game/rules-demo/play${query}`);

@@ -20,6 +20,8 @@ npm install
 npm run dev
 ```
 
+If `npm run dev` or `npm run build` fails with errors from files inside `node_modules`, run `npm ci`. It reinstalls everything, and repairs damaged files. `npm install` doesn't, as it only checks package versions.
+
 ## About Footsteps
 
 Footsteps is a React application written in Typescript and built with Vite.

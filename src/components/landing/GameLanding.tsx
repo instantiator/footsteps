@@ -6,6 +6,7 @@ import { isDefined } from "../../util/ObjectUtils";
 import GameStylesheets from "../core/GameStylesheets";
 import "./GamePanel.css";
 import "./GameLanding.css";
+import CameraPicker from "./CameraPicker";
 import GamePermissionPanel from "./GamePermissionPanel";
 import { useGamePermissions } from "./useGamePermissions";
 
@@ -17,7 +18,7 @@ export default function GameLanding() {
     () => (isDefined(gameData.tileGraphic) ? resources[gameData.tileGraphic] : undefined),
     [gameData.tileGraphic, resources],
   );
-  const { permissions, states, granting, grant, allGranted } = useGamePermissions(gameData);
+  const { permissions, states, granting, grant, canStart } = useGamePermissions(gameData);
   const savedState = useMemo(() => loadGameState(gameId, gameData), [gameId, gameData]);
 
   const startNewGame = () => {
@@ -38,15 +39,17 @@ export default function GameLanding() {
           <h1>{gameData.title}</h1>
           <p>{gameData.description}</p>
         </div>
-        <GamePermissionPanel permissions={permissions} states={states} granting={granting} onGrant={grant} />
+        <GamePermissionPanel permissions={permissions} states={states} granting={granting} onGrant={grant}>
+          {states.camera === "granted" && <CameraPicker />}
+        </GamePermissionPanel>
       </div>
       <div className="game-landing-actions">
         {isDefined(savedState) && (
-          <button type="button" disabled={!allGranted} onClick={() => navigate(`/game/${gameId}/play`)}>
+          <button type="button" disabled={!canStart} onClick={() => navigate(`/game/${gameId}/play`)}>
             Continue
           </button>
         )}
-        <button type="button" disabled={!allGranted} onClick={startNewGame}>
+        <button type="button" disabled={!canStart} onClick={startNewGame}>
           New game
         </button>
       </div>

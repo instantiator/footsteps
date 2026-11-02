@@ -221,6 +221,42 @@ describe("CharacterCanvas", () => {
     expect(queuedFrames.size).toBe(1);
   });
 
+  describe("with one canvas per player", () => {
+    const canvasCount = (container: HTMLElement) => container.querySelectorAll("canvas").length;
+
+    it("gives a second player a canvas like the first", async () => {
+      const onPlayersChange = vi.fn();
+      const { container } = renderCanvas({ onPlayersChange, className: "silhouette", style: { zIndex: 6 } });
+      await waitFor(() => expect(onPlayersChange).toHaveBeenCalledTimes(1));
+
+      const [first, second] = Array.from(container.querySelectorAll("canvas"));
+      expect(canvasCount(container)).toBe(2);
+      expect(second.className).toBe("silhouette");
+      expect(second.style.zIndex).toBe("6");
+      expect([second.width, second.height]).toEqual([first.width, first.height]);
+    });
+
+    it("keeps its one canvas when nobody is found", async () => {
+      model.people = 0;
+      const onPlayersChange = vi.fn();
+      const { container } = renderCanvas({ onPlayersChange });
+      await waitFor(() => expect(onPlayersChange).toHaveBeenCalledTimes(1));
+
+      expect(canvasCount(container)).toBe(1);
+    });
+
+    it("removes the extra canvases when the loop stops", async () => {
+      const onPlayersChange = vi.fn();
+      const { container, rerender } = renderCanvas({ onPlayersChange });
+      await waitFor(() => expect(onPlayersChange).toHaveBeenCalledTimes(1));
+      expect(canvasCount(container)).toBe(2);
+
+      rerender(<CharacterCanvas video={video} mediaStream={undefined} onPlayersChange={onPlayersChange} />);
+
+      await waitFor(() => expect(canvasCount(container)).toBe(1));
+    });
+  });
+
   it("creates the model the app config chooses", async () => {
     const onPlayersChange = vi.fn();
     render(

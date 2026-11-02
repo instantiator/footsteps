@@ -10,7 +10,7 @@ import { simpleGameData } from "./data/SampleGameState";
 import { stubGetUserMedia, stubPermissionQuery, type PermissionQueryResult } from "./helpers/permissions";
 
 const GAME_ID = "camera-game";
-const cameraGame: GameData = { ...simpleGameData, modules: { camera: { enabled: true } } };
+const cameraGame: GameData = { ...simpleGameData, modules: { camera: { requirement: "required" } } };
 
 const restores: (() => void)[] = [];
 
@@ -26,10 +26,10 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const renderGuard = () =>
+const renderGuard = (game: GameData = cameraGame) =>
   render(
     <MemoryRouter initialEntries={[`/game/${GAME_ID}/play`]}>
-      <GameRepositoryProvider source={{ type: "RawRepository", repository: { games: { [GAME_ID]: cameraGame } } }}>
+      <GameRepositoryProvider source={{ type: "RawRepository", repository: { games: { [GAME_ID]: game } } }}>
         <GameDataProvider id={GAME_ID}>
           <Routes>
             <Route
@@ -78,5 +78,12 @@ describe("GamePermissionGuard", () => {
     renderGuard();
 
     expect(await screen.findByText("Landing page")).toBeInTheDocument();
+  });
+
+  it("lets the player in without a grant when the camera is only enabled", async () => {
+    permissionQuery("denied");
+    renderGuard({ ...simpleGameData, modules: { camera: { requirement: "enabled" } } });
+
+    expect(await screen.findByText("Playing the game")).toBeInTheDocument();
   });
 });

@@ -19,7 +19,7 @@ const openDemo = async (page: Page, change: (game: GameData) => void = () => {})
       ...game.displays,
       ...game.stages.flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.displays)),
     ]) {
-      display.camera = { enabled: false };
+      display.camera = { requirement: false };
     }
     change(game);
     await route.fulfill({ response, json: repository });

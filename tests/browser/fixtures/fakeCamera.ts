@@ -9,6 +9,8 @@ export interface FakeCameraState {
   setImage: (image: FakeCameraImage) => void;
   /** Every stream the page has been given, oldest first. */
   streams: MediaStream[];
+  /** What each stream was asked for, oldest first. */
+  constraints: MediaStreamConstraints[];
 }
 
 declare global {
@@ -25,6 +27,8 @@ interface FakeCameraSetup {
   width: number;
   /** The camera's height, in pixels. */
   height: number;
+  /** The cameras the browser lists. */
+  cameras: Pick<MediaDeviceInfo, "kind" | "deviceId" | "label" | "groupId">[];
 }
 
 /**
@@ -32,7 +36,7 @@ interface FakeCameraSetup {
  * `window.__fakeCamera` switches the scene and exposes the streams. It must be self-contained, as
  * Playwright sends it to the page as source.
  */
-function fakeCameraScript({ photoUrls, width, height }: FakeCameraSetup): void {
+function fakeCameraScript({ photoUrls, width, height, cameras }: FakeCameraSetup): void {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
@@ -75,7 +79,7 @@ function fakeCameraScript({ photoUrls, width, height }: FakeCameraSetup): void {
 
   const streams: MediaStream[] = [];
   let image: FakeCameraImage = "room";
-  const state: FakeCameraState = { streams, setImage: () => undefined };
+  const state: FakeCameraState = { streams, constraints: [], setImage: () => undefined };
   state.setImage = (next) => {
     image = next;
     paint(image);
@@ -88,14 +92,24 @@ function fakeCameraScript({ photoUrls, width, height }: FakeCameraSetup): void {
   Object.defineProperty(navigator, "mediaDevices", {
     configurable: true,
     value: {
-      getUserMedia: async () => {
+      getUserMedia: async (constraints: MediaStreamConstraints) => {
         const stream = canvas.captureStream(30);
         streams.push(stream);
+        state.constraints.push(constraints);
         return stream;
       },
+      enumerateDevices: async () => cameras,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
     },
   });
 }
+
+/** Two cameras to choose from, as a laptop with a camera plugged in has. */
+const FAKE_CAMERAS: FakeCameraSetup["cameras"] = [
+  { kind: "videoinput", deviceId: "fake-laptop", label: "Fake laptop camera", groupId: "fake" },
+  { kind: "videoinput", deviceId: "fake-rear", label: "Fake rear camera", groupId: "fake" },
+];
 
 /**
  * Installs a fake webcam before the page's own scripts run, so the real camera pipeline runs without a
@@ -108,5 +122,5 @@ export const installFakeCamera = async (
   photos: Record<string, string> = {},
   size = { width: 640, height: 480 },
 ): Promise<void> => {
-  await page.addInitScript(fakeCameraScript, { photoUrls: photos, ...size });
+  await page.addInitScript(fakeCameraScript, { photoUrls: photos, ...size, cameras: FAKE_CAMERAS });
 };

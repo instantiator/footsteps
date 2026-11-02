@@ -1,0 +1,2 @@
+# Shell scripts must stay LF on every machine: bash can't run them with CRLF, which Git on Windows checks out by default
+*.sh text eol=lf

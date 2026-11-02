@@ -7,7 +7,7 @@
       "description": "A test game for the validator.",
       "modules": {
         "camera": {
-          "enabled": true
+          "requirement": "enabled"
         }
       },
       "displays": [

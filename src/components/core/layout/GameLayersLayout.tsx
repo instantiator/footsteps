@@ -10,7 +10,9 @@ import {
   type SetStateAction,
 } from "react";
 import { isDefined } from "../../../util/ObjectUtils";
+import { loadCameraChoice } from "../../camera/CameraChoice";
 import type { FeetPositions } from "../../camera/CameraSupport";
+import { DEPTH_STACK_CLASS, UNSORTED_PLAYER_Z_INDEX } from "../../camera/PlayerDepth";
 import type { PlayerFrame } from "../../camera/PlayerMonitor";
 import type { ResolvedCameraMode } from "../logic/CameraModeUtils";
 import "./GameLayersLayout.css";
@@ -92,26 +94,6 @@ function LowerDisplayLayers({ layers: { overview, stage, challenges } }: Display
   );
 }
 
-/** The challenge foreground layer, and the debug overlay when debugging; both sit above the camera. */
-function UpperDisplayLayers({
-  layers,
-  debug,
-  feetPositions,
-  cameraEnabled,
-}: DisplayLayersProps & { debug?: boolean; feetPositions: FeetPositions; cameraEnabled: boolean }) {
-  return (
-    <>
-      <GameLayerWrapper
-        zIndex={8}
-        nodes={layers.challenges?.foregroundLayerNodes}
-        layer="challenges"
-        layerHint="foreground"
-      />
-      {debug && <DebugLayerWrapper zIndex={9} feetPositions={feetPositions} cameraEnabled={cameraEnabled} />}
-    </>
-  );
-}
-
 /** The webcam's video and stream, forgotten when no camera remains mounted so re-enabling starts fresh. */
 function useCameraMedia(cameraEnabled: boolean) {
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
@@ -141,6 +123,8 @@ interface SceneProps {
   showPreview: boolean;
   /** Whether the layers can line up with a camera that has reported its shape. */
   show: boolean;
+  /** Whether the camera's picture is flipped like a mirror. */
+  mirror: boolean;
   /** Shows the debug overlay and the camera's colour key. */
   debug?: boolean;
   /** The webcam's video and stream, and what to do when the camera can't start. */
@@ -159,12 +143,51 @@ interface SceneProps {
   setAspectRatio: Dispatch<SetStateAction<number | undefined>>;
 }
 
+/** The players and the challenge foreground, in one stacking context so they can be sorted among each other by depth. */
+function DepthStack({
+  scene,
+  media,
+  aspectRatio,
+  setFeetPositions,
+  canvasRef,
+  handlePlayers,
+  mirror,
+  debug,
+}: Pick<
+  SceneProps,
+  "scene" | "media" | "aspectRatio" | "setFeetPositions" | "canvasRef" | "handlePlayers" | "mirror" | "debug"
+>) {
+  return (
+    <div className={DEPTH_STACK_CLASS}>
+      {scene.camera.enabled && (
+        <CharacterCanvasLayerWrapper
+          zIndex={UNSORTED_PLAYER_Z_INDEX}
+          video={media.video}
+          characterStream={media.characterStream}
+          aspectRatio={aspectRatio}
+          setFeetPositions={setFeetPositions}
+          canvasRef={canvasRef}
+          onPlayersChange={handlePlayers}
+          mirror={mirror}
+          debug={debug}
+        />
+      )}
+      <GameLayerWrapper
+        nodes={scene.layers.challenges?.foregroundLayerNodes}
+        layer="challenges"
+        layerHint="foreground"
+      />
+    </div>
+  );
+}
+
 /** The display and camera layers, grouped so a display change can fade them together. */
 function Scene({
   scene,
   cameraToMount,
   showPreview,
   show,
+  mirror,
   debug,
   media,
   aspectRatio,
@@ -174,6 +197,7 @@ function Scene({
   handlePlayers,
   setAspectRatio,
 }: SceneProps) {
+  const aids = { mirror, debug };
   return (
     <div
       className="gameScene"
@@ -182,16 +206,15 @@ function Scene({
       aria-busy={scene.transitioning}
     >
       {show && <LowerDisplayLayers layers={scene.layers} />}
-      {show && scene.camera.enabled && (
-        <CharacterCanvasLayerWrapper
-          zIndex={6}
-          video={media.video}
-          characterStream={media.characterStream}
+      {show && (
+        <DepthStack
+          scene={scene}
+          media={media}
           aspectRatio={aspectRatio}
           setFeetPositions={setFeetPositions}
           canvasRef={canvasRef}
-          onPlayersChange={handlePlayers}
-          debug={debug}
+          handlePlayers={handlePlayers}
+          {...aids}
         />
       )}
       {cameraToMount && (
@@ -204,15 +227,15 @@ function Scene({
           setAspectRatio={setAspectRatio}
           onCameraError={media.onCameraError}
           showPreview={showPreview}
-          debug={debug}
+          {...aids}
         />
       )}
-      {show && (
-        <UpperDisplayLayers
-          layers={scene.layers}
-          debug={debug}
+      {show && debug && (
+        <DebugLayerWrapper
+          zIndex={9}
           feetPositions={feetPositions}
           cameraEnabled={scene.camera.enabled}
+          mirror={mirror}
         />
       )}
     </div>
@@ -260,6 +283,8 @@ export default function GameLayersLayout({
 }: GameLayersLayoutProps) {
   const [feetPositions, setFeetPositions] = useState<FeetPositions>({});
   const [cameraAspectRatio, setCameraAspectRatio] = useState<number>();
+  // Read once: changing it means going back to the landing page
+  const [mirror] = useState(() => loadCameraChoice().mirror);
   const { viewportRef, measureViewport, measureContainer } = useViewportMeasurements();
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const { camera, onCameraError } = useCameraFallback(requestedCamera);
@@ -286,6 +311,7 @@ export default function GameLayersLayout({
     cameraRules,
     onPlayerInteraction,
     scene.camera.enabled && !scene.transitioning,
+    mirror,
   );
 
   return (
@@ -300,6 +326,7 @@ export default function GameLayersLayout({
         cameraToMount={cameraToMount}
         showPreview={showPreview}
         show={show}
+        mirror={mirror}
         debug={debug}
         media={{ ...media, onCameraError }}
         aspectRatio={cameraAspectRatio}

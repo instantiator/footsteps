@@ -4,13 +4,14 @@ import {
   checkGamePermission,
   requestGamePermission,
   requiredGamePermissions,
+  usedGamePermissions,
   type GamePermissionId,
   type GamePermissionState,
 } from "../core/logic/GamePermissionUtils";
 
-/** The permissions a game requires, and the UI state for checking and granting them. */
+/** The permissions a game can use, and the UI state for checking and granting them. */
 interface GamePermissions {
-  /** The permissions the game requires. */
+  /** The permissions the game can use. */
   permissions: GamePermissionId[];
   /** Each permission's last known browser state, once checked. */
   states: Partial<Record<GamePermissionId, GamePermissionState>>;
@@ -18,13 +19,13 @@ interface GamePermissions {
   granting: GamePermissionId | null;
   /** Requests a permission from the browser. */
   grant: (id: GamePermissionId) => void;
-  /** Whether every required permission is granted and the initial checks have finished. */
-  allGranted: boolean;
+  /** Whether the game can start: the initial checks have finished, and every permission it requires is granted. */
+  canStart: boolean;
 }
 
-/** Checks the permissions a game requires, and grants them when the player asks. */
+/** Checks the permissions a game can use, and grants them when the player asks. */
 export const useGamePermissions = (gameData: GameData): GamePermissions => {
-  const permissions = useMemo(() => requiredGamePermissions(gameData), [gameData]);
+  const permissions = useMemo(() => usedGamePermissions(gameData), [gameData]);
   const [states, setStates] = useState<Partial<Record<GamePermissionId, GamePermissionState>>>({});
   const [checking, setChecking] = useState(permissions.length > 0);
   const [granting, setGranting] = useState<GamePermissionId | null>(null);
@@ -53,6 +54,6 @@ export const useGamePermissions = (gameData: GameData): GamePermissions => {
     });
   };
 
-  const allGranted = !checking && permissions.every((id) => states[id] === "granted");
-  return { permissions, states, granting, grant, allGranted };
+  const canStart = !checking && requiredGamePermissions(gameData).every((id) => states[id] === "granted");
+  return { permissions, states, granting, grant, canStart };
 };

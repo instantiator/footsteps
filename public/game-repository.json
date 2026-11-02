@@ -8,7 +8,7 @@
       "tileGraphic": "title-background",
       "modules": {
         "camera": {
-          "enabled": false
+          "requirement": false
         }
       },
       "config": {
@@ -158,7 +158,7 @@
               }
             ]
           },
-          "camera": { "enabled": true }
+          "camera": { "requirement": "enabled" }
         }
       ],
       "stages": [
@@ -167,7 +167,7 @@
           "displays": [
             {
               "purpose": "shared",
-              "camera": { "enabled": false },
+              "camera": { "requirement": false },
               "component": {
                 "type": "template",
                 "foregroundTemplate": {
@@ -196,7 +196,7 @@
               "displays": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "enabled": false },
+                  "camera": { "requirement": false },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -227,7 +227,7 @@
               "displays": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "enabled": false },
+                  "camera": { "requirement": false },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -262,7 +262,7 @@
               "displays": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "enabled": false },
+                  "camera": { "requirement": false },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -288,7 +288,7 @@
               "displays": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "enabled": false },
+                  "camera": { "requirement": false },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -319,7 +319,7 @@
               "displays": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "enabled": false },
+                  "camera": { "requirement": false },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -354,7 +354,7 @@
               "displays": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "enabled": false },
+                  "camera": { "requirement": false },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -385,7 +385,7 @@
               "displays": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "enabled": false },
+                  "camera": { "requirement": false },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -416,7 +416,7 @@
               "displays": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "enabled": false },
+                  "camera": { "requirement": false },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -464,7 +464,7 @@
       "id": "rules-demo",
       "title": "Rules demo",
       "description": "Pop balloons and cross a floor of lava: a demonstration of display rules and state, by mouse or camera.",
-      "modules": { "camera": { "enabled": false } },
+      "modules": { "camera": { "requirement": false } },
       "config": { "sequential": false, "autoAdvanceStages": false },
       "stylesheets": ["demo-css"],
       "resources": {
@@ -486,10 +486,10 @@
         },
         {
           "purpose": "game-overview-stages",
-          "camera": { "enabled": true },
+          "camera": { "requirement": "enabled" },
           "component": {
             "type": "template",
-            "data": { "names": { "balloons": "Balloons", "lava": "The floor is lava" } },
+            "data": { "names": { "balloons": "Balloons", "lava": "The floor is lava", "depth": "Walk around" } },
             "initialState": { "position": 1, "lit": false },
             "rules": [
               {
@@ -507,6 +507,10 @@
               {
                 "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-lava", "threshold": 0.5 },
                 "do": [{ "enterStage": "lava" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-depth", "threshold": 0.5 },
+                "do": [{ "enterStage": "depth" }]
               },
               {
                 "on": { "interact": ["click", "hand-enter"], "target": "#switch", "threshold": 0.5 },
@@ -528,7 +532,7 @@
               "displays": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "enabled": true },
+                  "camera": { "requirement": "enabled" },
                   "component": {
                     "type": "template",
                     "data": { "target": 10 },
@@ -607,7 +611,7 @@
               "displays": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "enabled": true },
+                  "camera": { "requirement": "enabled" },
                   "component": {
                     "type": "template",
                     "data": {},
@@ -660,6 +664,33 @@
                       },
                       "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
                     }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "depth",
+          "challenges": [
+            {
+              "id": "walk-around",
+              "solution": { "answers": [] },
+              "displays": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "camera": { "requirement": "enabled" },
+                  "component": {
+                    "type": "template",
+                    "data": {},
+                    "rules": [
+                      {
+                        "on": { "interact": ["click"], "target": "#depth-done" },
+                        "do": [{ "completeChallenge": true }]
+                      }
+                    ],
+                    "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/depth.hbs" },
+                    "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
                   }
                 }
               ]

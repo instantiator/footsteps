@@ -13,6 +13,12 @@ const MAX_MATCH_DISTANCE = 0.25;
 /** How long a person may go unseen, in milliseconds, before a returning one counts as someone new. */
 const TRACK_TIMEOUT_MS = 500;
 
+/**
+ * The furthest a gap fill may move the frame before's mask, as a fraction of the frame width. Anything further is
+ * taken as a bad measurement, and that frame goes unfilled, so a copy of the player can't appear away from them.
+ */
+const MAX_FILL_SHIFT = 0.05;
+
 /** The smoothing factor for a low-pass filter at the given cutoff, over the given interval. */
 const alpha = (cutoffHz: number, seconds: number): number => {
   const tau = 1 / (2 * Math.PI * cutoffHz);
@@ -101,24 +107,29 @@ export const fillFromPrevious = (mask: Uint8Array, previous: Uint8Array, width: 
   return filled;
 };
 
+/** The middle value, or the mean of the middle two. */
+const median = (values: number[]): number => {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = sorted.length / 2;
+  return Number.isInteger(middle) ? (sorted[middle - 1] + sorted[middle]) / 2 : sorted[Math.floor(middle)];
+};
+
 /**
- * How far, in whole pixels, a person moved since the frame before: the mean move of the key points placed in both
+ * How far, in whole pixels, a person moved since the frame before: the median move of the key points placed in both
  * frames, or else of their silhouette's centre. Key points come first because the centre jumps when the model misses
- * a part, which is when a fill is needed.
+ * a part, which is when a fill is needed. The median, because one stray pixel can throw several points at once (a
+ * model's head points all come from one part's extent).
  */
 const movement = (now: KeyPoints, before: KeyPoints, centre: Point | null, centreBefore: Point): Point => {
   const moves = (Object.keys(now) as KeyPointName[]).flatMap((name) => {
     const [a, b] = [before[name], now[name]];
     return a && b ? [{ x: b.x - a.x, y: b.y - a.y }] : [];
   });
-  const mean =
+  const move =
     moves.length > 0
-      ? {
-          x: moves.reduce((sum, move) => sum + move.x, 0) / moves.length,
-          y: moves.reduce((sum, move) => sum + move.y, 0) / moves.length,
-        }
+      ? { x: median(moves.map(({ x }) => x)), y: median(moves.map(({ y }) => y)) }
       : { x: (centre ?? centreBefore).x - centreBefore.x, y: (centre ?? centreBefore).y - centreBefore.y };
-  return { x: Math.round(mean.x), y: Math.round(mean.y) };
+  return { x: Math.round(move.x), y: Math.round(move.y) };
 };
 
 /** The squared distance between two points. */
@@ -175,9 +186,11 @@ export class PersonTracker {
     return { ...frame, people: [...people, ...this.held(seen, timestamp)] };
   }
 
-  /** The person's mask filled from their track's last one, moved as far as they have. */
-  private fill(person: VisionPerson, track: Track, centre: Point | null, width: number): Uint8Array {
+  /** The person's mask filled from their track's last one, moved as far as they have; nothing if that's too far. */
+  private fill(person: VisionPerson, track: Track, centre: Point | null, width: number): Uint8Array | undefined {
     const moved = movement(person.keyPoints, track.detected, centre, track.centre);
+    const reach = MAX_FILL_SHIFT * width;
+    if (Math.abs(moved.x) > reach || Math.abs(moved.y) > reach) return undefined;
     return fillFromPrevious(person.mask, track.last.mask, width, moved);
   }
 

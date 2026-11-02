@@ -1,3 +1,4 @@
+import type { GameDisplayBase, GameDisplayCameraData } from "../../../entities/data/displays/GameDisplayData";
 import type { GameData } from "../../../entities/data/GameData";
 import { getCameraStream } from "../../camera/CameraSupport";
 
@@ -15,21 +16,36 @@ const PERMISSION_LABELS: Record<GamePermissionId, string> = {
 /** The human-readable name of a permission. */
 export const gamePermissionLabel = (id: GamePermissionId): string => PERMISSION_LABELS[id];
 
-/** Whether any part of the game enables camera mode. */
-const gameUsesCamera = (gameData: GameData): boolean => {
-  if (gameData.modules?.camera?.enabled === true) return true;
+/** A display's camera settings, then those of each reset display nested in it. */
+const cameraSettingsOf = ({
+  camera,
+  resetDisplay,
+}: Pick<GameDisplayBase, "camera" | "resetDisplay">): (GameDisplayCameraData | undefined)[] => [
+  camera,
+  ...(resetDisplay ? cameraSettingsOf(resetDisplay) : []),
+];
 
+/** The most the game asks of the camera, anywhere: `"required"`, else `"enabled"`, else `false`. */
+const gameCameraRequirement = (gameData: GameData): NonNullable<GameDisplayCameraData["requirement"]> => {
   const displays = [
     ...gameData.displays,
     ...gameData.stages.flatMap((stage) => stage.displays ?? []),
     ...gameData.stages.flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.displays)),
   ];
-  return displays.some((display) => display.camera?.enabled === true);
+  const requirements = [gameData.modules?.camera, ...displays.flatMap(cameraSettingsOf)].map(
+    (settings) => settings?.requirement,
+  );
+  if (requirements.includes("required")) return "required";
+  return requirements.includes("enabled") ? "enabled" : false;
 };
 
-/** The permissions a game needs before it starts, in the order to show them. */
+/** The permissions a game can use, in the order to show them on its landing page. */
+export const usedGamePermissions = (gameData: GameData): GamePermissionId[] =>
+  gameCameraRequirement(gameData) ? ["camera"] : [];
+
+/** The permissions a game can't start without. */
 export const requiredGamePermissions = (gameData: GameData): GamePermissionId[] =>
-  gameUsesCamera(gameData) ? ["camera"] : [];
+  gameCameraRequirement(gameData) === "required" ? ["camera"] : [];
 
 /** The session storage key that remembers a permission the player granted in this tab. */
 const sessionGrantKey = (id: GamePermissionId): string => `footsteps:permission-granted:${id}`;

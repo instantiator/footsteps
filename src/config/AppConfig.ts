@@ -33,6 +33,10 @@ export interface AppConfig {
   cameraFadeMs: number;
   /** Fills parts of a player the model missed for a frame (eg. their legs) from the frame before (needs smoothing). */
   cameraFillGaps: boolean;
+  /** How long a player's lowest ground point is kept, in milliseconds, so a jump doesn't change their depth. */
+  cameraDepthWindowMs: number;
+  /** How far a player's ground point must move to change their depth, in % of the scene's height. */
+  cameraDepthDeadband: number;
   /** How far the feet must rise for a jump, as a fraction of the player's height. */
   jumpMinRise: number;
   /** How far the feet may wander while standing, as a fraction of the player's height. */
@@ -78,6 +82,8 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   cameraHoldMs: 400,
   cameraFadeMs: 300,
   cameraFillGaps: false,
+  cameraDepthWindowMs: 700,
+  cameraDepthDeadband: 2,
   jumpMinRise: 0.04,
   jumpStill: 0.02,
   jumpMinGroundedMs: 100,
@@ -136,6 +142,8 @@ const PARSERS: { [K in keyof AppConfig]: Parser<AppConfig[K]> } = {
   cameraHoldMs: int(0),
   cameraFadeMs: int(0),
   cameraFillGaps: bool,
+  cameraDepthWindowMs: int(0),
+  cameraDepthDeadband: int(0),
   jumpMinRise: fraction,
   jumpStill: fraction,
   jumpMinGroundedMs: int(0),

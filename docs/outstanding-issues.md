@@ -44,6 +44,33 @@ the camera feedback work too ([ADRs 0007](ADRs/0007-camera-flicker.md) and [0008
 
 Tune the `VITE_JUMP_*` and `VITE_CAMERA_HOLD_MS` / `FADE_MS` defaults from what you see, as they are estimates.
 
+## Tracking from behind is not proven on a real camera
+
+The game is built for a camera behind the player, but this has only been tested with photos, and only one is from
+behind. It placed no feet, so head and foot interactions and jumps, which use the model's points, may fail from behind.
+The depth settings are estimates, and `cameraFillGaps`'s stray copies are only reproduced with synthetic frames. Their
+likely cause hasn't been confirmed on real footage.
+
+**Act when:** before a game ships with a camera behind the player. Run [From behind](testing/manual-testing.md#from-behind)
+and record the results in [ADR 0010](ADRs/0010-player-tracking-from-behind.md). If feet or heads are found in fewer than
+about 9 frames in 10, compare the other models, then consider the options that ADR lists. Tune `cameraDepthWindowMs` and
+`cameraDepthDeadband` from what you see.
+
+## Only challenge foregrounds can be sorted by depth
+
+Overview and stage foregrounds always stay behind the player, because they must stay beneath challenge backgrounds.
+
+**Act when:** a game needs a player to pass behind something on an overview or a stage's shared display. Sort those
+layers with the players while no challenge is showing.
+
+## The landing page may miss a new default camera
+
+Browsers don't name a default camera, so a new first camera in their list stands in for one. They may not report a
+change of default at all, and the list's order may not follow it, in which case the page keeps the old camera.
+
+**Act when:** a tester reports the landing page not following a new default camera. Then reopen the camera on each
+check and compare the device it gives.
+
 ## A jump can land a frame early onto an element nearer the camera
 
 `jump-onto` fires on the first frame the feet have come back down far enough. When landing on an element lower on
