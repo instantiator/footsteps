@@ -87,7 +87,7 @@ const shownRunsKey = (state: GameState): string =>
 const getCameraRules = (state: GameState): CameraRuleTarget[] =>
   getShownDisplays(state).flatMap(({ scope, component }) =>
     (component.rules ?? []).flatMap(({ on }, ruleIndex) => {
-      if (!("interact" in on) || !isDefined(on.target)) return [];
+      if (!("interact" in on)) return [];
       const interactions = triggerInteractions(on).filter((i): i is CameraInteraction => !isPointerInteraction(i));
       if (interactions.length === 0) return [];
       const threshold = on.threshold ?? DEFAULT_INTERACTION_THRESHOLD;
@@ -101,6 +101,7 @@ const getCameraRules = (state: GameState): CameraRuleTarget[] =>
           threshold,
           includeCovered: on.includeCovered === true,
           holdMs: on.holdMs ?? 0,
+          within: on.within,
         },
       ];
     }),
@@ -451,7 +452,7 @@ export function useGameRules(): GameRules {
   /** Fires the camera rule that watches the element the player interacted with. */
   const onPlayerInteraction = useCallback(
     ({ scope, ruleIndex, element, interaction, player }: CameraRuleEvent) =>
-      fire(scope, (_, index) => (index === ruleIndex ? { id: element.id, interaction, player } : undefined)),
+      fire(scope, (_, index) => (index === ruleIndex ? { id: element?.id ?? "", interaction, player } : undefined)),
     [fire],
   );
 

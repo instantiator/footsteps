@@ -5,6 +5,7 @@ import {
   maskRectForElement,
   screenPointForMaskPoint,
   type Rect,
+  maskPointForScreenPoint,
 } from "../src/components/camera/CameraSupport";
 import { FakeMediaStream } from "./helpers/media";
 import { stubGetUserMedia } from "./helpers/permissions";
@@ -16,6 +17,24 @@ const HEIGHT = 100;
 /** A person with only the given feet placed. */
 const withFeet = (leftFoot: Point | null, rightFoot: Point | null) => ({
   keyPoints: { ...noKeyPoints(), leftFoot, rightFoot },
+});
+
+describe("maskPointForScreenPoint", () => {
+  const canvas = { left: 100, top: 50, right: 300, bottom: 150 };
+  const mask = { width: 20, height: 10 };
+
+  it("scales a point on the canvas into the mask", () => {
+    expect(maskPointForScreenPoint({ x: 200, y: 100 }, canvas, mask, false)).toEqual({ x: 10, y: 5 });
+    expect(maskPointForScreenPoint({ x: 120, y: 60 }, canvas, mask, false)).toEqual({ x: 2, y: 1 });
+  });
+
+  it("flips it for a mirrored canvas", () => {
+    expect(maskPointForScreenPoint({ x: 120, y: 60 }, canvas, mask, true)).toEqual({ x: 18, y: 1 });
+  });
+
+  it("gives a point off the canvas outside the mask", () => {
+    expect(maskPointForScreenPoint({ x: 80, y: 60 }, canvas, mask, false).x).toBe(-2);
+  });
 });
 
 describe("feetOf", () => {

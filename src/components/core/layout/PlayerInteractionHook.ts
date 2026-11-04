@@ -2,7 +2,12 @@ import { useCallback, useContext, useEffect, useRef, type RefObject } from "reac
 import type { DisplayScope } from "../../../entities/state/GameState";
 import useAppConfig from "../../../providers/AppConfigHook";
 import { PlayerRegistryContext } from "../../../providers/PlayerRegistryContext";
-import { maskRectForElement, screenPointForMaskPoint } from "../../camera/CameraSupport";
+import {
+  EMPTY_MASK_RECT,
+  maskPointForScreenPoint,
+  maskRectForElement,
+  screenPointForMaskPoint,
+} from "../../camera/CameraSupport";
 import { jumpSettingsOf } from "../../camera/JumpDetector";
 import {
   PlayerMonitor,
@@ -11,6 +16,7 @@ import {
   type PlayerFrame,
   type PlayerMonitorEvent,
 } from "../../camera/PlayerMonitor";
+import { centreOnScreen } from "../effects/EffectTargets";
 import { displayRoots } from "../logic/TemplateUtils";
 
 /** A rule the camera can fire: which display it belongs to, and the elements and interactions it watches. */
@@ -21,8 +27,8 @@ export interface CameraRuleTarget {
   run: number;
   /** The rule's position in the display's rules. */
   ruleIndex: number;
-  /** CSS selector for the elements, run inside the display's templates every frame. */
-  selector: string;
+  /** CSS selector for the elements, run inside the display's templates every frame; none for a jump anywhere. */
+  selector: string | undefined;
   /** The camera interactions that fire the rule. */
   interactions: CameraInteraction[];
   /** The fraction of the body part that must be inside the element (0–1). */
@@ -31,6 +37,8 @@ export interface CameraRuleTarget {
   includeCovered: boolean;
   /** How long, in milliseconds, a body part must stay over the element before it enters. */
   holdMs: number;
+  /** For being near: how close counts, as a % of the display's width. */
+  within?: number;
 }
 
 /** A camera interaction with an element a rule watches. */
@@ -39,8 +47,8 @@ export interface CameraRuleEvent {
   scope: DisplayScope;
   /** The rule's position in the display's rules. */
   ruleIndex: number;
-  /** The element the player interacted with. */
-  element: Element;
+  /** The element the player interacted with; null for a jump anywhere. */
+  element: Element | null;
   /** What the player did. */
   interaction: CameraInteraction;
   /** The number of the player who did it. */
@@ -71,6 +79,21 @@ interface FrameTargets {
   sources: Map<string, Omit<CameraRuleEvent, "interaction" | "player">>;
 }
 
+/** How being near an element reads in mask pixels. Its centre may be off the mask, unlike its bounds. */
+const nearTarget = (
+  element: Element,
+  within: number,
+  canvas: HTMLCanvasElement,
+  { mask, mirrored }: { mask: PlayerFrame; mirrored: boolean },
+): MonitorTarget["near"] => {
+  const canvasRect = canvas.getBoundingClientRect();
+  const displayWidth = canvas.closest(".gameViewport")?.getBoundingClientRect().width ?? canvasRect.width;
+  return {
+    centre: maskPointForScreenPoint(centreOnScreen(element), canvasRect, mask, mirrored),
+    within: ((within / 100) * displayWidth * mask.width) / canvasRect.width,
+  };
+};
+
 /**
  * The elements the camera rules watch, found by their selectors in the displays shown now, as mask-space targets.
  * Elements can come, go and move between frames.
@@ -85,9 +108,14 @@ const frameTargets = (
   const [mask] = players;
   const result: FrameTargets = { targets: {}, sources: new Map() };
   for (const rule of rules) {
-    for (const element of displayRoots(rule.scope).flatMap((root) =>
-      Array.from(root.querySelectorAll(rule.selector)),
-    )) {
+    if (rule.selector === undefined) {
+      const key = `${rule.scope}#${rule.ruleIndex}#anywhere`;
+      result.targets[key] = { rect: EMPTY_MASK_RECT, interactions: rule.interactions, threshold: 0, anywhere: true };
+      result.sources.set(key, { scope: rule.scope, ruleIndex: rule.ruleIndex, element: null });
+      continue;
+    }
+    const selector = rule.selector;
+    for (const element of displayRoots(rule.scope).flatMap((root) => Array.from(root.querySelectorAll(selector)))) {
       const key = `${rule.scope}#${rule.ruleIndex}#${elementKey(element)}`;
       const isTopmostAt = (point: { x: number; y: number }) => {
         const { x, y } = screenPointForMaskPoint(point, canvasRect, mask, mirrored);
@@ -100,6 +128,7 @@ const frameTargets = (
         threshold: rule.threshold,
         holdMs: rule.holdMs,
         isTopmostAt: rule.includeCovered ? undefined : isTopmostAt,
+        ...(rule.within !== undefined && { near: nearTarget(element, rule.within, canvas, { mask, mirrored }) }),
       };
       result.sources.set(key, { scope: rule.scope, ruleIndex: rule.ruleIndex, element });
     }

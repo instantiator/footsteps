@@ -53,7 +53,7 @@ const sample = async (page: Page, readout: Locator): Promise<Record<(typeof MEAS
 // VISION_BENCH_PLAIN=1 measures the game as played (plain silhouettes, readout from showFps) rather than in debug
 // VISION_BENCH_QUERY adds config (eg. "&visionModel=mediapipe"); VISION_BENCH_SHOTS saves each scene's debug view
 // to that folder, named VISION_BENCH_LABEL-<scene>.png; VISION_BENCH_CAMERA sets the fake camera's size, eg. 640x480
-// (by default 1280x720, the resolution the game asks a real camera for)
+// (by default 1280x720, the resolution the game asks a real camera for); VISION_BENCH_NEAR adds a near rule to the play
 test.skip(!process.env.VISION_BENCH, "set VISION_BENCH=1 to run the vision benchmark");
 
 test("measures the vision loop on an empty room and on photos of people", async ({ page }) => {
@@ -105,7 +105,13 @@ const openRulesDemoWithCamera = async (page: Page, query: string): Promise<void>
   await page.route("**/game-repository.json", async (route) => {
     const response = await route.fetch();
     const repository = (await response.json()) as GameRepository;
-    repository.games["rules-demo"].modules = { camera: { requirement: "enabled", preview: false } };
+    const game = repository.games["rules-demo"];
+    game.modules = { camera: { requirement: "enabled", preview: false } };
+    if (process.env.VISION_BENCH_NEAR) {
+      const [{ component }] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].displays;
+      const near = { interact: ["near-enter" as const], target: "#score", within: 10 };
+      component.rules = [...(component.rules ?? []), { on: near, do: [] }];
+    }
     await route.fulfill({ response, json: repository });
   });
   await page.goto(`/game/rules-demo/play${query}`);

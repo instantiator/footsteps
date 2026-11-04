@@ -138,6 +138,31 @@ export const bodyPartsIn = (frame: VisionFrame, area: PixelRect): BodyPartInArea
   return found;
 };
 
+/**
+ * Whether any of a person's silhouette is within a distance of a point. It looks only at the circle around the point,
+ * and stops at the first pixel it finds there, as this runs every frame for each near rule.
+ * @param point in mask pixels, and may be outside the mask
+ * @param within in mask pixels
+ */
+export const isSilhouetteWithin = (
+  { mask }: Pick<VisionPerson, "mask">,
+  { width, height }: { width: number; height: number },
+  point: Point,
+  within: number,
+): boolean => {
+  const firstRow = Math.max(0, Math.ceil(point.y - within));
+  const lastRow = Math.min(height - 1, Math.floor(point.y + within));
+  for (let y = firstRow; y <= lastRow; y++) {
+    const across = Math.sqrt(within * within - (y - point.y) ** 2);
+    const firstColumn = Math.max(0, Math.ceil(point.x - across));
+    const lastColumn = Math.min(width - 1, Math.floor(point.x + across));
+    for (let x = firstColumn; x <= lastColumn; x++) {
+      if (mask[y * width + x] === 1) return true;
+    }
+  }
+  return false;
+};
+
 /** The squared distance from a pixel to a segment. */
 const distanceSquared = (x: number, y: number, [a, b]: Segment): number => {
   const dx = b.x - a.x;
