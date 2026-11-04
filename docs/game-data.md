@@ -113,6 +113,8 @@ templates only render the state, and no game script ever runs. The `rules-demo` 
 - With `resetStateOnShow: true`, it returns to `initialState` each time the display is shown.
 - Resetting a challenge (the `resetChallenge` action) resets the state of that challenge's displays. A New game
   from the landing page clears everything.
+- A reset also rebuilds the display's templates, restarts its timers and fires its `start` rules again: see
+  [ending with the display](special-effects.md#ending-with-the-display).
 - Each display has its own state. Displays can't share state yet.
 
 #### Reset displays
@@ -152,27 +154,31 @@ A rule has a trigger (`on`), an optional condition (`if`, an expression), and ac
 Rules on displays that aren't showing do nothing. An overview display counts as showing only while no stage is
 open.
 
-| Trigger                                                      | Fires                                                                                                                          |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `{ "interact": …, "target": "<selector>", "holdMs"?: <ms> }` | When any player (or the mouse) interacts with an element matching the selector; with `holdMs`, once they have stayed that long |
-| `{ "animationEnd": "<name>", "target": "<selector>" }`       | When a CSS animation with that name ends on a matching element                                                                 |
-| `{ "transitionEnd": "<property>", "target": "<selector>" }`  | When a CSS transition of that property ends on a matching element                                                              |
-| `{ "when": "<expression>", "forMs"?: <ms> }`                 | When the expression turns from false to true, after any change; with `forMs`, once it has stayed true that long                |
-| `{ "every": <ms or expression> }`                            | Repeatedly while the display shows; an expression is worked out again each time                                                |
-| `{ "after": <ms or expression> }`                            | Once, that long after the display is shown                                                                                     |
-| `{ "start": true }`                                          | When the display is shown                                                                                                      |
+| Trigger                                                      | Fires                                                                                                                                                                                         |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `{ "interact": …, "target": "<selector>", "holdMs"?: <ms> }` | When any player (or the mouse) interacts with an element matching the selector; with `holdMs`, once they have stayed that long. `jump` alone may leave out `target`, to fire on every landing |
+| `{ "effectEnd": "<effect>", "target"?: "<selector>" }`       | When an [effect](special-effects.md#effect-end-trigger) finishes                                                                                                                              |
+| `{ "animationEnd": "<name>", "target": "<selector>" }`       | When a CSS animation with that name ends on a matching element                                                                                                                                |
+| `{ "transitionEnd": "<property>", "target": "<selector>" }`  | When a CSS transition of that property ends on a matching element                                                                                                                             |
+| `{ "when": "<expression>", "forMs"?: <ms> }`                 | When the expression turns from false to true, after any change; with `forMs`, once it has stayed true that long                                                                               |
+| `{ "every": <ms or expression> }`                            | Repeatedly while the display shows; an expression is worked out again each time                                                                                                               |
+| `{ "after": <ms or expression> }`                            | Once, that long after the display is shown                                                                                                                                                    |
+| `{ "start": true }`                                          | When the display is shown                                                                                                                                                                     |
 
-| Action                                                              | Does                                                                                                                        |
-| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `{ "set": { "key": "<expr>" }`                                      | Sets state keys to expressions' values, all worked out from the state before the action                                     |
-| `{ "resetState": true }`                                            | Returns the display's state to `initialState`                                                                               |
-| `{ "completeChallenge": true }`                                     | Solves this display's challenge, as a correct answer does (challenge displays only)                                         |
-| `{ "answer": "<expression>" }`                                      | Submits the expression's value as an answer to this display's challenge (challenge displays only)                           |
-| `{ "resetChallenge": true }`                                        | Makes this display's challenge unsolved again, and resets its displays' state (challenge displays only)                     |
-| `{ "enterStage": "<stage id>" }`                                    | Opens a stage, unless it is locked or completed                                                                             |
-| `{ "finishReset": true }`                                           | Reveals the display this reset display stands in for (reset displays only)                                                  |
-| `{ "sound": "<resource>", "delayMs"?: <ms> }`                       | Plays a sound resource, after `delayMs`                                                                                     |
-| `{ "reward": { "animation", "particleCount"? }, "delayMs"?: <ms> }` | Shows a [partycles](https://www.npmjs.com/package/partycles) celebration, like the stage [reward](#reward), after `delayMs` |
+| Action                                                                   | Does                                                                                                                                                                                     |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `{ "set": { "key": "<expr>" }`                                           | Sets state keys to expressions' values, all worked out from the state before the action                                                                                                  |
+| `{ "resetState": true }`                                                 | Returns the display's state to `initialState`                                                                                                                                            |
+| `{ "completeChallenge": true }`                                          | Solves this display's challenge, as a correct answer does (challenge displays only)                                                                                                      |
+| `{ "answer": "<expression>" }`                                           | Submits the expression's value as an answer to this display's challenge (challenge displays only)                                                                                        |
+| `{ "resetChallenge": true }`                                             | Makes this display's challenge unsolved again, and resets its displays' state (challenge displays only)                                                                                  |
+| `{ "enterStage": "<stage id>" }`                                         | Opens a stage, unless it is locked or completed                                                                                                                                          |
+| `{ "finishReset": true }`                                                | Reveals the display this reset display stands in for (reset displays only)                                                                                                               |
+| `{ "sound": "<resource>" }`                                              | Plays a sound resource                                                                                                                                                                   |
+| `{ "reward": { "animation", "particleCount"? }, "target"?, "players"? }` | Shows a [partycles](https://www.npmjs.com/package/partycles) celebration, like the stage [reward](#reward), from the middle of the game or [what it targets](special-effects.md#rewards) |
+| `{ "effect": "<effect>", … }`                                            | Runs a [special effect](special-effects.md) on elements or players                                                                                                                       |
+
+Every action can have a [`delayMs`](special-effects.md#delay).
 
 - Selectors are any CSS selector (`#door`, `.lava`, `.door:not(.open)`), matched inside the display's own
   templates. A click fires the rules whose selector matches the clicked element or its nearest matching ancestor.
@@ -181,14 +187,15 @@ open.
 - A `set` can make a `when` fire, which can `set` again. A chain of more than 10 rounds is logged, naming the
   rules, and stopped.
 - `every` waits at least 50 ms between firings.
-- `sound` and `reward` don't hold anything up: the rule's other actions apply at once, and effects from the same
-  rule start together (or after their own `delayMs`). Each plays once. Sounds play at full volume. With reduced
+- `sound` and `reward` don't hold anything up: the rule's other actions apply at once, and sounds and rewards from
+  the same rule start together (or after their own `delayMs`), carrying on even if their display closes or resets. Each plays once. Sounds play at full volume. With reduced
   motion, rewards aren't shown but sounds still play. A reload drops effects still waiting to play.
 - `holdMs` and `forMs` restart from zero if the player moves away, or the expression turns false, before the time
   is up. `holdMs` works only with `-enter` interactions.
 - Everything is checked when the game loads: an expression that doesn't parse, an invalid selector, a negative
-  duration, a challenge action outside a challenge display, or `enterStage` to a stage the game doesn't have stops
-  the game loading, with a message naming the display and rule. A selector that matches nothing in the display is
+  duration, a challenge action outside a challenge display, `enterStage` to a stage the game doesn't have, a `start`
+  rule that resets its own display, a mistake in an [effect](special-effects.md), or a rule only the camera could fire
+  on a display where the camera can never be on, stops the game loading, with a message naming the display and rule. A selector that matches nothing in the display is
   a console warning. So does a `holdMs` on an interaction that isn't an `-enter`, `finishReset` outside a reset
   display, a `sound` naming a resource the game doesn't have, or an old interaction name (eg. `hand`, now
   `hand-enter`).
@@ -224,6 +231,8 @@ See [how filtrex works](filtrex.md) for the syntax and why it is safe.
 | `jump`                                                         | Jumps up from the element and lands back on it                                |
 | `jump-from`                                                    | Jumps from the element, landing anywhere                                      |
 | `jump-onto`                                                    | Jumps onto the element, from anywhere                                         |
+| `near-enter`                                                   | Comes within `within` of the element                                          |
+| `near-exit`                                                    | Leaves that range, or the camera's view while in it                           |
 
 `interact` takes one interaction or a list. Moving the mouse between an element's own parts neither enters nor leaves
 it. `mouse-enter` is a good mouse stand-in for walking onto something with the camera (the lava demo uses it with
@@ -233,6 +242,15 @@ fires only after its `-enter` has fired, so pair them (eg. `["hand-exit", "mouse
 `["hand-enter", "mouse-enter"]`, as the demo's bulb does). The monitor
 is described under [how interactions work](camera-mode.md#how-interactions-work), and jumps under
 [jumps](camera-mode.md#jumps). Jump interactions fire as the player lands.
+
+`near-enter` and `near-exit` need `within`: how close counts as near, from the centre of the element to the closest
+part of the player's silhouette, as a % of the display's width. So it is a circle on screen whatever the display's
+shape, and it works from behind, where key points may not be found. It follows `visionStableFrames`, and a player
+already in range when a display appears must leave and come back. `holdMs` works with `near-enter`, and `threshold` and
+`includeCovered` don't apply. There's no mouse equivalent, though a rule can use `mouse-enter` as well.
+
+A rule whose interactions all need the camera is an error on a display where the camera can never be on. A display set
+to `"enabled"` can have them, for when there is a camera.
 
 #### What can be clicked or touched
 
@@ -244,7 +262,7 @@ elements `pointer-events: none` so they don't cover what's beneath them.
 #### Elements that animate or keep state
 
 Templates are patched in place when state changes, rather than replaced, so CSS transitions and animations carry
-on. An element is matched to its previous self by `id`, so give an `id` to anything that animates or that the
+on, until the display [resets](special-effects.md#ending-with-the-display). An element is matched to its previous self by `id`, so give an `id` to anything that animates or that the
 camera tracks. Changing an element's `id` (eg. `balloon-{{state.balloonIndex}}`) makes a new element, which restarts its
 animations: a simple way to spawn a replacement.
 

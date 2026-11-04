@@ -1,36 +1,23 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type Dispatch,
-  type RefObject,
-  type SetStateAction,
-} from "react";
-import type { DelayedAction, DisplayScope, GameState } from "../../entities/state/GameState";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import type { DisplayScope, GameState } from "../../entities/state/GameState";
 import { useGameData } from "../../providers/GameDataHook";
 import { useGameState } from "../../providers/GameStateHook";
 import { isDefined } from "../../util/ObjectUtils";
 import { resolveTargets } from "./effects/EffectTargets";
 import { useGameEffects } from "./effects/GameEffectsHook";
 import type { PlayerEffects } from "./effects/PlayerEffects";
-import { useQueueDrain } from "./QueueDrainHook";
+import { useDelayedActions, useWhenRules } from "./RuleWaitsHook";
 import { leaveTitleScreen } from "./logic/GameClickUtils";
 import { targetsPlayers } from "./logic/GameEffectCompile";
 import { displayRun } from "./logic/GameStateUtils";
 import {
-  applyDelayedAction,
   fireRules,
   matchDisplayEvent,
   NO_EVENT,
   ruleDelay,
-  runWhens,
   triggerInteractions,
   type RuleEnvironment,
   type RuleEvent,
-  type WhenEdges,
-  whenKey,
 } from "./logic/GameRuleUtils";
 import { getShownDisplays, overviewScope, type ShownDisplay } from "./logic/RenderDataUtils";
 import { displayRoots, matchTarget, type DisplayDomEvent } from "./logic/TemplateUtils";
@@ -284,102 +271,6 @@ function useMouseHolds(gameState: GameState, stateRef: RefObject<GameState>, fir
     }),
     [fire, stateRef],
   );
-}
-
-/** Waits for `when` rules with `forMs`, by {@link whenKey}. */
-type HeldWhens = Map<string, ReturnType<typeof setTimeout>>;
-
-/**
- * Starts a wait for each shown `when` rule with `forMs` that has just turned true, and cancels those whose rule has
- * turned false or whose display is no longer shown. A wait that runs its course fires its rule.
- * @param edges each rule's value before the change, and each shown rule's value now
- */
-const followHeldWhens = (
-  state: GameState,
-  { before, after }: { before: WhenEdges; after: WhenEdges },
-  waits: HeldWhens,
-  fire: FireRules,
-) => {
-  for (const [key, timer] of waits) {
-    if (after.get(key) === true) continue;
-    clearTimeout(timer);
-    waits.delete(key);
-  }
-  for (const { scope, component } of getShownDisplays(state)) {
-    (component.rules ?? []).forEach(({ on }, ruleIndex) => {
-      const key = whenKey(state, scope, ruleIndex);
-      if (!("when" in on) || !isDefined(on.forMs) || waits.has(key)) return;
-      if (before.get(key) !== false || after.get(key) !== true) return;
-      const timer = setTimeout(() => {
-        waits.delete(key);
-        fire(scope, (_, index) => (index === ruleIndex ? NO_EVENT : undefined));
-      }, on.forMs);
-      waits.set(key, timer);
-    });
-  }
-};
-
-/**
- * After any change, fires the `when` rules that have become true; skipped if the state moved on meanwhile. A rule with
- * `forMs` fires once it has stayed true that long (see {@link followHeldWhens}).
- */
-function useWhenRules(
-  env: RuleEnvironment,
-  gameState: GameState,
-  setGameState: Dispatch<SetStateAction<GameState>>,
-  fire: FireRules,
-) {
-  const edgesRef = useRef<WhenEdges>(new Map());
-  const waitsRef = useRef<HeldWhens>(new Map());
-  useEffect(() => {
-    const before = edgesRef.current;
-    const result = runWhens(env, gameState, before);
-    edgesRef.current = result.edges;
-    followHeldWhens(gameState, { before, after: result.edges }, waitsRef.current, fire);
-    // Another update (eg. draining played effects) may land first: the rules then run again on it, not dropped
-    if (result.state !== gameState) {
-      setGameState((previous) => (previous === gameState ? result.state : runWhens(env, previous, before).state));
-    }
-  }, [env, gameState, setGameState, fire]);
-
-  useEffect(() => {
-    const waits = waitsRef.current;
-    return () => waits.forEach((timer) => clearTimeout(timer));
-  }, []);
-}
-
-/** The state without the delayed actions up to and including this id. */
-const withoutDelayedUpTo = (state: GameState, id: number): GameState => ({
-  ...state,
-  session: { ...state.session, delayedActions: state.session.delayedActions.filter((delayed) => delayed.id > id) },
-});
-
-/**
- * Runs the actions rules have delayed, each once, after its `delayMs`. One whose display has closed or reset by then
- * does nothing, so a timer that outlives its display is harmless.
- */
-function useDelayedActions(
-  env: RuleEnvironment,
-  gameState: GameState,
-  setGameState: Dispatch<SetStateAction<GameState>>,
-) {
-  const timersRef = useRef(new Set<ReturnType<typeof setTimeout>>());
-  const start = useCallback(
-    (delayed: DelayedAction) => {
-      const timer = setTimeout(() => {
-        timersRef.current.delete(timer);
-        setGameState((state) => applyDelayedAction(env, state, delayed));
-      }, delayed.action.delayMs);
-      timersRef.current.add(timer);
-    },
-    [env, setGameState],
-  );
-  useQueueDrain(gameState.session.delayedActions, start, withoutDelayedUpTo, setGameState);
-
-  useEffect(() => {
-    const timers = timersRef.current;
-    return () => timers.forEach((timer) => clearTimeout(timer));
-  }, []);
 }
 
 /** What {@link useGameRules} gives the game. */

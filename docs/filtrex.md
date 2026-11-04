@@ -27,12 +27,12 @@ site's Content Security Policy.
 
 ## What an expression can see
 
-| Name    | What it is                                                                                      |
-| ------- | ----------------------------------------------------------------------------------------------- |
-| `state` | This display's own state, starting from `initialState`.                                         |
-| `data`  | The display component's `data`, as authored.                                                    |
-| `game`  | A read-only snapshot of the game's progress: its stages, their challenges, and what is showing. |
-| `event` | For element triggers: the matched element's `id` (empty if it has none), and the `interaction`. |
+| Name    | What it is                                                                                                                                                                                          |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `state` | This display's own state, starting from `initialState`.                                                                                                                                             |
+| `data`  | The display component's `data`, as authored.                                                                                                                                                        |
+| `game`  | A read-only snapshot of the game's progress: its stages, their challenges, what is showing, and [how many players there are](player-tracking.md#counting-players).                                  |
+| `event` | For element triggers: the matched element's `id` (empty if it has none), and the `interaction`. `player` is the [number of the player](player-tracking.md#player-numbers) who fired the rule, or 0. |
 
 ## Syntax
 
