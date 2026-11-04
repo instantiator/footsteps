@@ -290,11 +290,11 @@ const drawPlayers = (
 ) => {
   const debugging = style.maskType !== "binary";
   const playerDepths = depths.update(frame, debugging);
-  canvases.draw(frame, (playerCanvas, playerFrame) => {
+  canvases.draw(frame, ({ wrapper, canvas }, playerFrame) => {
     const playerDepth = playerDepths.get(playerFrame.people[0]?.id);
-    if (playerDepth !== undefined) playerCanvas.style.zIndex = String(depthZIndex(playerDepth));
+    if (playerDepth !== undefined) wrapper.style.zIndex = String(depthZIndex(playerDepth));
     // The 2D context is missing in some environments (eg. tests); the reports above still happen
-    const ctx = playerCanvas.getContext("2d");
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
     drawPeople(video, playerFrame, ctx, style);
     if (debugging && playerDepth !== undefined) drawDepthLine(ctx, playerDepth);
@@ -311,7 +311,7 @@ const drawPlayers = (
 const startTrackingLoop = (
   model: FootstepsVisionModelImplementation,
   video: HTMLVideoElement,
-  canvas: HTMLCanvasElement,
+  { reference, canvases }: { reference: HTMLCanvasElement; canvases: PlayerCanvases },
   {
     offScreenThreshold_percent,
     onFeetPositionsChange,
@@ -323,10 +323,10 @@ const startTrackingLoop = (
 ): (() => void) => {
   let cancelled = false;
   const detections = videoDetections(model, video, inputWidth);
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const canvases = new PlayerCanvases(canvas);
-  const depths = new PlayerDepths(canvas, depth);
+  reference.width = video.videoWidth;
+  reference.height = video.videoHeight;
+  canvases.resize();
+  const depths = new PlayerDepths(reference, depth);
   const reportStats = statsReporter(onStats);
   const tracker = smoothing ? new PersonTracker(hold, fillGaps) : null;
 
@@ -368,7 +368,7 @@ const startTrackingLoop = (
     cancelled = true;
     setTrackingFps(null);
     detections.cancel();
-    canvases.removeExtras();
+    canvases.removeAll();
     depths.clearItems();
   };
 };
@@ -395,8 +395,8 @@ const FrameStatsReadout = ({ stats }: { stats: FrameStats }) => (
 );
 
 /**
- * Runs the configured vision model on the webcam video every frame, draws the players' silhouettes on a canvas,
- * and reports where each person is.
+ * Runs the configured vision model on the webcam video every frame, draws each player's silhouette on their own canvas,
+ * and reports where each person is. The canvas rendered here is the reference theirs are made like; see {@link PlayerCanvases}.
  */
 export default function CharacterCanvas({
   canvasRef,
@@ -412,6 +412,7 @@ export default function CharacterCanvas({
   const [stats, setStats] = useState<FrameStats | null>(null);
   const internalCanvasRef = useRef<HTMLCanvasElement>(null);
   const canvas = canvasRef ?? internalCanvasRef;
+  const canvasesRef = useRef<PlayerCanvases | null>(null);
   const { video, mediaStream, offScreenThreshold_percent, onFeetPositionsChange, onPlayersChange } = loopProps;
 
   // The stream belongs to CharacterCamera, which stops its tracks; this effect only stops its own loop
@@ -427,7 +428,8 @@ export default function CharacterCanvas({
       settings,
       onStats,
     };
-    return startTrackingLoop(model, video, canvasElement, handlers);
+    const canvases = (canvasesRef.current ??= new PlayerCanvases(canvasElement));
+    return startTrackingLoop(model, video, { reference: canvasElement, canvases }, handlers);
   }, [
     model,
     mediaStream,

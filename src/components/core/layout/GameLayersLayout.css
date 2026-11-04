@@ -71,7 +71,7 @@
   position: relative;
 }
 
-/* One canvas per player, laid over each other */
+/* One canvas per player, each in a wrapper, laid over each other; the bare canvas is only there to measure against */
 .characterCanvasStack {
   display: grid;
   grid-template-rows: 100%;
@@ -80,6 +80,17 @@
 
 .characterCanvasStack > canvas {
   grid-area: 1 / 1;
+  visibility: hidden;
+}
+
+.characterCanvasStack > .playerWrapper {
+  grid-area: 1 / 1;
+}
+
+.playerWrapper > canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .hudStyle {

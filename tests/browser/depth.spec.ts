@@ -26,7 +26,7 @@ const zIndexOf = (page: Page, selector: string) =>
 
 test("sorts a player among the items, in one stacking context", async ({ page }) => {
   await openDepthStage(page);
-  const canvas = "#character-canvas-container canvas";
+  const canvas = "#character-canvas-container .player";
   await expect.poll(() => zIndexOf(page, canvas), { timeout: MODEL_TIMEOUT }).toBeGreaterThan(-1000);
 
   // The photo's person stands with their feet about 69% down: between the far post (45) and the near one (80)
@@ -54,14 +54,14 @@ test("sorts a player among the items, in one stacking context", async ({ page })
       }
       return found;
     };
-    return [...ancestors(document.querySelector("#depth-far")!), ...ancestors(document.querySelector("canvas")!)];
+    return [...ancestors(document.querySelector("#depth-far")!), ...ancestors(document.querySelector(".player")!)];
   });
   expect(breaks).toEqual([]);
 });
 
 test("paints a far post behind the player's canvas and a near one in front", async ({ page }) => {
   await openDepthStage(page);
-  const canvas = page.locator("#character-canvas-container canvas").first();
+  const canvas = page.locator("#character-canvas-container .player").first();
   await expect
     .poll(() => canvas.evaluate((c) => Number(c.style.zIndex)), { timeout: MODEL_TIMEOUT })
     .toBeGreaterThan(-1000);
@@ -69,7 +69,7 @@ test("paints a far post behind the player's canvas and a near one in front", asy
   const topmostAt = (selector: string) =>
     page.evaluate((target) => {
       const { left, top, width, height } = document.querySelector(target)!.getBoundingClientRect();
-      const canvasElement = document.querySelector<HTMLCanvasElement>("#character-canvas-container canvas")!;
+      const canvasElement = document.querySelector<HTMLElement>("#character-canvas-container .player")!;
       canvasElement.style.pointerEvents = "auto"; // the silhouette takes no clicks, so let this check find it
       const stack = document.elementsFromPoint(left + width / 2, top + height / 2);
       canvasElement.style.pointerEvents = "";
@@ -86,7 +86,7 @@ test("keeps an item with no depth in front of the player, where a click still re
   await openDepthStage(page);
   const done = page.locator("#depth-done");
   await expect
-    .poll(() => zIndexOf(page, "#character-canvas-container canvas"), { timeout: MODEL_TIMEOUT })
+    .poll(() => zIndexOf(page, "#character-canvas-container .player"), { timeout: MODEL_TIMEOUT })
     .toBeGreaterThan(-1000);
 
   await expect(done).toHaveCSS("z-index", "auto");
@@ -96,13 +96,13 @@ test("keeps an item with no depth in front of the player, where a click still re
 
 test("draws each player's depth as a line when debugging", async ({ page }) => {
   await openDepthStage(page, "?debug=true");
-  const canvas = page.locator("#character-canvas-container canvas").first();
+  const canvas = page.locator("#character-canvas-container .player").first();
   await expect
     .poll(() => canvas.evaluate((c) => Number(c.style.zIndex)), { timeout: MODEL_TIMEOUT })
     .toBeGreaterThan(-1000);
 
   const hasDepthLine = () =>
-    canvas.evaluate((element) => {
+    canvas.locator("canvas").evaluate((element) => {
       const { width, height } = element as HTMLCanvasElement;
       const { data } = (element as HTMLCanvasElement).getContext("2d")!.getImageData(0, 0, width, height);
       for (let i = 0; i < data.length; i += 4) {

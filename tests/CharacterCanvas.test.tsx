@@ -224,19 +224,19 @@ describe("CharacterCanvas", () => {
   describe("with one canvas per player", () => {
     const canvasCount = (container: HTMLElement) => container.querySelectorAll("canvas").length;
 
-    it("gives a second player a canvas like the first", async () => {
+    it("gives a player a canvas like the one rendered, in a wrapper like it", async () => {
       const onPlayersChange = vi.fn();
       const { container } = renderCanvas({ onPlayersChange, className: "silhouette", style: { zIndex: 6 } });
       await waitFor(() => expect(onPlayersChange).toHaveBeenCalledTimes(1));
 
-      const [first, second] = Array.from(container.querySelectorAll("canvas"));
-      expect(canvasCount(container)).toBe(2);
-      expect(second.className).toBe("silhouette");
-      expect(second.style.zIndex).toBe("6");
-      expect([second.width, second.height]).toEqual([first.width, first.height]);
+      const [reference, own] = Array.from(container.querySelectorAll("canvas"));
+      expect(canvasCount(container)).toBe(3); // the one rendered, and the two people found
+      expect(own.parentElement).toHaveClass("player", "silhouette");
+      expect(own.parentElement?.style.zIndex).toBe("6");
+      expect([own.width, own.height]).toEqual([reference.width, reference.height]);
     });
 
-    it("keeps its one canvas when nobody is found", async () => {
+    it("keeps only the one rendered when nobody is found", async () => {
       model.people = 0;
       const onPlayersChange = vi.fn();
       const { container } = renderCanvas({ onPlayersChange });
@@ -245,11 +245,11 @@ describe("CharacterCanvas", () => {
       expect(canvasCount(container)).toBe(1);
     });
 
-    it("removes the extra canvases when the loop stops", async () => {
+    it("removes players' canvases when the loop stops", async () => {
       const onPlayersChange = vi.fn();
       const { container, rerender } = renderCanvas({ onPlayersChange });
       await waitFor(() => expect(onPlayersChange).toHaveBeenCalledTimes(1));
-      expect(canvasCount(container)).toBe(2);
+      expect(canvasCount(container)).toBe(3);
 
       rerender(<CharacterCanvas video={video} mediaStream={undefined} onPlayersChange={onPlayersChange} />);
 

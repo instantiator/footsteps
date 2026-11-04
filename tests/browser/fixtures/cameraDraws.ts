@@ -18,7 +18,7 @@ export const installCameraDrawCounter = async (page: Page): Promise<void> => {
   await page.addInitScript(() => {
     window.__cameraDraws = 0;
     const isCharacterCanvas = (context: CanvasRenderingContext2D) =>
-      context.canvas.parentElement?.id === "character-canvas-container";
+      context.canvas.closest("#character-canvas-container") !== null;
 
     const clearRect = CanvasRenderingContext2D.prototype.clearRect;
     CanvasRenderingContext2D.prototype.clearRect = new Proxy(clearRect, {

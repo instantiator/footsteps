@@ -80,7 +80,7 @@ test("measures the vision loop on an empty room and on photos of people", async 
     if (shots) {
       const label = process.env.VISION_BENCH_LABEL ?? "bench";
       await page
-        .locator("#character-canvas-container canvas")
+        .locator("#character-canvas-container .player canvas")
         .screenshot({ path: `${shots}/${label}-${scene.name}.png` });
     }
     // Hands are expected whatever the framing; feet only when the people are in shot to their feet
