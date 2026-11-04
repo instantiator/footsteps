@@ -3,7 +3,7 @@ import {
   GAME_INTERACTIONS,
   type GameAction,
   type GameDisplayBase,
-  type GameEffectAction,
+  type GameFeedbackAction,
   type GameInteractTrigger,
   type GameRule,
   type GameTrigger,
@@ -133,7 +133,7 @@ const triggerSources = (trigger: GameTrigger, where: string): [string, string][]
 };
 
 /** Why a sound or reward can't be played, or undefined if it can. */
-const effectProblem = (effect: GameEffectAction, gameData: GameData): string | undefined => {
+const effectProblem = (effect: GameFeedbackAction, gameData: GameData): string | undefined => {
   if ("sound" in effect && !Object.hasOwn(gameData.resources ?? {}, effect.sound)) {
     return `there is no resource "${effect.sound}" to play`;
   }

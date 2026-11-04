@@ -2,7 +2,7 @@ import _ from "lodash";
 import type { GameId } from "../../../entities/data/GameData";
 import type {
   GameAction,
-  GameEffectAction,
+  GameFeedbackAction,
   GameFinishResetAction,
   GameInteraction,
   GameInteractTrigger,
@@ -120,7 +120,7 @@ const applyAnswer = (state: GameState, { stageId, challengeId }: ShownDisplay, a
 };
 
 /** Adds a sound or reward to those waiting for the game to play them. */
-const queueEffect = (state: GameState, effect: GameEffectAction): GameState => {
+const queueEffect = (state: GameState, effect: GameFeedbackAction): GameState => {
   const { effects, nextEffectId } = state.session;
   return {
     ...state,
@@ -145,7 +145,7 @@ const applyAction = (run: RuleRun, state: GameState, action: GameAction, where: 
 const applyGameAction = (
   run: RuleRun,
   state: GameState,
-  action: Exclude<GameAction, GameFinishResetAction | GameEffectAction>,
+  action: Exclude<GameAction, GameFinishResetAction | GameFeedbackAction>,
   where: string,
 ): GameState => {
   const { scope, stageId, challengeId } = run.display;

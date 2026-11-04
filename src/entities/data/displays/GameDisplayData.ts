@@ -208,74 +208,72 @@ export type GameTrigger =
   | GameAfterTrigger
   | GameStartTrigger;
 
+/** What every action can have. */
+export interface GameActionBase {
+  /**
+   * Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.
+   *
+   * @minimum 0
+   */
+  delayMs?: number;
+}
+
 /** Sets state keys to the values of expressions, all evaluated against the state before the action. */
-export interface GameSetAction {
+export interface GameSetAction extends GameActionBase {
   /** State key to expression. */
   set: Record<string, GameExpressionSource>;
 }
 
 /** Returns the display's state to `initialState`. */
-export interface GameResetStateAction {
+export interface GameResetStateAction extends GameActionBase {
   /** Always true. */
   resetState: true;
 }
 
 /** Marks this display's challenge as solved. Challenge displays only. */
-export interface GameCompleteChallengeAction {
+export interface GameCompleteChallengeAction extends GameActionBase {
   /** Always true. */
   completeChallenge: true;
 }
 
 /** Submits an answer to this display's challenge, checked as a typed answer is. Challenge displays only. */
-export interface GameAnswerAction {
+export interface GameAnswerAction extends GameActionBase {
   /** Expression giving the answer. */
   answer: GameExpressionSource;
 }
 
 /** Clears this display's challenge, and the state of its displays. Challenge displays only. */
-export interface GameResetChallengeAction {
+export interface GameResetChallengeAction extends GameActionBase {
   /** Always true. */
   resetChallenge: true;
 }
 
 /** Plays one of the game's sound resources. It doesn't hold up the rule: the rule's other actions carry on. */
-export interface GameSoundAction {
+export interface GameSoundAction extends GameActionBase {
   /** The resource's name, a key of the game's `resources`. */
   sound: string;
-  /**
-   * Milliseconds to wait before playing it. Defaults to 0.
-   *
-   * @minimum 0
-   */
-  delayMs?: number;
 }
 
 /**
  * Shows a celebration, as the game does for a completed stage; not shown to players who prefer reduced motion. It
  * doesn't hold up the rule, and plays alongside any other sounds and rewards.
  */
-export interface GameRewardAction {
+export interface GameRewardAction extends GameActionBase {
   /** The celebration. */
   reward: GameRewardData;
-  /**
-   * Milliseconds to wait before showing it. Defaults to 0.
-   *
-   * @minimum 0
-   */
-  delayMs?: number;
 }
 
 /** Something a rule plays or shows, rather than changing the game. */
-export type GameEffectAction = GameSoundAction | GameRewardAction;
+export type GameFeedbackAction = GameSoundAction | GameRewardAction;
 
 /** Finishes this reset display, revealing the display it is shown for. Reset displays only. */
-export interface GameFinishResetAction {
+export interface GameFinishResetAction extends GameActionBase {
   /** Always true. */
   finishReset: true;
 }
 
 /** Opens a stage, unless it is locked or completed. */
-export interface GameEnterStageAction {
+export interface GameEnterStageAction extends GameActionBase {
   /** The stage's id. */
   enterStage: GameStageId;
 }

@@ -1,6 +1,6 @@
 import { GameOverviewPurposeSequence } from "../../components/core/logic/GameClickUtils";
 import { isDefined } from "../../util/ObjectUtils";
-import type { GameEffectAction, GameOverviewDisplayPurpose } from "../data/displays/GameDisplayData";
+import type { GameFeedbackAction, GameOverviewDisplayPurpose } from "../data/displays/GameDisplayData";
 import type { GameData } from "../data/GameData";
 import type { GameStageId } from "../data/GameStageData";
 import type { GameStageState } from "./GameStageState";
@@ -16,7 +16,7 @@ export interface QueuedEffect {
   /** Identifies it, so it is played once however often the state is worked out; ids only grow. */
   id: number;
   /** What to play. */
-  effect: GameEffectAction;
+  effect: GameFeedbackAction;
 }
 
 /** What lasts only while the game is open, and is never saved with its progress. */

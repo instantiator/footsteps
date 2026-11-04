@@ -73,6 +73,11 @@
                 "answer": {
                     "description": "Expression giving the answer.",
                     "type": "string"
+                },
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
                 }
             },
             "required": [
@@ -176,6 +181,11 @@
                     "const": true,
                     "description": "Always true.",
                     "type": "boolean"
+                },
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
                 }
             },
             "required": [
@@ -512,6 +522,11 @@
         "GameEnterStageAction": {
             "description": "Opens a stage, unless it is locked or completed.",
             "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
                 "enterStage": {
                     "description": "The stage's id.",
                     "type": "string"
@@ -541,6 +556,11 @@
         "GameFinishResetAction": {
             "description": "Finishes this reset display, revealing the display it is shown for. Reset displays only.",
             "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
                 "finishReset": {
                     "const": true,
                     "description": "Always true.",
@@ -669,6 +689,11 @@
         "GameResetChallengeAction": {
             "description": "Clears this display's challenge, and the state of its displays. Challenge displays only.",
             "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
                 "resetChallenge": {
                     "const": true,
                     "description": "Always true.",
@@ -712,6 +737,11 @@
         "GameResetStateAction": {
             "description": "Returns the display's state to `initialState`.",
             "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
                 "resetState": {
                     "const": true,
                     "description": "Always true.",
@@ -753,7 +783,7 @@
             "description": "Shows a celebration, as the game does for a completed stage; not shown to players who prefer reduced motion. It\ndoesn't hold up the rule, and plays alongside any other sounds and rewards.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before showing it. Defaults to 0.",
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
                     "minimum": 0,
                     "type": "number"
                 },
@@ -812,6 +842,11 @@
         "GameSetAction": {
             "description": "Sets state keys to the values of expressions, all evaluated against the state before the action.",
             "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
                 "set": {
                     "$ref": "#/definitions/Record%3Cstring%2Cstring%3E",
                     "description": "State key to expression."
@@ -826,7 +861,7 @@
             "description": "Plays one of the game's sound resources. It doesn't hold up the rule: the rule's other actions carry on.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before playing it. Defaults to 0.",
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
                     "minimum": 0,
                     "type": "number"
                 },
