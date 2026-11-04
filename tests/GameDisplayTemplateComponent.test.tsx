@@ -86,6 +86,27 @@ describe("GameDisplayTemplateComponent", () => {
     expect(root.style.color).toBe("red");
   });
 
+  it("keeps the template's elements while the run stays the same, and rebuilds them for a new run", async () => {
+    const shown = (text: string, run: number) => (
+      <GameDisplayTemplateComponent
+        templateSource={embedded('<p id="line">{{text}}</p>')}
+        templateData={{ text }}
+        scope="s"
+        run={run}
+      />
+    );
+    const { container, rerender } = render(shown("one", 1), { wrapper: Wrapper });
+    const first = await screen.findByText("one");
+
+    rerender(shown("two", 1));
+    expect(screen.getByText("two")).toBe(first);
+    expect(container.querySelector(".templateBody")).toHaveAttribute("data-display-run", "1");
+
+    rerender(shown("two", 2));
+    expect(screen.getByText("two")).not.toBe(first);
+    expect(container.querySelector(".templateBody")).toHaveAttribute("data-display-run", "2");
+  });
+
   it("renders children after the template", async () => {
     render(
       <GameDisplayTemplateComponent templateSource={embedded("<p>template</p>")} templateData={{}}>

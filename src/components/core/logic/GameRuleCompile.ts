@@ -137,7 +137,7 @@ const effectProblem = (effect: GameFeedbackAction, gameData: GameData): string |
   if ("sound" in effect && !Object.hasOwn(gameData.resources ?? {}, effect.sound)) {
     return `there is no resource "${effect.sound}" to play`;
   }
-  return (effect.delayMs ?? 0) < 0 ? "delayMs can't be negative" : undefined;
+  return undefined;
 };
 
 /** Why an action can't be used on this display, or undefined if it can. */
@@ -158,11 +158,22 @@ const actionSources = (
   target: DisplayToCompile,
   gameData: GameData,
 ): [string, string][] => {
-  const problem = actionProblem(action, target, gameData);
+  const problem = (action.delayMs ?? 0) < 0 ? "delayMs can't be negative" : actionProblem(action, target, gameData);
   if (isDefined(problem)) throw new Error(`${where}: ${problem}`);
   if ("set" in action) return Object.entries(action.set).map(([key, source]) => [source, `${where}.set.${key}`]);
   if ("answer" in action) return [[action.answer, `${where}.answer`]];
   return [];
+};
+
+/**
+ * Checks that a `start` rule doesn't reset its display: a reset starts the display again, so it would never stop.
+ * @throws naming `where` if it does
+ */
+const checkStartRule = ({ on, do: actions }: GameRule, where: string): void => {
+  const a = actions.findIndex((action) => "resetState" in action || "resetChallenge" in action);
+  if ("start" in on && a >= 0) {
+    throw new Error(`${where}.do[${a}]: a start rule can't reset its own display, as it would start again and again`);
+  }
 };
 
 /** Every expression source in a rule, with where it is, checking selectors and actions on the way. */
@@ -171,11 +182,15 @@ const ruleSources = (
   where: string,
   target: DisplayToCompile,
   gameData: GameData,
-): [string, string][] => [
-  ...triggerSources(rule.on, `${where}.on`),
-  ...(rule.if === undefined ? [] : [[rule.if, `${where}.if`] satisfies [string, string]]),
-  ...rule.do.flatMap((action, a) => actionSources(action, `${where}.do[${a}]`, target, gameData)),
-];
+): [string, string][] => {
+  const sources: [string, string][] = [
+    ...triggerSources(rule.on, `${where}.on`),
+    ...(rule.if === undefined ? [] : [[rule.if, `${where}.if`] satisfies [string, string]]),
+    ...rule.do.flatMap((action, a) => actionSources(action, `${where}.do[${a}]`, target, gameData)),
+  ];
+  checkStartRule(rule, where);
+  return sources;
+};
 
 /**
  * Compiles and checks every rule in a game, so a mistake is reported when the game loads, naming the

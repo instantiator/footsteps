@@ -18,6 +18,7 @@ const renderDisplay = (
     purpose: "game-overview-stages",
     component,
     scope: "overview:game-overview-stages",
+    run: 1,
     templateData: {
       gameState: decorateGameState(simpleGameState),
       game: toGameSnapshot("game", simpleGameState),

@@ -97,6 +97,7 @@ const playerWithHandAt = (x: number, y: number): PlayerFrame => {
 /** A camera rule watching the overview's element for hands, ignoring covering (jsdom can't hit-test). */
 const handRule = (overrides: Partial<CameraRuleTarget> = {}): CameraRuleTarget => ({
   scope: SCOPE,
+  run: 1,
   ruleIndex: 0,
   selector: "#overview-thing",
   interactions: ["hand-enter"],
@@ -495,6 +496,33 @@ describe("GameLayersLayout camera interactions", () => {
     sendPlayers([playerWithHandAt(6, 1)]);
 
     expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith(handOnThing(container));
+  });
+
+  it("makes a player already over an element move in again after its display resets, without an exit", async () => {
+    const onPlayerInteraction = vi.fn();
+    const rules = [handRule({ interactions: ["hand-enter", "hand-exit"] })];
+    const { container, canvas, rerender } = await renderWithCamera({ cameraRules: rules, onPlayerInteraction });
+    stubRect(canvas, new DOMRect(0, 0, 100, 100));
+    stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 50, 50));
+    sendPlayers([playerWithHandAt(0, 7)], 900);
+    sendPlayers([playerWithHandAt(6, 1)], 1000);
+    expect(onPlayerInteraction).toHaveBeenCalledTimes(1);
+
+    rerender(
+      layout({
+        camera: { enabled: true, preview: true },
+        cameraRules: [{ ...rules[0], run: 2 }],
+        onPlayerInteraction,
+      }),
+    );
+    sendPlayers([playerWithHandAt(6, 1)], 1100);
+    sendPlayers([playerWithHandAt(6, 1)], 1200);
+    expect(onPlayerInteraction).toHaveBeenCalledTimes(1);
+
+    sendPlayers([playerWithHandAt(0, 7)], 1300);
+    expect(onPlayerInteraction).toHaveBeenCalledTimes(1);
+    sendPlayers([playerWithHandAt(6, 1)], 1400);
+    expect(onPlayerInteraction).toHaveBeenCalledTimes(2);
   });
 
   it("reports the interaction on the same side of the mask when the camera isn't mirrored", async () => {

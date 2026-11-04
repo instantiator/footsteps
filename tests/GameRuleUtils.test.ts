@@ -2,14 +2,17 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import localRepository from "../public/game-repository.json";
 import {
   applyShowResets,
+  applyDelayedAction,
   fireRules,
   MAX_WHEN_CHAIN,
   NO_EVENT,
   runWhens,
+  whenKey,
   type RuleEnvironment,
   type RuleEvent,
 } from "../src/components/core/logic/GameRuleUtils";
 import { compileGameRules } from "../src/components/core/logic/GameRuleCompile";
+import { startDisplayRuns } from "../src/components/core/logic/GameStateUtils";
 import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
 import type { GameData } from "../src/entities/data/GameData";
 import type { GameAction, GameRule } from "../src/entities/data/displays/GameDisplayData";
@@ -55,6 +58,21 @@ describe("compileGameRules", () => {
     ["set", { on: { start: true }, do: [{ set: { a: "1 +" } }] }, `${OVERVIEW}.do[0].set.a`],
   ] satisfies [string, GameRule, string][])("names the path of a bad %s expression", (_, rule, where) => {
     expect(() => compileGameRules(gameWithRules([rule]))).toThrow(`${where}: `);
+  });
+
+  it.each([
+    ["resetState", { resetState: true }],
+    ["resetChallenge", { resetChallenge: true }],
+  ] satisfies [string, GameAction][])("rejects a start rule that does %s, as it would loop", (_, action) => {
+    expect(() => compileGameRules(gameWithRules([], [{ on: { start: true }, do: [action] }]))).toThrow(
+      `${CHALLENGE}.do[0]: a start rule can't reset`,
+    );
+  });
+
+  it("rejects a negative delayMs on any action", () => {
+    expect(() =>
+      compileGameRules(gameWithRules([{ on: { start: true }, do: [{ set: { n: "1" }, delayMs: -1 }] }])),
+    ).toThrow(`${OVERVIEW}.do[0]: delayMs can't be negative`);
   });
 
   it("names the path into a challenge display", () => {
@@ -157,13 +175,26 @@ describe("applyShowResets", () => {
     expect(applyShowResets(withStates(inStage), next)).toBe(next);
   });
 
+  it("starts a new run of a display as it becomes shown, and not while it stays shown", () => {
+    const shown = applyShowResets(withStates(overview), withStates(inStage));
+    expect(shown.session.displayRuns).toEqual({ [CHALLENGE_SCOPE]: 1 });
+    const left = applyShowResets(shown, { ...shown, current: overview });
+    const back = applyShowResets(left, { ...left, current: inStage });
+    expect(back.session.displayRuns).toEqual({ [CHALLENGE_SCOPE]: 2, [OVERVIEW_SCOPE]: 1 });
+    expect(applyShowResets(back, { ...back })).toEqual(back);
+  });
+
+  it("starts a run of what is shown when the game starts", () => {
+    expect(applyShowResets(undefined, withStates(overview)).session.displayRuns).toEqual({ [OVERVIEW_SCOPE]: 1 });
+  });
+
   it("resets a flagged display that is shown when the game starts", () => {
     expect(applyShowResets(undefined, withStates(inStage)).displayStates).not.toHaveProperty(CHALLENGE_SCOPE);
   });
 
   it("keeps the state of a display without the flag when it becomes shown", () => {
     const next = withStates(overview);
-    expect(applyShowResets(withStates(inStage), next)).toBe(next);
+    expect(applyShowResets(withStates(inStage), next).displayStates).toEqual(next.displayStates);
   });
 });
 
@@ -187,6 +218,117 @@ describe("rule engine", () => {
   const stateOf = (state: GameState) => state.displayStates[SCOPE];
   const solved = (state: GameState, stageIndex = 0, challengeIndex = 0) =>
     state.stages[stageIndex].challengeStates[challengeIndex].succeeded;
+
+  describe("delayed actions", () => {
+    const delayedSet: GameRule = {
+      on: { start: true },
+      do: [{ set: { n: "event.id" }, delayMs: 500 }, { set: { m: "1" } }],
+    };
+    const fired = () => fireAll(playing([delayedSet]), { id: "door", interaction: "click" });
+    const runDelayed = (state: GameState, from = fired()) =>
+      applyDelayedAction(env, state, from.session.delayedActions[0]);
+
+    it("queues the action rather than applying it, and later actions don't wait", () => {
+      const state = fired();
+      expect(stateOf(state)).toEqual({ m: 1 });
+      expect(state.session.delayedActions).toEqual([
+        expect.objectContaining({
+          id: 1,
+          scope: SCOPE,
+          action: delayedSet.do[0],
+          event: { id: "door", interaction: "click" },
+        }),
+      ]);
+    });
+
+    it("leaves sounds and rewards to the game's own queue", () => {
+      const state = fireAll(playing([{ on: { start: true }, do: [{ sound: "pop", delayMs: 500 }] }]));
+      expect(state.session.delayedActions).toEqual([]);
+      expect(state.session.effects).toHaveLength(1);
+    });
+
+    it("works out expressions from the latest state, with the event the rule fired with", () => {
+      const later: GameRule = {
+        on: { start: true },
+        do: [{ set: { sum: "state.n + 1", from: "event.id" }, delayMs: 500 }],
+      };
+      const state = fireAll(playing([later], { n: 1 }), { id: "door", interaction: "click" });
+      const changed = { ...state, displayStates: { [SCOPE]: { n: 10 } } };
+      expect(stateOf(applyDelayedAction(env, changed, state.session.delayedActions[0]))).toEqual({
+        n: 10,
+        sum: 11,
+        from: "door",
+      });
+    });
+
+    it("doesn't check the rule's if again", () => {
+      const iffy: GameRule = { on: { start: true }, if: "state.go", do: [{ set: { done: "true" }, delayMs: 500 }] };
+      const state = fireAll(playing([iffy], { go: true }));
+      const changed = { ...state, displayStates: { [SCOPE]: { go: false } } };
+      expect(stateOf(applyDelayedAction(env, changed, state.session.delayedActions[0]))).toEqual({
+        go: false,
+        done: true,
+      });
+    });
+
+    it("does nothing once the display has closed", () => {
+      const state = fired();
+      const closed = { ...state, current: { ...state.current, stageId: null } };
+      expect(runDelayed(closed)).toBe(closed);
+    });
+
+    it("does nothing once the display has reset", () => {
+      const state = fired();
+      const again = startDisplayRuns(state, [SCOPE]);
+      expect(runDelayed(again)).toBe(again);
+    });
+
+    it("does nothing once the display has closed and shown again, as that is a new run", () => {
+      const state = fired();
+      const closed = applyShowResets(state, { ...state, current: { ...state.current, stageId: null } });
+      const back = applyShowResets(closed, { ...closed, current: state.current });
+      expect(runDelayed(back)).toBe(back);
+    });
+
+    it("doesn't complete a challenge the game has moved on from", () => {
+      const late: GameRule = { on: { start: true }, do: [{ completeChallenge: true, delayMs: 500 }] };
+      const state = fireAll(playing([late]));
+      const moved = { ...state, current: { ...state.current, stageId: null } };
+      expect(solved(applyDelayedAction(env, moved, state.session.delayedActions[0]))).toBe(false);
+    });
+  });
+
+  describe("display runs", () => {
+    const reset = (action: GameAction) => fireAll(playing([{ on: { start: true }, do: [action] }]));
+
+    it("starts a new run on resetState", () => {
+      expect(reset({ resetState: true }).session.displayRuns).toEqual({ [SCOPE]: 1 });
+    });
+
+    it("starts a new run of each of the challenge's displays on resetChallenge", () => {
+      expect(reset({ resetChallenge: true }).session.displayRuns).toEqual({ [SCOPE]: 1 });
+    });
+
+    it("includes a challenge's reset displays, and theirs", () => {
+      const state = playing([{ on: { start: true }, do: [{ resetChallenge: true }] }]);
+      const component = state.gameData.stages[0].challenges[0].displays[0].component;
+      const resetDisplay = { component, resetDisplay: { component } };
+      state.gameData.stages[0].challenges[0].displays[0].resetDisplay = resetDisplay;
+      const shown = {
+        ...state,
+        session: { ...state.session, finishedResets: [`${SCOPE}/reset`, `${SCOPE}/reset/reset`] },
+      };
+      expect(fireAll(shown).session.displayRuns).toEqual({
+        [SCOPE]: 1,
+        [`${SCOPE}/reset`]: 1,
+        [`${SCOPE}/reset/reset`]: 1,
+      });
+    });
+
+    it("doesn't start one on a set", () => {
+      expect(reset({ set: { n: "1" } }).session.displayRuns).toEqual({});
+    });
+  });
 
   describe("actions", () => {
     it("queues sounds and rewards for the game to play, with growing ids, leaving the rest of the game alone", () => {
@@ -313,7 +455,23 @@ describe("rule engine", () => {
       const state = withN(counting(), 5);
       const result = runWhens(env, state, new Map());
       expect(result.state).toBe(state);
-      expect(result.edges.get(`${SCOPE}#0`)).toBe(true);
+      expect(result.edges.get(whenKey(state, SCOPE, 0))).toBe(true);
+    });
+
+    it("begins again after a reset: already true only records, and a later change fires", () => {
+      const rules: GameRule[] = [
+        { on: { when: "state.n >= 5" }, do: [{ set: { fired: "true" } }] },
+        { on: { start: true }, do: [{ resetState: true }] },
+      ];
+      const before = fireRules(
+        env,
+        { ...playing(rules, { n: 5 }), displayStates: { [SCOPE]: { n: 1 } } },
+        SCOPE,
+        () => undefined,
+      );
+      const { edges } = runWhens(env, before, new Map());
+      const reset = fireRules(env, before, SCOPE, (trigger) => ("start" in trigger ? NO_EVENT : undefined));
+      expect(runWhens(env, reset, edges).state).toBe(reset);
     });
 
     it("fires on false to true, not while it stays true, and again after it has been false", () => {

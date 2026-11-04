@@ -45,6 +45,8 @@ export interface GameDisplayDialogComponentProps {
   onAnswer?: GameAnswerFunction;
   /** Identifies the display, so camera rules can find its elements. */
   scope?: string;
+  /** Which run of the display this is; a new one rebuilds its template. */
+  run?: number;
   /** Called with events inside the dialog's template, for the display's rules. */
   onDisplayEvent?: (event: DisplayDomEvent) => void;
 }
@@ -188,6 +190,7 @@ export default function GameDisplayDialogComponent({
   challengeId,
   onAnswer,
   scope,
+  run,
   onDisplayEvent,
 }: GameDisplayDialogComponentProps) {
   const [solved, setSolved] = useState<boolean>(false);
@@ -204,6 +207,7 @@ export default function GameDisplayDialogComponent({
           templateStyle={{ ...(layerHint === "foreground" && SCROLLING_TEXT_STYLE), ...templateStyle }}
           templateData={{ text: content?.text, lines: parseLines(content?.text), ...templateData }}
           scope={scope}
+          run={run}
           onDisplayEvent={onDisplayEvent}
         >
           {layerHint === "foreground" && (

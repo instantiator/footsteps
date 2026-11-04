@@ -203,6 +203,8 @@ export class PlayerMonitor {
   private targets: Record<string, MonitorTarget> = {};
   /** Whether a frame has been seen, so coverage on later frames can count as beginning. */
   private armed = false;
+  /** The starts of target keys to treat as new in the next frame, as on the monitor's first; see {@link rearm}. */
+  private rearming: string[] = [];
   private readonly jump: JumpDetector;
   /** The keys of the jump targets the feet were on when last on the ground, ie. where a jump takes off from. */
   private takeoffKeys = new Set<string>();
@@ -248,6 +250,7 @@ export class PlayerMonitor {
     this.presence = presence;
     this.targets = targets;
     this.armed = true;
+    this.rearming = [];
     this.followJump(frame, targets, feetOn, timestamp);
   }
 
@@ -280,6 +283,18 @@ export class PlayerMonitor {
     this.presence.clear();
   }
 
+  /**
+   * Starts afresh with some targets, without firing anything: their exits won't fire, and what is over them must move
+   * into them again.
+   * @param keyPrefix how the keys of those targets begin
+   */
+  rearm(keyPrefix: string): void {
+    for (const [presenceKey, { key }] of this.presence) {
+      if (key.startsWith(keyPrefix)) this.presence.delete(presenceKey);
+    }
+    this.rearming.push(keyPrefix);
+  }
+
   /** Follows each group of body parts the target looks for over it, and reports it entering and leaving. */
   private reportCoverage(
     targetKey: string,
@@ -305,10 +320,16 @@ export class PlayerMonitor {
    * and the target's hold.
    */
   private stay(before: Presence | undefined, { targetKey, target, group, timestamp }: Arrival): Presence {
-    const streak = !this.armed || before?.streak === ALREADY_HELD ? ALREADY_HELD : (before?.streak ?? 0) + 1;
+    const streak =
+      this.isStarting(targetKey) || before?.streak === ALREADY_HELD ? ALREADY_HELD : (before?.streak ?? 0) + 1;
     const since = before?.since ?? timestamp;
     const entered = before?.entered === true || this.hasHeld(streak, timestamp - since, target);
     return { key: targetKey, group, streak, since, entered, away: 0 };
+  }
+
+  /** Whether this frame is the first the monitor has seen of a target, so what is over it already held. */
+  private isStarting(targetKey: string): boolean {
+    return !this.armed || this.rearming.some((prefix) => targetKey.startsWith(prefix));
   }
 
   /** Whether a streak (not one held when the monitor was armed) has lasted the stable frames and the target's hold. */

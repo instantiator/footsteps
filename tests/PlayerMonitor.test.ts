@@ -66,6 +66,32 @@ const monitorWithEvents = () => {
   return { events, monitor };
 };
 
+describe("PlayerMonitor rearm", () => {
+  it("makes what is over a target move in again, fires no exit, and leaves other targets alone", () => {
+    const { events, monitor } = monitorWithEvents();
+    const targets = {
+      "a#0": target(["hand-enter", "hand-exit"], 0),
+      "b#0": target(["hand-exit"], 0),
+    };
+    monitor.update(handFrame([[1, 1]]), targets, 1);
+    expect(events).toEqual([{ key: "a#0", interaction: "hand-enter" }]);
+
+    monitor.rearm("a#");
+    monitor.update(handFrame([[1, 1]]), targets, 2);
+    monitor.update(handFrame([[1, 1]]), targets, 3);
+    expect(events).toHaveLength(1);
+
+    monitor.update(handFrame([]), targets, 4);
+    expect(events).toEqual([
+      { key: "a#0", interaction: "hand-enter" },
+      { key: "b#0", interaction: "hand-exit" },
+    ]);
+
+    monitor.update(handFrame([[1, 1]]), targets, 5);
+    expect(events.at(-1)).toEqual({ key: "a#0", interaction: "hand-enter" });
+  });
+});
+
 describe("PlayerMonitor first frame", () => {
   it("ignores what already holds on its first frame, and fires once it begins again", () => {
     const events: PlayerMonitorEvent[] = [];

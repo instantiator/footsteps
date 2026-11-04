@@ -4,7 +4,9 @@ import { useGameData } from "../../providers/GameDataHook";
 import { useGameState } from "../../providers/GameStateHook";
 import { isDefined } from "../../util/ObjectUtils";
 import { leaveTitleScreen } from "./logic/GameClickUtils";
+import { displayRun } from "./logic/GameStateUtils";
 import {
+  applyDelayedAction,
   fireRules,
   matchDisplayEvent,
   NO_EVENT,
@@ -48,6 +50,18 @@ const warnUnmatchedSelectors = (display: ShownDisplay): void => {
   });
 };
 
+/** Most times a display may reset within {@link RESTART_WINDOW_MS}, before it counts as a loop and is stopped. */
+const MAX_RESTARTS = 10;
+
+/** The period {@link MAX_RESTARTS} applies to. */
+const RESTART_WINDOW_MS = 1000;
+
+/** Identifies the shown displays and which run of each, so what depends on them can follow any change. */
+const shownRunsKey = (state: GameState): string =>
+  getShownDisplays(state)
+    .map(({ scope }) => `${scope}#${displayRun(state, scope)}`)
+    .join("\n");
+
 /** The shown displays' rules that camera interactions can fire. */
 const getCameraRules = (state: GameState): CameraRuleTarget[] =>
   getShownDisplays(state).flatMap(({ scope, component }) =>
@@ -59,6 +73,7 @@ const getCameraRules = (state: GameState): CameraRuleTarget[] =>
       return [
         {
           scope,
+          run: displayRun(state, scope),
           ruleIndex,
           selector: on.target,
           interactions,
@@ -108,9 +123,31 @@ const startDisplay = (
   return () => timers.forEach(clearTimeout);
 };
 
+/** A display started by {@link useDisplayLifecycles}. */
+interface RunningDisplay {
+  /** Which run of the display it is. */
+  run: number;
+  /** Stops its timers. */
+  stop: () => void;
+}
+
 /**
- * Starts displays as they are shown, and stops those hidden. A display that stays shown while others change (eg. a
- * stage's shared display as its challenges move on) keeps its timers running.
+ * Whether a display has reset so often lately that something must be resetting it each time it starts, which the
+ * check on `start` rules when the game loads can't see (eg. a `start` rule sets a value that a `when` rule resets on).
+ * @param restarts when each display last reset, kept up to date here
+ */
+const isRestartLoop = (restarts: Map<DisplayScope, number[]>, scope: DisplayScope): boolean => {
+  const now = Date.now();
+  const recent = [...(restarts.get(scope) ?? []).filter((at) => now - at < RESTART_WINDOW_MS), now];
+  restarts.set(scope, recent);
+  if (recent.length <= MAX_RESTARTS) return false;
+  console.error(`${scope}: stopped, as it reset more than ${MAX_RESTARTS} times in ${RESTART_WINDOW_MS} ms`);
+  return true;
+};
+
+/**
+ * Starts displays as they are shown, and again as they reset, and stops those hidden. A display that stays shown while
+ * others change (eg. a stage's shared display as its challenges move on) keeps its timers running.
  */
 function useDisplayLifecycles(
   env: RuleEnvironment,
@@ -118,32 +155,33 @@ function useDisplayLifecycles(
   stateRef: RefObject<GameState>,
   fire: FireRules,
 ) {
-  const runningRef = useRef(new Map<DisplayScope, () => void>());
-  const shownKey = getShownDisplays(gameState)
-    .map((display) => display.scope)
-    .join("\n");
+  const runningRef = useRef(new Map<DisplayScope, RunningDisplay>());
+  const restartsRef = useRef(new Map<DisplayScope, number[]>());
+  const shownKey = shownRunsKey(gameState);
 
   useEffect(() => {
     const running = runningRef.current;
-    const shown = new Map(getShownDisplays(stateRef.current).map((display) => [display.scope, display]));
-    for (const [scope, stop] of running) {
-      if (shown.has(scope)) continue;
+    const state = stateRef.current;
+    const shown = new Map(getShownDisplays(state).map((display) => [display.scope, display]));
+    for (const [scope, { run, stop }] of running) {
+      if (shown.has(scope) && run === displayRun(state, scope)) continue;
       stop();
       running.delete(scope);
+      if (shown.has(scope) && isRestartLoop(restartsRef.current, scope)) shown.delete(scope);
     }
     for (const display of shown.values()) {
       if (!running.has(display.scope))
-        running.set(
-          display.scope,
-          startDisplay(display, env, () => stateRef.current, fire),
-        );
+        running.set(display.scope, {
+          run: displayRun(state, display.scope),
+          stop: startDisplay(display, env, () => stateRef.current, fire),
+        });
     }
   }, [shownKey, env, stateRef, fire]);
 
   useEffect(() => {
     const running = runningRef.current;
     return () => {
-      running.forEach((stop) => stop());
+      running.forEach(({ stop }) => stop());
       running.clear();
     };
   }, []);
@@ -158,6 +196,8 @@ interface RuleAt {
 /** A rule waiting for the mouse to stay over an element for its `holdMs`. */
 interface MouseHold {
   scope: DisplayScope;
+  /** The display and run it began in, as in {@link shownRunsKey}. */
+  runKey: string;
   /** The element the mouse is over. */
   element: Element;
   timer: ReturnType<typeof setTimeout>;
@@ -165,18 +205,17 @@ interface MouseHold {
 
 /**
  * Holds rules whose trigger has a `holdMs`: the mouse entering one of their elements starts a wait, and the rule fires
- * if it is still there when the wait is over. Leaving the element, or the display being hidden, cancels the wait.
+ * if it is still there when the wait is over. Leaving the element, or the display being hidden or reset, cancels the
+ * wait.
  */
-function useMouseHolds(gameState: GameState, fire: FireRules) {
+function useMouseHolds(gameState: GameState, stateRef: RefObject<GameState>, fire: FireRules) {
   const holdsRef = useRef(new Set<MouseHold>());
-  const shownKey = getShownDisplays(gameState)
-    .map((display) => display.scope)
-    .join("\n");
+  const shownKey = shownRunsKey(gameState);
 
   useEffect(() => {
     const shown = new Set(shownKey.split("\n"));
     for (const hold of holdsRef.current) {
-      if (shown.has(hold.scope)) continue;
+      if (shown.has(hold.runKey)) continue;
       clearTimeout(hold.timer);
       holdsRef.current.delete(hold);
     }
@@ -199,6 +238,7 @@ function useMouseHolds(gameState: GameState, fire: FireRules) {
         if (holdMs <= 0 || matched.interaction !== "mouse-enter" || !isDefined(element)) return false;
         const hold: MouseHold = {
           scope,
+          runKey: `${scope}#${displayRun(stateRef.current, scope)}`,
           element,
           timer: setTimeout(() => {
             holdsRef.current.delete(hold);
@@ -218,7 +258,7 @@ function useMouseHolds(gameState: GameState, fire: FireRules) {
         }
       },
     }),
-    [fire],
+    [fire, stateRef],
   );
 }
 
@@ -243,7 +283,7 @@ const followHeldWhens = (
   }
   for (const { scope, component } of getShownDisplays(state)) {
     (component.rules ?? []).forEach(({ on }, ruleIndex) => {
-      const key = whenKey(scope, ruleIndex);
+      const key = whenKey(state, scope, ruleIndex);
       if (!("when" in on) || !isDefined(on.forMs) || waits.has(key)) return;
       if (before.get(key) !== false || after.get(key) !== true) return;
       const timer = setTimeout(() => {
@@ -284,6 +324,44 @@ function useWhenRules(
   }, []);
 }
 
+/**
+ * Runs the actions rules have delayed, each once, after its `delayMs`, then drops it from the queue. One whose display
+ * has closed or reset by then does nothing, so a timer that outlives its display is harmless.
+ */
+function useDelayedActions(
+  env: RuleEnvironment,
+  gameState: GameState,
+  setGameState: Dispatch<SetStateAction<GameState>>,
+) {
+  // The highest id started; ids only grow, so a queue worked out twice (as React may) runs nothing twice
+  const startedRef = useRef(0);
+  const timersRef = useRef(new Set<ReturnType<typeof setTimeout>>());
+  const { delayedActions } = gameState.session;
+
+  useEffect(() => {
+    const fresh = delayedActions.filter(({ id }) => id > startedRef.current);
+    if (fresh.length === 0) return;
+    startedRef.current = Math.max(...fresh.map(({ id }) => id));
+    for (const delayed of fresh) {
+      const timer = setTimeout(() => {
+        timersRef.current.delete(timer);
+        setGameState((state) => applyDelayedAction(env, state, delayed));
+      }, delayed.action.delayMs);
+      timersRef.current.add(timer);
+    }
+    const started = startedRef.current;
+    setGameState((state) => ({
+      ...state,
+      session: { ...state.session, delayedActions: state.session.delayedActions.filter(({ id }) => id > started) },
+    }));
+  }, [delayedActions, env, setGameState]);
+
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => timers.forEach((timer) => clearTimeout(timer));
+  }, []);
+}
+
 /** What {@link useGameRules} gives the game. */
 export interface GameRules {
   /** Fires a display's rules for an event in its templates. */
@@ -317,8 +395,9 @@ export function useGameRules(): GameRules {
     [env, setGameState],
   );
   useDisplayLifecycles(env, gameState, stateRef, fire);
-  const mouseHolds = useMouseHolds(gameState, fire);
+  const mouseHolds = useMouseHolds(gameState, stateRef, fire);
   useWhenRules(env, gameState, setGameState, fire);
+  useDelayedActions(env, gameState, setGameState);
 
   /** Fires a display's rules for an event in its template. A click no rule takes moves on from the title screen. */
   const onDisplayEvent = useCallback(

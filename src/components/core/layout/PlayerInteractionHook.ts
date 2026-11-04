@@ -16,6 +16,8 @@ import { displayRoots } from "../logic/TemplateUtils";
 export interface CameraRuleTarget {
   /** The display the rule belongs to. */
   scope: DisplayScope;
+  /** Which run of the display this is. */
+  run: number;
   /** The rule's position in the display's rules. */
   ruleIndex: number;
   /** CSS selector for the elements, run inside the display's templates every frame. */
@@ -126,6 +128,22 @@ const updateMonitors = (
   }
 };
 
+/** Rearms the monitors for a display that has reset: whoever is already over its elements must move into them again. */
+function useRearmOnReset(
+  cameraRules: CameraRuleTarget[] | undefined,
+  monitorsRef: RefObject<Map<number, PlayerMonitor>>,
+) {
+  const runsRef = useRef(new Map<DisplayScope, number>());
+  useEffect(() => {
+    const runs = new Map((cameraRules ?? []).map(({ scope, run }) => [scope, run]));
+    for (const [scope, run] of runs) {
+      const before = runsRef.current.get(scope);
+      if (before !== undefined && before !== run) monitorsRef.current.forEach((monitor) => monitor.rearm(`${scope}#`));
+    }
+    runsRef.current = runs;
+  }, [cameraRules, monitorsRef]);
+}
+
 /** What {@link usePlayerInteractions} gives the layout. */
 interface PlayerInteractions {
   /** The character canvas's element, for converting screen bounds into mask pixels. */
@@ -167,6 +185,8 @@ export function usePlayerInteractions(
   useEffect(() => {
     rulesRef.current = cameraRules;
   }, [cameraRules]);
+
+  useRearmOnReset(cameraRules, monitorsRef);
 
   useEffect(() => {
     callbackRef.current = onPlayerInteraction;

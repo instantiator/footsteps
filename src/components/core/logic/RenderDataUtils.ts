@@ -17,7 +17,7 @@ import type { GameChallengeState } from "../../../entities/state/GameChallengeSt
 import { toGameSnapshot, type GameSnapshot } from "../../../entities/state/GameSnapshot";
 import type { DisplayScope, GameState } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
-import { getActiveStageStateChallenges, getStageState } from "./GameStateUtils";
+import { displayRun, getActiveStageStateChallenges, getStageState } from "./GameStateUtils";
 import { decorateGameState, type DecoratedGameState } from "./TemplateUtils";
 
 /** Whether the game is showing its overview, or a stage (and its challenges). */
@@ -27,6 +27,8 @@ export type GameDisplayMode = "overview" | "stage";
 export interface GameDisplayRenderData extends GameDisplayBase {
   /** Identifies the display, and so its state. */
   scope: DisplayScope;
+  /** Which run of the display this is; a new one rebuilds its templates. */
+  run: number;
   /** The context for the display's template. */
   templateData: GameTemplateData;
   /** The stage the display belongs to; undefined for overview displays. */
@@ -262,6 +264,7 @@ const getOverviewRenderData = (gameState: GameState, shared: SharedTemplateData)
     component,
     camera,
     scope,
+    run: displayRun(gameState, scope),
     templateData: templateDataFor(shared, gameState, { scope, component }),
     stageId: undefined,
     challengeId: undefined,
@@ -284,6 +287,7 @@ const getStageDisplayRenderData = (
     component,
     camera,
     scope,
+    run: displayRun(gameState, scope),
     templateData: templateDataFor(shared, gameState, { scope, component }),
     stageId: stageState.stage.id,
     challengeId: undefined,
@@ -316,6 +320,7 @@ const getChallengesRenderData = (
       component,
       camera,
       scope,
+      run: displayRun(gameState, scope),
       templateData: templateDataFor(shared, gameState, { scope, component }, challengeState),
       stageId: stageState.stage.id,
       challengeId: challengeState.challenge.id,

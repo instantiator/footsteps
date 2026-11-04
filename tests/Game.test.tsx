@@ -172,6 +172,7 @@ describe("Game camera interactions", () => {
     expect(cameraRules()).toEqual([
       {
         scope: "overview:game-overview-stages",
+        run: 1,
         ruleIndex: 0,
         selector: "#stage-link-stage-1",
         interactions: ["hand-enter"],
@@ -361,6 +362,12 @@ describe("Game sounds and reward", () => {
       await screen.findByText("Small Game");
       await new Promise((resolve) => setTimeout(resolve, 150));
       expect(opened()).toEqual([]);
+      await vi.waitFor(() => expect(opened()).toHaveLength(1));
+    });
+
+    it("still plays a delayed sound after its display has closed", async () => {
+      renderEffects([{ sound: "opened", delayMs: 100 }, { enterStage: "stage-1" }]);
+      await screen.findByText("Stage 1");
       await vi.waitFor(() => expect(opened()).toHaveLength(1));
     });
 

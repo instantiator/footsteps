@@ -2,7 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useGameRules } from "../src/components/core/GameRulesHook";
-import { completeChallenge } from "../src/components/core/logic/GameStateUtils";
+import { completeChallenge, startDisplayRuns } from "../src/components/core/logic/GameStateUtils";
 import type { DisplayDomEvent } from "../src/components/core/logic/TemplateUtils";
 import type { GameData } from "../src/entities/data/GameData";
 import type { GameDisplayComponentBase, GameRule } from "../src/entities/data/displays/GameDisplayData";
@@ -333,6 +333,111 @@ describe("useGameRules", () => {
       rules.go("game-overview-stages");
       advance(5000);
       expect(rules.displayState(TITLE)).toEqual({ n: 2, ms: 250 });
+    });
+
+    describe("delayed actions", () => {
+      const delayed = (delayMs: number): GameRule => ({
+        on: { start: true },
+        do: [{ set: { n: "state.n + 1" }, delayMs }],
+      });
+
+      it("runs once, after its delay, and empties the queue", () => {
+        const rules = renderRules(rulesGame({ [TITLE]: { rules: [delayed(500)], initialState: { n: 0 } } }));
+        advance(499);
+        expect(rules.displayState(TITLE)).toBeUndefined();
+        advance(1);
+        expect(rules.displayState(TITLE)).toEqual({ n: 1 });
+        advance(5000);
+        expect(rules.displayState(TITLE)).toEqual({ n: 1 });
+        expect(rules.state().session.delayedActions).toEqual([]);
+      });
+
+      it("is cancelled by the display closing", () => {
+        const rules = renderRules(rulesGame({ [TITLE]: { rules: [delayed(500)], initialState: { n: 0 } } }));
+        rules.go("game-overview-stages");
+        advance(5000);
+        expect(rules.displayState(TITLE)).toBeUndefined();
+      });
+
+      it("is cancelled by the display resetting", () => {
+        const rules = renderRules(rulesGame({ [TITLE]: { rules: [delayed(500)], initialState: { n: 0 } } }));
+        rules.set((state) => startDisplayRuns(state, [TITLE]));
+        // The reset fires the `start` rule again, which waits afresh: the first one's 500 ms mustn't count
+        advance(250);
+        rules.set((state) => startDisplayRuns(state, [TITLE]));
+        advance(499);
+        expect(rules.displayState(TITLE)).toBeUndefined();
+        advance(1);
+        expect(rules.displayState(TITLE)).toEqual({ n: 1 });
+      });
+    });
+
+    describe("when the display resets", () => {
+      const resetOn = (trigger: GameRule["on"]): GameRule => ({ on: trigger, do: [{ resetState: true }] });
+      const STAGE_STATE = { n: 0 };
+
+      it("restarts its every and after timers, from its initial state", () => {
+        const rules = renderRules(
+          rulesGame({
+            [TITLE]: {
+              rules: [
+                tick({ after: 1000 }),
+                { on: { every: 700 }, do: [{ set: { m: "state.m + 1" } }] },
+                resetOn({ after: 600 }),
+              ],
+              initialState: { ...STAGE_STATE, m: 0 },
+            },
+          }),
+        );
+        advance(600); // the reset starts every timer again; the first `after` would have fired 400 ms on
+        advance(400);
+        expect(rules.displayState(TITLE)).toBeUndefined();
+        advance(300); // 700 ms after the reset
+        expect(rules.displayState(TITLE)).toEqual({ n: 0, m: 1 });
+      });
+
+      it("fires its start rules again", () => {
+        const rules = renderRules(
+          rulesGame({ [TITLE]: { rules: [count(), resetOn({ after: 100 })], initialState: { n: 0 } } }),
+        );
+        expect(rules.displayState(TITLE)).toEqual({ n: 1 });
+        advance(100);
+        expect(rules.displayState(TITLE)).toEqual({ n: 1 });
+      });
+
+      it("cancels a forMs wait, and an expression already true after it only records", () => {
+        const rules = renderRules(
+          rulesGame({
+            [TITLE]: {
+              rules: [{ on: { when: "state.go", forMs: 1000 }, do: [{ set: { done: "true" } }] }],
+              initialState: { go: false },
+            },
+          }),
+        );
+        rules.set((state) => ({ ...state, displayStates: { [TITLE]: { go: true } } }));
+        advance(600);
+        rules.set((state) => startDisplayRuns(state, [TITLE]));
+        advance(5000);
+        expect(rules.displayState(TITLE)).toEqual({ go: true });
+      });
+
+      it("stops and logs a display that keeps resetting itself through other rules", () => {
+        const error = vi.spyOn(console, "error").mockImplementation(() => {});
+        const rules = renderRules(
+          rulesGame({
+            [TITLE]: {
+              rules: [
+                { on: { start: true }, do: [{ set: { n: "1" } }] },
+                { on: { when: "state.n == 1" }, do: [{ resetState: true }] },
+              ],
+              initialState: { n: 0 },
+            },
+          }),
+        );
+        advance(1000);
+        expect(error).toHaveBeenCalledWith(expect.stringContaining(`${TITLE}: stopped`));
+        expect(rules.state().session.displayRuns[TITLE]).toBeLessThan(20);
+      });
     });
 
     it("keeps a stage display's timer running while its challenges move on", () => {

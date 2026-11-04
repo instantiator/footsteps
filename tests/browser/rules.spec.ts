@@ -96,6 +96,26 @@ test.describe("rules demo", () => {
     await expect(page.locator("#switch")).toHaveClass(/position-2/);
   });
 
+  test("rebuilds a display's template when it resets, restarting its animations", async ({ page }) => {
+    await openDemo(page, (game) => {
+      challengeOf(game, "balloons").rules!.push({
+        on: { interact: ["click"], target: "#score" },
+        do: [{ resetState: true }],
+      });
+    });
+    await startBalloons(page);
+    const balloon = page.locator(".balloon");
+    await balloon.evaluate((element) => element.setAttribute("data-before-reset", "yes"));
+    const runningFor = () =>
+      balloon.evaluate((element) => Number(element.getAnimations({ subtree: true })[0]?.currentTime ?? 0));
+    await expect.poll(runningFor).toBeGreaterThan(300);
+
+    await page.locator("#score").click();
+
+    await expect(page.locator(".balloon[data-before-reset]")).toHaveCount(0);
+    expect(await runningFor()).toBeLessThan(300);
+  });
+
   test("pops balloons where they are, scores them, replaces missed ones, and completes at the target", async ({
     page,
   }) => {
