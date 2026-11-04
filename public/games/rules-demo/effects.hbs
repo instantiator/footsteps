@@ -1,0 +1,19 @@
+<div class="demo-screen">
+  <p id="effects-message" class="demo-score effects-message">{{state.message}}{{#if state.fell}} · Player {{state.fell}} fell{{/if}} · {{game.players.active}} playing, {{game.players.removed}} gone, {{game.players.frozen}} frozen</p>
+
+  <div id="rock" class="effects-item" style="left: 4cqw; top: 14cqh">Quake</div>
+  <div id="crate" class="effects-item" style="left: 20cqw; top: 14cqh">Fall</div>
+  <div id="lift" class="effects-item" style="left: 36cqw; top: 14cqh">Move</div>
+  <div id="lamp" class="effects-item" style="left: 52cqw; top: 14cqh">Come near</div>
+  <div id="bridge" class="effects-item" style="left: 68cqw; top: 14cqh">Delay</div>
+  <div id="prize" class="effects-item" style="left: 84cqw; top: 14cqh">Reward</div>
+
+  <div class="effects-item effects-player pit" style="left: 4cqw; top: 50cqh">Pit: fall</div>
+  <div class="effects-item effects-player boulder" style="left: 20cqw; top: 50cqh">Boulder: spin away</div>
+  <div id="ghost" class="effects-item effects-player" style="left: 36cqw; top: 50cqh">Ghost: invisible</div>
+  <div class="effects-item effects-player ice" style="left: 52cqw; top: 50cqh">Ice: freeze</div>
+  <div id="fuzz" class="effects-item effects-player" style="left: 68cqw; top: 50cqh">Fuzz: static</div>
+  <div id="restore" class="effects-item effects-player" role="button" tabindex="0" style="left: 84cqw; top: 50cqh">Restore all</div>
+
+  <button id="effects-done" type="button" class="demo-depth-done">Done</button>
+</div>

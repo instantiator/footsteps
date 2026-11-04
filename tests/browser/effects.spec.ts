@@ -30,7 +30,10 @@ const openWith = async (page: Page, rules: GameRule[], change: (game: GameData) 
     const game = repository.games["rules-demo"];
     for (const display of [
       ...game.displays,
-      ...game.stages.flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.displays)),
+      // The effects stage acts on players, so it can't load without the camera
+      ...game.stages
+        .filter((stage) => stage.id !== "effects")
+        .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.displays)),
     ]) {
       display.camera = { requirement: false };
     }
@@ -420,6 +423,30 @@ test.describe("for players who prefer reduced motion", () => {
     await page.locator("#go").click();
     await expect(page.locator("#count")).toHaveText("11");
   });
+});
+
+test("the demo's effects stage removes a player, says who, and starts again once nobody is left", async ({ page }) => {
+  test.setTimeout(MODEL_TIMEOUT + 60_000);
+  await page.context().grantPermissions(["camera"]);
+  await installFakeCamera(page, peoplePhotoUrls());
+  await page.goto("/game/rules-demo/play");
+  await page.locator("#demo-title").click();
+  await page.locator("#stage-link-effects").click();
+  await expect(page.locator(".effects-item.pit")).toBeVisible();
+  await page.evaluate(() => window.__fakeCamera.setImage("photo:jumping-side-on"));
+  const message = page.locator("#effects-message");
+  await expect(message).toContainText("1 playing", { timeout: MODEL_TIMEOUT });
+
+  // Puts the pit under the player, so they walk into it, as far as the camera can tell
+  await page.locator(".effects-item.pit").evaluate((pit: HTMLElement) => {
+    pit.style.left = "0";
+    pit.style.top = "0";
+    pit.style.width = "100cqw";
+    pit.style.height = "100cqh";
+    pit.style.zIndex = "1";
+  });
+  await expect(message).toContainText("0 playing, 1 gone", { timeout: 10_000 });
+  await expect(message).toContainText("1 playing", { timeout: 10_000 });
 });
 
 test.describe("on players, with a fake camera", () => {

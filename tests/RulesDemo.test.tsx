@@ -47,7 +47,10 @@ const demo = (change: (game: GameData) => void): GameData => {
     display.resetDisplay ? [display, ...withResets(display.resetDisplay)] : [display];
   for (const display of [
     ...game.displays,
-    ...game.stages.flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.displays)),
+    // The effects stage acts on players, so it can't load without the camera
+    ...game.stages
+      .filter((stage) => stage.id !== "effects")
+      .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.displays)),
   ].flatMap(withResets)) {
     display.camera = { requirement: false };
     if (display.component.type !== "template") continue;

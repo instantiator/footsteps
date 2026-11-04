@@ -228,6 +228,8 @@ export interface EffectOn {
  */
 export class ItemEffects {
   private readonly running = new WeakMap<Element, Map<string, EffectAnimation>>();
+  /** How far each element is being shaken vertically, as a % of the display's height, while it is. */
+  private readonly shaking = new WeakMap<Element, number>();
 
   /** Shakes the elements. A dialog's frames always share one motion, to keep their layers lined up. */
   quake(effect: GameQuakeEffect, elements: Element[], run: EffectRun): void {
@@ -246,6 +248,7 @@ export class ItemEffects {
         translate: displayDistance(element, { x, y }),
         ...(scale !== 1 && { scale: String(scale) }),
       }));
+      this.shaking.set(element, Math.abs(dy));
       this.play({ element, name: "quake" }, keyframes, timing(durationMs, cycleMs), run);
     }
   }
@@ -279,7 +282,9 @@ export class ItemEffects {
   fall(effect: GameItemFallEffect, elements: Element[], run: EffectRun): void {
     for (const element of elements) {
       this.cancel(element, "item-fall");
-      const distance = fallDistance(element.getBoundingClientRect().top, displayRect(element));
+      // A shake may have it part way up as it is measured, which mustn't leave it short of the edge once that ends
+      const shake = this.running.get(element)?.has("quake") === true ? (this.shaking.get(element) ?? 0) : 0;
+      const distance = fallDistance(element.getBoundingClientRect().top, displayRect(element)) + shake;
       const keyframes = [
         { translate: displayDistance(element, { x: 0, y: 0 }) },
         { translate: displayDistance(element, { x: 0, y: distance }) },

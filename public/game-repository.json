@@ -489,7 +489,14 @@
           "camera": { "requirement": "enabled" },
           "component": {
             "type": "template",
-            "data": { "names": { "balloons": "Balloons", "lava": "The floor is lava", "depth": "Walk around" } },
+            "data": {
+              "names": {
+                "balloons": "Balloons",
+                "lava": "The floor is lava",
+                "depth": "Walk around",
+                "effects": "Effects"
+              }
+            },
             "initialState": { "position": 1, "lit": false },
             "rules": [
               {
@@ -511,6 +518,10 @@
               {
                 "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-depth", "threshold": 0.5 },
                 "do": [{ "enterStage": "depth" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-effects", "threshold": 0.5 },
+                "do": [{ "enterStage": "effects" }]
               },
               {
                 "on": { "interact": ["click", "hand-enter"], "target": "#switch", "threshold": 0.5 },
@@ -690,6 +701,150 @@
                       }
                     ],
                     "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/depth.hbs" },
+                    "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "effects",
+          "challenges": [
+            {
+              "id": "try-effects",
+              "solution": { "answers": [] },
+              "displays": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "camera": { "requirement": "enabled", "preview": false },
+                  "component": {
+                    "type": "template",
+                    "data": {},
+                    "initialState": { "message": "Touch or click each one" },
+                    "keepRemovedPlayers": false,
+                    "rules": [
+                      {
+                        "on": { "interact": ["click", "hand-enter"], "target": "#rock", "threshold": 0.3 },
+                        "do": [
+                          { "effect": "quake", "target": "#rock", "dx": 1, "durationMs": 1000, "easing": "ease-out" },
+                          { "effect": "quake", "target": ".player", "dx": 0.5, "durationMs": 500 }
+                        ]
+                      },
+                      {
+                        "on": { "interact": "jump" },
+                        "do": [{ "effect": "quake", "dx": 0.5, "dy": 1, "consistentMotion": false, "durationMs": 500 }]
+                      },
+                      {
+                        "on": { "interact": ["click", "hand-enter"], "target": "#crate", "threshold": 0.3 },
+                        "do": [{ "effect": "item-fall", "target": "#crate", "easing": "ease-in" }]
+                      },
+                      {
+                        "on": { "effectEnd": "item-fall", "target": "#crate" },
+                        "do": [{ "set": { "message": "\"The crate has fallen\"" } }]
+                      },
+                      {
+                        "on": { "interact": ["click", "hand-enter"], "target": "#lift", "threshold": 0.3 },
+                        "do": [{ "effect": "item-move", "target": "#lift", "end": { "by": { "left": 0, "top": 15 } } }]
+                      },
+                      {
+                        "on": { "interact": ["near-enter", "mouse-enter"], "target": "#lamp", "within": 10 },
+                        "do": [
+                          {
+                            "effect": "highlight",
+                            "target": "#lamp",
+                            "durationMs": "indefinite",
+                            "sequence": [
+                              {
+                                "filter": "brightness(1.5)",
+                                "shadow": "0 0 2cqw gold",
+                                "durationMs": 500,
+                                "easing": "ease-in"
+                              },
+                              {
+                                "filter": "brightness(1)",
+                                "shadow": "0 0 0 gold",
+                                "durationMs": 500,
+                                "easing": "ease-out"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["near-exit", "mouse-exit"], "target": "#lamp", "within": 10 },
+                        "do": [{ "effect": "stop", "target": "#lamp", "stop": "highlight" }]
+                      },
+                      {
+                        "on": { "interact": ["click", "hand-enter"], "target": "#bridge", "threshold": 0.3 },
+                        "do": [
+                          { "effect": "quake", "target": "#bridge", "dx": 0.5, "dy": 0.5, "durationMs": 400 },
+                          { "effect": "item-fall", "target": "#bridge", "delayMs": 400 },
+                          { "set": { "message": "\"The bridge has gone\"" }, "delayMs": 1400 }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["click", "hand-enter"], "target": "#prize", "threshold": 0.3 },
+                        "do": [{ "reward": { "animation": "stars", "particleCount": 40 }, "target": "#prize" }]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter", "body-enter"], "target": ".pit", "threshold": 0.3 },
+                        "do": [{ "effect": "player-fall", "durationMs": 1000, "easing": "ease-in" }]
+                      },
+                      {
+                        "on": { "effectEnd": "player-fall" },
+                        "do": [{ "set": { "fell": "event.player" } }]
+                      },
+                      {
+                        "on": { "interact": ["body-enter", "hand-enter"], "target": ".boulder", "threshold": 0.2 },
+                        "do": [
+                          {
+                            "effect": "player-spin-away",
+                            "durationMs": 1200,
+                            "angle": { "min": -60, "max": 60 },
+                            "zoom": 0.3,
+                            "opacity": 0,
+                            "rotations": 2
+                          }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["hand-enter"], "target": "#ghost", "threshold": 0.3 },
+                        "do": [
+                          { "effect": "player-invisible", "durationMs": 500 },
+                          { "effect": "player-visible", "durationMs": 500, "delayMs": 3000 }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["body-enter", "hand-enter"], "target": ".ice", "threshold": 0.2 },
+                        "do": [{ "effect": "player-freeze" }, { "effect": "player-unfreeze", "delayMs": 3000 }]
+                      },
+                      {
+                        "on": { "interact": ["hand-enter"], "target": "#fuzz", "threshold": 0.3 },
+                        "do": [{ "effect": "player-static", "pixelSize": 0.5, "proportion": 0.6, "easeMs": 500 }]
+                      },
+                      {
+                        "on": { "interact": ["hand-exit"], "target": "#fuzz", "threshold": 0.3 },
+                        "do": [{ "effect": "stop", "players": "triggering", "stop": "player-static" }]
+                      },
+                      {
+                        "on": { "interact": ["click", "hand-enter"], "target": "#restore", "threshold": 0.3 },
+                        "do": [{ "effect": "player-restore", "players": "all", "durationMs": 500 }]
+                      },
+                      {
+                        "on": { "when": "game.players.active == 0 and game.players.removed > 0", "forMs": 2000 },
+                        "do": [{ "resetChallenge": true }]
+                      },
+                      {
+                        "on": { "interact": ["click"], "target": "#effects-done" },
+                        "do": [{ "completeChallenge": true }]
+                      }
+                    ],
+                    "backgroundStyle": { "background": "#1b2a41" },
+                    "foregroundTemplate": {
+                      "sourceType": "relative",
+                      "templateSource": "games/rules-demo/effects.hbs"
+                    },
                     "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
                   }
                 }

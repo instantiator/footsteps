@@ -269,3 +269,30 @@
   left: 50cqw;
   transform: translateX(-50%);
 }
+
+/* One thing to touch or click for each effect: items along the top, and what happens to players along the bottom */
+.effects-message {
+  inset: 36cqh 0 auto;
+  color: #fff;
+  font-size: 3.5cqh;
+  text-align: center;
+  text-shadow: 0 0 4px #000;
+}
+
+.effects-item {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 12cqw;
+  height: 16cqh;
+  border-radius: 0.5rem;
+  background: #5b7c99;
+  color: #fff;
+  font-weight: bold;
+  text-align: center;
+}
+
+.effects-player {
+  background: #99615b;
+}

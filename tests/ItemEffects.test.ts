@@ -209,6 +209,19 @@ describe("ItemEffects", () => {
     expect(animations[0].persist).not.toHaveBeenCalled();
   });
 
+  it("falls further by a shake that is under way, so it isn't left short of the edge when that ends", () => {
+    const fallsBy = (shake: boolean) => {
+      animate.mockClear();
+      const effects = new ItemEffects();
+      const target = element();
+      if (shake) effects.quake({ effect: "quake", dy: 5 }, [target], run());
+      effects.fall({ effect: "item-fall" }, [target], run());
+      return translatesOf(animate.mock.calls.length - 1).at(-1);
+    };
+    expect(fallsBy(false)).toBe("0cqw 100cqh");
+    expect(fallsBy(true)).toBe("0cqw 105cqh");
+  });
+
   it("restarts an effect fired again, without that counting as an end", () => {
     const effects = new ItemEffects();
     const target = element();
