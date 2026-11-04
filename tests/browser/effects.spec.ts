@@ -291,6 +291,105 @@ test("a quake enlarges a full-size item so no gap shows", async ({ page }) => {
   expect(scale).toBeCloseTo(1.04, 2);
 });
 
+test("a highlight plays and returns the element to its own styles", async ({ page }) => {
+  await openWith(page, [
+    onGo([{ effect: "highlight", target: "#bridge", sequence: [{ filter: "brightness(2)", durationMs: 200 }] }]),
+  ]);
+  const filter = () => page.locator("#bridge").evaluate((element) => getComputedStyle(element).filter);
+  await page.locator("#go").click();
+  expect(await filter()).toBe("brightness(2)");
+  await expect.poll(filter).toBe("none");
+});
+
+test("a highlight pulses while the mouse is near, until stopped", async ({ page }) => {
+  const sequence = [
+    { filter: "brightness(2)", durationMs: 100, easing: "ease-in" },
+    { filter: "brightness(1)", durationMs: 100, easing: "ease-out" },
+  ];
+  await openWith(page, [
+    {
+      on: { interact: ["mouse-enter"], target: "#platform" },
+      do: [{ effect: "highlight", target: "#platform", durationMs: "indefinite", sequence }],
+    },
+    {
+      on: { interact: ["mouse-exit"], target: "#platform" },
+      do: [{ effect: "stop", target: "#platform", stop: "highlight" }],
+    },
+  ]);
+  const running = () => page.locator("#platform").evaluate((element) => element.getAnimations().length);
+  await page.locator("#platform").hover();
+  await expect.poll(running).toBe(1);
+  await page.waitForTimeout(500);
+  expect(await running()).toBe(1);
+  await page.locator("#go").hover();
+  await expect.poll(running).toBe(0);
+});
+
+test("stopping an item effect returns the item", async ({ page }) => {
+  await openWith(page, [
+    onGo([{ effect: "item-fall", target: "#bridge", durationMs: 50 }]),
+    onAgain([{ effect: "stop", target: "#bridge" }]),
+  ]);
+  await page.locator("#go").click();
+  await settled(page, "#bridge");
+  expect(await isOffScreen(page, "#bridge")).toBe(true);
+  await page.locator("#again").click();
+  await expect.poll(() => isOffScreen(page, "#bridge")).toBe(false);
+});
+
+test("an effect's end fires a rule once per element, with its id", async ({ page }) => {
+  await openWith(
+    page,
+    [
+      onGo([{ effect: "item-fall", target: "#bridge, #platform", durationMs: 50 }]),
+      { on: { effectEnd: "item-fall" }, do: [{ set: { n: "state.n + 1" } }] },
+      { on: { effectEnd: "item-fall", target: "#platform" }, do: [{ set: { last: "event.id" } }] },
+    ],
+    (game) => {
+      const [display] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].displays;
+      display.component.foregroundTemplate = {
+        sourceType: "embedded",
+        content: `${ITEMS}<p id="last">{{state.last}}</p>`,
+      };
+    },
+  );
+  await page.locator("#go").click();
+  await expect(page.locator("#count")).toHaveText("2");
+  await expect(page.locator("#last")).toHaveText("platform");
+});
+
+test("an effect's end doesn't fire after it was stopped or its display reset", async ({ page }) => {
+  await openWith(page, [
+    onGo([{ effect: "item-fall", target: "#bridge", durationMs: 200 }]),
+    onAgain([{ effect: "stop", target: "#bridge" }]),
+    { on: { interact: ["click"], target: "#count" }, do: [{ resetState: true }] },
+    { on: { effectEnd: "item-fall" }, do: [{ set: { n: "state.n + 1" } }] },
+  ]);
+  await page.locator("#go").click();
+  await page.locator("#again").click();
+  await page.waitForTimeout(400);
+  await expect(page.locator("#count")).toHaveText("0");
+
+  await page.locator("#go").click();
+  await page.locator("#count").click();
+  await page.waitForTimeout(400);
+  await expect(page.locator("#count")).toHaveText("0");
+});
+
+test("the bridge sample: a quake, then a fall, then state, each timed from the rule", async ({ page }) => {
+  await openWith(page, [
+    onGo([
+      { effect: "quake", target: "#bridge", dx: 0.5, dy: 0.5, durationMs: 100 },
+      { effect: "item-fall", target: "#bridge", durationMs: 50, delayMs: 100 },
+      { set: { n: "1" }, delayMs: 300 },
+    ]),
+  ]);
+  await page.locator("#go").click();
+  await expect(page.locator("#count")).toHaveText("0");
+  await expect(page.locator("#count")).toHaveText("1");
+  expect(await isOffScreen(page, "#bridge")).toBe(true);
+});
+
 test.describe("for players who prefer reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
 
@@ -304,5 +403,18 @@ test.describe("for players who prefer reduced motion", () => {
     await page.locator("#again").click();
     await page.waitForTimeout(100);
     expect(await page.locator("#platform").evaluate((element) => element.getAnimations().length)).toBe(0);
+  });
+
+  test("an effect's end still fires", async ({ page }) => {
+    await openWith(page, [
+      onGo([
+        { effect: "item-fall", target: "#bridge", durationMs: 5000 },
+        { effect: "quake", target: "#platform", dx: 1 },
+      ]),
+      { on: { effectEnd: "item-fall" }, do: [{ set: { n: "state.n + 1" } }] },
+      { on: { effectEnd: "quake" }, do: [{ set: { n: "state.n + 10" } }] },
+    ]);
+    await page.locator("#go").click();
+    await expect(page.locator("#count")).toHaveText("11");
   });
 });

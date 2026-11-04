@@ -1,6 +1,8 @@
 import type {
   GameEffectDuration,
   GameEffectPosition,
+  GameHighlightEffect,
+  GameHighlightStep,
   GameItemFallEffect,
   GameItemMoveEffect,
   GameQuakeEffect,
@@ -121,6 +123,53 @@ export const moveOffsets = (
   return [offset(start), offset(end)];
 };
 
+/** The CSS property each of a highlight's styles sets. */
+const HIGHLIGHT_STYLES = { filter: "filter", shadow: "boxShadow", outline: "outline" } as const;
+
+/** The length of a step that doesn't give one. */
+const DEFAULT_STEP_MS = 1000;
+
+/** The length of a highlight's sequence. */
+const sequenceLength = (sequence: GameHighlightStep[]): number =>
+  sequence.reduce((total, { durationMs = DEFAULT_STEP_MS }) => total + durationMs, 0);
+
+/**
+ * The keyframes of a highlight. A step with an easing builds from the step before, or from the element's own styles.
+ * One without applies at full strength throughout.
+ * @param own the element's own value for each CSS property the sequence sets
+ */
+export const highlightKeyframes = (sequence: GameHighlightStep[], own: Record<string, string>): Keyframe[] => {
+  const total = sequenceLength(sequence);
+  const stylesOf = (step: GameHighlightStep) => {
+    const styles = { ...own };
+    for (const [style, property] of Object.entries(HIGHLIGHT_STYLES)) {
+      const value = step[style as keyof typeof HIGHLIGHT_STYLES];
+      if (value !== undefined) styles[property] = value;
+    }
+    return styles;
+  };
+  let elapsed = 0;
+  let before = own;
+  const keyframes: Keyframe[] = sequence.map((step) => {
+    const styles = stylesOf(step);
+    const offset = elapsed / total;
+    elapsed += step.durationMs ?? DEFAULT_STEP_MS;
+    const keyframe =
+      step.easing === undefined
+        ? { ...styles, offset, easing: "step-end" }
+        : { ...before, offset, easing: step.easing };
+    before = styles;
+    return keyframe;
+  });
+  return [...keyframes, { ...before, offset: 1 }];
+};
+
+/** The CSS properties a highlight's sequence sets. */
+const highlightProperties = (sequence: GameHighlightStep[]): string[] =>
+  Object.entries(HIGHLIGHT_STYLES)
+    .filter(([style]) => sequence.some((step) => step[style as keyof typeof HIGHLIGHT_STYLES] !== undefined))
+    .map(([, property]) => property);
+
 /** The duration of one play of an effect, and how many times it plays. */
 const timing = (durationMs: GameEffectDuration, cycleMs: number): Pick<EffectTiming, "duration" | "iterations"> =>
   durationMs === "indefinite" ? { duration: cycleMs, iterations: Infinity } : { duration: durationMs };
@@ -133,6 +182,9 @@ const quakeMotion = ({ dx = 0, dy = 0, durationMs = 1000, cycleMs = 100, easing 
   const strength = (progress: number) => (eased === undefined ? 1 : Math.max(0, 1 - eased(progress)));
   return () => quakeSteps({ dx, dy, cycles, strength });
 };
+
+/** A CSS property's name as a stylesheet writes it. */
+const cssName = (property: string): string => property.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 
 /** What effects need to know about the rule that started them. */
 export interface EffectRun {
@@ -185,6 +237,31 @@ export class ItemEffects {
         ...(scale !== 1 && { scale: String(scale) }),
       }));
       this.play({ element, name: "quake" }, keyframes, timing(durationMs, cycleMs), run);
+    }
+  }
+
+  /** Plays a series of styles on the elements, after which they return to their own. */
+  highlight({ sequence, durationMs }: GameHighlightEffect, elements: Element[], run: EffectRun): void {
+    const total = sequenceLength(sequence);
+    if (total <= 0) return;
+    const iterations = durationMs === "indefinite" ? Infinity : durationMs === undefined ? 1 : durationMs / total;
+    const properties = highlightProperties(sequence);
+    for (const element of elements) {
+      this.cancel(element, "highlight"); // so its own styles aren't read part way through
+      const computed = getComputedStyle(element);
+      const own = Object.fromEntries(
+        properties.map((property) => [property, computed.getPropertyValue(cssName(property))]),
+      );
+      const options = { duration: total, iterations, composite: "replace" as const };
+      this.play({ element, name: "highlight" }, highlightKeyframes(sequence, own), options, run);
+    }
+  }
+
+  /** Ends effects on the elements, which return to where their templates put them. */
+  stop(elements: Element[], name: string | undefined): void {
+    for (const element of elements) {
+      const names = name === undefined ? Array.from(this.running.get(element)?.keys() ?? []) : [name];
+      names.forEach((running) => this.cancel(element, running));
     }
   }
 

@@ -406,7 +406,7 @@ export function useGameRules(): GameRules {
   const mouseHolds = useMouseHolds(gameState, stateRef, fire);
   useWhenRules(env, gameState, setGameState, fire);
   useDelayedActions(env, gameState, setGameState);
-  useGameEffects(gameState, stateRef, setGameState);
+  useGameEffects(gameState, stateRef, setGameState, fire);
 
   /** Fires a display's rules for an event in its template. A click no rule takes moves on from the title screen. */
   const onDisplayEvent = useCallback(

@@ -4,6 +4,7 @@ import {
   ItemEffects,
   coverScale,
   fallDistance,
+  highlightKeyframes,
   moveOffsets,
   quakeSteps,
   type EffectRun,
@@ -111,6 +112,47 @@ describe("moveOffsets", () => {
   });
 });
 
+describe("highlightKeyframes", () => {
+  const own = { filter: "none", boxShadow: "none" };
+
+  it("spaces the steps by their durations, ending at 1", () => {
+    const keyframes = highlightKeyframes(
+      [
+        { filter: "brightness(2)", durationMs: 100 },
+        { filter: "brightness(3)", durationMs: 300 },
+      ],
+      own,
+    );
+    expect(keyframes.map(({ offset }) => offset)).toEqual([0, 0.25, 1]);
+  });
+
+  it("applies a step without an easing at full strength throughout", () => {
+    const [first, second] = highlightKeyframes([{ filter: "brightness(2)" }], own);
+    expect(first).toMatchObject({ filter: "brightness(2)", easing: "step-end", offset: 0 });
+    expect(second).toMatchObject({ filter: "brightness(2)", offset: 1 });
+  });
+
+  it("builds a step with an easing from the element's own styles, then from the step before", () => {
+    const keyframes = highlightKeyframes(
+      [
+        { filter: "brightness(2)", easing: "ease-in", durationMs: 500 },
+        { filter: "brightness(1)", easing: "ease-out", durationMs: 500 },
+      ],
+      own,
+    );
+    expect(keyframes).toEqual([
+      { filter: "none", boxShadow: "none", offset: 0, easing: "ease-in" },
+      { filter: "brightness(2)", boxShadow: "none", offset: 0.5, easing: "ease-out" },
+      { filter: "brightness(1)", boxShadow: "none", offset: 1 },
+    ]);
+  });
+
+  it("gives a step's other styles the element's own values", () => {
+    const keyframes = highlightKeyframes([{ filter: "brightness(2)" }, { shadow: "0 0 1cqw gold" }], own);
+    expect(keyframes[1]).toMatchObject({ filter: "none", boxShadow: "0 0 1cqw gold" });
+  });
+});
+
 describe("ItemEffects", () => {
   /** An animation, as effects use it. */
   const animation = () => ({ onfinish: null as Animation["onfinish"], cancel: vi.fn(), persist: vi.fn() });
@@ -191,6 +233,61 @@ describe("ItemEffects", () => {
     const finished = animations[1].onfinish as ((event: AnimationPlaybackEvent) => void) | null;
     finished?.(new Event("finish") as AnimationPlaybackEvent);
     expect(onEnd).toHaveBeenCalledExactlyOnceWith(b);
+  });
+
+  describe("highlight", () => {
+    const sequence = [
+      { filter: "brightness(2)", durationMs: 100 },
+      { filter: "brightness(1)", durationMs: 300 },
+    ];
+
+    it("plays once by default, returning to the element's own styles", () => {
+      new ItemEffects().highlight({ effect: "highlight", sequence }, [element()], run());
+      expect(optionsOf(0)).toMatchObject({ duration: 400, iterations: 1, composite: "replace" });
+      expect(optionsOf(0).fill).toBeUndefined();
+    });
+
+    it("repeats for a number's length, or until stopped", () => {
+      new ItemEffects().highlight({ effect: "highlight", sequence, durationMs: 1000 }, [element()], run());
+      expect(optionsOf(0).iterations).toBe(2.5);
+      new ItemEffects().highlight({ effect: "highlight", sequence, durationMs: "indefinite" }, [element()], run());
+      expect(optionsOf(1).iterations).toBe(Infinity);
+    });
+
+    it("does nothing with a sequence of no length", () => {
+      new ItemEffects().highlight({ effect: "highlight", sequence: [{ durationMs: 0 }] }, [element()], run());
+      expect(animate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("stop", () => {
+    const fallAndQuake = (effects: ItemEffects, target: Element) => {
+      effects.fall({ effect: "item-fall" }, [target], run());
+      effects.quake({ effect: "quake", dx: 1 }, [target], run());
+    };
+
+    it("ends only the effect it names, without that counting as an end", () => {
+      const effects = new ItemEffects();
+      const target = element();
+      fallAndQuake(effects, target);
+      effects.stop([target], "quake");
+      expect(animations[0].cancel).not.toHaveBeenCalled();
+      expect(animations[1].cancel).toHaveBeenCalled();
+      expect(animations[1].onfinish).toBeNull();
+    });
+
+    it("ends everything on the element without a name", () => {
+      const effects = new ItemEffects();
+      const target = element();
+      fallAndQuake(effects, target);
+      effects.stop([target], undefined);
+      expect(animations[0].cancel).toHaveBeenCalled();
+      expect(animations[1].cancel).toHaveBeenCalled();
+    });
+
+    it("does nothing to an element not running it", () => {
+      expect(() => new ItemEffects().stop([element()], "quake")).not.toThrow();
+    });
   });
 
   describe("for players who prefer reduced motion", () => {
