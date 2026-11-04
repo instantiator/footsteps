@@ -155,12 +155,17 @@ describe("highlightKeyframes", () => {
 
 describe("ItemEffects", () => {
   /** An animation, as effects use it. */
-  const animation = () => ({ onfinish: null as Animation["onfinish"], cancel: vi.fn(), persist: vi.fn() });
+  const animation = () => ({
+    onfinish: null as Animation["onfinish"],
+    cancel: vi.fn(),
+    persist: vi.fn(),
+    finish: vi.fn(),
+  });
   const animations: ReturnType<typeof animation>[] = [];
   const animate = vi.fn<Element["animate"]>(() => {
     const made = Object.assign(new EventTarget(), animation());
     animations.push(made);
-    return made as EventTarget & Pick<Animation, "cancel" | "persist" | "onfinish"> as Animation;
+    return made as EventTarget & Pick<Animation, "cancel" | "persist" | "onfinish" | "finish"> as Animation;
   });
   const run = (extra: Partial<EffectRun> = {}): EffectRun => ({
     onEnd: vi.fn(),

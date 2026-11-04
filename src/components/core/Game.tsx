@@ -15,7 +15,8 @@ import { useGameState } from "../../providers/GameStateHook";
 import { PlayerRegistryContext } from "../../providers/PlayerRegistryContext";
 import { isDefined } from "../../util/ObjectUtils";
 import GameDisplayComponent, { type LayerHint } from "./display/GameDisplayComponent";
-import { centreOnScreen, resolveTargets } from "./effects/EffectTargets";
+import { centreOnScreen, playerWrappers, resolveTargets } from "./effects/EffectTargets";
+import type { PlayerEffects } from "./effects/PlayerEffects";
 import "./Game.css";
 import GameStylesheets from "./GameStylesheets";
 import GameLayersLayout, { type GameLayers } from "./layout/GameLayersLayout";
@@ -112,15 +113,22 @@ interface ShownReward {
  * has no target. So does one whose element has gone by now, as rewards outlive their display.
  */
 const rewardsFor = (
-  id: number,
-  { effect, scope }: QueuedEffect,
+  { id, effect, scope, event }: QueuedEffect,
   reward: GameRewardData,
-  shownScopes: DisplayScope[],
+  { shownScopes, playerEffects }: { shownScopes: DisplayScope[]; playerEffects: PlayerEffects },
 ): ShownReward[] => {
   const selector = "reward" in effect ? effect.target : undefined;
-  const elements = isDefined(selector) ? resolveTargets(scope, selector, shownScopes) : [];
+  const choice = "reward" in effect ? effect.players : undefined;
+  const elements = isDefined(choice)
+    ? playerWrappers(choice, event.player)
+    : isDefined(selector)
+      ? resolveTargets(scope, selector, shownScopes)
+      : [];
   if (elements.length === 0) return [{ id, reward }];
-  return elements.map((element, index) => ({ id: `${id}-${index}`, reward, at: centreOnScreen(element) }));
+  // A player's canvas fills the display, so its centre would be the middle of the display, not the player
+  const centreOf = (element: Element) =>
+    element.classList.contains("player") ? playerEffects.bodyCentre(element) : centreOnScreen(element);
+  return elements.map((element, index) => ({ id: `${id}-${index}`, reward, at: centreOf(element) }));
 };
 
 /**
@@ -128,7 +136,7 @@ const rewardsFor = (
  * the queue. Rewards aren't shown to players who prefer reduced motion; their sounds still play.
  * @returns the rewards showing now, to render
  */
-function useRuleEffects(reducedMotion: boolean) {
+function useRuleEffects(reducedMotion: boolean, playerEffects: PlayerEffects) {
   const { gameState, setGameState } = useGameState();
   const { resources } = useGameData();
   const [shown, setShown] = useState<ShownReward[]>([]);
@@ -146,13 +154,13 @@ function useRuleEffects(reducedMotion: boolean) {
     if (fresh.length === 0) return;
     playedRef.current = Math.max(...fresh.map(({ id }) => id));
     for (const queued of fresh) {
-      const { id, effect } = queued;
+      const { effect } = queued;
       const timer = setTimeout(() => {
         timersRef.current.delete(timer);
         if ("sound" in effect) void playAudio(resources[effect.sound]);
         else if (!reducedMotion) {
           const shownScopes = getShownDisplays(stateRef.current).map((display) => display.scope);
-          setShown((rewards) => [...rewards, ...rewardsFor(id, queued, effect.reward, shownScopes)]);
+          setShown((rewards) => [...rewards, ...rewardsFor(queued, effect.reward, { shownScopes, playerEffects })]);
         }
       }, effect.delayMs ?? 0);
       timersRef.current.add(timer);
@@ -162,7 +170,7 @@ function useRuleEffects(reducedMotion: boolean) {
       ...state,
       session: { ...state.session, effects: state.session.effects.filter(({ id }) => id > played) },
     }));
-  }, [effects, resources, reducedMotion, setGameState]);
+  }, [effects, resources, reducedMotion, setGameState, playerEffects]);
 
   useEffect(() => {
     const timers = timersRef.current;
@@ -272,14 +280,14 @@ export default function Game() {
   const { gameState } = useGameState();
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   useGameFeedback(reducedMotion);
-  const ruleRewards = useRuleEffects(reducedMotion);
   useTitleScreenKeys();
   useWakeLock(!gameState.stages.every((stage) => stage.completion === "completed"));
 
   const onAnswer = useAnswerHandler();
   const renderData = useMemo(() => getLayeredRenderData(gameState, resources, gameId), [gameState, resources, gameId]);
   const displayKey = useMemo(() => getDisplayKey(renderData), [renderData]);
-  const { onDisplayEvent, cameraRules, onPlayerInteraction, players } = useGameRules();
+  const { onDisplayEvent, cameraRules, onPlayerInteraction, players, playerEffects } = useGameRules();
+  const ruleRewards = useRuleEffects(reducedMotion, playerEffects);
   const layers = useMemo(
     () => createLayers(renderData, { onAnswer, onDisplayEvent }),
     [renderData, onAnswer, onDisplayEvent],

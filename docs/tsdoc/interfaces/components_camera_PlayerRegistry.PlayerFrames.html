@@ -16,7 +16,7 @@
 </div></section>
 <div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">PlayerFrames</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#drawn">drawn</a><span class="tsd-signature-symbol">:</span> <a href="vision_VisionTypes.VisionFrame.html" class="tsd-signature-type tsd-kind-interface">VisionFrame</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#frozenids">frozenIds</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ReadonlySet</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#interactive">interactive</a><span class="tsd-signature-symbol">:</span> <a href="vision_VisionTypes.VisionFrame.html" class="tsd-signature-type tsd-kind-interface">VisionFrame</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#knownids">knownIds</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ReadonlySet</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerRegistry.ts#L25">components/camera/PlayerRegistry.ts:25</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerRegistry.ts#L26">components/camera/PlayerRegistry.ts:26</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -38,28 +38,28 @@
 <div class="tsd-comment tsd-typography"><p>The players to draw. Frozen and leaving ones are as they were last seen, and held, which keeps their depth.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerRegistry.ts#L29">components/camera/PlayerRegistry.ts:29</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerRegistry.ts#L30">components/camera/PlayerRegistry.ts:30</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="frozenids"><span>frozen<wbr/>Ids</span><a href="#frozenids" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">frozenIds</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ReadonlySet</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span></div>
 <div class="tsd-comment tsd-typography"><p>The players whose canvases shouldn't be redrawn, as their image is frozen.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerRegistry.ts#L31">components/camera/PlayerRegistry.ts:31</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerRegistry.ts#L32">components/camera/PlayerRegistry.ts:32</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="interactive"><span>interactive</span><a href="#interactive" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">interactive</span><span class="tsd-signature-symbol">:</span> <a href="vision_VisionTypes.VisionFrame.html" class="tsd-signature-type tsd-kind-interface">VisionFrame</a></div>
 <div class="tsd-comment tsd-typography"><p>The players who can interact with the display.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerRegistry.ts#L27">components/camera/PlayerRegistry.ts:27</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerRegistry.ts#L28">components/camera/PlayerRegistry.ts:28</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="knownids"><span>known<wbr/>Ids</span><a href="#knownids" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">knownIds</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ReadonlySet</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span></div>
 <div class="tsd-comment tsd-typography"><p>Everyone the game still knows about, so their canvases stay, including removed players.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerRegistry.ts#L33">components/camera/PlayerRegistry.ts:33</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerRegistry.ts#L34">components/camera/PlayerRegistry.ts:34</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

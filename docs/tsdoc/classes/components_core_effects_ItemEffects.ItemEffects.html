@@ -20,7 +20,7 @@ display's template is rebuilt as it closes or resets, which is what ends them. S
 closes, as that would snap an item back into view during the scene's fade.</p>
 </div></section><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/effects/ItemEffects.ts#L219">components/core/effects/ItemEffects.ts:219</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/effects/ItemEffects.ts#L229">components/core/effects/ItemEffects.ts:229</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -34,8 +34,12 @@ closes, as that would snap an item back into view during the scene's fade.</p>
 <h3 class="tsd-index-heading tsd-anchor-link" id="methods">Methods<a href="#methods" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-index-list"><a href="#cancel" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>cancel</span></a>
 <a href="#fall" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>fall</span></a>
+<a href="#finish" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>finish</span></a>
 <a href="#highlight" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>highlight</span></a>
+<a href="#isrunning" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>is<wbr/>Running</span></a>
 <a href="#move" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>move</span></a>
+<a href="#playonce" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>play<wbr/>Once</span></a>
+<a href="#playtoend" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>play<wbr/>To<wbr/>End</span></a>
 <a href="#quake" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>quake</span></a>
 <a href="#stop" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>stop</span></a>
 </div></section></div></details></section></section>
@@ -67,7 +71,7 @@ closes, as that would snap an item back into view during the scene's fade.</p>
 <li><span><span class="tsd-kind-parameter">name</span>: <span class="tsd-signature-type">string</span></span></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/effects/ItemEffects.ts#L334">components/core/effects/ItemEffects.ts:334</a></li></ul></aside></div></li></ul></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/effects/ItemEffects.ts#L360">components/core/effects/ItemEffects.ts:360</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="fall"><span>fall</span><a href="#fall" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -84,7 +88,22 @@ closes, as that would snap an item back into view during the scene's fade.</p>
 <li><span><span class="tsd-kind-parameter">run</span>: <a href="../interfaces/components_core_effects_ItemEffects.EffectRun.html" class="tsd-signature-type tsd-kind-interface">EffectRun</a></span></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/effects/ItemEffects.ts#L269">components/core/effects/ItemEffects.ts:269</a></li></ul></aside></div></li></ul></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/effects/ItemEffects.ts#L279">components/core/effects/ItemEffects.ts:279</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="finish"><span>finish</span><a href="#finish" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="finish-1"><span class="tsd-kind-call-signature">finish</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">element</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Element</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#finish-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Takes every effect on an element to its end, as far as it goes.</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">element</span>: <span class="tsd-signature-type">Element</span></span></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/effects/ItemEffects.ts#L334">components/core/effects/ItemEffects.ts:334</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="highlight"><span>highlight</span><a href="#highlight" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -101,7 +120,22 @@ closes, as that would snap an item back into view during the scene's fade.</p>
 <li><span><span class="tsd-kind-parameter">run</span>: <a href="../interfaces/components_core_effects_ItemEffects.EffectRun.html" class="tsd-signature-type tsd-kind-interface">EffectRun</a></span></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/effects/ItemEffects.ts#L244">components/core/effects/ItemEffects.ts:244</a></li></ul></aside></div></li></ul></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/effects/ItemEffects.ts#L254">components/core/effects/ItemEffects.ts:254</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="isrunning"><span>is<wbr/>Running</span><a href="#isrunning" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="isrunning-1"><span class="tsd-kind-call-signature">isRunning</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">element</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Element</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><a href="#isrunning-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Whether an element is running any effect.</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">element</span>: <span class="tsd-signature-type">Element</span></span></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/effects/ItemEffects.ts#L339">components/core/effects/ItemEffects.ts:339</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="move"><span>move</span><a href="#move" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -118,7 +152,44 @@ closes, as that would snap an item back into view during the scene's fade.</p>
 <li><span><span class="tsd-kind-parameter">run</span>: <a href="../interfaces/components_core_effects_ItemEffects.EffectRun.html" class="tsd-signature-type tsd-kind-interface">EffectRun</a></span></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/effects/ItemEffects.ts#L282">components/core/effects/ItemEffects.ts:282</a></li></ul></aside></div></li></ul></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/effects/ItemEffects.ts#L292">components/core/effects/ItemEffects.ts:292</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="playonce"><span>play<wbr/>Once</span><a href="#playonce" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="playonce-1"><span class="tsd-kind-call-signature">playOnce</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">on</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/components_core_effects_ItemEffects.EffectOn.html" class="tsd-signature-type tsd-kind-interface">EffectOn</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">keyframes</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Keyframe</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">options</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">KeyframeAnimationOptions</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">run</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/components_core_effects_ItemEffects.EffectRun.html" class="tsd-signature-type tsd-kind-interface">EffectRun</a><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#playonce-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Plays an effect once, with no lasting end.</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">on</span>: <a href="../interfaces/components_core_effects_ItemEffects.EffectOn.html" class="tsd-signature-type tsd-kind-interface">EffectOn</a></span></li>
+<li><span><span class="tsd-kind-parameter">keyframes</span>: <span class="tsd-signature-type">Keyframe</span><span class="tsd-signature-symbol">[]</span></span></li>
+<li><span><span class="tsd-kind-parameter">options</span>: <span class="tsd-signature-type">KeyframeAnimationOptions</span></span></li>
+<li><span><span class="tsd-kind-parameter">run</span>: <a href="../interfaces/components_core_effects_ItemEffects.EffectRun.html" class="tsd-signature-type tsd-kind-interface">EffectRun</a></span></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/effects/ItemEffects.ts#L329">components/core/effects/ItemEffects.ts:329</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="playtoend"><span>play<wbr/>To<wbr/>End</span><a href="#playtoend" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="playtoend-1"><span class="tsd-kind-call-signature">playToEnd</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">on</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/components_core_effects_ItemEffects.EffectOn.html" class="tsd-signature-type tsd-kind-interface">EffectOn</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">keyframes</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Keyframe</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">__namedParameters</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">LastingTiming</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">run</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/components_core_effects_ItemEffects.EffectRun.html" class="tsd-signature-type tsd-kind-interface">EffectRun</a><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#playtoend-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Plays an effect with a lasting end, where it stays. If indefinite, it starts again instead; for players who prefer
+reduced motion, it goes straight to its end.</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">on</span>: <a href="../interfaces/components_core_effects_ItemEffects.EffectOn.html" class="tsd-signature-type tsd-kind-interface">EffectOn</a></span></li>
+<li><span><span class="tsd-kind-parameter">keyframes</span>: <span class="tsd-signature-type">Keyframe</span><span class="tsd-signature-symbol">[]</span></span></li>
+<li><span><span class="tsd-kind-parameter">__namedParameters</span>: <span class="tsd-signature-type">LastingTiming</span></span></li>
+<li><span><span class="tsd-kind-parameter">run</span>: <a href="../interfaces/components_core_effects_ItemEffects.EffectRun.html" class="tsd-signature-type tsd-kind-interface">EffectRun</a></span></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/effects/ItemEffects.ts#L312">components/core/effects/ItemEffects.ts:312</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="quake"><span>quake</span><a href="#quake" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -135,7 +206,7 @@ closes, as that would snap an item back into view during the scene's fade.</p>
 <li><span><span class="tsd-kind-parameter">run</span>: <a href="../interfaces/components_core_effects_ItemEffects.EffectRun.html" class="tsd-signature-type tsd-kind-interface">EffectRun</a></span></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/effects/ItemEffects.ts#L223">components/core/effects/ItemEffects.ts:223</a></li></ul></aside></div></li></ul></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/effects/ItemEffects.ts#L233">components/core/effects/ItemEffects.ts:233</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="stop"><span>stop</span><a href="#stop" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -151,7 +222,7 @@ closes, as that would snap an item back into view during the scene's fade.</p>
 <li><span><span class="tsd-kind-parameter">name</span>: <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></span></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/effects/ItemEffects.ts#L261">components/core/effects/ItemEffects.ts:261</a></li></ul></aside></div></li></ul></section></section></details></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/effects/ItemEffects.ts#L271">components/core/effects/ItemEffects.ts:271</a></li></ul></aside></div></li></ul></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -170,7 +241,7 @@ closes, as that would snap an item back into view during the scene's fade.</p>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Constructors"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Constructors</summary>
 <div><a href="#constructor"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Constructor"><use href="../assets/icons.svg#icon-512"></use></svg><span>constructor</span></a></div></details>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Methods</summary>
-<div><a href="#cancel"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>cancel</span></a><a href="#fall"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>fall</span></a><a href="#highlight"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>highlight</span></a><a href="#move"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>move</span></a><a href="#quake"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>quake</span></a><a href="#stop"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>stop</span></a></div></details></div></details></div>
+<div><a href="#cancel"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>cancel</span></a><a href="#fall"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>fall</span></a><a href="#finish"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>finish</span></a><a href="#highlight"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>highlight</span></a><a href="#isrunning"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>is<wbr/>Running</span></a><a href="#move"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>move</span></a><a href="#playonce"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>play<wbr/>Once</span></a><a href="#playtoend"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>play<wbr/>To<wbr/>End</span></a><a href="#quake"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>quake</span></a><a href="#stop"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>stop</span></a></div></details></div></details></div>
 <div class="site-menu">
 <nav class="tsd-navigation"><a href="../index.html">Footsteps API</a>
 <ul class="tsd-small-nested-navigation" id="tsd-nav-container">

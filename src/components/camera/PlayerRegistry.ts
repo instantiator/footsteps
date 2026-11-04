@@ -1,6 +1,7 @@
 import { centreOf, MAX_MATCH_DISTANCE } from "../../vision/Tracking";
 import type { VisionFrame, VisionPerson } from "../../vision/VisionTypes";
 import type { DisplayScope } from "../../entities/state/GameState";
+import type { MaskSize } from "./CameraSupport";
 
 /**
  * What can happen to a player: `active` is in play, `leaving` is falling or being knocked away, `frozen` is stopped in
@@ -66,6 +67,7 @@ export class PlayerRegistry {
   private readonly players = new Map<number, Player>();
   private nextId = 1;
   private counts: PlayerCounts = NO_PLAYERS;
+  private size: MaskSize = { width: 0, height: 0 };
 
   /**
    * Hears as the counts change, not on every frame, as a game state update re-renders the game.
@@ -80,6 +82,7 @@ export class PlayerRegistry {
 
   /** Works out what a frame from the tracker means. */
   update(frame: VisionFrame): PlayerFrames {
+    this.size = { width: frame.width, height: frame.height };
     const seen = new Set<Player>();
     for (const person of frame.people) {
       const player = this.playerFor(person, frame.width);
@@ -117,6 +120,11 @@ export class PlayerRegistry {
   /** How a player looked in the last frame, or when they stopped being active. */
   lastOf(id: number): VisionPerson | undefined {
     return this.players.get(id)?.last;
+  }
+
+  /** The size of the masks of the latest frame. */
+  frameSize(): MaskSize {
+    return this.size;
   }
 
   /** Everyone the game knows about. */

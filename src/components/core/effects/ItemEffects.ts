@@ -186,6 +186,10 @@ const quakeMotion = ({ dx = 0, dy = 0, durationMs = 1000, cycleMs = 100, easing 
 /** A CSS property's name as a stylesheet writes it. */
 const cssName = (property: string): string => property.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 
+/** How much to enlarge an element while it shakes. A player's canvas fills the display, but the player doesn't. */
+const quakeScale = (element: Element, dx: number, dy: number): number =>
+  element.classList.contains("player") ? 1 : coverScale(element.getBoundingClientRect(), displayRect(element), dx, dy);
+
 /** What effects need to know about the rule that started them. */
 export interface EffectRun {
   /** Called as the effect finishes on each element. */
@@ -197,10 +201,16 @@ export interface EffectRun {
 }
 
 /** An animation, as effects use it. */
-type EffectAnimation = Pick<Animation, "onfinish" | "cancel" | "persist">;
+type EffectAnimation = Pick<Animation, "onfinish" | "cancel" | "persist" | "finish">;
+
+/** How long an effect with a lasting end takes. */
+type LastingTiming = Pick<GameItemFallEffect, "durationMs" | "cycleMs" | "easing"> & {
+  /** How it combines with other effects: `add` unless it needs to set a value outright, eg. an opacity. */
+  composite?: CompositeOperation;
+};
 
 /** An effect on an element. */
-interface EffectOn {
+export interface EffectOn {
   /** The element. */
   element: Element;
   /** The effect's name. */
@@ -230,7 +240,7 @@ export class ItemEffects {
     const shared = motion();
     for (const element of elements) {
       const sharesMotion = consistentMotion || element.classList.contains(DISPLAY_FRAME_CLASS);
-      const scale = coverScale(element.getBoundingClientRect(), displayRect(element), dx, dy);
+      const scale = quakeScale(element, dx, dy);
       const keyframes = (sharesMotion ? shared : motion()).map(({ offset, x, y }) => ({
         offset,
         translate: displayDistance(element, { x, y }),
@@ -299,19 +309,35 @@ export class ItemEffects {
    * Plays an effect with a lasting end, where it stays. If indefinite, it starts again instead; for players who prefer
    * reduced motion, it goes straight to its end.
    */
-  private playToEnd(
+  playToEnd(
     on: EffectOn,
     keyframes: Keyframe[],
-    { durationMs = 1000, cycleMs = 1000, easing = "linear" }: GameItemFallEffect | GameItemMoveEffect,
+    { durationMs = 1000, cycleMs = 1000, easing = "linear", composite = "add" }: LastingTiming,
     run: EffectRun,
   ): void {
     const lasting = run.reducedMotion || durationMs !== "indefinite";
-    const options: KeyframeAnimationOptions = run.reducedMotion
-      ? { duration: 0 }
-      : { ...timing(durationMs, cycleMs), easing };
+    const options: KeyframeAnimationOptions = {
+      composite,
+      ...(run.reducedMotion ? { duration: 0 } : { ...timing(durationMs, cycleMs), easing }),
+    };
     // A later effect finishing would otherwise let the browser drop this one, snapping the element back
     const animation = this.play(on, keyframes, lasting ? { ...options, fill: "forwards" } : options, run);
     if (lasting) animation.persist();
+  }
+
+  /** Plays an effect once, with no lasting end. */
+  playOnce(on: EffectOn, keyframes: Keyframe[], options: KeyframeAnimationOptions, run: EffectRun): void {
+    this.play(on, keyframes, { composite: "replace", ...options }, run);
+  }
+
+  /** Takes every effect on an element to its end, as far as it goes. */
+  finish(element: Element): void {
+    for (const animation of this.running.get(element)?.values() ?? []) animation.finish();
+  }
+
+  /** Whether an element is running any effect. */
+  isRunning(element: Element): boolean {
+    return (this.running.get(element)?.size ?? 0) > 0;
   }
 
   /** Starts an effect on an element, in place of any it is already running of the same name. */

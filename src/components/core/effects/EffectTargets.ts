@@ -62,6 +62,10 @@ export const resolveTargets = (
   return [...new Set([...inDisplay, ...outside].flatMap(asItems))];
 };
 
+/** The wrappers of the chosen players: everyone, or the one with this number. */
+export const playerWrappers = (choice: "triggering" | "all", number: number): Element[] =>
+  Array.from(document.querySelectorAll(choice === "all" ? ".player" : `.player-${number}`));
+
 /** Warns about a target that traps items sorting among players, as moving or filtering it makes a stacking context. */
 export const warnIfTrappingDepth = (elements: Element[], selector: string | undefined, where: string): void => {
   if (selector === undefined || !elements.some(holdsDepthItems)) return;

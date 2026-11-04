@@ -2,6 +2,9 @@ import { expect, test, type Page } from "@playwright/test";
 import type { GameData } from "../../src/entities/data/GameData";
 import type { GameRule } from "../../src/entities/data/displays/GameDisplayData";
 import type { GameRepository } from "../../src/entities/GameRepository";
+import { MODEL_TIMEOUT } from "./fixtures/cameraGame";
+import { installFakeCamera } from "./fixtures/fakeCamera";
+import { peoplePhotoUrls } from "./fixtures/people/people";
 
 /** Items for an effect to act on, and buttons for the rules to fire on. */
 const ITEMS = `
@@ -416,5 +419,114 @@ test.describe("for players who prefer reduced motion", () => {
     ]);
     await page.locator("#go").click();
     await expect(page.locator("#count")).toHaveText("11");
+  });
+});
+
+test.describe("on players, with a fake camera", () => {
+  const PLAYERS =
+    '<p id="players" style="position: absolute; left: 40cqw; top: 1cqh">{{game.players.active}}/{{game.players.removed}}/{{game.players.frozen}}</p>';
+
+  /** Opens the challenge with the camera on, and a person in shot. */
+  const openWithPlayer = async (page: Page, rules: GameRule[]) => {
+    test.setTimeout(MODEL_TIMEOUT + 60_000);
+    await page.context().grantPermissions(["camera"]);
+    await installFakeCamera(page, peoplePhotoUrls());
+    await openWith(page, rules, (game) => {
+      const [display] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].displays;
+      display.camera = { requirement: "enabled" };
+      display.component.foregroundTemplate = { sourceType: "embedded", content: `${ITEMS}${PLAYERS}` };
+    });
+    await page.evaluate(() => window.__fakeCamera.setImage("photo:jumping-side-on"));
+    await expect(page.locator(".player-1")).toHaveCount(1, { timeout: MODEL_TIMEOUT });
+    await expect(page.locator("#players")).toHaveText("1/0/0");
+  };
+
+  /** A summary of the image on the first player's canvas, to tell whether it has changed. */
+  const imageOf = (page: Page) =>
+    page.locator(".player-1 canvas").evaluate((element) => {
+      const canvas = element as HTMLCanvasElement;
+      const { data } = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height);
+      return data.reduce((sum, value) => (sum + value) % 1_000_003, 0);
+    });
+
+  test("a fall removes them, resets the display when nobody is left, and brings them back", async ({ page }) => {
+    await openWithPlayer(page, [
+      onGo([{ effect: "player-fall", players: "all", durationMs: 200 }]),
+      { on: { when: "game.players.active == 0 and game.players.removed > 0", forMs: 300 }, do: [{ resetState: true }] },
+    ]);
+    await page.locator("#go").click();
+    await expect(page.locator("#players")).toHaveText("0/1/0");
+    const wrapper = await page.locator(".player-1").evaluate((element) => element.getAnimations().length);
+    expect(wrapper).toBe(1);
+    await expect(page.locator("#players")).toHaveText("1/0/0", { timeout: 5000 });
+    expect(await page.locator(".player-1").evaluate((element) => element.getAnimations().length)).toBe(0);
+  });
+
+  test("a removed player stays removed when the model loses them and finds them again", async ({ page }) => {
+    await openWithPlayer(page, [onGo([{ effect: "player-fall", players: "all", durationMs: 100 }])]);
+    await page.locator("#go").click();
+    await expect(page.locator("#players")).toHaveText("0/1/0");
+    await page.evaluate(() => window.__fakeCamera.setImage("room"));
+    await page.waitForTimeout(1500); // long enough for the tracker to give up on them
+    await page.evaluate(() => window.__fakeCamera.setImage("photo:jumping-side-on"));
+    await page.waitForTimeout(1500);
+    await expect(page.locator("#players")).toHaveText("0/1/0");
+  });
+
+  test("a frozen player's image stays still, and follows the camera again once unfrozen", async ({ page }) => {
+    await openWithPlayer(page, [
+      onGo([{ effect: "player-freeze", players: "all" }]),
+      onAgain([{ effect: "player-unfreeze", players: "all" }]),
+    ]);
+    await page.locator("#go").click();
+    await expect(page.locator("#players")).toHaveText("1/0/1");
+    await imageOf(page); // the browser's first read of a canvas can round differently from later ones
+    const frozen = await imageOf(page);
+    await page.evaluate(() => window.__fakeCamera.setImage("photo:active-runner-forest"));
+    await page.waitForTimeout(1000);
+    expect(await imageOf(page)).toBe(frozen);
+
+    await page.locator("#again").click();
+    await expect(page.locator("#players")).toHaveText("1/0/0");
+    await expect.poll(() => imageOf(page), { timeout: 5000 }).not.toBe(frozen);
+  });
+
+  test("a spin away takes them off the display, and a restore brings them back", async ({ page }) => {
+    await openWithPlayer(page, [
+      onGo([{ effect: "player-spin-away", players: "all", durationMs: 200, zoom: 2, opacity: 0 }]),
+      onAgain([{ effect: "player-restore", players: "all", durationMs: 100 }]),
+    ]);
+    await page.locator("#go").click();
+    await expect(page.locator("#players")).toHaveText("0/1/0");
+    await page.locator("#again").click();
+    await expect(page.locator("#players")).toHaveText("1/0/0");
+  });
+
+  test("a quake and a filter highlight stay on a player", async ({ page }) => {
+    await openWithPlayer(page, [
+      onGo([
+        { effect: "quake", target: ".player-1", dx: 1, durationMs: "indefinite" },
+        { effect: "highlight", target: ".player-1", durationMs: "indefinite", sequence: [{ filter: "brightness(2)" }] },
+      ]),
+      onAgain([{ effect: "stop", target: ".player" }]),
+    ]);
+    const running = () => page.locator(".player-1").evaluate((element) => element.getAnimations().length);
+    await page.locator("#go").click();
+    await expect.poll(running).toBe(2);
+    await page.locator("#again").click();
+    await expect.poll(running).toBe(0);
+  });
+
+  test("a reward starts from the player's body", async ({ page }) => {
+    await openWithPlayer(page, [onGo([{ reward: { animation: "stars" }, target: ".player-1" }])]);
+    const body = await page
+      .locator(".player-1")
+      .evaluate((element) => element.getBoundingClientRect().toJSON() as DOMRect);
+    await page.locator("#go").click();
+    const burst = page.locator('[id^="reward-burst-"]');
+    await expect(burst).toHaveCount(1);
+    const left = await burst.evaluate((element) => Number.parseFloat((element as HTMLElement).style.left));
+    // The photo's person isn't in the middle of the display, unlike the centre of their canvas
+    expect(left).not.toBeCloseTo(body.left + body.width / 2, -1);
   });
 });

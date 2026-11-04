@@ -14,6 +14,7 @@ import { useGameState } from "../../providers/GameStateHook";
 import { isDefined } from "../../util/ObjectUtils";
 import { resolveTargets } from "./effects/EffectTargets";
 import { useGameEffects } from "./effects/GameEffectsHook";
+import type { PlayerEffects } from "./effects/PlayerEffects";
 import { useQueueDrain } from "./QueueDrainHook";
 import { leaveTitleScreen } from "./logic/GameClickUtils";
 import { targetsPlayers } from "./logic/GameEffectCompile";
@@ -391,6 +392,8 @@ export interface GameRules {
   onPlayerInteraction: (event: CameraRuleEvent) => void;
   /** What has happened to each player, for the camera to follow. */
   players: PlayerRegistry;
+  /** Plays effects on players, and knows where their bodies are. */
+  playerEffects: PlayerEffects;
 }
 
 /**
@@ -427,7 +430,7 @@ export function useGameRules(): GameRules {
   const mouseHolds = useMouseHolds(gameState, stateRef, fire);
   useWhenRules(env, gameState, setGameState, fire);
   useDelayedActions(env, gameState, setGameState);
-  useGameEffects(gameState, stateRef, setGameState, fire);
+  const playerEffects = useGameEffects(gameState, { stateRef, setGameState, fire, players });
 
   /** Fires a display's rules for an event in its template. A click no rule takes moves on from the title screen. */
   const onDisplayEvent = useCallback(
@@ -457,5 +460,5 @@ export function useGameRules(): GameRules {
   );
 
   const cameraRules = useMemo(() => getCameraRules(gameState), [gameState]);
-  return { onDisplayEvent, cameraRules, onPlayerInteraction, players };
+  return { onDisplayEvent, cameraRules, onPlayerInteraction, players, playerEffects };
 }
