@@ -51,8 +51,11 @@ const JUMP_INTERACTIONS = ["jump", "jump-from", "jump-onto"] as const;
 /** An interaction that comes from a jump. */
 type JumpInteraction = (typeof JUMP_INTERACTIONS)[number];
 
+/** Interactions detected from how close a player's silhouette is to an element. */
+type NearInteraction = "near-enter" | "near-exit";
+
 /** Interactions detected from how much of a body part is inside an element. */
-type CoverageInteraction = Exclude<CameraInteraction, JumpInteraction>;
+type CoverageInteraction = Exclude<CameraInteraction, JumpInteraction | NearInteraction>;
 
 /** What a coverage interaction looks for: a group of body parts. */
 type PartGroup = "hand" | "foot" | "head" | "body" | "any";

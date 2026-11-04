@@ -43,8 +43,8 @@ const SELECTOR_CHECK_DELAY_MS = 2000;
 const warnUnmatchedSelectors = (display: ShownDisplay): void => {
   const roots = displayRoots(display.scope);
   (display.component.rules ?? []).forEach((rule, ruleIndex) => {
-    if (!("target" in rule.on)) return;
-    const selector = rule.on.target;
+    const selector = "target" in rule.on ? rule.on.target : undefined;
+    if (!isDefined(selector)) return;
     if (roots.some((root) => root.querySelector(selector) !== null)) return;
     console.warn(`${display.scope} › rules[${ruleIndex}].on.target: "${selector}" matches nothing in the display`);
   });
@@ -66,7 +66,7 @@ const shownRunsKey = (state: GameState): string =>
 const getCameraRules = (state: GameState): CameraRuleTarget[] =>
   getShownDisplays(state).flatMap(({ scope, component }) =>
     (component.rules ?? []).flatMap(({ on }, ruleIndex) => {
-      if (!("interact" in on)) return [];
+      if (!("interact" in on) || !isDefined(on.target)) return [];
       const interactions = triggerInteractions(on).filter((i): i is CameraInteraction => !isPointerInteraction(i));
       if (interactions.length === 0) return [];
       const threshold = on.threshold ?? DEFAULT_INTERACTION_THRESHOLD;
@@ -234,7 +234,8 @@ function useMouseHolds(gameState: GameState, stateRef: RefObject<GameState>, fir
        */
       start: ({ scope, ruleIndex }: RuleAt, trigger: GameTrigger, event: DisplayDomEvent, matched: RuleEvent) => {
         const holdMs = "interact" in trigger ? (trigger.holdMs ?? 0) : 0;
-        const element = "target" in trigger ? matchTarget(event, trigger.target) : undefined;
+        const selector = "target" in trigger ? trigger.target : undefined;
+        const element = isDefined(selector) ? matchTarget(event, selector) : undefined;
         if (holdMs <= 0 || matched.interaction !== "mouse-enter" || !isDefined(element)) return false;
         const hold: MouseHold = {
           scope,
@@ -422,7 +423,7 @@ export function useGameRules(): GameRules {
   /** Fires the camera rule that watches the element the player interacted with. */
   const onPlayerInteraction = useCallback(
     ({ scope, ruleIndex, element, interaction }: CameraRuleEvent) =>
-      fire(scope, (_, index) => (index === ruleIndex ? { id: element.id, interaction } : undefined)),
+      fire(scope, (_, index) => (index === ruleIndex ? { id: element.id, interaction, player: 0 } : undefined)),
     [fire],
   );
 

@@ -18,7 +18,10 @@ type CameraModeField = keyof ResolvedCameraMode;
 const CAMERA_MODE_DEFAULTS: ResolvedCameraMode = { enabled: false, preview: true };
 
 /** What a display or the game's module declares for a setting, if anything. */
-const declaredValue = (field: CameraModeField, source: GameDisplayCameraData | undefined): boolean | undefined => {
+export const declaredValue = (
+  field: CameraModeField,
+  source: GameDisplayCameraData | undefined,
+): boolean | undefined => {
   if (field === "preview") return source?.preview;
   return isDefined(source?.requirement) ? source.requirement !== false : undefined;
 };

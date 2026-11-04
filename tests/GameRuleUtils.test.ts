@@ -224,7 +224,7 @@ describe("rule engine", () => {
       on: { start: true },
       do: [{ set: { n: "event.id" }, delayMs: 500 }, { set: { m: "1" } }],
     };
-    const fired = () => fireAll(playing([delayedSet]), { id: "door", interaction: "click" });
+    const fired = () => fireAll(playing([delayedSet]), { id: "door", interaction: "click", player: 0 });
     const runDelayed = (state: GameState, from = fired()) =>
       applyDelayedAction(env, state, from.session.delayedActions[0]);
 
@@ -236,7 +236,7 @@ describe("rule engine", () => {
           id: 1,
           scope: SCOPE,
           action: delayedSet.do[0],
-          event: { id: "door", interaction: "click" },
+          event: { id: "door", interaction: "click", player: 0 },
         }),
       ]);
     });
@@ -252,7 +252,7 @@ describe("rule engine", () => {
         on: { start: true },
         do: [{ set: { sum: "state.n + 1", from: "event.id" }, delayMs: 500 }],
       };
-      const state = fireAll(playing([later], { n: 1 }), { id: "door", interaction: "click" });
+      const state = fireAll(playing([later], { n: 1 }), { id: "door", interaction: "click", player: 0 });
       const changed = { ...state, displayStates: { [SCOPE]: { n: 10 } } };
       expect(stateOf(applyDelayedAction(env, changed, state.session.delayedActions[0]))).toEqual({
         n: 10,
@@ -378,7 +378,7 @@ describe("rule engine", () => {
 
     it("sees the event in expressions", () => {
       const rule: GameRule = { on: { start: true }, do: [{ set: { hit: "event.id", how: "event.interaction" } }] };
-      expect(stateOf(fireAll(playing([rule]), { id: "lava-2", interaction: "foot-enter" }))).toEqual({
+      expect(stateOf(fireAll(playing([rule]), { id: "lava-2", interaction: "foot-enter", player: 0 }))).toEqual({
         hit: "lava-2",
         how: "foot-enter",
       });

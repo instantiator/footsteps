@@ -1,8 +1,10 @@
 import type { GameData } from "../../../entities/data/GameData";
+import type { GameStageData } from "../../../entities/data/GameStageData";
 import {
   GAME_INTERACTIONS,
   type GameAction,
   type GameDisplayBase,
+  type GameDisplayCameraData,
   type GameFeedbackAction,
   type GameInteractTrigger,
   type GameRule,
@@ -11,6 +13,16 @@ import {
 } from "../../../entities/data/displays/GameDisplayData";
 import { isDefined } from "../../../util/ObjectUtils";
 import { compileGameExpression, type GameExpression } from "./GameExpressionUtils";
+import {
+  cameraOnlyRuleProblem,
+  checkEffectEnd,
+  checkInteractTrigger,
+  checkSelector,
+  effectProblem,
+  needsPlayerProblem,
+  rewardProblem,
+} from "./GameEffectCompile";
+import { declaredValue } from "./CameraModeUtils";
 import { isEntering, triggerInteractions, type GameExpressions } from "./GameRuleUtils";
 
 /** Actions that act on the display's own challenge, so only make sense on challenge displays. */
@@ -18,68 +30,106 @@ const CHALLENGE_ACTIONS = ["completeChallenge", "answer", "resetChallenge"] as c
 
 /** A display to check, with a readable path to it for error messages. */
 interface DisplayToCompile {
-  display: Pick<GameDisplayBase, "component" | "resetDisplay">;
+  display: Pick<GameDisplayBase, "component" | "camera" | "resetDisplay">;
   path: string;
   isChallenge: boolean;
   /** Whether it is a reset display, where `finishReset` can be used. */
   isReset: boolean;
+  /** Whether the camera could ever be on while it shows. */
+  cameraCanBeOn: boolean;
 }
 
-/** A display, followed by its reset display, and theirs. */
-const withResets = (target: DisplayToCompile): DisplayToCompile[] =>
-  isDefined(target.display.resetDisplay)
-    ? [
-        target,
-        ...withResets({
-          ...target,
-          display: target.display.resetDisplay,
-          path: `${target.path} › resetDisplay`,
-          isReset: true,
+/** What a display inherits its camera from, when it doesn't say: a broader display's setting, or the game's. */
+type CameraInheritance = {
+  /** Whether a broader display or the game turns the camera on; undefined if none says. */
+  inherited: boolean | undefined;
+  /** Whether a display shown alongside it turns the camera on, which turns it on for all of them. */
+  alongside: boolean;
+};
+
+/** Whether the camera could ever be on for a display, by the inheritance in `CameraModeUtils.ts`. */
+const canCameraBeOn = (camera: GameDisplayCameraData | undefined, { inherited, alongside }: CameraInheritance) =>
+  alongside || (declaredValue("enabled", camera) ?? inherited) === true;
+
+/** A display, followed by its reset display, and theirs, each using its own camera setting over its parent's. */
+const withResets = (target: DisplayToCompile, camera: CameraInheritance): DisplayToCompile[] => {
+  const reset = target.display.resetDisplay;
+  if (!isDefined(reset)) return [target];
+  const merged = { ...target.display.camera, ...reset.camera };
+  return [
+    target,
+    ...withResets(
+      {
+        ...target,
+        display: { ...reset, camera: merged },
+        path: `${target.path} › resetDisplay`,
+        isReset: true,
+        cameraCanBeOn: canCameraBeOn(merged, camera),
+      },
+      camera,
+    ),
+  ];
+};
+
+/** The value several displays' camera settings give together: on if any is on, otherwise off if any is off. */
+const anyDeclared = (displays: Pick<GameDisplayBase, "camera">[]): boolean | undefined => {
+  const values = displays.map(({ camera }) => declaredValue("enabled", camera)).filter(isDefined);
+  return values.length === 0 ? undefined : values.includes(true);
+};
+
+/** A display's place in the game, with what it inherits. */
+type DisplayPlace = Pick<DisplayToCompile, "path" | "isChallenge"> & CameraInheritance;
+
+/** A display to check, and its reset displays, at their place in the game. */
+const compilable = (display: DisplayToCompile["display"], { path, isChallenge, ...camera }: DisplayPlace) =>
+  withResets(
+    { display, path, isChallenge, isReset: false, cameraCanBeOn: canCameraBeOn(display.camera, camera) },
+    camera,
+  );
+
+/** A stage's displays to check, with what they inherit. */
+const stageDisplays = (stage: GameStageData, s: number, fromOverview: boolean | undefined): DisplayToCompile[] => {
+  const stagePath = `stages[${s}] (${stage.id})`;
+  const challengesOn = stage.challenges.map((challenge) => anyDeclared(challenge.displays) === true);
+  const inherited = anyDeclared(stage.displays ?? []) ?? fromOverview;
+  return [
+    ...(stage.displays ?? []).flatMap((display, d) =>
+      compilable(display, {
+        path: `${stagePath} › displays[${d}] (${display.purpose})`,
+        isChallenge: false,
+        inherited: fromOverview,
+        alongside: challengesOn.includes(true),
+      }),
+    ),
+    ...stage.challenges.flatMap((challenge, c) =>
+      challenge.displays.flatMap((display, d) =>
+        compilable(display, {
+          path: `${stagePath} › challenges[${c}] (${challenge.id}) › displays[${d}] (${display.purpose})`,
+          isChallenge: true,
+          inherited,
+          // ponytail: any other challenge counts if the stage shows several at once, even in another chunk
+          alongside: (stage.challengeChunking ?? 1) > 1 && challengesOn.some((on, other) => on && other !== c),
         }),
-      ]
-    : [target];
+      ),
+    ),
+  ];
+};
 
 /** Every display in the game, overview, stage and challenge, and their reset displays, with its path. */
-const allDisplays = (gameData: GameData): DisplayToCompile[] =>
-  [
-    ...gameData.displays.map((display, d) => ({
-      display,
-      path: `displays[${d}] (${display.purpose})`,
-      isChallenge: false,
-      isReset: false,
-    })),
-    ...gameData.stages.flatMap((stage, s) => {
-      const stagePath = `stages[${s}] (${stage.id})`;
-      return [
-        ...(stage.displays ?? []).map((display, d) => ({
-          display,
-          path: `${stagePath} › displays[${d}] (${display.purpose})`,
-          isChallenge: false,
-          isReset: false,
-        })),
-        ...stage.challenges.flatMap((challenge, c) =>
-          challenge.displays.map((display, d) => ({
-            display,
-            path: `${stagePath} › challenges[${c}] (${challenge.id}) › displays[${d}] (${display.purpose})`,
-            isChallenge: true,
-            isReset: false,
-          })),
-        ),
-      ];
-    }),
-  ].flatMap(withResets);
-
-/**
- * Checks that a selector parses, where there is a DOM to parse it with (not in the validation script).
- * @throws naming `where` if it doesn't
- */
-const checkSelector = (selector: string, where: string): void => {
-  if (typeof document === "undefined") return;
-  try {
-    document.createDocumentFragment().querySelector(selector);
-  } catch {
-    throw new Error(`${where}: "${selector}" is not a valid CSS selector`);
-  }
+const allDisplays = (gameData: GameData): DisplayToCompile[] => {
+  const fromGame = declaredValue("enabled", gameData.modules?.camera);
+  const fromOverview = anyDeclared(gameData.displays) ?? fromGame;
+  return [
+    ...gameData.displays.flatMap((display, d) =>
+      compilable(display, {
+        path: `displays[${d}] (${display.purpose})`,
+        isChallenge: false,
+        inherited: fromGame,
+        alongside: false,
+      }),
+    ),
+    ...gameData.stages.flatMap((stage, s) => stageDisplays(stage, s, fromOverview)),
+  ];
 };
 
 /** The camera interactions that were renamed with an `-enter` suffix, named in the error for old game data. */
@@ -115,14 +165,21 @@ const whenSources = (trigger: GameWhenTrigger, where: string): [string, string][
   return [[trigger.when, `${where}.when`]];
 };
 
-/** The selector and expressions a trigger needs, checking any fixed duration. */
-const triggerSources = (trigger: GameTrigger, where: string): [string, string][] => {
+/** Checks what only an interact or effect end trigger has. */
+const checkTrigger = (trigger: GameTrigger, where: string): void => {
   if ("interact" in trigger) {
     checkInteractions(trigger, `${where}.interact`);
     checkHold(trigger, `${where}.holdMs`);
+    checkInteractTrigger(trigger, where);
   }
+  if ("effectEnd" in trigger) checkEffectEnd(trigger, where);
+};
+
+/** The selector and expressions a trigger needs, checking any fixed duration. */
+const triggerSources = (trigger: GameTrigger, where: string): [string, string][] => {
+  checkTrigger(trigger, where);
   if ("target" in trigger) {
-    checkSelector(trigger.target, `${where}.target`);
+    if (isDefined(trigger.target)) checkSelector(trigger.target, `${where}.target`);
     return [];
   }
   if ("when" in trigger) return whenSources(trigger, where);
@@ -133,11 +190,11 @@ const triggerSources = (trigger: GameTrigger, where: string): [string, string][]
 };
 
 /** Why a sound or reward can't be played, or undefined if it can. */
-const effectProblem = (effect: GameFeedbackAction, gameData: GameData): string | undefined => {
-  if ("sound" in effect && !Object.hasOwn(gameData.resources ?? {}, effect.sound)) {
-    return `there is no resource "${effect.sound}" to play`;
-  }
-  return undefined;
+const feedbackProblem = (feedback: GameFeedbackAction, gameData: GameData): string | undefined => {
+  if ("reward" in feedback) return rewardProblem(feedback);
+  return Object.hasOwn(gameData.resources ?? {}, feedback.sound)
+    ? undefined
+    : `there is no resource "${feedback.sound}" to play`;
 };
 
 /** Why an action can't be used on this display, or undefined if it can. */
@@ -148,7 +205,8 @@ const actionProblem = (action: GameAction, target: DisplayToCompile, gameData: G
   if ("enterStage" in action && !gameData.stages.some((stage) => stage.id === action.enterStage)) {
     return `there is no stage "${action.enterStage}"`;
   }
-  return "sound" in action || "reward" in action ? effectProblem(action, gameData) : undefined;
+  if ("sound" in action || "reward" in action) return feedbackProblem(action, gameData);
+  return "effect" in action ? effectProblem(action) : undefined;
 };
 
 /** The expressions an action needs, checking it is allowed on this display. */
@@ -158,7 +216,10 @@ const actionSources = (
   target: DisplayToCompile,
   gameData: GameData,
 ): [string, string][] => {
-  const problem = (action.delayMs ?? 0) < 0 ? "delayMs can't be negative" : actionProblem(action, target, gameData);
+  const problem =
+    (action.delayMs ?? 0) < 0
+      ? "delayMs can't be negative"
+      : (actionProblem(action, target, gameData) ?? (target.cameraCanBeOn ? undefined : needsPlayerProblem(action)));
   if (isDefined(problem)) throw new Error(`${where}: ${problem}`);
   if ("set" in action) return Object.entries(action.set).map(([key, source]) => [source, `${where}.set.${key}`]);
   if ("answer" in action) return [[action.answer, `${where}.answer`]];
@@ -189,6 +250,8 @@ const ruleSources = (
     ...rule.do.flatMap((action, a) => actionSources(action, `${where}.do[${a}]`, target, gameData)),
   ];
   checkStartRule(rule, where);
+  const cameraOnly = target.cameraCanBeOn ? undefined : cameraOnlyRuleProblem(rule);
+  if (isDefined(cameraOnly)) throw new Error(`${where}.on: ${cameraOnly}`);
   return sources;
 };
 

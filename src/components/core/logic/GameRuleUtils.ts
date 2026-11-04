@@ -1,5 +1,6 @@
 import _ from "lodash";
 import type { GameId } from "../../../entities/data/GameData";
+import type { GameEffect } from "../../../entities/data/displays/GameEffectData";
 import type {
   GameAction,
   GameFeedbackAction,
@@ -81,7 +82,7 @@ export interface RuleEnvironment {
 export type RuleEvent = ExpressionContext["event"];
 
 /** The `event` for triggers that don't concern an element. */
-export const NO_EVENT: RuleEvent = { id: "", interaction: "" };
+export const NO_EVENT: RuleEvent = { id: "", interaction: "", player: 0 };
 
 /** Most `when` rounds that may fire in a row before the chain counts as a loop and is stopped. */
 export const MAX_WHEN_CHAIN = 10;
@@ -163,6 +164,7 @@ const delayAction = ({ display, event }: RuleRun, state: GameState, action: Game
 const applyAction = (run: RuleRun, state: GameState, action: GameAction, where: string): GameState => {
   if ("finishReset" in action) return finishReset(state, run.display.scope);
   if ("sound" in action || "reward" in action) return queueEffect(state, action);
+  if ("effect" in action) return state;
   return applyGameAction(run, state, action, where);
 };
 
@@ -170,7 +172,7 @@ const applyAction = (run: RuleRun, state: GameState, action: GameAction, where: 
 const applyGameAction = (
   run: RuleRun,
   state: GameState,
-  action: Exclude<GameAction, GameFinishResetAction | GameFeedbackAction>,
+  action: Exclude<GameAction, GameFinishResetAction | GameFeedbackAction | GameEffect>,
   where: string,
 ): GameState => {
   const { scope, stageId, challengeId } = run.display;
@@ -309,7 +311,7 @@ const POINTER_EVENT_INTERACTIONS: Partial<Record<DisplayDomEvent["kind"], Pointe
  */
 const pointerTarget = (trigger: GameInteractTrigger, event: DisplayDomEvent, interaction: PointerInteraction) => {
   if (!triggerInteractions(trigger).includes(interaction)) return undefined;
-  const element = matchTarget(event, trigger.target);
+  const element = isDefined(trigger.target) ? matchTarget(event, trigger.target) : undefined;
   return isDefined(element) && isDefined(event.related) && element.contains(event.related) ? undefined : element;
 };
 
@@ -328,10 +330,11 @@ export const matchDisplayEvent = (trigger: GameTrigger, event: DisplayDomEvent):
   const interaction = POINTER_EVENT_INTERACTIONS[event.kind];
   if (isDefined(interaction)) {
     const element = "interact" in trigger ? pointerTarget(trigger, event, interaction) : undefined;
-    return isDefined(element) ? { id: element.id, interaction } : undefined;
+    return isDefined(element) ? { id: element.id, interaction, player: 0 } : undefined;
   }
-  const element = namesEvent(trigger, event) && "target" in trigger ? matchTarget(event, trigger.target) : undefined;
-  return isDefined(element) ? { id: element.id, interaction: "" } : undefined;
+  const selector = namesEvent(trigger, event) && "target" in trigger ? trigger.target : undefined;
+  const element = isDefined(selector) ? matchTarget(event, selector) : undefined;
+  return isDefined(element) ? { id: element.id, interaction: "", player: 0 } : undefined;
 };
 
 /** The shortest gap between `every` firings, so a tiny or zero interval can't flood the game with updates. */

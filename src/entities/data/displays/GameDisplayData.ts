@@ -1,6 +1,7 @@
 import type { GameRewardData } from "../GameData";
 import type { GameStageId } from "../GameStageData";
 import type { GameDisplayDialogComponentData } from "./GameDisplayDialogComponentData";
+import type { GameEffect, GamePlayerChoice } from "./GameEffectData";
 import type { GameDisplayScrollComponentData } from "./GameDisplayScrollComponentData";
 import type { GameDisplayTemplateComponentData } from "./GameDisplayTemplateComponentData";
 
@@ -26,7 +27,8 @@ export type GameDisplayComponentData =
 /**
  * Every way a player can interact with an element in a display. `<part>-enter` fires when a body part comes over the
  * element, and `<part>-exit` when it leaves again. Jumps fire as the player lands: `jump` when they took off from and landed on the element, `jump-from` when
- * they took off from it, and `jump-onto` when they landed on it.
+ * they took off from it, and `jump-onto` when they landed on it. `near-enter` fires as a player comes within a distance
+ * of the element, and `near-exit` as they leave it.
  */
 export const GAME_INTERACTIONS = [
   "click",
@@ -45,6 +47,8 @@ export const GAME_INTERACTIONS = [
   "jump",
   "jump-from",
   "jump-onto",
+  "near-enter",
+  "near-exit",
 ] as const;
 
 /** A way a player can interact with an element in a display; see {@link GAME_INTERACTIONS}. */
@@ -107,6 +111,8 @@ export interface GameDisplayComponentBase {
   initialState?: Record<string, unknown>;
   /** Whether state returns to `initialState` each time the display is shown. Defaults to false. */
   resetStateOnShow?: boolean;
+  /** Whether players stay removed when this display resets. Moving to another display restores them anyway. Defaults to false. */
+  keepRemovedPlayers?: boolean;
   /** What happens in response to events, in order. */
   rules?: GameRule[];
 }
@@ -131,8 +137,18 @@ export interface GameRule {
 export interface GameInteractTrigger {
   /** The interactions that fire the rule. */
   interact: GameInteraction | GameInteraction[];
-  /** CSS selector for the elements, eg. `#door` or `.lava`. */
-  target: string;
+  /**
+   * CSS selector for the elements, eg. `#door` or `.lava`. May be left out for `jump` alone, which then fires on every
+   * landing; every other interaction needs it, as checked when the game loads.
+   */
+  target?: string;
+  /**
+   * `near-enter` and `near-exit` only, which need it: how close counts as near. The distance from the centre of the
+   * element to the closest part of the player's silhouette, as a % of the display's width.
+   *
+   * @minimum 0
+   */
+  within?: number;
   /**
    * Camera interactions only: the fraction of the body part that must be inside the element (0–1). Defaults to 1.
    *
@@ -165,6 +181,14 @@ export interface GameTransitionEndTrigger {
   transitionEnd: string;
   /** CSS selector for the elements. */
   target: string;
+}
+
+/** An effect finishing. Not when ended early by `stop`, or by its display closing or resetting. */
+export interface GameEffectEndTrigger {
+  /** The effect's name, eg. `item-fall`. */
+  effectEnd: string;
+  /** CSS selector: only fire for these elements. Item effects only. Defaults to any element. */
+  target?: string;
 }
 
 /** An expression turning from false to true, or staying true for a while after that. */
@@ -203,6 +227,7 @@ export type GameTrigger =
   | GameInteractTrigger
   | GameAnimationEndTrigger
   | GameTransitionEndTrigger
+  | GameEffectEndTrigger
   | GameWhenTrigger
   | GameEveryTrigger
   | GameAfterTrigger
@@ -261,6 +286,10 @@ export interface GameSoundAction extends GameActionBase {
 export interface GameRewardAction extends GameActionBase {
   /** The celebration. */
   reward: GameRewardData;
+  /** CSS selector: each burst starts from the centre of a matching element. Defaults to the middle of the game. */
+  target?: string;
+  /** The players each burst starts from the centre of the body of, instead of `target`. */
+  players?: GamePlayerChoice;
 }
 
 /** Something a rule plays or shows, rather than changing the game. */
@@ -288,7 +317,8 @@ export type GameAction =
   | GameEnterStageAction
   | GameFinishResetAction
   | GameSoundAction
-  | GameRewardAction;
+  | GameRewardAction
+  | GameEffect;
 
 /** A display shown when no stage is active. */
 export interface GameOverviewDisplay extends GameDisplayBase {
