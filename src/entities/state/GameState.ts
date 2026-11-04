@@ -2,6 +2,7 @@ import { GameOverviewPurposeSequence } from "../../components/core/logic/GameCli
 import { isDefined } from "../../util/ObjectUtils";
 import type { RuleEvent } from "../../components/core/logic/GameRuleUtils";
 import type { GameAction, GameFeedbackAction, GameOverviewDisplayPurpose } from "../data/displays/GameDisplayData";
+import type { GameEffect } from "../data/displays/GameEffectData";
 import type { GameData } from "../data/GameData";
 import type { GameStageId } from "../data/GameStageData";
 import type { GameStageState } from "./GameStageState";
@@ -40,18 +41,36 @@ export interface DelayedAction {
   where: string;
 }
 
+/** An effect a rule has started, waiting for the game to play it. */
+export interface QueuedVisualEffect {
+  /** Identifies it, as a {@link QueuedEffect}'s id does. */
+  id: number;
+  /** The display whose rule started it. */
+  scope: DisplayScope;
+  /** Which run of the display the rule fired in: it is dropped if the display has moved on from it. */
+  run: number;
+  /** What to play. */
+  effect: GameEffect;
+  /** The event its rule fired with. */
+  event: RuleEvent;
+  /** Where the action is in the game's rules, for error messages. */
+  where: string;
+}
+
 /** What lasts only while the game is open, and is never saved with its progress. */
 export interface GameSession {
   /** The scopes of the reset displays finished since the game was loaded. */
   finishedResets: DisplayScope[];
   /** Sounds and rewards rules have asked for, until the game plays them. */
   effects: QueuedEffect[];
+  /** Effects rules have started, until the game plays them. */
+  visualEffects: QueuedVisualEffect[];
   /** Actions rules have delayed, until the game starts waiting for them. */
   delayedActions: DelayedAction[];
   /** The id the next queued effect or delayed action gets. */
   nextEffectId: number;
   /**
-   * How many times each display has started: each time it is shown, and each time it resets. What a display starts
+   * How many times each display has started or ended: as it is shown, as it closes, and as it resets. What a display starts
    * (its timers, template animations, delays and effects) belongs to one run, and ends with it.
    */
   displayRuns: Record<DisplayScope, number>;
@@ -61,6 +80,7 @@ export interface GameSession {
 export const newGameSession = (): GameSession => ({
   finishedResets: [],
   effects: [],
+  visualEffects: [],
   delayedActions: [],
   nextEffectId: 1,
   displayRuns: {},

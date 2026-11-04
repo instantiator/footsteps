@@ -175,12 +175,12 @@ describe("applyShowResets", () => {
     expect(applyShowResets(withStates(inStage), next)).toBe(next);
   });
 
-  it("starts a new run of a display as it becomes shown, and not while it stays shown", () => {
+  it("starts a new run of a display as it shows and as it closes, and not while it stays shown", () => {
     const shown = applyShowResets(withStates(overview), withStates(inStage));
-    expect(shown.session.displayRuns).toEqual({ [CHALLENGE_SCOPE]: 1 });
+    expect(shown.session.displayRuns).toEqual({ [CHALLENGE_SCOPE]: 1, [OVERVIEW_SCOPE]: 1 });
     const left = applyShowResets(shown, { ...shown, current: overview });
     const back = applyShowResets(left, { ...left, current: inStage });
-    expect(back.session.displayRuns).toEqual({ [CHALLENGE_SCOPE]: 2, [OVERVIEW_SCOPE]: 1 });
+    expect(back.session.displayRuns).toEqual({ [CHALLENGE_SCOPE]: 3, [OVERVIEW_SCOPE]: 3 });
     expect(applyShowResets(back, { ...back })).toEqual(back);
   });
 

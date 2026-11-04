@@ -52,22 +52,23 @@ const showEveryShowResets = (previous: GameState | undefined, next: GameState): 
  * renders its old state:
  * - a display whose reset display shows before every showing shows it again;
  * - a reset display, or a display with `resetStateOnShow`, returns to its `initialState`;
- * - each starts a new run.
+ * - each starts a new run, and so does each it has just stopped showing, which ends what it started. (The overview
+ *   still renders behind a stage, so nothing else would end its effects.)
  * @param previous the state before the change, or undefined when the game starts
  */
 export const applyShowResets = (previous: GameState | undefined, next: GameState): GameState => {
   const prepared = showEveryShowResets(previous, next);
   const wasShown = new Set(isDefined(previous) ? getShownDisplays(previous).map((d) => d.scope) : []);
-  const shownNow = getShownDisplays(prepared).filter((d) => !wasShown.has(d.scope));
-  if (shownNow.length === 0) return prepared;
+  const shown = getShownDisplays(prepared);
+  const shownNow = shown.filter((d) => !wasShown.has(d.scope));
+  const stillShown = new Set(shown.map((d) => d.scope));
+  const closed = Array.from(wasShown).filter((scope) => !stillShown.has(scope));
+  if (shownNow.length === 0 && closed.length === 0) return prepared;
   const displayStates = { ...prepared.displayStates };
   for (const { scope, isReset, component } of shownNow) {
     if (isReset === true || component.resetStateOnShow === true) delete displayStates[scope];
   }
-  return startDisplayRuns(
-    { ...prepared, displayStates },
-    shownNow.map((d) => d.scope),
-  );
+  return startDisplayRuns({ ...prepared, displayStates }, [...shownNow.map((d) => d.scope), ...closed]);
 };
 
 /** What rules need besides the game state: the game's id (for the snapshot) and its compiled expressions. */
@@ -141,6 +142,28 @@ const finishReset = (state: GameState, scope: DisplayScope): GameState =>
     ? state
     : { ...state, session: { ...state.session, finishedResets: [...state.session.finishedResets, scope] } };
 
+/** Adds an effect to those waiting for the game to play them. */
+const queueVisualEffect = (
+  { display, event }: RuleRun,
+  state: GameState,
+  effect: GameEffect,
+  where: string,
+): GameState => {
+  const { visualEffects, nextEffectId } = state.session;
+  const queued = {
+    id: nextEffectId,
+    scope: display.scope,
+    run: displayRun(state, display.scope),
+    effect,
+    event,
+    where,
+  };
+  return {
+    ...state,
+    session: { ...state.session, visualEffects: [...visualEffects, queued], nextEffectId: nextEffectId + 1 },
+  };
+};
+
 /** Puts an action off, for the game to run after its `delayMs`. */
 const delayAction = ({ display, event }: RuleRun, state: GameState, action: GameAction, where: string): GameState => {
   const { delayedActions, nextEffectId } = state.session;
@@ -162,7 +185,7 @@ const delayAction = ({ display, event }: RuleRun, state: GameState, action: Game
 const applyAction = (run: RuleRun, state: GameState, action: GameAction, where: string): GameState => {
   if ("finishReset" in action) return finishReset(state, run.display.scope);
   if ("sound" in action || "reward" in action) return queueEffect(run, state, action);
-  if ("effect" in action) return state;
+  if ("effect" in action) return queueVisualEffect(run, state, action, where);
   return applyGameAction(run, state, action, where);
 };
 

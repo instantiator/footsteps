@@ -27,6 +27,9 @@ const compilingEffect = (effect: GameEffect, camera?: GameDisplayCameraData) => 
 /** Compiling a game whose challenge has one rule with this trigger. */
 const compilingTrigger = (on: GameRule["on"]) => () => compileGameRules(gameWith([{ on, do: [] }]));
 
+/** An effect the types wouldn't allow, as game data could give. */
+const invalid = (json: string) => JSON.parse(json) as GameEffect;
+
 afterEach(() => vi.unstubAllGlobals());
 
 describe("effects when the game loads", () => {
@@ -58,7 +61,7 @@ describe("effects when the game loads", () => {
   });
 
   it.each([
-    ["an unknown effect", { effect: "wobble" } as unknown as GameEffect, 'there is no effect "wobble"'],
+    ["an unknown effect", invalid('{ "effect": "wobble" }'), 'there is no effect "wobble"'],
     ["a negative duration", { effect: "quake", durationMs: -1 }, "durationMs can't be negative"],
     ["a negative cycle", { effect: "item-fall", cycleMs: -1 }, "cycleMs can't be negative"],
     ["a target that doesn't parse", { effect: "quake", target: "##" }, '"##" is not a valid CSS selector'],
@@ -68,8 +71,8 @@ describe("effects when the game loads", () => {
     ["indefinite fading", { effect: "player-invisible", durationMs: "indefinite" }, "as it must finish"],
     ["indefinite showing", { effect: "player-visible", durationMs: "indefinite" }, "as it must finish"],
     ["indefinite restoring", { effect: "player-restore", durationMs: "indefinite" }, "as it must finish"],
-    ["a move with no end", { effect: "item-move" } as unknown as GameEffect, "item-move needs an end"],
-    ["a highlight with no sequence", { effect: "highlight" } as unknown as GameEffect, "needs a sequence"],
+    ["a move with no end", invalid('{ "effect": "item-move" }'), "item-move needs an end"],
+    ["a highlight with no sequence", invalid('{ "effect": "highlight" }'), "needs a sequence"],
     ["an empty sequence", { effect: "highlight", sequence: [] }, "needs a sequence"],
     ["a negative step", { effect: "highlight", sequence: [{ durationMs: -1 }] }, "sequence[0].durationMs"],
     ["min above max", { effect: "player-spin-away", angle: { min: 10, max: 0 } }, "angle.min can't be above"],
@@ -295,7 +298,7 @@ describe("the camera when the game loads", () => {
   });
 
   it("doesn't fault any game in the local repository", () => {
-    for (const data of Object.values((localRepository as unknown as GameRepository).games)) {
+    for (const data of Object.values((localRepository as GameRepository).games)) {
       expect(() => compileGameRules(data)).not.toThrow();
     }
   });

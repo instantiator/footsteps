@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, type Dispatch, type RefObject, type SetStateAction } from "react";
-import type { DisplayScope, GameState } from "../../entities/state/GameState";
+import type { DelayedAction, DisplayScope, GameState } from "../../entities/state/GameState";
 import { useGameData } from "../../providers/GameDataHook";
 import { useGameState } from "../../providers/GameStateHook";
 import { isDefined } from "../../util/ObjectUtils";
 import { resolveTargets } from "./effects/EffectTargets";
+import { useGameEffects } from "./effects/GameEffectsHook";
+import { useQueueDrain } from "./QueueDrainHook";
 import { leaveTitleScreen } from "./logic/GameClickUtils";
 import { targetsPlayers } from "./logic/GameEffectCompile";
 import { displayRun } from "./logic/GameStateUtils";
@@ -334,37 +336,33 @@ function useWhenRules(
   }, []);
 }
 
+/** The state without the delayed actions up to and including this id. */
+const withoutDelayedUpTo = (state: GameState, id: number): GameState => ({
+  ...state,
+  session: { ...state.session, delayedActions: state.session.delayedActions.filter((delayed) => delayed.id > id) },
+});
+
 /**
- * Runs the actions rules have delayed, each once, after its `delayMs`, then drops it from the queue. One whose display
- * has closed or reset by then does nothing, so a timer that outlives its display is harmless.
+ * Runs the actions rules have delayed, each once, after its `delayMs`. One whose display has closed or reset by then
+ * does nothing, so a timer that outlives its display is harmless.
  */
 function useDelayedActions(
   env: RuleEnvironment,
   gameState: GameState,
   setGameState: Dispatch<SetStateAction<GameState>>,
 ) {
-  // The highest id started; ids only grow, so a queue worked out twice (as React may) runs nothing twice
-  const startedRef = useRef(0);
   const timersRef = useRef(new Set<ReturnType<typeof setTimeout>>());
-  const { delayedActions } = gameState.session;
-
-  useEffect(() => {
-    const fresh = delayedActions.filter(({ id }) => id > startedRef.current);
-    if (fresh.length === 0) return;
-    startedRef.current = Math.max(...fresh.map(({ id }) => id));
-    for (const delayed of fresh) {
+  const start = useCallback(
+    (delayed: DelayedAction) => {
       const timer = setTimeout(() => {
         timersRef.current.delete(timer);
         setGameState((state) => applyDelayedAction(env, state, delayed));
       }, delayed.action.delayMs);
       timersRef.current.add(timer);
-    }
-    const started = startedRef.current;
-    setGameState((state) => ({
-      ...state,
-      session: { ...state.session, delayedActions: state.session.delayedActions.filter(({ id }) => id > started) },
-    }));
-  }, [delayedActions, env, setGameState]);
+    },
+    [env, setGameState],
+  );
+  useQueueDrain(gameState.session.delayedActions, start, withoutDelayedUpTo, setGameState);
 
   useEffect(() => {
     const timers = timersRef.current;
@@ -408,6 +406,7 @@ export function useGameRules(): GameRules {
   const mouseHolds = useMouseHolds(gameState, stateRef, fire);
   useWhenRules(env, gameState, setGameState, fire);
   useDelayedActions(env, gameState, setGameState);
+  useGameEffects(gameState, stateRef, setGameState);
 
   /** Fires a display's rules for an event in its template. A click no rule takes moves on from the title screen. */
   const onDisplayEvent = useCallback(
