@@ -5,11 +5,14 @@ import type {
   GamePlayerOpacityEffect,
   GamePlayerRestoreEffect,
   GamePlayerSpinAwayEffect,
+  GamePlayerStaticEffect,
 } from "../../../entities/data/displays/GameEffectData";
 import type { DisplayScope } from "../../../entities/state/GameState";
 import { centreOf } from "../../../vision/Tracking";
 import type { PlayerRegistry } from "../../camera/PlayerRegistry";
+import { PlayerStatic } from "../../camera/PlayerStatic";
 import type { RuleEvent } from "../logic/GameRuleUtils";
+import { easingFunction } from "./EasingProbe";
 import type { ScreenPoint } from "./EffectTargets";
 import type { EffectRun, ItemEffects } from "./ItemEffects";
 
@@ -135,10 +138,13 @@ export class PlayerEffects {
   /** Starts an effect on one player. */
   private playOn(id: number, effect: GameEffect, run: PlayerEffectRun): void {
     const wrapper = wrapperOfNumber(this.players.numberOf(id));
+    this.players.touch(id, run.scope);
     if (effect.effect === "player-fall") this.leave(id, wrapper, run, (leaving) => this.fall(leaving, id, effect, run));
     else if (effect.effect === "player-spin-away") {
       this.leave(id, wrapper, run, (leaving) => this.spin(leaving, id, effect, run));
     } else if (effect.effect === "player-restore") this.restore(id, wrapper, effect, run);
+    else if (effect.effect === "player-static") this.startStatic(id, wrapper, effect, run);
+    else if (effect.effect === "stop") this.stop(id, wrapper, effect.stop);
     else if (effect.effect === "player-freeze" || effect.effect === "player-unfreeze") {
       this.setFrozen(id, effect.effect === "player-freeze", run);
       if (wrapper !== null) run.onEnd(wrapper);
@@ -148,7 +154,38 @@ export class PlayerEffects {
   /** Starts an effect that only changes how a player is drawn. */
   private playOnWrapper(wrapper: HTMLElement, effect: GameEffect, run: EffectRun): void {
     if (effect.effect === "player-invisible" || effect.effect === "player-visible") this.fade(wrapper, effect, run);
-    else if (effect.effect === "stop") this.effects.stop([wrapper], effect.stop);
+  }
+
+  /** Puts static on a player, in place of any they have. It ends by itself after a set duration, or when stopped. */
+  private startStatic(id: number, wrapper: HTMLElement | null, effect: GamePlayerStaticEffect, run: EffectRun): void {
+    const { pixelSize = 0.5, proportion = 0.5, easeMs = 500, durationMs = "indefinite", easing = "linear" } = effect;
+    const settings = {
+      pixelSize,
+      proportion,
+      easeMs,
+      durationMs: durationMs === "indefinite" ? undefined : durationMs,
+      easing: easing === "linear" ? (progress: number) => progress : easingFunction(easing),
+      still: run.reducedMotion,
+    };
+    const running = new PlayerStatic(settings, performance.now());
+    this.players.setStatic(id, running);
+    if (durationMs === "indefinite") return;
+    setTimeout(() => {
+      if (this.players.staticOf(id) !== running) return; // restored, stopped or started again since
+      this.players.setStatic(id, undefined);
+      if (wrapper !== null) run.onEnd(wrapper);
+    }, durationMs);
+  }
+
+  /** Stops effects on a player: static fades away, and anything else ends at once. */
+  private stop(id: number, wrapper: HTMLElement | null, name: string | undefined): void {
+    if (wrapper !== null) this.effects.stop([wrapper], name);
+    const running = this.players.staticOf(id);
+    if (running === undefined || (name !== undefined && name !== "player-static")) return;
+    running.stop(performance.now());
+    setTimeout(() => {
+      if (this.players.staticOf(id) === running) this.players.setStatic(id, undefined);
+    }, running.easeMs);
   }
 
   /** Freezes or unfreezes a player, unless they are leaving or have gone. */
@@ -253,7 +290,10 @@ export class PlayerEffects {
 
   /** Returns a player to normal, fading them back in if anything had happened to them. */
   private restore(id: number, wrapper: HTMLElement | null, effect?: GamePlayerRestoreEffect, run?: EffectRun): void {
-    const wasAffected = this.players.stateOf(id) !== "active" || (wrapper !== null && this.effects.isRunning(wrapper));
+    const wasAffected =
+      this.players.stateOf(id) !== "active" ||
+      this.players.staticOf(id) !== undefined ||
+      (wrapper !== null && this.effects.isRunning(wrapper));
     this.players.restore(id);
     if (wrapper === null) return;
     this.effects.stop([wrapper], undefined);

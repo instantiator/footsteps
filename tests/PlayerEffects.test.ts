@@ -393,6 +393,92 @@ describe("PlayerEffects", () => {
       effects.play({ effect: "stop", players: "triggering", stop: "player-opacity" }, run());
       expect(animations[0].cancel).toHaveBeenCalled();
     });
+
+    it("leaves what it doesn't name", () => {
+      const { effects } = withPlayers(1);
+      effects.play({ effect: "player-invisible", durationMs: 100 }, run());
+      effects.play({ effect: "stop", players: "triggering", stop: "player-static" }, run());
+      expect(animations[0].cancel).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("player-static", () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    const look = (players: PlayerRegistry, id: number) => players.staticOf(id)?.lookAt(performance.now());
+
+    it("eases in, holds, and eases out when stopped, leaving the player active", () => {
+      const { players, ids, effects } = withPlayers(1);
+      effects.play({ effect: "player-static", proportion: 0.6, easeMs: 100, pixelSize: 2 }, run());
+      expect(players.stateOf(ids[0])).toBe("active");
+      vi.advanceTimersByTime(50);
+      expect(look(players, ids[0])?.proportion).toBeCloseTo(0.3);
+      vi.advanceTimersByTime(1000);
+      expect(look(players, ids[0])).toEqual({ pixelSize: 2, proportion: 0.6, still: false });
+
+      effects.play({ effect: "stop", players: "triggering", stop: "player-static" }, run());
+      vi.advanceTimersByTime(50);
+      expect(look(players, ids[0])?.proportion).toBeCloseTo(0.3);
+      vi.advanceTimersByTime(50);
+      expect(players.staticOf(ids[0])).toBeUndefined();
+    });
+
+    it("includes its easing in a set duration, then ends and says so", () => {
+      const { players, ids, effects } = withPlayers(1);
+      const onEnd = vi.fn();
+      effects.play({ effect: "player-static", durationMs: 1000, easeMs: 100, proportion: 1 }, run({ onEnd }));
+      vi.advanceTimersByTime(950);
+      expect(look(players, ids[0])?.proportion).toBeCloseTo(0.5);
+      expect(onEnd).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(50);
+      expect(players.staticOf(ids[0])).toBeUndefined();
+      expect(onEnd).toHaveBeenCalledExactlyOnceWith(wrapperOf(1));
+    });
+
+    it("doesn't say it ended when stopped early", () => {
+      const { effects } = withPlayers(1);
+      const onEnd = vi.fn();
+      effects.play({ effect: "player-static", durationMs: 1000, easeMs: 100 }, run({ onEnd }));
+      effects.play({ effect: "stop", players: "triggering" }, run());
+      vi.advanceTimersByTime(5000);
+      expect(onEnd).not.toHaveBeenCalled();
+    });
+
+    it("restarts when fired again, without the first one's end counting", () => {
+      const { players, ids, effects } = withPlayers(1);
+      const onEnd = vi.fn();
+      effects.play({ effect: "player-static", durationMs: 1000, easeMs: 100 }, run({ onEnd }));
+      vi.advanceTimersByTime(500);
+      effects.play({ effect: "player-static", durationMs: 1000, easeMs: 100 }, run({ onEnd }));
+      vi.advanceTimersByTime(500);
+      expect(players.staticOf(ids[0])).toBeDefined();
+      expect(onEnd).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(500);
+      expect(onEnd).toHaveBeenCalledTimes(1);
+    });
+
+    it("holds still for players who prefer reduced motion", () => {
+      const { players, ids, effects } = withPlayers(1);
+      effects.play({ effect: "player-static" }, run({ reducedMotion: true }));
+      expect(look(players, ids[0])?.still).toBe(true);
+    });
+
+    it("clears at once on a restore, and as their display ends, without saying it ended", () => {
+      const { players, ids, effects } = withPlayers(1);
+      const onEnd = vi.fn();
+      effects.play({ effect: "player-static", durationMs: 1000 }, run({ onEnd }));
+      effects.end(ids[0], false);
+      expect(players.staticOf(ids[0])).toBeUndefined();
+      vi.advanceTimersByTime(5000);
+      expect(onEnd).not.toHaveBeenCalled();
+    });
+
+    it("notes the display that started it, so it ends with that display", () => {
+      const { players, ids, effects } = withPlayers(1);
+      effects.play({ effect: "player-static" }, run({ scope: "display-a" }));
+      expect(players.setByOf(ids[0])).toBe("display-a");
+    });
   });
 
   describe("bodyCentre", () => {

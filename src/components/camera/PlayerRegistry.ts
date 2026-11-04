@@ -2,6 +2,7 @@ import { centreOf, MAX_MATCH_DISTANCE } from "../../vision/Tracking";
 import type { VisionFrame, VisionPerson } from "../../vision/VisionTypes";
 import type { DisplayScope } from "../../entities/state/GameState";
 import type { MaskSize } from "./CameraSupport";
+import type { PlayerStatic } from "./PlayerStatic";
 
 /**
  * What can happen to a player: `active` is in play, `leaving` is falling or being knocked away, `frozen` is stopped in
@@ -47,6 +48,8 @@ interface Player {
   setBy?: DisplayScope;
   /** How they looked in the last frame, or when they stopped being active. */
   last: VisionPerson;
+  /** Their static, while it runs. */
+  static?: PlayerStatic;
   /** Where their silhouette's centre was when the tracker lost them, in mask pixels. */
   centre?: { x: number; y: number };
 }
@@ -132,6 +135,23 @@ export class PlayerRegistry {
     return new Set(this.players.keys());
   }
 
+  /** Notes that a display's rule has done something to a player, so they return to normal as it ends. */
+  touch(id: number, scope: DisplayScope): void {
+    const player = this.players.get(id);
+    if (player !== undefined && player.setBy === undefined) player.setBy = scope;
+  }
+
+  /** Starts static on a player, or stops it with undefined, straight away. */
+  setStatic(id: number, playerStatic: PlayerStatic | undefined): void {
+    const player = this.players.get(id);
+    if (player !== undefined) player.static = playerStatic;
+  }
+
+  /** A player's static, while it runs. */
+  staticOf(id: number): PlayerStatic | undefined {
+    return this.players.get(id)?.static;
+  }
+
   /** Stops a player in place. */
   freeze(id: number, scope: DisplayScope): void {
     this.change(id, "frozen", scope);
@@ -154,6 +174,7 @@ export class PlayerRegistry {
     if (player.trackId === null) this.players.delete(id);
     else {
       player.state = "active";
+      player.static = undefined;
       player.setBy = undefined;
       player.centre = undefined;
     }

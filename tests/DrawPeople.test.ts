@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { silhouettePixels, tintPixels } from "../src/components/camera/DrawPeople";
+import { silhouettePixels, staticGrid, staticPixels, tintPixels } from "../src/components/camera/DrawPeople";
 import { BODY_PART_STYLES } from "../src/vision/BodyPart";
 import { noKeyPoints, type KeyPoints, type VisionFrame, type VisionPerson } from "../src/vision/VisionTypes";
 
@@ -22,6 +22,39 @@ const rgba = (pixels: Uint8ClampedArray) =>
 const { r, g, b, a } = BODY_PART_STYLES.leftHand.color;
 const HAND = [r, g, b, a];
 const CLEAR = [0, 0, 0, 0];
+
+describe("staticPixels", () => {
+  const opaque = (pixels: Uint8ClampedArray) =>
+    pixels.filter((_, index) => index % 4 === 3 && pixels[index] === 255).length;
+
+  it("erases about the proportion asked", () => {
+    expect(opaque(staticPixels(200, 100, 0.6, 7)) / 20_000).toBeCloseTo(0.6, 1);
+    expect(opaque(staticPixels(200, 100, 0, 7))).toBe(0);
+    expect(opaque(staticPixels(200, 100, 1, 7))).toBe(20_000);
+  });
+
+  it("gives the same pattern for the same seed, and another for another", () => {
+    expect(staticPixels(20, 10, 0.5, 1)).toEqual(staticPixels(20, 10, 0.5, 1));
+    expect(staticPixels(20, 10, 0.5, 1)).not.toEqual(staticPixels(20, 10, 0.5, 2));
+  });
+
+  it("keeps blocks erased as the proportion grows, so a held-still pattern only fills in", () => {
+    const [less, more] = [staticPixels(20, 10, 0.3, 1), staticPixels(20, 10, 0.6, 1)];
+    for (let i = 3; i < less.length; i += 4) if (less[i] === 255) expect(more[i]).toBe(255);
+  });
+});
+
+describe("staticGrid", () => {
+  it("sizes blocks as a % of the width, whatever the canvas's size, keeping them square", () => {
+    expect(staticGrid(1280, 720, 0.5)).toEqual({ columns: 200, rows: 113 });
+    expect(staticGrid(640, 360, 0.5)).toEqual({ columns: 200, rows: 113 });
+    expect(staticGrid(1000, 1000, 10)).toEqual({ columns: 10, rows: 10 });
+  });
+
+  it("always has a block", () => {
+    expect(staticGrid(100, 10, 1000)).toEqual({ columns: 1, rows: 1 });
+  });
+});
 
 describe("tintPixels for a coloured mask", () => {
   it("picks the tint by the person's id, not where they are in the list", () => {

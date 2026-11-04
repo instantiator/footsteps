@@ -6,6 +6,8 @@ export interface PlayerCanvas {
   wrapper: HTMLElement;
   /** Draws the player's image, and mirrors it if the reference does. */
   canvas: HTMLCanvasElement;
+  /** Their image without static, while it has some, as static erases parts of what is on the canvas. */
+  clean?: HTMLCanvasElement;
 }
 
 /**

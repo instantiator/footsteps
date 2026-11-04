@@ -118,11 +118,22 @@ const shownRunsKeyOf = (state: GameState): string =>
     .map(({ scope }) => `${scope}#${displayRun(state, scope)}`)
     .join("\n");
 
+/** Notes the players an effect's elements include, so it ends with their display, as their wrappers aren't rebuilt. */
+const noteAffectedPlayers = (elements: Element[], scope: DisplayScope, players: PlayerRegistry): void => {
+  for (const element of elements) {
+    const number = element instanceof HTMLElement ? Number(element.dataset.player) : NaN;
+    const id = Number.isNaN(number) ? undefined : players.idOf(number);
+    if (id !== undefined) players.touch(id, scope);
+  }
+};
+
 /** What is needed to start an effect on elements. */
 type ElementEffectStart = Pick<QueuedVisualEffect, "scope" | "run" | "effect" | "where"> &
   Pick<EffectRun, "onEnd" | "reducedMotion"> & {
     /** Plays it. */
     effects: ItemEffects;
+    /** What has happened to each player. */
+    players: PlayerRegistry;
   };
 
 /**
@@ -130,7 +141,7 @@ type ElementEffectStart = Pick<QueuedVisualEffect, "scope" | "run" | "effect" | 
  * state moves on before the scene does. It gives up if its display moves on first.
  */
 const startOnElements = (
-  { scope, run, effect, where, effects, onEnd, reducedMotion }: ElementEffectStart,
+  { scope, run, effect, where, effects, players, onEnd, reducedMotion }: ElementEffectStart,
   stateRef: RefObject<GameState>,
   framesRef: RefObject<Set<number>>,
 ): void => {
@@ -145,6 +156,7 @@ const startOnElements = (
       targetsPlayers(selector) || (isOnScreen(scope, run) && (selector === undefined || elements.length > 0));
     if (ready) {
       warnIfTrappingDepth(elements, selector, where);
+      noteAffectedPlayers(elements, scope, players);
       const find = (other: string) => resolveTargets(scope, other, shownScopes)[0];
       runEffect(effects, effect, elements, { reducedMotion, find, onEnd });
     } else if (performance.now() < deadline) {
@@ -185,13 +197,10 @@ export function useGameEffects(gameState: GameState, { stateRef, setGameState, f
         }
         return;
       }
-      startOnElements(
-        { scope, run, effect, where, effects, onEnd, reducedMotion: reducedMotion() },
-        stateRef,
-        framesRef,
-      );
+      const starting = { scope, run, effect, where, effects, players, onEnd, reducedMotion: reducedMotion() };
+      startOnElements(starting, stateRef, framesRef);
     },
-    [stateRef, fire, effects, playerEffects, visionSmoothing],
+    [stateRef, fire, effects, players, playerEffects, visionSmoothing],
   );
 
   const withoutUpTo = useCallback(

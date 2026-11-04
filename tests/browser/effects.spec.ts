@@ -502,6 +502,39 @@ test.describe("on players, with a fake camera", () => {
     await expect(page.locator("#players")).toHaveText("1/0/0");
   });
 
+  test("static shows over a frozen image, flickering, and comes off cleanly", async ({ page }) => {
+    await openWithPlayer(page, [
+      onGo([
+        { effect: "player-freeze", players: "all" },
+        { effect: "player-static", players: "all", proportion: 0.9, pixelSize: 2, easeMs: 0 },
+      ]),
+      onAgain([{ effect: "stop", players: "all", stop: "player-static" }]),
+    ]);
+    await page.locator("#go").click();
+    await expect(page.locator("#players")).toHaveText("1/0/1");
+    const withStatic = await imageOf(page);
+    await expect.poll(() => imageOf(page)).not.toBe(withStatic); // it flickers, on a frozen image too
+
+    await page.locator("#again").click();
+    await page.waitForTimeout(300);
+    const afterwards = await imageOf(page);
+    await page.waitForTimeout(300);
+    expect(await imageOf(page)).toBe(afterwards); // frozen and clean again, so no longer changing
+  });
+
+  test("a player with all static is drawn with nothing, and is still active", async ({ page }) => {
+    await openWithPlayer(page, [onGo([{ effect: "player-static", players: "all", proportion: 1, easeMs: 0 }])]);
+    await page.locator("#go").click();
+    await page.waitForTimeout(500);
+    await expect(page.locator("#players")).toHaveText("1/0/0");
+    const anyVisible = await page.locator(".player-1 canvas").evaluate((element) => {
+      const canvas = element as HTMLCanvasElement;
+      const { data } = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height);
+      return data.some((value, index) => index % 4 === 3 && value > 0);
+    });
+    expect(anyVisible).toBe(false);
+  });
+
   test("a quake and a filter highlight stay on a player", async ({ page }) => {
     await openWithPlayer(page, [
       onGo([
