@@ -129,12 +129,10 @@ const applyAnswer = (state: GameState, { stageId, challengeId }: ShownDisplay, a
 };
 
 /** Adds a sound or reward to those waiting for the game to play them. */
-const queueEffect = (state: GameState, effect: GameFeedbackAction): GameState => {
+const queueEffect = ({ display, event }: RuleRun, state: GameState, effect: GameFeedbackAction): GameState => {
   const { effects, nextEffectId } = state.session;
-  return {
-    ...state,
-    session: { ...state.session, effects: [...effects, { id: nextEffectId, effect }], nextEffectId: nextEffectId + 1 },
-  };
+  const queued = { id: nextEffectId, effect, scope: display.scope, event };
+  return { ...state, session: { ...state.session, effects: [...effects, queued], nextEffectId: nextEffectId + 1 } };
 };
 
 /** Marks a reset display finished, revealing what it was shown for. */
@@ -163,7 +161,7 @@ const delayAction = ({ display, event }: RuleRun, state: GameState, action: Game
 /** Applies one action, to the game or (for finishing a reset display, and sounds and rewards) to the session. */
 const applyAction = (run: RuleRun, state: GameState, action: GameAction, where: string): GameState => {
   if ("finishReset" in action) return finishReset(state, run.display.scope);
-  if ("sound" in action || "reward" in action) return queueEffect(state, action);
+  if ("sound" in action || "reward" in action) return queueEffect(run, state, action);
   if ("effect" in action) return state;
   return applyGameAction(run, state, action, where);
 };

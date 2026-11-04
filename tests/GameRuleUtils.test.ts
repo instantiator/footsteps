@@ -338,10 +338,10 @@ describe("rule engine", () => {
       };
       const state = fireAll(fireAll(playing([rule])));
       expect(state.session.effects).toEqual([
-        { id: 1, effect: { sound: "pop" } },
-        { id: 2, effect: { reward: { animation: "stars" }, delayMs: 500 } },
-        { id: 3, effect: { sound: "pop" } },
-        { id: 4, effect: { reward: { animation: "stars" }, delayMs: 500 } },
+        { id: 1, effect: { sound: "pop" }, scope: SCOPE, event: NO_EVENT },
+        { id: 2, effect: { reward: { animation: "stars" }, delayMs: 500 }, scope: SCOPE, event: NO_EVENT },
+        { id: 3, effect: { sound: "pop" }, scope: SCOPE, event: NO_EVENT },
+        { id: 4, effect: { reward: { animation: "stars" }, delayMs: 500 }, scope: SCOPE, event: NO_EVENT },
       ]);
       expect(state.session.nextEffectId).toBe(5);
       expect(state.displayStates).toEqual({});

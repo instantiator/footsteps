@@ -7,13 +7,14 @@ import type { GameChallengeId } from "../../entities/data/GameChallengeData";
 import type { GameRewardData } from "../../entities/data/GameData";
 import type { GameChallengeAnswerValidation } from "../../entities/data/GameChallengeSolution";
 import type { GameStageId } from "../../entities/data/GameStageData";
-import type { DisplayScope, GameState } from "../../entities/state/GameState";
+import type { DisplayScope, GameState, QueuedEffect } from "../../entities/state/GameState";
 import useAppConfig from "../../providers/AppConfigHook";
 import { useGameData } from "../../providers/GameDataHook";
 import useGameMusic from "../../providers/GameMusicHook";
 import { useGameState } from "../../providers/GameStateHook";
 import { isDefined } from "../../util/ObjectUtils";
 import GameDisplayComponent, { type LayerHint } from "./display/GameDisplayComponent";
+import { centreOnScreen, resolveTargets } from "./effects/EffectTargets";
 import "./Game.css";
 import GameStylesheets from "./GameStylesheets";
 import GameLayersLayout, { type GameLayers } from "./layout/GameLayersLayout";
@@ -25,6 +26,7 @@ import { completeChallenge, validateAnswer } from "./logic/GameStateUtils";
 import {
   getDisplayKey,
   getLayeredRenderData,
+  getShownDisplays,
   type GameDisplayRenderData,
   type LayeredGameDisplayRenderData,
 } from "./logic/RenderDataUtils";
@@ -98,9 +100,27 @@ function useGameFeedback(reducedMotion: boolean) {
 
 /** A celebration a rule asked for, while it shows. */
 interface ShownReward {
-  id: number;
+  id: number | string;
   reward: GameRewardData;
+  /** Where on screen it starts; the middle of the game if not given. */
+  at?: { x: number; y: number };
 }
+
+/**
+ * The rewards a rule's reward action shows: one from each element it targets, or one from the middle of the game if it
+ * has no target. So does one whose element has gone by now, as rewards outlive their display.
+ */
+const rewardsFor = (
+  id: number,
+  { effect, scope }: QueuedEffect,
+  reward: GameRewardData,
+  shownScopes: DisplayScope[],
+): ShownReward[] => {
+  const selector = "reward" in effect ? effect.target : undefined;
+  const elements = isDefined(selector) ? resolveTargets(scope, selector, shownScopes) : [];
+  if (elements.length === 0) return [{ id, reward }];
+  return elements.map((element, index) => ({ id: `${id}-${index}`, reward, at: centreOnScreen(element) }));
+};
 
 /**
  * Plays the sounds and rewards rules queue: each once, after its `delayMs`, alongside any others, then drops it from
@@ -115,16 +135,24 @@ function useRuleEffects(reducedMotion: boolean) {
   const playedRef = useRef(0);
   const timersRef = useRef(new Set<ReturnType<typeof setTimeout>>());
   const { effects } = gameState.session;
+  const stateRef = useRef(gameState);
+  useEffect(() => {
+    stateRef.current = gameState;
+  }, [gameState]);
 
   useEffect(() => {
     const fresh = effects.filter(({ id }) => id > playedRef.current);
     if (fresh.length === 0) return;
     playedRef.current = Math.max(...fresh.map(({ id }) => id));
-    for (const { id, effect } of fresh) {
+    for (const queued of fresh) {
+      const { id, effect } = queued;
       const timer = setTimeout(() => {
         timersRef.current.delete(timer);
         if ("sound" in effect) void playAudio(resources[effect.sound]);
-        else if (!reducedMotion) setShown((rewards) => [...rewards, { id, reward: effect.reward }]);
+        else if (!reducedMotion) {
+          const shownScopes = getShownDisplays(stateRef.current).map((display) => display.scope);
+          setShown((rewards) => [...rewards, ...rewardsFor(id, queued, effect.reward, shownScopes)]);
+        }
       }, effect.delayMs ?? 0);
       timersRef.current.add(timer);
     }
@@ -140,7 +168,10 @@ function useRuleEffects(reducedMotion: boolean) {
     return () => timers.forEach((timer) => clearTimeout(timer));
   }, []);
 
-  const done = useCallback((id: number) => setShown((rewards) => rewards.filter((reward) => reward.id !== id)), []);
+  const done = useCallback(
+    (id: number | string) => setShown((rewards) => rewards.filter((reward) => reward.id !== id)),
+    [],
+  );
   return { shown, done };
 }
 
@@ -272,8 +303,8 @@ export default function Game() {
         id="reward-element"
         style={{ position: "absolute", top: "50vh", left: "50vw", width: 0, height: 0, pointerEvents: "none" }}
       />
-      {ruleRewards.shown.map(({ id, reward }) => (
-        <RewardBurst key={id} id={id} reward={reward} onDone={() => ruleRewards.done(id)} />
+      {ruleRewards.shown.map(({ id, reward, at }) => (
+        <RewardBurst key={id} id={id} reward={reward} at={at} onDone={() => ruleRewards.done(id)} />
       ))}
       <GameLayersLayout
         debug={debug}

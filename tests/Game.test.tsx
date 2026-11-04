@@ -357,6 +357,52 @@ describe("Game sounds and reward", () => {
       expect(rewardSpy).toHaveBeenCalledTimes(1);
     });
 
+    describe("with a target", () => {
+      /** A template that gives the targeted elements, on the display whose rule asks for the reward. */
+      const renderTargeted = (target: string) => {
+        const data = withEffects([{ reward: { animation: "stars" }, target, delayMs: 50 }]);
+        data.displays[0].component.foregroundTemplate = {
+          sourceType: "embedded",
+          content: '<div class="spot" id="spot-1"></div><div class="spot" id="spot-2"></div>',
+        };
+        return render(
+          <GameProviders repository={{ games: { [SMALL_GAME_ID]: data } }} gameId={SMALL_GAME_ID}>
+            <Game />
+          </GameProviders>,
+        );
+      };
+
+      // A burst that doesn't finish keeps its anchor to look at
+      beforeEach(() => {
+        setReducedMotion(false);
+        rewardSpy.mockReturnValue(new Promise(() => {}));
+      });
+      afterEach(() => {
+        rewardSpy.mockImplementation(() => Promise.resolve());
+      });
+
+      it("starts one burst from the centre of each matching element", async () => {
+        vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+          return this.id === "spot-2" ? new DOMRect(100, 200, 10, 20) : new DOMRect(0, 0, 10, 10);
+        });
+        const { container } = renderTargeted(".spot");
+        await vi.waitFor(() => expect(burstsOf("stars")).toHaveLength(2));
+        const anchors = Array.from(container.querySelectorAll<HTMLElement>('[id^="reward-burst-"]'));
+        expect(anchors.map((element) => [element.style.position, element.style.left, element.style.top])).toEqual([
+          ["fixed", "5px", "5px"],
+          ["fixed", "105px", "210px"],
+        ]);
+      });
+
+      it("starts from the middle of the game if the element has gone", async () => {
+        const { container } = renderTargeted("#nothing");
+        await vi.waitFor(() => expect(burstsOf("stars")).toHaveLength(1));
+        const burst = container.querySelector<HTMLElement>('[id^="reward-burst-"]')!;
+        expect(burst.style.position).toBe("absolute");
+        expect(burst.style.left).toBe("50vw");
+      });
+    });
+
     it("waits each effect's delayMs before playing it", async () => {
       renderEffects([{ sound: "opened", delayMs: 300 }]);
       await screen.findByText("Small Game");

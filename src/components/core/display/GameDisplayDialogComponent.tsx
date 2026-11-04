@@ -17,6 +17,7 @@ import type { DisplayDomEvent } from "../logic/TemplateUtils";
 import type { LayerHint } from "./GameDisplayComponent";
 import GameDisplayTemplateComponent from "./GameDisplayTemplateComponent";
 import GameTextInputComponent, { type GameTextInputComponentProps } from "./GameTextInputComponent";
+import { DIALOG_CONTAINER_CLASS, DISPLAY_FRAME_CLASS } from "../effects/EffectTargets";
 import useImageAspectRatio from "./ImageAspectRatioHook";
 
 /** Props for {@link GameDisplayDialogComponent}. */
@@ -199,8 +200,8 @@ export default function GameDisplayDialogComponent({
   const content: GameDisplayPageData | undefined = contents[contentIndex];
 
   return (
-    <div style={OUTER_STYLE}>
-      <div style={frameStyle(ratio)}>
+    <div className={DIALOG_CONTAINER_CLASS} style={OUTER_STYLE}>
+      <div className={DISPLAY_FRAME_CLASS} style={frameStyle(ratio)}>
         <GameDisplayTemplateComponent
           templateSource={templateSource ?? defaultTemplate(layerHint)}
           containerStyle={layerStyle(layerHint, image, margins, containerStyle)}

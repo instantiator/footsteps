@@ -62,7 +62,11 @@ export interface LayerNodeProps {
  * {@link GameChallengeGrid}. The layer lets pointer events through; each display handles its own.
  */
 export const GameLayerWrapper = ({ nodes, style, zIndex, layer, layerHint }: LayerNodeProps) => (
-  <div id={`${layer!}-${layerHint!}-container`} className="outerStyle noClicks" style={{ ...style, zIndex: zIndex }}>
+  <div
+    id={`${layer!}-${layerHint!}-container`}
+    className={`outerStyle noClicks display-${layerHint!}`}
+    style={{ ...style, zIndex: zIndex }}
+  >
     {isDefined(nodes) && (
       <GameChallengeGrid layer={layer!} layerHint={layerHint!} className="innerStyle noClicks">
         {nodes.map((node, index) => (

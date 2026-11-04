@@ -18,6 +18,10 @@ export interface QueuedEffect {
   id: number;
   /** What to play. */
   effect: GameFeedbackAction;
+  /** The display whose rule asked for it. */
+  scope: DisplayScope;
+  /** The event its rule fired with. */
+  event: RuleEvent;
 }
 
 /** An action with a `delayMs`, waiting for the game to run it. Sounds and rewards are {@link QueuedEffect}s instead. */

@@ -3,7 +3,9 @@ import type { DisplayScope, GameState } from "../../entities/state/GameState";
 import { useGameData } from "../../providers/GameDataHook";
 import { useGameState } from "../../providers/GameStateHook";
 import { isDefined } from "../../util/ObjectUtils";
+import { resolveTargets } from "./effects/EffectTargets";
 import { leaveTitleScreen } from "./logic/GameClickUtils";
+import { targetsPlayers } from "./logic/GameEffectCompile";
 import { displayRun } from "./logic/GameStateUtils";
 import {
   applyDelayedAction,
@@ -44,9 +46,16 @@ const warnUnmatchedSelectors = (display: ShownDisplay): void => {
   const roots = displayRoots(display.scope);
   (display.component.rules ?? []).forEach((rule, ruleIndex) => {
     const selector = "target" in rule.on ? rule.on.target : undefined;
-    if (!isDefined(selector)) return;
-    if (roots.some((root) => root.querySelector(selector) !== null)) return;
-    console.warn(`${display.scope} › rules[${ruleIndex}].on.target: "${selector}" matches nothing in the display`);
+    if (isDefined(selector) && !roots.some((root) => root.querySelector(selector) !== null)) {
+      console.warn(`${display.scope} › rules[${ruleIndex}].on.target: "${selector}" matches nothing in the display`);
+    }
+    rule.do.forEach((action, a) => {
+      const target = "target" in action ? action.target : undefined;
+      if (!isDefined(target) || targetsPlayers(target) || resolveTargets(display.scope, target, []).length > 0) return;
+      console.warn(
+        `${display.scope} › rules[${ruleIndex}].do[${a}].target: "${target}" matches nothing in the display`,
+      );
+    });
   });
 };
 
