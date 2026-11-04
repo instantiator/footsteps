@@ -184,7 +184,7 @@ describe("Game camera interactions", () => {
 
     const [{ scope, ruleIndex }] = cameraRules();
     const element = document.querySelector("#stage-link-stage-1")!;
-    act(() => layoutInteraction()({ scope, ruleIndex, element, interaction: "hand-enter" }));
+    act(() => layoutInteraction()({ scope, ruleIndex, element, interaction: "hand-enter", player: 0 }));
 
     expect(await screen.findByText("Question for stage-1")).toBeInTheDocument();
   });

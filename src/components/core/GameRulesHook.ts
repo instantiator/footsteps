@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, type Dispatch, type RefObject, type SetStateAction } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+} from "react";
 import type { DelayedAction, DisplayScope, GameState } from "../../entities/state/GameState";
 import { useGameData } from "../../providers/GameDataHook";
 import { useGameState } from "../../providers/GameStateHook";
@@ -26,6 +35,7 @@ import { getShownDisplays, overviewScope, type ShownDisplay } from "./logic/Rend
 import { displayRoots, matchTarget, type DisplayDomEvent } from "./logic/TemplateUtils";
 import type { CameraRuleEvent, CameraRuleTarget } from "./layout/PlayerInteractionHook";
 import type { CameraInteraction } from "../camera/PlayerMonitor";
+import { PlayerRegistry } from "../camera/PlayerRegistry";
 import {
   DEFAULT_INTERACTION_THRESHOLD,
   POINTER_INTERACTIONS,
@@ -378,6 +388,8 @@ export interface GameRules {
   cameraRules: CameraRuleTarget[];
   /** Fires the camera rule that watches the element a player interacted with. */
   onPlayerInteraction: (event: CameraRuleEvent) => void;
+  /** What has happened to each player, for the camera to follow. */
+  players: PlayerRegistry;
 }
 
 /**
@@ -393,6 +405,14 @@ export function useGameRules(): GameRules {
   const { gameId, expressions } = useGameData();
   const { gameState, setGameState } = useGameState();
   const env: RuleEnvironment = useMemo(() => ({ gameId, expressions }), [gameId, expressions]);
+  const [players] = useState(() => new PlayerRegistry());
+  useEffect(
+    () =>
+      players.onCounts((counts) =>
+        setGameState((state) => ({ ...state, session: { ...state.session, players: counts } })),
+      ),
+    [players, setGameState],
+  );
   const stateRef = useRef(gameState);
   useEffect(() => {
     stateRef.current = gameState;
@@ -430,11 +450,11 @@ export function useGameRules(): GameRules {
 
   /** Fires the camera rule that watches the element the player interacted with. */
   const onPlayerInteraction = useCallback(
-    ({ scope, ruleIndex, element, interaction }: CameraRuleEvent) =>
-      fire(scope, (_, index) => (index === ruleIndex ? { id: element.id, interaction, player: 0 } : undefined)),
+    ({ scope, ruleIndex, element, interaction, player }: CameraRuleEvent) =>
+      fire(scope, (_, index) => (index === ruleIndex ? { id: element.id, interaction, player } : undefined)),
     [fire],
   );
 
   const cameraRules = useMemo(() => getCameraRules(gameState), [gameState]);
-  return { onDisplayEvent, cameraRules, onPlayerInteraction };
+  return { onDisplayEvent, cameraRules, onPlayerInteraction, players };
 }

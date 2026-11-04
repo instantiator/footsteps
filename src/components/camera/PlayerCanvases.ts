@@ -28,10 +28,15 @@ export class PlayerCanvases {
   /**
    * Draws each person on their own canvas, or clears the reference if nobody is there, so a frame always draws something.
    * @param draw draws the frame given, which holds one person or nobody, on the player's canvas
+   * @param knownIds the players whose canvases stay even though they aren't in this frame; those in it always do
    */
-  draw(frame: VisionFrame, draw: (player: PlayerCanvas, playerFrame: VisionFrame) => void): void {
+  draw(
+    frame: VisionFrame,
+    draw: (player: PlayerCanvas, playerFrame: VisionFrame) => void,
+    knownIds: ReadonlySet<number> = new Set(),
+  ): void {
     const seen = new Set(frame.people.map(({ id }) => id));
-    for (const id of this.players.keys()) if (!seen.has(id)) this.remove(id);
+    for (const id of Array.from(this.players.keys())) if (!seen.has(id) && !knownIds.has(id)) this.remove(id);
     if (frame.people.length === 0) draw({ wrapper: this.reference, canvas: this.reference }, frame);
     for (const person of frame.people) draw(this.playerCanvas(person.id), { ...frame, people: [person] });
   }
@@ -44,9 +49,14 @@ export class PlayerCanvases {
     }
   }
 
-  /** Removes every player's canvas. */
-  removeAll(): void {
-    for (const id of Array.from(this.players.keys())) this.remove(id);
+  /** Removes every player's canvas but those given. */
+  removeAllBut(knownIds: ReadonlySet<number> = new Set()): void {
+    for (const id of Array.from(this.players.keys())) if (!knownIds.has(id)) this.remove(id);
+  }
+
+  /** A player's wrapper, while they have one. */
+  wrapperOf(id: number): HTMLElement | undefined {
+    return this.players.get(id)?.wrapper;
   }
 
   /** Removes a player's canvas. */

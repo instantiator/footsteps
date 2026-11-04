@@ -8,7 +8,7 @@ const BETA = 0.01;
 const DERIVATIVE_CUTOFF_HZ = 1;
 
 /** The furthest a person's centre may move between frames, as a fraction of the frame width, and still match. */
-const MAX_MATCH_DISTANCE = 0.25;
+export const MAX_MATCH_DISTANCE = 0.25;
 
 /** How long a person may go unseen, in milliseconds, before a returning one counts as someone new. */
 const TRACK_TIMEOUT_MS = 500;
@@ -78,7 +78,7 @@ interface Track {
 }
 
 /** The centre of a person's silhouette, or null if it is empty. */
-const centreOf = ({ mask }: VisionPerson, width: number): Point | null => {
+export const centreOf = ({ mask }: VisionPerson, width: number): Point | null => {
   let x = 0;
   let y = 0;
   let count = 0;

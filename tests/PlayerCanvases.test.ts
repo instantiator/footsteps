@@ -71,6 +71,18 @@ describe("PlayerCanvases", () => {
     expect(wrappers()).toEqual([drawn.get(2)?.wrapper]);
   });
 
+  it("keeps the canvases of players it is told to, when they aren't in the frame", () => {
+    canvases.draw(frame(person(1), person(2)), draw);
+    const one = drawn.get(1);
+    canvases.draw(frame(person(2)), draw, new Set([1]));
+    expect(wrappers()).toHaveLength(2);
+    canvases.draw(frame(person(1)), draw, new Set());
+    expect(drawn.get(1)).toBe(one);
+    canvases.removeAllBut(new Set([1]));
+    expect(wrappers()).toEqual([one?.wrapper]);
+    expect(canvases.wrapperOf(1)).toBe(one?.wrapper);
+  });
+
   it("clears the reference when nobody is there, so a frame still draws", () => {
     canvases.draw(frame(), draw);
     expect(draw).toHaveBeenCalledExactlyOnceWith({ wrapper: reference, canvas: reference }, frame());
@@ -78,7 +90,7 @@ describe("PlayerCanvases", () => {
 
   it("removes every player's canvas on request, leaving the reference", () => {
     canvases.draw(frame(person(1), person(2)), draw);
-    canvases.removeAll();
+    canvases.removeAllBut();
     expect(wrappers()).toEqual([]);
     expect(container.querySelectorAll("canvas")).toHaveLength(1);
   });

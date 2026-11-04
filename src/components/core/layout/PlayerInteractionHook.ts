@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, type RefObject } from "react";
+import { useCallback, useContext, useEffect, useRef, type RefObject } from "react";
 import type { DisplayScope } from "../../../entities/state/GameState";
 import useAppConfig from "../../../providers/AppConfigHook";
+import { PlayerRegistryContext } from "../../../providers/PlayerRegistryContext";
 import { maskRectForElement, screenPointForMaskPoint } from "../../camera/CameraSupport";
 import { jumpSettingsOf } from "../../camera/JumpDetector";
 import {
@@ -42,6 +43,8 @@ export interface CameraRuleEvent {
   element: Element;
   /** What the player did. */
   interaction: CameraInteraction;
+  /** The number of the player who did it. */
+  player: number;
 }
 
 /** Generated keys for elements without an `id`, dropped with the element. */
@@ -65,7 +68,7 @@ interface FrameTargets {
   /** What the monitors check, by key. */
   targets: Record<string, MonitorTarget>;
   /** The rule and element behind each key. */
-  sources: Map<string, Omit<CameraRuleEvent, "interaction">>;
+  sources: Map<string, Omit<CameraRuleEvent, "interaction" | "player">>;
 }
 
 /**
@@ -112,12 +115,12 @@ const updateMonitors = (
   monitors: Map<number, PlayerMonitor>,
   players: PlayerFrame[],
   update: (monitor: PlayerMonitor, player: PlayerFrame) => void,
-  createMonitor: () => PlayerMonitor,
+  createMonitor: (player: PlayerFrame) => PlayerMonitor,
 ): void => {
   for (const player of players) {
     if (player.held) continue;
     let monitor = monitors.get(player.id);
-    if (!monitor) monitors.set(player.id, (monitor = createMonitor()));
+    if (!monitor) monitors.set(player.id, (monitor = createMonitor(player)));
     update(monitor, player);
   }
   const seen = new Set(players.map((player) => player.id));
@@ -172,6 +175,7 @@ export function usePlayerInteractions(
   mirrored: boolean,
 ): PlayerInteractions {
   const config = useAppConfig();
+  const registry = useContext(PlayerRegistryContext);
   const stableFrames = config.visionSmoothing ? config.visionStableFrames : 1;
   const stableFramesRef = useRef(stableFrames);
   const jumpRef = useRef(jumpSettingsOf(config));
@@ -182,15 +186,12 @@ export function usePlayerInteractions(
   const callbackRef = useRef(onPlayerInteraction);
   const enabledRef = useRef(enabled);
 
-  useEffect(() => {
-    rulesRef.current = cameraRules;
-  }, [cameraRules]);
-
   useRearmOnReset(cameraRules, monitorsRef);
 
   useEffect(() => {
+    rulesRef.current = cameraRules;
     callbackRef.current = onPlayerInteraction;
-  }, [onPlayerInteraction]);
+  }, [cameraRules, onPlayerInteraction]);
 
   useEffect(() => {
     stableFramesRef.current = stableFrames;
@@ -218,18 +219,18 @@ export function usePlayerInteractions(
           ? frameTargets(canvas, players, rulesRef.current ?? [], mirrored)
           : { targets: {}, sources: sourcesRef.current };
       sourcesRef.current = sources;
-      const createMonitor = () =>
-        new PlayerMonitor(
-          (event: PlayerMonitorEvent) => {
-            const source = sourcesRef.current.get(event.key);
-            if (source) callbackRef.current?.({ ...source, interaction: event.interaction });
-          },
-          stableFramesRef.current,
-          jumpRef.current,
-        );
+      const createMonitor = (player: PlayerFrame) => {
+        // Their number is read now, as it may be free again by the time they are released
+        const number = registry.numberOf(player.id) ?? 0;
+        const report = (event: PlayerMonitorEvent) => {
+          const source = sourcesRef.current.get(event.key);
+          if (source) callbackRef.current?.({ ...source, interaction: event.interaction, player: number });
+        };
+        return new PlayerMonitor(report, stableFramesRef.current, jumpRef.current);
+      };
       updateMonitors(monitors, players, (monitor, player) => monitor.update(player, targets, timestamp), createMonitor);
     },
-    [canvasRef, mirrored],
+    [canvasRef, mirrored, registry],
   );
 
   return { canvasRef, handlePlayers };

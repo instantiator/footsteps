@@ -9,6 +9,7 @@ import type { GameDisplayComponentBase, GameRule } from "../src/entities/data/di
 import { useGameState } from "../src/providers/GameStateHook";
 import { challenge, game, stage } from "./data/GameBuilders";
 import GameProviders from "./helpers/GameProviders";
+import { noKeyPoints } from "../src/vision/VisionTypes";
 
 const TITLE = "overview:game-overview-title";
 const STAGES = "overview:game-overview-stages";
@@ -46,6 +47,7 @@ const renderRules = (data: GameData) => {
   const go = (overviewDisplay: "game-overview-title" | "game-overview-stages", stageId: string | null = null) =>
     set((state) => ({ ...state, current: { overviewDisplay, stageId } }));
   return {
+    hook: () => result.current,
     state: () => result.current.gameState,
     displayState: (scope: string) => result.current.gameState.displayStates[scope],
     send: (scope: string, event: DisplayDomEvent) => act(() => result.current.onDisplayEvent(scope, event)),
@@ -334,6 +336,58 @@ describe("useGameRules", () => {
       rules.go("game-overview-stages");
       advance(5000);
       expect(rules.displayState(TITLE)).toEqual({ n: 2, ms: 250 });
+    });
+
+    describe("players", () => {
+      it("gives expressions the number of the player who fired a rule, and 0 otherwise", () => {
+        const rules = renderRules(
+          rulesGame({
+            [TITLE]: {
+              rules: [
+                { on: { interact: ["hand-enter"], target: "#a" }, do: [{ set: { by: "event.player" } }] },
+                { on: { start: true }, do: [{ set: { first: "event.player" } }] },
+              ],
+              initialState: {},
+            },
+          }),
+        );
+        expect(rules.displayState(TITLE)).toEqual({ first: 0 });
+        const element = document.createElement("div");
+        act(() =>
+          rules
+            .hook()
+            .onPlayerInteraction({ scope: TITLE, ruleIndex: 0, element, interaction: "hand-enter", player: 2 }),
+        );
+        expect(rules.displayState(TITLE)).toEqual({ first: 0, by: 2 });
+      });
+
+      it("fires a when rule on the player counts, and doesn't save them", () => {
+        const removedAll: GameRule = {
+          on: { when: "game.players.active == 0 and game.players.removed > 0" },
+          do: [{ set: { over: "true" } }],
+        };
+        const rules = renderRules(rulesGame({ [TITLE]: { rules: [removedAll], initialState: {} } }));
+        const person = {
+          id: 1,
+          mask: new Uint8Array(1),
+          keyPoints: noKeyPoints(),
+          scale: 1,
+        };
+        const frame = { width: 1, height: 1, timestamp: 0, people: [person] };
+        const { players } = rules.hook();
+        let id = 0;
+        act(() => {
+          id = players.update(frame).interactive.people[0].id;
+        });
+        expect(rules.state().session.players).toEqual({ active: 1, removed: 0, frozen: 0 });
+        expect(rules.displayState(TITLE)).toBeUndefined();
+        act(() => {
+          players.startLeaving(id, TITLE);
+          players.finishLeaving(id);
+        });
+        expect(rules.state().session.players).toEqual({ active: 0, removed: 1, frozen: 0 });
+        expect(rules.displayState(TITLE)).toEqual({ over: true });
+      });
     });
 
     describe("delayed actions", () => {

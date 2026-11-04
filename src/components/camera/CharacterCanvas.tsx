@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useContext, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { DEFAULT_APP_CONFIG, type AppConfig } from "../../config/AppConfig";
 import useAppConfig from "../../providers/AppConfigHook";
 import { isDefined } from "../../util/ObjectUtils";
@@ -9,7 +9,9 @@ import type { VisionFrame } from "../../vision/VisionTypes";
 import { feetOf, type FeetPositions } from "./CameraSupport";
 import { drawPeople, type DrawStyle, type MaskType } from "./DrawPeople";
 import { frameQuality, FrameStatsRecorder, type FrameStats, type FrameSteps } from "./FrameStats";
-import { PlayerCanvases } from "./PlayerCanvases";
+import { PlayerCanvases, type PlayerCanvas } from "./PlayerCanvases";
+import type { PlayerFrames, PlayerRegistry } from "./PlayerRegistry";
+import { PlayerRegistryContext } from "../../providers/PlayerRegistryContext";
 import { depthZIndex, drawDepthLine, PlayerDepths, type DepthSettings } from "./PlayerDepth";
 import { setTrackingFps } from "./TrackingFpsStore";
 import type { PlayerFrame } from "./PlayerMonitor";
@@ -281,24 +283,70 @@ const videoDetections = (model: FootstepsVisionModelImplementation, video: HTMLV
   return { next, cancel };
 };
 
+/** Gives a player's wrapper the classes that name them, which effects can target. */
+const namePlayer = (wrapper: HTMLElement, number: number | undefined): void => {
+  if (number === undefined || wrapper.dataset.player === String(number)) return;
+  wrapper.classList.remove(`player-${wrapper.dataset.player}`);
+  wrapper.classList.add(`player-${number}`);
+  wrapper.dataset.player = String(number);
+};
+
 /** Draws each player on their own canvas, sorted to their depth, with a line showing it when debugging. */
 const drawPlayers = (
   video: HTMLVideoElement,
-  frame: VisionFrame,
-  { canvases, depths }: { canvases: PlayerCanvases; depths: PlayerDepths },
+  { drawn: frame, frozenIds, knownIds }: PlayerFrames,
+  { canvases, depths, players }: { canvases: PlayerCanvases; depths: PlayerDepths; players: PlayerRegistry },
   style: DrawStyle,
 ) => {
   const debugging = style.maskType !== "binary";
   const playerDepths = depths.update(frame, debugging);
-  canvases.draw(frame, ({ wrapper, canvas }, playerFrame) => {
-    const playerDepth = playerDepths.get(playerFrame.people[0]?.id);
+  const drawOne = ({ wrapper, canvas }: PlayerCanvas, playerFrame: VisionFrame) => {
+    const id = playerFrame.people[0]?.id;
+    const playerDepth = playerDepths.get(id);
     if (playerDepth !== undefined) wrapper.style.zIndex = String(depthZIndex(playerDepth));
+    if (id !== undefined) namePlayer(wrapper, players.numberOf(id));
+    if (frozenIds.has(id)) return; // their image stays as it was
     // The 2D context is missing in some environments (eg. tests); the reports above still happen
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     drawPeople(video, playerFrame, ctx, style);
     if (debugging && playerDepth !== undefined) drawDepthLine(ctx, playerDepth);
-  });
+  };
+  canvases.draw(frame, drawOne, knownIds);
+};
+
+/**
+ * Hands each frame to `report` as the model returns it, while giving the model the next one.
+ * @returns a function that stops it
+ */
+const runDetections = (
+  detections: ReturnType<typeof videoDetections>,
+  report: (timestamp: number, detected: VisionFrame, inferenceEnd: number) => void,
+): (() => void) => {
+  let cancelled = false;
+  // A failed frame is skipped rather than ending the loop; only the first failure is logged, as it may repeat every frame
+  let warned = false;
+  const run = async (detection: Promise<Detection>) => {
+    let next: Promise<Detection> | undefined;
+    try {
+      const { timestamp, result } = await detection;
+      const { detected, inferenceEnd } = await result;
+      if (cancelled) return; // the model may have been disposed while this frame was tracked
+      next = detections.next();
+      report(timestamp, detected, inferenceEnd);
+    } catch (error) {
+      // A frame cut short by the loop stopping (eg. the model disposed) is expected, not a failure
+      if (!warned && !cancelled) console.warn("Skipped a camera frame that could not be tracked:", error);
+      warned = true;
+    }
+    if (!cancelled) run(next ?? detections.next());
+  };
+
+  run(detections.next());
+  return () => {
+    cancelled = true;
+    detections.cancel();
+  };
 };
 
 /**
@@ -311,7 +359,11 @@ const drawPlayers = (
 const startTrackingLoop = (
   model: FootstepsVisionModelImplementation,
   video: HTMLVideoElement,
-  { reference, canvases }: { reference: HTMLCanvasElement; canvases: PlayerCanvases },
+  {
+    reference,
+    canvases,
+    players: registry,
+  }: { reference: HTMLCanvasElement; canvases: PlayerCanvases; players: PlayerRegistry },
   {
     offScreenThreshold_percent,
     onFeetPositionsChange,
@@ -321,23 +373,23 @@ const startTrackingLoop = (
     onStats,
   }: LoopHandlers,
 ): (() => void) => {
-  let cancelled = false;
   const detections = videoDetections(model, video, inputWidth);
   reference.width = video.videoWidth;
   reference.height = video.videoHeight;
   canvases.resize();
+  registry.resetTracking(video.videoWidth);
   const depths = new PlayerDepths(reference, depth);
   const reportStats = statsReporter(onStats);
   const tracker = smoothing ? new PersonTracker(hold, fillGaps) : null;
 
   const reportAndDraw = (timestamp: number, detected: VisionFrame, inferenceEnd: number) => {
-    const frame = tracker ? tracker.update(detected) : detected;
-    const players = playersOf(frame, offScreenThreshold_percent);
+    const frames = registry.update(tracker ? tracker.update(detected) : detected);
+    const players = playersOf(frames.interactive, offScreenThreshold_percent);
     const trackEnd = performance.now();
     onPlayersChange?.(players, timestamp);
     onFeetPositionsChange?.(feetPositionsOf(players));
     const monitorEnd = performance.now();
-    drawPlayers(video, frame, { canvases, depths }, { maskType, featherPx });
+    drawPlayers(video, frames, { canvases, depths, players: registry }, { maskType, featherPx });
     reportStats(detected, timestamp, inferenceEnd, {
       trackMs: trackEnd - inferenceEnd,
       monitorMs: monitorEnd - trackEnd,
@@ -345,30 +397,12 @@ const startTrackingLoop = (
     });
   };
 
-  // A failed frame is skipped rather than ending the loop; only the first failure is logged, as it may repeat every frame
-  let warned = false;
-  const run = async (detection: Promise<Detection>) => {
-    let next: Promise<Detection> | undefined;
-    try {
-      const { timestamp, result } = await detection;
-      const { detected, inferenceEnd } = await result;
-      if (cancelled) return; // the model may have been disposed while this frame was tracked
-      next = detections.next();
-      reportAndDraw(timestamp, detected, inferenceEnd);
-    } catch (error) {
-      // A frame cut short by the loop stopping (eg. the model disposed) is expected, not a failure
-      if (!warned && !cancelled) console.warn("Skipped a camera frame that could not be tracked:", error);
-      warned = true;
-    }
-    if (!cancelled) run(next ?? detections.next());
-  };
-
-  run(detections.next());
+  const stopDetecting = runDetections(detections, reportAndDraw);
   return () => {
-    cancelled = true;
+    stopDetecting();
     setTrackingFps(null);
-    detections.cancel();
-    canvases.removeAll();
+    registry.resetTracking(reference.width);
+    canvases.removeAllBut(registry.knownIds());
     depths.clearItems();
   };
 };
@@ -413,6 +447,7 @@ export default function CharacterCanvas({
   const internalCanvasRef = useRef<HTMLCanvasElement>(null);
   const canvas = canvasRef ?? internalCanvasRef;
   const canvasesRef = useRef<PlayerCanvases | null>(null);
+  const players = useContext(PlayerRegistryContext);
   const { video, mediaStream, offScreenThreshold_percent, onFeetPositionsChange, onPlayersChange } = loopProps;
 
   // The stream belongs to CharacterCamera, which stops its tracks; this effect only stops its own loop
@@ -429,12 +464,13 @@ export default function CharacterCanvas({
       onStats,
     };
     const canvases = (canvasesRef.current ??= new PlayerCanvases(canvasElement));
-    return startTrackingLoop(model, video, { reference: canvasElement, canvases }, handlers);
+    return startTrackingLoop(model, video, { reference: canvasElement, canvases, players }, handlers);
   }, [
     model,
     mediaStream,
     video,
     canvas,
+    players,
     onFeetPositionsChange,
     onPlayersChange,
     offScreenThreshold_percent,

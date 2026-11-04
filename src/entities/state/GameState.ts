@@ -1,3 +1,4 @@
+import { NO_PLAYERS, type PlayerCounts } from "../../components/camera/PlayerRegistry";
 import { GameOverviewPurposeSequence } from "../../components/core/logic/GameClickUtils";
 import { isDefined } from "../../util/ObjectUtils";
 import type { RuleEvent } from "../../components/core/logic/GameRuleUtils";
@@ -67,6 +68,8 @@ export interface GameSession {
   visualEffects: QueuedVisualEffect[];
   /** Actions rules have delayed, until the game starts waiting for them. */
   delayedActions: DelayedAction[];
+  /** How many players there are. Updated only as it changes, as an update re-renders the game. */
+  players: PlayerCounts;
   /** The id the next queued effect or delayed action gets. */
   nextEffectId: number;
   /**
@@ -82,6 +85,7 @@ export const newGameSession = (): GameSession => ({
   effects: [],
   visualEffects: [],
   delayedActions: [],
+  players: NO_PLAYERS,
   nextEffectId: 1,
   displayRuns: {},
 });

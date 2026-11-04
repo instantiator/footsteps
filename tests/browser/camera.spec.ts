@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { MODEL_TIMEOUT, openCameraGame } from "./fixtures/cameraGame";
 import { peoplePhotoUrls } from "./fixtures/people/people";
+import { installReactCommitCounter } from "./fixtures/reactCommits";
 
 const streamCount = (page: Page) => page.evaluate(() => window.__fakeCamera.streams.length);
 const trackState = (page: Page, index: number) =>
@@ -191,6 +192,24 @@ for (const holding of [true, false]) {
     else expect(fewest).toBe(0);
   });
 }
+
+test("names each player's wrapper by number, and doesn't re-render the game while they stay in shot", async ({
+  page,
+}) => {
+  test.setTimeout(MODEL_TIMEOUT + 30_000);
+  await installReactCommitCounter(page);
+  await openCameraGame(page, { photos: peoplePhotoUrls() });
+  await expect.poll(() => drawCount(page), { timeout: MODEL_TIMEOUT }).toBeGreaterThan(2);
+  await page.evaluate(() => window.__fakeCamera.setImage("photo:two-facing"));
+
+  await expect(page.locator(".player-1")).toHaveCount(1, { timeout: MODEL_TIMEOUT });
+  await expect(page.locator(".player-2")).toHaveCount(1);
+  await page.waitForTimeout(1000); // settle
+  const commits = () => page.evaluate(() => window.__reactCommits);
+  const before = await commits();
+  await page.waitForTimeout(2000);
+  expect((await commits()) - before).toBeLessThan(5); // only the frame rate readout, if anything
+});
 
 test("lays each player's canvas exactly over the others", async ({ page }) => {
   await openCameraGame(page, { photos: peoplePhotoUrls() });

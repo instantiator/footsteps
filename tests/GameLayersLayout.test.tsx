@@ -112,6 +112,7 @@ const handOnThing = (container: HTMLElement) => ({
   scope: SCOPE,
   ruleIndex: 0,
   element: container.querySelector("#overview-thing"),
+  player: 0,
   interaction: "hand-enter",
 });
 

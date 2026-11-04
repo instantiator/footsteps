@@ -1,13 +1,15 @@
 import { act, render, waitFor } from "@testing-library/react";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CharacterCanvas from "../src/components/camera/CharacterCanvas";
 import type { FeetPositions } from "../src/components/camera/CameraSupport";
 import type { PlayerFrame } from "../src/components/camera/PlayerMonitor";
+import { PlayerRegistry } from "../src/components/camera/PlayerRegistry";
 import * as fpsStore from "../src/components/camera/TrackingFpsStore";
 import type { AppConfig } from "../src/config/AppConfig";
 import AppConfigProvider from "../src/providers/AppConfigProvider";
+import { PlayerRegistryContext } from "../src/providers/PlayerRegistryContext";
 import { noKeyPoints, type VisionFrame } from "../src/vision/VisionTypes";
 import { FakeMediaStream } from "./helpers/media";
 
@@ -51,8 +53,14 @@ const fakeFrame = (people: number, timestamp: number): VisionFrame => ({
 const video = document.createElement("video");
 const mediaStream = new FakeMediaStream();
 
-const renderCanvas = (props: Partial<ComponentProps<typeof CharacterCanvas>> = {}) =>
-  render(<CharacterCanvas video={video} mediaStream={mediaStream} {...props} />);
+/** Renders the canvas with a registry of its own, as a game gives it. */
+const renderCanvas = (props: Partial<ComponentProps<typeof CharacterCanvas>> = {}) => {
+  const registry = new PlayerRegistry();
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <PlayerRegistryContext.Provider value={registry}>{children}</PlayerRegistryContext.Provider>
+  );
+  return render(<CharacterCanvas video={video} mediaStream={mediaStream} {...props} />, { wrapper });
+};
 
 beforeEach(() => {
   model.people = 2;
@@ -93,7 +101,7 @@ describe("CharacterCanvas", () => {
     await waitFor(() => expect(onPlayersChange).toHaveBeenCalled());
 
     const [players, timestamp] = onPlayersChange.mock.calls[0];
-    expect(players.map((player) => player.id)).toEqual([0, 1]);
+    expect(players.map((player) => player.id)).toEqual([1, 2]);
     expect(players[0]).toMatchObject({ width: 8, height: 8 });
     expect(players[0].mask).toHaveLength(64);
     expect(players[0].feet?.percent.y).toBeCloseTo(87.5); // the lowest of eight rows
@@ -147,12 +155,34 @@ describe("CharacterCanvas", () => {
     await waitFor(() => expect(onPlayersChange).toHaveBeenCalledWith([], expect.any(Number)));
   });
 
+  it("doesn't report a frozen player for interactions, but keeps their canvas without redrawing it", async () => {
+    const registry = new PlayerRegistry();
+    const onPlayersChange = vi.fn<(players: PlayerFrame[], timestamp: number) => void>();
+    model.people = 1;
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <PlayerRegistryContext.Provider value={registry}>{children}</PlayerRegistryContext.Provider>
+    );
+    const { container } = render(
+      <CharacterCanvas video={video} mediaStream={mediaStream} onPlayersChange={onPlayersChange} />,
+      { wrapper },
+    );
+    await waitFor(() => expect(onPlayersChange).toHaveBeenCalledTimes(1));
+    const id = onPlayersChange.mock.calls[0][0][0].id;
+    expect(container.querySelector(".player-1")).not.toBeNull();
+
+    registry.freeze(id, "scope");
+    await act(async () => runNextFrame());
+    await waitFor(() => expect(onPlayersChange).toHaveBeenCalledTimes(2));
+    expect(onPlayersChange.mock.calls[1][0]).toEqual([]);
+    expect(container.querySelector(".player-1 canvas")).not.toBeNull();
+  });
+
   it("reports feet positions separately, for the debug overlay", async () => {
     const onFeetPositionsChange = vi.fn<(feetPositions: FeetPositions) => void>();
     renderCanvas({ onFeetPositionsChange });
 
     await waitFor(() => expect(onFeetPositionsChange).toHaveBeenCalled());
-    expect(Object.keys(onFeetPositionsChange.mock.calls[0][0])).toEqual(["0", "1"]);
+    expect(Object.keys(onFeetPositionsChange.mock.calls[0][0])).toEqual(["1", "2"]);
   });
 
   it("reports the feet of a player the model has lost for a moment, flagged as held", async () => {
@@ -160,12 +190,12 @@ describe("CharacterCanvas", () => {
     model.people = 1;
     renderCanvas({ onFeetPositionsChange });
     await waitFor(() => expect(onFeetPositionsChange).toHaveBeenCalled());
-    expect(onFeetPositionsChange.mock.calls[0][0][0].held).toBeUndefined();
+    expect(onFeetPositionsChange.mock.calls[0][0][1].held).toBeUndefined();
 
     model.people = 0; // lost by the model, so held by the tracker
     await act(async () => runNextFrame());
     await waitFor(() => expect(onFeetPositionsChange).toHaveBeenCalledTimes(2));
-    expect(onFeetPositionsChange.mock.calls[1][0][0]).toMatchObject({ held: true, percent: { y: 87.5 } });
+    expect(onFeetPositionsChange.mock.calls[1][0][1]).toMatchObject({ held: true, percent: { y: 87.5 } });
   });
 
   it("skips a frame that fails to be tracked, and carries on with the next", async () => {

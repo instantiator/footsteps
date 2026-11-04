@@ -1,3 +1,4 @@
+import type { PlayerCounts } from "../../components/camera/PlayerRegistry";
 import type { GameId } from "../data/GameData";
 import type { GameState } from "./GameState";
 import type { GameStageAvailabilityState, GameStageCompletionState } from "./GameStageState";
@@ -27,6 +28,8 @@ export interface GameSnapshot {
     /** The overview display showing when no stage is open. */
     overviewDisplay: string | null;
   };
+  /** How many players there are; see `docs/player-tracking.md`. */
+  players: PlayerCounts;
 }
 
 /** One stage's progress. */
@@ -64,4 +67,5 @@ export const toGameSnapshot = (gameId: GameId, state: GameState): GameSnapshot =
     challenges: stage.challengeStates.map((c) => ({ id: c.challenge.id, succeeded: c.succeeded })),
   })),
   current: { ...state.current },
+  players: state.session.players,
 });

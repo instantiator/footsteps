@@ -73,7 +73,13 @@ const touch = (selector: string, interaction: CameraInteraction) => {
   const rule = layout.cameraRules!.find((r) => element?.matches(r.selector) && r.interactions.includes(interaction));
   expect(rule, `a camera rule for ${interaction} on ${selector}`).toBeDefined();
   act(() =>
-    layout.onPlayerInteraction!({ scope: rule!.scope, ruleIndex: rule!.ruleIndex, element: element!, interaction }),
+    layout.onPlayerInteraction!({
+      scope: rule!.scope,
+      ruleIndex: rule!.ruleIndex,
+      element: element!,
+      interaction,
+      player: 0,
+    }),
   );
 };
 

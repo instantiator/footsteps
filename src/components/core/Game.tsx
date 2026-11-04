@@ -12,6 +12,7 @@ import useAppConfig from "../../providers/AppConfigHook";
 import { useGameData } from "../../providers/GameDataHook";
 import useGameMusic from "../../providers/GameMusicHook";
 import { useGameState } from "../../providers/GameStateHook";
+import { PlayerRegistryContext } from "../../providers/PlayerRegistryContext";
 import { isDefined } from "../../util/ObjectUtils";
 import GameDisplayComponent, { type LayerHint } from "./display/GameDisplayComponent";
 import { centreOnScreen, resolveTargets } from "./effects/EffectTargets";
@@ -278,7 +279,7 @@ export default function Game() {
   const onAnswer = useAnswerHandler();
   const renderData = useMemo(() => getLayeredRenderData(gameState, resources, gameId), [gameState, resources, gameId]);
   const displayKey = useMemo(() => getDisplayKey(renderData), [renderData]);
-  const { onDisplayEvent, cameraRules, onPlayerInteraction } = useGameRules();
+  const { onDisplayEvent, cameraRules, onPlayerInteraction, players } = useGameRules();
   const layers = useMemo(
     () => createLayers(renderData, { onAnswer, onDisplayEvent }),
     [renderData, onAnswer, onDisplayEvent],
@@ -306,14 +307,16 @@ export default function Game() {
       {ruleRewards.shown.map(({ id, reward, at }) => (
         <RewardBurst key={id} id={id} reward={reward} at={at} onDone={() => ruleRewards.done(id)} />
       ))}
-      <GameLayersLayout
-        debug={debug}
-        gameLayers={layers}
-        displayKey={displayKey}
-        camera={camera}
-        cameraRules={cameraRules}
-        onPlayerInteraction={onPlayerInteraction}
-      />
+      <PlayerRegistryContext.Provider value={players}>
+        <GameLayersLayout
+          debug={debug}
+          gameLayers={layers}
+          displayKey={displayKey}
+          camera={camera}
+          cameraRules={cameraRules}
+          onPlayerInteraction={onPlayerInteraction}
+        />
+      </PlayerRegistryContext.Provider>
     </div>
   );
 }
