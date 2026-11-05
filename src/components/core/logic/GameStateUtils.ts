@@ -1,13 +1,17 @@
 import _ from "lodash";
 import type { GameChallengeData, GameChallengeId } from "../../../entities/data/GameChallengeData";
 import type { GameChallengeAnswer, GameChallengeAnswerValidation } from "../../../entities/data/GameChallengeSolution";
-import type { GameOverviewDisplayPurpose } from "../../../entities/data/displays/GameDisplayData";
+import type {
+  GameDisplayBase,
+  GameOverviewDisplayPurpose,
+  GameResetDisplay,
+} from "../../../entities/data/displays/GameDisplayData";
 import type { GameStageId } from "../../../entities/data/GameStageData";
 import type { GameChallengeState } from "../../../entities/state/GameChallengeState";
 import type { GameStageCompletionState, GameStageState } from "../../../entities/state/GameStageState";
 import type { DisplayScope, GameState } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
-import { challengeScope } from "./RenderDataUtils";
+import { challengeScope, resetScope } from "./RenderDataUtils";
 
 /**
  * Validates an answer for a given challenge, applying the solution's case and whitespace rules (all on by default).
@@ -194,6 +198,20 @@ export const stageCompletion = (challengeStates: GameChallengeState[]): GameStag
       ? "partial"
       : "ready";
 
+/** Which run of a display this is; see `GameSession.displayRuns`. 0 before it has first been shown. */
+export const displayRun = (state: GameState, scope: DisplayScope): number => state.session.displayRuns[scope] ?? 0;
+
+/** Starts a new run of each of the given displays. */
+export const startDisplayRuns = (state: GameState, scopes: Iterable<DisplayScope>): GameState => {
+  const displayRuns = { ...state.session.displayRuns };
+  for (const scope of scopes) displayRuns[scope] = (displayRuns[scope] ?? 0) + 1;
+  return { ...state, session: { ...state.session, displayRuns } };
+};
+
+/** A display's scope, followed by those of its reset display, and theirs. */
+const withResetScopes = (scope: DisplayScope, display: GameDisplayBase | GameResetDisplay): DisplayScope[] =>
+  isDefined(display.resetDisplay) ? [scope, ...withResetScopes(resetScope(scope), display.resetDisplay)] : [scope];
+
 /**
  * Clears a challenge: it is unsolved again, its stage's completion follows, and its displays' states are removed so
  * they start again from `initialState`. The stage's availability, and what is showing, are left alone.
@@ -211,13 +229,19 @@ export function resetChallenge(gameState: GameState, stageId: GameStageId, chall
   );
   const updatedStageState = { ...stageState, challengeStates, completion: stageCompletion(challengeStates) };
   const scopes = new Set(challengeState.challenge.displays.map((d) => challengeScope(stageId, challengeId, d.purpose)));
-  return forgetFinishedResets(
+  const reset = forgetFinishedResets(
     {
       ...gameState,
       stages: gameState.stages.map((s) => (s === stageState ? updatedStageState : s)),
       displayStates: _.omitBy(gameState.displayStates, (_state, scope) => scopes.has(scope)),
     },
     scopes,
+  );
+  return startDisplayRuns(
+    reset,
+    challengeState.challenge.displays.flatMap((d) =>
+      withResetScopes(challengeScope(stageId, challengeId, d.purpose), d),
+    ),
   );
 }
 

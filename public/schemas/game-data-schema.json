@@ -4,6 +4,42 @@
         "GameAction": {
             "anyOf": [
                 {
+                    "$ref": "#/definitions/GameQuakeEffect"
+                },
+                {
+                    "$ref": "#/definitions/GameItemFallEffect"
+                },
+                {
+                    "$ref": "#/definitions/GameItemMoveEffect"
+                },
+                {
+                    "$ref": "#/definitions/GameHighlightEffect"
+                },
+                {
+                    "$ref": "#/definitions/GamePlayerFallEffect"
+                },
+                {
+                    "$ref": "#/definitions/GamePlayerSpinAwayEffect"
+                },
+                {
+                    "$ref": "#/definitions/GamePlayerOpacityEffect"
+                },
+                {
+                    "$ref": "#/definitions/GamePlayerStaticEffect"
+                },
+                {
+                    "$ref": "#/definitions/GamePlayerFreezeEffect"
+                },
+                {
+                    "$ref": "#/definitions/GamePlayerUnfreezeEffect"
+                },
+                {
+                    "$ref": "#/definitions/GamePlayerRestoreEffect"
+                },
+                {
+                    "$ref": "#/definitions/GameStopEffect"
+                },
+                {
                     "$ref": "#/definitions/GameSetAction"
                 },
                 {
@@ -73,6 +109,11 @@
                 "answer": {
                     "description": "Expression giving the answer.",
                     "type": "string"
+                },
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
                 }
             },
             "required": [
@@ -176,6 +217,11 @@
                     "const": true,
                     "description": "Always true.",
                     "type": "boolean"
+                },
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
                 }
             },
             "required": [
@@ -264,6 +310,10 @@
                 "initialState": {
                     "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
                     "description": "The display's state when it is first shown, and after a reset. Templates and rules see it as `state`."
+                },
+                "keepRemovedPlayers": {
+                    "description": "Whether players stay removed when this display resets. Moving to another display restores them anyway. Defaults to false.",
+                    "type": "boolean"
                 },
                 "resetStateOnShow": {
                     "description": "Whether state returns to `initialState` each time the display is shown. Defaults to false.",
@@ -406,6 +456,10 @@
                     "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
                     "description": "The display's state when it is first shown, and after a reset. Templates and rules see it as `state`."
                 },
+                "keepRemovedPlayers": {
+                    "description": "Whether players stay removed when this display resets. Moving to another display restores them anyway. Defaults to false.",
+                    "type": "boolean"
+                },
                 "resetStateOnShow": {
                     "description": "Whether state returns to `initialState` each time the display is shown. Defaults to false.",
                     "type": "boolean"
@@ -465,6 +519,10 @@
                     "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
                     "description": "The display's state when it is first shown, and after a reset. Templates and rules see it as `state`."
                 },
+                "keepRemovedPlayers": {
+                    "description": "Whether players stay removed when this display resets. Moving to another display restores them anyway. Defaults to false.",
+                    "type": "boolean"
+                },
                 "resetStateOnShow": {
                     "description": "Whether state returns to `initialState` each time the display is shown. Defaults to false.",
                     "type": "boolean"
@@ -509,9 +567,63 @@
             ],
             "type": "object"
         },
+        "GameEffectAngle": {
+            "description": "The range of directions a player spinning away may leave in.",
+            "properties": {
+                "max": {
+                    "description": "Degrees on screen, as for `min`.",
+                    "type": "number"
+                },
+                "min": {
+                    "description": "Degrees on screen: 0 is straight up, 90 is right, and -90 is left.",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "max",
+                "min"
+            ],
+            "type": "object"
+        },
+        "GameEffectEndTrigger": {
+            "description": "An effect finishing. Not when ended early by `stop`, or by its display closing or resetting.",
+            "properties": {
+                "effectEnd": {
+                    "description": "The effect's name, eg. `item-fall`.",
+                    "type": "string"
+                },
+                "target": {
+                    "description": "CSS selector: only fire for these elements. Item effects only. Defaults to any element.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "effectEnd"
+            ],
+            "type": "object"
+        },
+        "GameEffectPosition": {
+            "anyOf": [
+                {
+                    "$ref": "#/definitions/GamePositionInDisplay"
+                },
+                {
+                    "$ref": "#/definitions/GamePositionByAmount"
+                },
+                {
+                    "$ref": "#/definitions/GamePositionFromElement"
+                }
+            ],
+            "description": "Where an element goes; see the coordinate system in `docs/special-effects.md`."
+        },
         "GameEnterStageAction": {
             "description": "Opens a stage, unless it is locked or completed.",
             "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
                 "enterStage": {
                     "description": "The stage's id.",
                     "type": "string"
@@ -541,6 +653,11 @@
         "GameFinishResetAction": {
             "description": "Finishes this reset display, revealing the display it is shown for. Reset displays only.",
             "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
                 "finishReset": {
                     "const": true,
                     "description": "Always true.",
@@ -550,6 +667,76 @@
             "required": [
                 "finishReset"
             ],
+            "type": "object"
+        },
+        "GameHighlightEffect": {
+            "description": "Plays a series of styles on elements, which then return to their own styles.",
+            "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "durationMs": {
+                    "anyOf": [
+                        {
+                            "const": "indefinite",
+                            "type": "string"
+                        },
+                        {
+                            "type": "number"
+                        }
+                    ],
+                    "description": "How long it runs."
+                },
+                "effect": {
+                    "const": "highlight",
+                    "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "sequence": {
+                    "description": "The styles, in order.",
+                    "items": {
+                        "$ref": "#/definitions/GameHighlightStep"
+                    },
+                    "type": "array"
+                },
+                "target": {
+                    "description": "CSS selector for the elements. Defaults to every item in the shown displays.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "effect",
+                "sequence"
+            ],
+            "type": "object"
+        },
+        "GameHighlightStep": {
+            "description": "One step of a highlight.",
+            "properties": {
+                "durationMs": {
+                    "description": "How long the step takes. Defaults to 1000.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "easing": {
+                    "description": "A CSS easing function: how the step's styles build. Without one, they apply at full strength throughout.",
+                    "type": "string"
+                },
+                "filter": {
+                    "description": "A CSS `filter`.",
+                    "type": "string"
+                },
+                "outline": {
+                    "description": "A CSS `outline`.",
+                    "type": "string"
+                },
+                "shadow": {
+                    "description": "A CSS `box-shadow`.",
+                    "type": "string"
+                }
+            },
             "type": "object"
         },
         "GameInteractTrigger": {
@@ -584,7 +771,9 @@
                                     "jump-from",
                                     "jump-onto",
                                     "mouse-enter",
-                                    "mouse-exit"
+                                    "mouse-exit",
+                                    "near-enter",
+                                    "near-exit"
                                 ],
                                 "type": "string"
                             },
@@ -607,7 +796,9 @@
                                 "jump-from",
                                 "jump-onto",
                                 "mouse-enter",
-                                "mouse-exit"
+                                "mouse-exit",
+                                "near-enter",
+                                "near-exit"
                             ],
                             "type": "string"
                         }
@@ -615,7 +806,7 @@
                     "description": "The interactions that fire the rule."
                 },
                 "target": {
-                    "description": "CSS selector for the elements, eg. `#door` or `.lava`.",
+                    "description": "CSS selector for the elements, eg. `#door` or `.lava`. May be left out for `jump` alone, which then fires on every\nlanding; every other interaction needs it, as checked when the game loads.",
                     "type": "string"
                 },
                 "threshold": {
@@ -623,11 +814,122 @@
                     "maximum": 1,
                     "minimum": 0,
                     "type": "number"
+                },
+                "within": {
+                    "description": "`near-enter` and `near-exit` only, which need it: how close counts as near. The distance from the centre of the\nelement to the closest part of the player's silhouette, as a % of the display's width.",
+                    "minimum": 0,
+                    "type": "number"
                 }
             },
             "required": [
-                "interact",
-                "target"
+                "interact"
+            ],
+            "type": "object"
+        },
+        "GameItemFallEffect": {
+            "description": "Drops elements off the bottom of the display, where they stay until it resets.",
+            "properties": {
+                "cycleMs": {
+                    "description": "The length of one loop, when `durationMs` is `\"indefinite\"`.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "durationMs": {
+                    "anyOf": [
+                        {
+                            "const": "indefinite",
+                            "type": "string"
+                        },
+                        {
+                            "type": "number"
+                        }
+                    ],
+                    "description": "How long it runs."
+                },
+                "easing": {
+                    "description": "A CSS easing function: how it speeds up and slows down.",
+                    "type": "string"
+                },
+                "effect": {
+                    "const": "item-fall",
+                    "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "target": {
+                    "description": "CSS selector for the elements. Defaults to every item in the shown displays.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "effect"
+            ],
+            "type": "object"
+        },
+        "GameItemMoveEffect": {
+            "description": "Moves elements, where they stay until their display resets.",
+            "properties": {
+                "cycleMs": {
+                    "description": "The length of one loop, when `durationMs` is `\"indefinite\"`.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "durationMs": {
+                    "anyOf": [
+                        {
+                            "const": "indefinite",
+                            "type": "string"
+                        },
+                        {
+                            "type": "number"
+                        }
+                    ],
+                    "description": "How long it runs."
+                },
+                "easing": {
+                    "description": "A CSS easing function: how it speeds up and slows down.",
+                    "type": "string"
+                },
+                "effect": {
+                    "const": "item-move",
+                    "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "end": {
+                    "$ref": "#/definitions/GameEffectPosition",
+                    "description": "Where the move ends."
+                },
+                "start": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/GamePositionInDisplay"
+                        },
+                        {
+                            "$ref": "#/definitions/GamePositionByAmount"
+                        },
+                        {
+                            "$ref": "#/definitions/GamePositionFromElement"
+                        }
+                    ],
+                    "description": "Where the move begins. Defaults to where the element is now."
+                },
+                "target": {
+                    "description": "CSS selector for the elements. Defaults to every item in the shown displays.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "effect",
+                "end"
             ],
             "type": "object"
         },
@@ -666,9 +968,425 @@
             ],
             "type": "string"
         },
+        "GamePlayerFallEffect": {
+            "description": "Drops players off the display. They are removed once they have gone.",
+            "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "durationMs": {
+                    "anyOf": [
+                        {
+                            "const": "indefinite",
+                            "type": "string"
+                        },
+                        {
+                            "type": "number"
+                        }
+                    ],
+                    "description": "How long it takes."
+                },
+                "easing": {
+                    "description": "A CSS easing function: how it speeds up and slows down.",
+                    "type": "string"
+                },
+                "effect": {
+                    "const": "player-fall",
+                    "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "players": {
+                    "description": "Who it applies to. Defaults to `\"triggering\"`.",
+                    "enum": [
+                        "all",
+                        "triggering"
+                    ],
+                    "type": "string"
+                }
+            },
+            "required": [
+                "effect"
+            ],
+            "type": "object"
+        },
+        "GamePlayerFreezeEffect": {
+            "description": "Stops players in place until `player-unfreeze`. They are still active, but can't interact. Applies at once.",
+            "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "effect": {
+                    "const": "player-freeze",
+                    "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "players": {
+                    "description": "Who it applies to. Defaults to `\"triggering\"`.",
+                    "enum": [
+                        "all",
+                        "triggering"
+                    ],
+                    "type": "string"
+                }
+            },
+            "required": [
+                "effect"
+            ],
+            "type": "object"
+        },
+        "GamePlayerOpacityEffect": {
+            "description": "Hides players, or shows them again. They are still active, and can still interact.",
+            "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "durationMs": {
+                    "anyOf": [
+                        {
+                            "const": "indefinite",
+                            "type": "string"
+                        },
+                        {
+                            "type": "number"
+                        }
+                    ],
+                    "description": "How long it takes."
+                },
+                "easing": {
+                    "description": "A CSS easing function: how it speeds up and slows down.",
+                    "type": "string"
+                },
+                "effect": {
+                    "description": "Which effect this is.",
+                    "enum": [
+                        "player-invisible",
+                        "player-visible"
+                    ],
+                    "type": "string"
+                },
+                "players": {
+                    "description": "Who it applies to. Defaults to `\"triggering\"`.",
+                    "enum": [
+                        "all",
+                        "triggering"
+                    ],
+                    "type": "string"
+                }
+            },
+            "required": [
+                "effect"
+            ],
+            "type": "object"
+        },
+        "GamePlayerRestoreEffect": {
+            "description": "Returns players to normal, whatever has happened to them. `\"all\"` includes removed players.",
+            "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "durationMs": {
+                    "anyOf": [
+                        {
+                            "const": "indefinite",
+                            "type": "string"
+                        },
+                        {
+                            "type": "number"
+                        }
+                    ],
+                    "description": "How long they take to fade back in. Defaults to 500."
+                },
+                "effect": {
+                    "const": "player-restore",
+                    "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "players": {
+                    "description": "Who it applies to. Defaults to `\"triggering\"`.",
+                    "enum": [
+                        "all",
+                        "triggering"
+                    ],
+                    "type": "string"
+                }
+            },
+            "required": [
+                "effect"
+            ],
+            "type": "object"
+        },
+        "GamePlayerSpinAwayEffect": {
+            "description": "Knocks players off the display, turning as they go. They are removed once they have gone.",
+            "properties": {
+                "angle": {
+                    "$ref": "#/definitions/GameEffectAngle",
+                    "description": "The directions they may leave in; one is picked at random. Defaults to -60 to 60."
+                },
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "durationMs": {
+                    "anyOf": [
+                        {
+                            "const": "indefinite",
+                            "type": "string"
+                        },
+                        {
+                            "type": "number"
+                        }
+                    ],
+                    "description": "How long it takes."
+                },
+                "easing": {
+                    "description": "A CSS easing function: how it speeds up and slows down.",
+                    "type": "string"
+                },
+                "effect": {
+                    "const": "player-spin-away",
+                    "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "opacity": {
+                    "description": "How opaque they are by the time they are off-screen. Defaults to 1.",
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "players": {
+                    "description": "Who it applies to. Defaults to `\"triggering\"`.",
+                    "enum": [
+                        "all",
+                        "triggering"
+                    ],
+                    "type": "string"
+                },
+                "rotations": {
+                    "description": "How many times they turn on the way. The direction is random. Defaults to 2.",
+                    "type": "number"
+                },
+                "zoom": {
+                    "description": "How much bigger or smaller they are by the time they are off-screen, as a multiple above 0. Defaults to 1.",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "effect"
+            ],
+            "type": "object"
+        },
+        "GamePlayerStaticEffect": {
+            "description": "Makes players look partly transparent, like a detuned TV. They are still active, and can still interact.",
+            "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "durationMs": {
+                    "anyOf": [
+                        {
+                            "const": "indefinite",
+                            "type": "string"
+                        },
+                        {
+                            "type": "number"
+                        }
+                    ],
+                    "description": "How long it takes."
+                },
+                "easeMs": {
+                    "description": "How long it takes to reach `proportion`, and to fade away again. Defaults to 500.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "easing": {
+                    "description": "A CSS easing function: how it speeds up and slows down.",
+                    "type": "string"
+                },
+                "effect": {
+                    "const": "player-static",
+                    "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "pixelSize": {
+                    "description": "The size of each block of static, as a % of the display's width, above 0. Defaults to 0.5.",
+                    "type": "number"
+                },
+                "players": {
+                    "description": "Who it applies to. Defaults to `\"triggering\"`.",
+                    "enum": [
+                        "all",
+                        "triggering"
+                    ],
+                    "type": "string"
+                },
+                "proportion": {
+                    "description": "The target proportion of the player's pixels made transparent. Defaults to 0.5.",
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number"
+                }
+            },
+            "required": [
+                "effect"
+            ],
+            "type": "object"
+        },
+        "GamePlayerUnfreezeEffect": {
+            "description": "Returns frozen players to the live camera. Applies at once.",
+            "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "effect": {
+                    "const": "player-unfreeze",
+                    "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "players": {
+                    "description": "Who it applies to. Defaults to `\"triggering\"`.",
+                    "enum": [
+                        "all",
+                        "triggering"
+                    ],
+                    "type": "string"
+                }
+            },
+            "required": [
+                "effect"
+            ],
+            "type": "object"
+        },
+        "GamePositionByAmount": {
+            "description": "An amount from where the element is when the effect starts.",
+            "properties": {
+                "by": {
+                    "$ref": "#/definitions/GamePositionInDisplay",
+                    "description": "The amount, as % of the display's width and height."
+                }
+            },
+            "required": [
+                "by"
+            ],
+            "type": "object"
+        },
+        "GamePositionFromElement": {
+            "description": "An amount from the centre of another element.",
+            "properties": {
+                "from": {
+                    "description": "CSS selector for the other element.",
+                    "type": "string"
+                },
+                "left": {
+                    "description": "% of the display's width, from the left.",
+                    "type": "number"
+                },
+                "top": {
+                    "description": "% of the display's height, from the top.",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "from",
+                "left",
+                "top"
+            ],
+            "type": "object"
+        },
+        "GamePositionInDisplay": {
+            "description": "A place in the display: the element's centre, as % of the display's width and height.",
+            "properties": {
+                "left": {
+                    "description": "% of the display's width, from the left.",
+                    "type": "number"
+                },
+                "top": {
+                    "description": "% of the display's height, from the top.",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "left",
+                "top"
+            ],
+            "type": "object"
+        },
+        "GameQuakeEffect": {
+            "description": "Shakes elements. Moves each item, never a layer's container, so items can still sort among players.",
+            "properties": {
+                "consistentMotion": {
+                    "description": "Whether all the items shake with the same motion. If false, each item's motion is random. Defaults to true.",
+                    "type": "boolean"
+                },
+                "cycleMs": {
+                    "description": "The length of one loop, when `durationMs` is `\"indefinite\"`.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "durationMs": {
+                    "anyOf": [
+                        {
+                            "const": "indefinite",
+                            "type": "string"
+                        },
+                        {
+                            "type": "number"
+                        }
+                    ],
+                    "description": "How long it runs."
+                },
+                "dx": {
+                    "description": "How far to shake horizontally, as a % of the display's width. Defaults to 0.",
+                    "type": "number"
+                },
+                "dy": {
+                    "description": "How far to shake vertically, as a % of the display's height. Defaults to 0.",
+                    "type": "number"
+                },
+                "easing": {
+                    "description": "A CSS easing function: how it speeds up and slows down.",
+                    "type": "string"
+                },
+                "effect": {
+                    "const": "quake",
+                    "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "target": {
+                    "description": "CSS selector for the elements. Defaults to every item in the shown displays.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "effect"
+            ],
+            "type": "object"
+        },
         "GameResetChallengeAction": {
             "description": "Clears this display's challenge, and the state of its displays. Challenge displays only.",
             "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
                 "resetChallenge": {
                     "const": true,
                     "description": "Always true.",
@@ -712,6 +1430,11 @@
         "GameResetStateAction": {
             "description": "Returns the display's state to `initialState`.",
             "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
                 "resetState": {
                     "const": true,
                     "description": "Always true.",
@@ -753,13 +1476,25 @@
             "description": "Shows a celebration, as the game does for a completed stage; not shown to players who prefer reduced motion. It\ndoesn't hold up the rule, and plays alongside any other sounds and rewards.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before showing it. Defaults to 0.",
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
                     "minimum": 0,
                     "type": "number"
+                },
+                "players": {
+                    "description": "The players each burst starts from the centre of the body of, instead of `target`.",
+                    "enum": [
+                        "all",
+                        "triggering"
+                    ],
+                    "type": "string"
                 },
                 "reward": {
                     "$ref": "#/definitions/GameRewardData",
                     "description": "The celebration."
+                },
+                "target": {
+                    "description": "CSS selector: each burst starts from the centre of a matching element. Defaults to the middle of the game.",
+                    "type": "string"
                 }
             },
             "required": [
@@ -812,6 +1547,11 @@
         "GameSetAction": {
             "description": "Sets state keys to the values of expressions, all evaluated against the state before the action.",
             "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
                 "set": {
                     "$ref": "#/definitions/Record%3Cstring%2Cstring%3E",
                     "description": "State key to expression."
@@ -826,7 +1566,7 @@
             "description": "Plays one of the game's sound resources. It doesn't hold up the rule: the rule's other actions carry on.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before playing it. Defaults to 0.",
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
                     "minimum": 0,
                     "type": "number"
                 },
@@ -913,6 +1653,41 @@
             ],
             "type": "object"
         },
+        "GameStopEffect": {
+            "description": "Ends effects before their display does. An item returns to where its template puts it.",
+            "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "effect": {
+                    "const": "stop",
+                    "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "players": {
+                    "description": "The players to stop effects on, instead of `target`.",
+                    "enum": [
+                        "all",
+                        "triggering"
+                    ],
+                    "type": "string"
+                },
+                "stop": {
+                    "description": "The effect to stop. Defaults to all of them.",
+                    "type": "string"
+                },
+                "target": {
+                    "description": "CSS selector for the elements. Defaults to every item in the shown displays.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "effect"
+            ],
+            "type": "object"
+        },
         "GameTransitionEndTrigger": {
             "description": "A CSS transition ending on an element of the display.",
             "properties": {
@@ -941,6 +1716,9 @@
                 },
                 {
                     "$ref": "#/definitions/GameTransitionEndTrigger"
+                },
+                {
+                    "$ref": "#/definitions/GameEffectEndTrigger"
                 },
                 {
                     "$ref": "#/definitions/GameWhenTrigger"

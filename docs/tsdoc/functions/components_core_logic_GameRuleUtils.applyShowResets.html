@@ -20,7 +20,9 @@
 renders its old state:</p>
 <ul>
 <li>a display whose reset display shows before every showing shows it again;</li>
-<li>a reset display, or a display with <code>resetStateOnShow</code>, returns to its <code>initialState</code>.</li>
+<li>a reset display, or a display with <code>resetStateOnShow</code>, returns to its <code>initialState</code>;</li>
+<li>each starts a new run, and so does each it has just stopped showing, which ends what it started. (The overview
+still renders behind a stage, so nothing else would end its effects.)</li>
 </ul>
 </div>
 <div class="tsd-parameters">
@@ -32,7 +34,7 @@ renders its old state:</p>
 <li><span><span class="tsd-kind-parameter">next</span>: <a href="../interfaces/entities_state_GameState.GameState.html" class="tsd-signature-type tsd-kind-interface">GameState</a></span></li></ul></div>
 <h4 class="tsd-returns-title">Returns <a href="../interfaces/entities_state_GameState.GameState.html" class="tsd-signature-type tsd-kind-interface">GameState</a></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/logic/GameRuleUtils.ts#L49">components/core/logic/GameRuleUtils.ts:49</a></li></ul></aside></div></li></ul></section></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/logic/GameRuleUtils.ts#L59">components/core/logic/GameRuleUtils.ts:59</a></li></ul></aside></div></li></ul></section></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

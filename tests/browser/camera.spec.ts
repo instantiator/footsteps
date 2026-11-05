@@ -1,23 +1,27 @@
 import { expect, test, type Page } from "@playwright/test";
 import { MODEL_TIMEOUT, openCameraGame } from "./fixtures/cameraGame";
 import { peoplePhotoUrls } from "./fixtures/people/people";
+import { installReactCommitCounter } from "./fixtures/reactCommits";
 
 const streamCount = (page: Page) => page.evaluate(() => window.__fakeCamera.streams.length);
 const trackState = (page: Page, index: number) =>
   page.evaluate((i) => window.__fakeCamera.streams[i]?.getVideoTracks()[0]?.readyState, index);
 const drawCount = (page: Page) => page.evaluate(() => window.__cameraDraws);
 
-const silhouetteCanvas = (page: Page) => page.locator("#character-canvas-container canvas");
+/** The canvas that shows the camera layer is running; each player found gets their own, in a wrapper. */
+const characterLayer = (page: Page) => page.locator("#character-canvas-container > canvas");
+
+const silhouetteCanvas = (page: Page) => page.locator("#character-canvas-container .player canvas");
 const preview = (page: Page) => page.locator("#character-camera-layer video");
 
 test("shows the preview and runs the silhouette loop against the fake camera", async ({ page }) => {
   await openCameraGame(page);
 
   await expect(preview(page)).toBeVisible();
-  await expect(silhouetteCanvas(page)).toBeVisible();
+  await expect(characterLayer(page)).toBeAttached();
   await expect.poll(() => streamCount(page)).toBe(1);
-  await expect(silhouetteCanvas(page)).toHaveAttribute("width", "640", { timeout: MODEL_TIMEOUT });
-  await expect(silhouetteCanvas(page)).toHaveAttribute("height", "480", { timeout: MODEL_TIMEOUT });
+  await expect(characterLayer(page)).toHaveAttribute("width", "640", { timeout: MODEL_TIMEOUT });
+  await expect(characterLayer(page)).toHaveAttribute("height", "480", { timeout: MODEL_TIMEOUT });
   await expect.poll(() => drawCount(page), { timeout: MODEL_TIMEOUT }).toBeGreaterThan(2);
 });
 
@@ -39,7 +43,7 @@ test("keeps the silhouette loop running when debug changes the mask type", async
 
   await expect(page.locator("#debug-overlay-container")).toBeVisible();
   await expect.poll(() => drawCount(page), { timeout: MODEL_TIMEOUT }).toBeGreaterThan(before);
-  await expect(silhouetteCanvas(page)).toBeVisible();
+  await expect(characterLayer(page)).toBeAttached();
   expect(errors.filter((text) => /tensorflow|disposed/i.test(text))).toEqual([]);
 });
 
@@ -47,7 +51,7 @@ test("hides the preview but keeps the camera running when the preview is off", a
   await openCameraGame(page, { preview: false });
 
   await expect(page.locator("#character-camera-layer")).toBeHidden();
-  await expect(silhouetteCanvas(page)).toBeVisible();
+  await expect(characterLayer(page)).toBeAttached();
   await expect.poll(() => drawCount(page), { timeout: MODEL_TIMEOUT }).toBeGreaterThan(2);
   await expect.poll(() => streamCount(page)).toBe(1);
 });
@@ -55,7 +59,7 @@ test("hides the preview but keeps the camera running when the preview is off", a
 test("stops the camera on a camera-off display, and reacquires it on return", async ({ page }) => {
   await openCameraGame(page, { cameraOffStage: "stage-1" });
 
-  await expect(silhouetteCanvas(page)).toBeVisible();
+  await expect(characterLayer(page)).toBeAttached();
   await expect.poll(() => streamCount(page)).toBe(1);
   expect(await trackState(page, 0)).toBe("live");
 
@@ -70,7 +74,7 @@ test("stops the camera on a camera-off display, and reacquires it on return", as
 
   await page.getByRole("button", { name: "Close challenge" }).click();
 
-  await expect(silhouetteCanvas(page)).toBeVisible();
+  await expect(characterLayer(page)).toBeAttached();
   await expect.poll(() => streamCount(page)).toBe(2);
   expect(await trackState(page, 1)).toBe("live");
 });
@@ -127,7 +131,7 @@ test("plays on by clicks when the camera is busy", async ({ page }) => {
 /** How many of the silhouette canvas's pixels are partly see-through, as feathered edges are. */
 const partlyClearPixels = (page: Page) =>
   page.evaluate(() => {
-    const canvas = document.querySelector<HTMLCanvasElement>("#character-canvas-container canvas");
+    const canvas = document.querySelector<HTMLCanvasElement>("#character-canvas-container .player canvas");
     const pixels = canvas?.getContext("2d")?.getImageData(0, 0, canvas.width, canvas.height).data ?? [];
     let count = 0;
     for (let i = 3; i < pixels.length; i += 4) if (pixels[i] > 0 && pixels[i] < 255) count++;
@@ -157,13 +161,13 @@ for (const featherPx of [3, 0]) {
  */
 const fewestPixelsWhileLost = (page: Page, lostMs: number) =>
   page.evaluate(async (ms) => {
-    const canvas = document.querySelector<HTMLCanvasElement>("#character-canvas-container canvas")!;
-    const context = canvas.getContext("2d")!;
     window.__fakeCamera.setImage("room");
     let fewest = Infinity;
     for (const until = performance.now() + ms; performance.now() < until;) {
       await new Promise(requestAnimationFrame);
-      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      // A player the model has really lost has no canvas
+      const canvas = document.querySelector<HTMLCanvasElement>("#character-canvas-container .player canvas");
+      const pixels = canvas?.getContext("2d")?.getImageData(0, 0, canvas.width, canvas.height).data ?? [];
       let count = 0;
       for (let i = 3; i < pixels.length; i += 4) if (pixels[i] > 0) count++;
       fewest = Math.min(fewest, count);
@@ -189,9 +193,27 @@ for (const holding of [true, false]) {
   });
 }
 
+test("names each player's wrapper by number, and doesn't re-render the game while they stay in shot", async ({
+  page,
+}) => {
+  test.setTimeout(MODEL_TIMEOUT + 30_000);
+  await installReactCommitCounter(page);
+  await openCameraGame(page, { photos: peoplePhotoUrls() });
+  await expect.poll(() => drawCount(page), { timeout: MODEL_TIMEOUT }).toBeGreaterThan(2);
+  await page.evaluate(() => window.__fakeCamera.setImage("photo:two-facing"));
+
+  await expect(page.locator(".player-1")).toHaveCount(1, { timeout: MODEL_TIMEOUT });
+  await expect(page.locator(".player-2")).toHaveCount(1);
+  await page.waitForTimeout(1000); // settle
+  const commits = () => page.evaluate(() => window.__reactCommits);
+  const before = await commits();
+  await page.waitForTimeout(2000);
+  expect((await commits()) - before).toBeLessThan(5); // only the frame rate readout, if anything
+});
+
 test("lays each player's canvas exactly over the others", async ({ page }) => {
   await openCameraGame(page, { photos: peoplePhotoUrls() });
-  await expect(silhouetteCanvas(page)).toHaveCount(1, { timeout: MODEL_TIMEOUT });
+  await expect.poll(() => drawCount(page), { timeout: MODEL_TIMEOUT }).toBeGreaterThan(2);
   await page.evaluate(() => window.__fakeCamera.setImage("photo:two-facing"));
 
   await expect(silhouetteCanvas(page)).toHaveCount(2, { timeout: MODEL_TIMEOUT });
@@ -202,5 +224,5 @@ test("lays each player's canvas exactly over the others", async ({ page }) => {
   expect(second).toEqual(first);
 
   await page.evaluate(() => window.__fakeCamera.setImage("room"));
-  await expect(silhouetteCanvas(page)).toHaveCount(1, { timeout: 10_000 });
+  await expect(silhouetteCanvas(page)).toHaveCount(0, { timeout: 10_000 });
 });

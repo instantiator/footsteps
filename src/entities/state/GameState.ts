@@ -1,6 +1,9 @@
+import { NO_PLAYERS, type PlayerCounts } from "../../components/camera/PlayerRegistry";
 import { GameOverviewPurposeSequence } from "../../components/core/logic/GameClickUtils";
 import { isDefined } from "../../util/ObjectUtils";
-import type { GameEffectAction, GameOverviewDisplayPurpose } from "../data/displays/GameDisplayData";
+import type { RuleEvent } from "../../components/core/logic/GameRuleUtils";
+import type { GameAction, GameFeedbackAction, GameOverviewDisplayPurpose } from "../data/displays/GameDisplayData";
+import type { GameEffect } from "../data/displays/GameEffectData";
 import type { GameData } from "../data/GameData";
 import type { GameStageId } from "../data/GameStageData";
 import type { GameStageState } from "./GameStageState";
@@ -16,7 +19,43 @@ export interface QueuedEffect {
   /** Identifies it, so it is played once however often the state is worked out; ids only grow. */
   id: number;
   /** What to play. */
-  effect: GameEffectAction;
+  effect: GameFeedbackAction;
+  /** The display whose rule asked for it. */
+  scope: DisplayScope;
+  /** The event its rule fired with. */
+  event: RuleEvent;
+}
+
+/** An action with a `delayMs`, waiting for the game to run it. Sounds and rewards are {@link QueuedEffect}s instead. */
+export interface DelayedAction {
+  /** Identifies it, as a {@link QueuedEffect}'s id does. */
+  id: number;
+  /** The display whose rule it belongs to. */
+  scope: DisplayScope;
+  /** Which run of the display the rule fired in: the action is dropped if the display has moved on from it. */
+  run: number;
+  /** What to do. */
+  action: GameAction;
+  /** What expressions see as `event`: the event the rule fired with. */
+  event: RuleEvent;
+  /** Where the action is in the game's rules, for error messages. */
+  where: string;
+}
+
+/** An effect a rule has started, waiting for the game to play it. */
+export interface QueuedVisualEffect {
+  /** Identifies it, as a {@link QueuedEffect}'s id does. */
+  id: number;
+  /** The display whose rule started it. */
+  scope: DisplayScope;
+  /** Which run of the display the rule fired in: it is dropped if the display has moved on from it. */
+  run: number;
+  /** What to play. */
+  effect: GameEffect;
+  /** The event its rule fired with. */
+  event: RuleEvent;
+  /** Where the action is in the game's rules, for error messages. */
+  where: string;
 }
 
 /** What lasts only while the game is open, and is never saved with its progress. */
@@ -25,12 +64,31 @@ export interface GameSession {
   finishedResets: DisplayScope[];
   /** Sounds and rewards rules have asked for, until the game plays them. */
   effects: QueuedEffect[];
-  /** The id the next queued effect gets. */
+  /** Effects rules have started, until the game plays them. */
+  visualEffects: QueuedVisualEffect[];
+  /** Actions rules have delayed, until the game starts waiting for them. */
+  delayedActions: DelayedAction[];
+  /** How many players there are. Updated only as it changes, as an update re-renders the game. */
+  players: PlayerCounts;
+  /** The id the next queued effect or delayed action gets. */
   nextEffectId: number;
+  /**
+   * How many times each display has started or ended: as it is shown, as it closes, and as it resets. What a display starts
+   * (its timers, template animations, delays and effects) belongs to one run, and ends with it.
+   */
+  displayRuns: Record<DisplayScope, number>;
 }
 
 /** A session with nothing in it, as a game starts or loads. */
-export const newGameSession = (): GameSession => ({ finishedResets: [], effects: [], nextEffectId: 1 });
+export const newGameSession = (): GameSession => ({
+  finishedResets: [],
+  effects: [],
+  visualEffects: [],
+  delayedActions: [],
+  players: NO_PLAYERS,
+  nextEffectId: 1,
+  displayRuns: {},
+});
 
 /** Runtime progress of a game: its definition, per-stage progress, what is currently showing, and display states. */
 export interface GameState {

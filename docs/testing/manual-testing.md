@@ -181,9 +181,26 @@ Play it once with the mouse and once with the camera (`?debug=true` shows where 
       door's base: fireworks and a fanfare, and the stage completes. Reload partway: you are asked for the start
       again. The same works by walking the mouse over them.
 - [ ] **Walk around:** see [From behind](#from-behind). "Done" completes the stage.
+- [ ] **Effects:** see [Player effects](#player-effects). The top row also works by mouse. "Done" completes the stage.
 - [ ] **Reduced motion:** with the system's reduce-motion setting on, the sounds still play but there are no
       sparkles or fireworks.
 - [ ] **Covering:** with the HUD over part of the game, a hand under the HUD's buttons does not count.
+
+## Player effects
+
+The rules demo's Effects stage has one thing to touch for each effect, and shows how many players there are. The automated fake camera shows one photo at a time, so it can't show any of this.
+
+- [ ] **Two people crossing:** freeze one of two people on the ice, then have them cross. Note whether the freeze stays with the right person. They can swap ([player tracking](../player-tracking.md#limits)), but note how often.
+- [ ] **Removal surviving a lost track:** fall into the pit, then step out of shot briefly and back to about the same place. You stay removed, and the count says so. Further away, you rejoin as someone new.
+- [ ] **Falling:** you fall straight down from where you stood, and your image stops following you as it starts. With everyone removed, the stage starts again after 2 s, and everyone returns.
+- [ ] **Spin away:** with "Mirror picture" both on and off, touch the boulder. You turn about your body, not the middle of the screen, and leave upwards.
+- [ ] **Freeze and unfreeze:** touch the ice. Your image stops, and things you were over act as if you had left. After 3 s you return to the live camera, and must leave and come back to anything you are already over.
+- [ ] **Near at the boundary:** stand at the edge of the lamp's range and sway. It doesn't flicker on and off.
+- [ ] **Static at distance:** touch the static square near the camera and far from it. The blocks are the same size on screen, and it flickers, unless reduced motion is on.
+- [ ] **Invisible:** touch the ghost: you fade out, and can still set off other things, and return after 3 s.
+- [ ] **Quake on a jump:** jump. Everything shakes, and you can still walk behind and in front of depth items while it does.
+- [ ] **Speed:** with `?showFps=true`, quake a player's image, or give them a filter highlight, in a large window. Look for stutter that the frame rate readout doesn't show, as a filter's cost falls on the browser's drawing rather than on the vision loop.
+- [ ] **Reduced motion:** with the system's reduce-motion setting on, falls and spins jump to their end, nothing shakes, static holds still, and the stage can still be finished.
 
 ## Without a working camera
 
@@ -222,6 +239,7 @@ What the suite proves:
 | Preview off keeps the camera running                | Hiding the preview does not stop segmentation                                                                                                                                                                                                                        |
 | Camera-off display stops, returning reacquires      | The track ends on the camera-off display, and a live stream returns                                                                                                                                                                                                  |
 | Switching the fake camera image changes the preview | The harness controls the image the app receives                                                                                                                                                                                                                      |
+| Effects (`effects.spec.ts`)                         | Item effects at two sizes, in a second column, through re-renders, resets and fades, with reduced motion; a fake camera for falling, spinning, freezing, static, rewards, and a removed player staying removed                                                       |
 | Rules demo (`rules.spec.ts`)                        | The toggle, bulb, balloons and lava play by mouse; the balloons count down and the lava asks for the start first, again after lava and a reload; display state is kept, and resets on show; the mouse passes through empty foreground but not through drawn elements |
 
 The suite does not prove that a physical camera works, that a real player's body is segmented

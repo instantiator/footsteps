@@ -17,7 +17,10 @@ const openDemo = async (page: Page, change: (game: GameData) => void = () => {})
     const game = repository.games[GAME_ID];
     for (const display of [
       ...game.displays,
-      ...game.stages.flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.displays)),
+      // The effects stage acts on players, so it can't load without the camera
+      ...game.stages
+        .filter((stage) => stage.id !== "effects")
+        .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.displays)),
     ]) {
       display.camera = { requirement: false };
     }
@@ -94,6 +97,52 @@ test.describe("rules demo", () => {
     await page.getByRole("button", { name: "Close challenge" }).click();
 
     await expect(page.locator("#switch")).toHaveClass(/position-2/);
+  });
+
+  test("plays each item effect on the effects stage with the mouse", async ({ page }) => {
+    await openDemo(page);
+    await page.locator("#stage-link-effects").click();
+    await expect(page.locator("#rock")).toBeVisible();
+
+    const animationsOn = (selector: string) =>
+      page.locator(selector).evaluate((element) => element.getAnimations().length);
+
+    await page.locator("#lift").click();
+    await expect.poll(() => animationsOn("#lift")).toBe(1);
+
+    await page.locator("#lamp").hover();
+    await expect.poll(() => animationsOn("#lamp")).toBe(1);
+    await page.locator("#effects-message").hover();
+    await expect.poll(() => animationsOn("#lamp")).toBe(0);
+
+    await page.locator("#crate").click();
+    await expect(page.locator("#effects-message")).toContainText("The crate has fallen");
+    await page.locator("#prize").click();
+    await page.locator("#bridge").click();
+    await expect(page.locator("#effects-message")).toContainText("The bridge has gone");
+
+    await page.locator("#effects-done").click();
+    await expect(page.locator("#stage-link-effects")).toHaveClass(/completed/);
+  });
+
+  test("rebuilds a display's template when it resets, restarting its animations", async ({ page }) => {
+    await openDemo(page, (game) => {
+      challengeOf(game, "balloons").rules!.push({
+        on: { interact: ["click"], target: "#score" },
+        do: [{ resetState: true }],
+      });
+    });
+    await startBalloons(page);
+    const balloon = page.locator(".balloon");
+    await balloon.evaluate((element) => element.setAttribute("data-before-reset", "yes"));
+    const runningFor = () =>
+      balloon.evaluate((element) => Number(element.getAnimations({ subtree: true })[0]?.currentTime ?? 0));
+    await expect.poll(runningFor).toBeGreaterThan(300);
+
+    await page.locator("#score").click();
+
+    await expect(page.locator(".balloon[data-before-reset]")).toHaveCount(0);
+    expect(await runningFor()).toBeLessThan(300);
   });
 
   test("pops balloons where they are, scores them, replaces missed ones, and completes at the target", async ({

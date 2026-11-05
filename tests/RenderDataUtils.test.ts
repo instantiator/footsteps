@@ -10,6 +10,7 @@ import {
   getRenderMode,
   getShownDisplays,
 } from "../src/components/core/logic/RenderDataUtils";
+import { startDisplayRuns } from "../src/components/core/logic/GameStateUtils";
 import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
 import { challenge, display, game, stage } from "./data/GameBuilders";
 
@@ -47,6 +48,12 @@ describe("getDisplayKey", () => {
   it("stays the same while a display's contents change", () => {
     const state = inStage(createBlankGameState(chunkedGame(1)), "s1");
     expect(keyOf({ ...state, current: { ...state.current } })).toBe(keyOf(state));
+  });
+
+  it("stays the same when a display resets, so a reset doesn't fade", () => {
+    const state = inStage(createBlankGameState(chunkedGame(1)), "s1");
+    const [{ scope }] = getShownDisplays(state);
+    expect(keyOf(startDisplayRuns(state, [scope]))).toBe(keyOf(state));
   });
 
   it("changes when the overview cuts to another overview", () => {

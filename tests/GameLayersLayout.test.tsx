@@ -97,6 +97,7 @@ const playerWithHandAt = (x: number, y: number): PlayerFrame => {
 /** A camera rule watching the overview's element for hands, ignoring covering (jsdom can't hit-test). */
 const handRule = (overrides: Partial<CameraRuleTarget> = {}): CameraRuleTarget => ({
   scope: SCOPE,
+  run: 1,
   ruleIndex: 0,
   selector: "#overview-thing",
   interactions: ["hand-enter"],
@@ -111,6 +112,7 @@ const handOnThing = (container: HTMLElement) => ({
   scope: SCOPE,
   ruleIndex: 0,
   element: container.querySelector("#overview-thing"),
+  player: 0,
   interaction: "hand-enter",
 });
 
@@ -495,6 +497,69 @@ describe("GameLayersLayout camera interactions", () => {
     sendPlayers([playerWithHandAt(6, 1)]);
 
     expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith(handOnThing(container));
+  });
+
+  it("fires a near rule by how close the silhouette comes, as a % of the display's width", async () => {
+    const onPlayerInteraction = vi.fn();
+    const { container, canvas } = await renderWithCamera({
+      cameraRules: [handRule({ interactions: ["near-enter"], within: 25, includeCovered: true })],
+      onPlayerInteraction,
+    });
+    stubRect(canvas, new DOMRect(0, 0, 100, 100));
+    stubRect(container.querySelector(".gameViewport")!, new DOMRect(0, 0, 100, 100));
+    stubRect(container.querySelector("#overview-thing")!, new DOMRect(40, 40, 20, 20));
+    sendPlayers([playerWithHandAt(9, 0)], 900); // over 25% from the middle, in the corner of a 10 by 10 mask
+    expect(onPlayerInteraction).not.toHaveBeenCalled();
+    sendPlayers([playerWithHandAt(6, 4)], 1000);
+    expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith({
+      ...handOnThing(container),
+      interaction: "near-enter",
+    });
+  });
+
+  it("fires a jump anywhere with no element", async () => {
+    const onPlayerInteraction = vi.fn();
+    await renderWithCamera({
+      cameraRules: [handRule({ interactions: ["jump"], selector: undefined })],
+      onPlayerInteraction,
+    });
+    const atHeight = (y: number): PlayerFrame => ({
+      ...playerWithHandAt(1, y),
+      keyPoints: { ...noKeyPoints(), headTop: { x: 1, y: y - 5 } },
+      feet: { absolute: { x: 1, y }, percent: { x: 10, y: y * 10 } },
+    });
+    let timestamp = 1000;
+    for (const y of [9, 9, 9, 5, 5, 9, 9, 9]) sendPlayers([atHeight(y)], (timestamp += 100));
+    expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ element: null, interaction: "jump", scope: SCOPE, ruleIndex: 0 }),
+    );
+  });
+
+  it("makes a player already over an element move in again after its display resets, without an exit", async () => {
+    const onPlayerInteraction = vi.fn();
+    const rules = [handRule({ interactions: ["hand-enter", "hand-exit"] })];
+    const { container, canvas, rerender } = await renderWithCamera({ cameraRules: rules, onPlayerInteraction });
+    stubRect(canvas, new DOMRect(0, 0, 100, 100));
+    stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 50, 50));
+    sendPlayers([playerWithHandAt(0, 7)], 900);
+    sendPlayers([playerWithHandAt(6, 1)], 1000);
+    expect(onPlayerInteraction).toHaveBeenCalledTimes(1);
+
+    rerender(
+      layout({
+        camera: { enabled: true, preview: true },
+        cameraRules: [{ ...rules[0], run: 2 }],
+        onPlayerInteraction,
+      }),
+    );
+    sendPlayers([playerWithHandAt(6, 1)], 1100);
+    sendPlayers([playerWithHandAt(6, 1)], 1200);
+    expect(onPlayerInteraction).toHaveBeenCalledTimes(1);
+
+    sendPlayers([playerWithHandAt(0, 7)], 1300);
+    expect(onPlayerInteraction).toHaveBeenCalledTimes(1);
+    sendPlayers([playerWithHandAt(6, 1)], 1400);
+    expect(onPlayerInteraction).toHaveBeenCalledTimes(2);
   });
 
   it("reports the interaction on the same side of the mask when the camera isn't mirrored", async () => {

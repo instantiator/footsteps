@@ -1,3 +1,4 @@
+import type { StaticLook } from "./PlayerStatic";
 import { BODY_PART_STYLES, BodyPart, type Color } from "../../vision/BodyPart";
 import { partRegion } from "../../vision/VisionQueries";
 import type { VisionFrame } from "../../vision/VisionTypes";
@@ -108,6 +109,57 @@ const surfaceFor = (ctx: CanvasRenderingContext2D, { width, height }: VisionFram
 const drawSurface = (ctx: CanvasRenderingContext2D, { context, image }: MaskSurface) => {
   context.putImageData(image, 0, 0);
   ctx.drawImage(context.canvas, 0, 0, ctx.canvas.width, ctx.canvas.height);
+};
+
+/** A repeatable random number from 0 to 1 for each block of a pattern, from a seed (mulberry32). */
+const randomFrom = (seed: number) => () => {
+  seed = (seed + 0x6d2b79f5) | 0;
+  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+
+/** How many blocks of static fit on a canvas. */
+export interface StaticGrid {
+  /** How many across. */
+  columns: number;
+  /** How many down. */
+  rows: number;
+}
+
+/** How many blocks of static fit on a canvas, from their size as a % of its width. */
+export const staticGrid = (canvasWidth: number, canvasHeight: number, pixelSize: number): StaticGrid => {
+  const columns = Math.max(1, Math.round(100 / pixelSize));
+  return { columns, rows: Math.max(1, Math.round((columns * canvasHeight) / canvasWidth)) };
+};
+
+/**
+ * The blocks of a static pattern: those to erase are opaque.
+ * @param seed gives the same pattern each time for the same seed
+ */
+export const staticPixels = (columns: number, rows: number, proportion: number, seed: number): Uint8ClampedArray => {
+  const pixels = new Uint8ClampedArray(columns * rows * 4);
+  const random = randomFrom(seed);
+  for (let i = 3; i < pixels.length; i += 4) pixels[i] = random() < proportion ? 255 : 0;
+  return pixels;
+};
+
+/** The pattern a frame of static draws with, which changes each frame unless it holds still. */
+let staticFrame = 0;
+
+/** Erases blocks of what is on the canvas, like a detuned TV. */
+export const drawStatic = (ctx: CanvasRenderingContext2D, { pixelSize, proportion, still }: StaticLook): void => {
+  const { width, height } = ctx.canvas;
+  const { columns, rows } = staticGrid(width, height, pixelSize);
+  const context = new OffscreenCanvas(columns, rows).getContext("2d");
+  if (!context) return;
+  const pixels = staticPixels(columns, rows, proportion, still ? 1 : ++staticFrame);
+  context.putImageData(new ImageData(new Uint8ClampedArray(pixels), columns, rows), 0, 0);
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.globalCompositeOperation = "destination-out";
+  ctx.drawImage(context.canvas, 0, 0, width, height);
+  ctx.restore();
 };
 
 /**

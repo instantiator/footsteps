@@ -83,7 +83,7 @@ export interface MaskSize {
 export type MaskRect = Rect;
 
 /** An empty mask rectangle, for elements that are not over the mask. */
-const EMPTY_MASK_RECT: MaskRect = { left: 0, top: 0, right: 0, bottom: 0 };
+export const EMPTY_MASK_RECT: MaskRect = { left: 0, top: 0, right: 0, bottom: 0 };
 
 /** Clamps a value to the given whole-pixel range. */
 const clampPixel = (value: number, max: number): number => Math.min(Math.max(Math.round(value), 0), max);
@@ -134,6 +134,20 @@ export const screenPointForMaskPoint = (
     : canvasRect.left + ((point.x + 0.5) / maskWidth) * (canvasRect.right - canvasRect.left),
   y: canvasRect.top + ((point.y + 0.5) / maskHeight) * (canvasRect.bottom - canvasRect.top),
 });
+
+/** Converts a viewport point to where it is in mask pixels, even if that is outside the mask. */
+export const maskPointForScreenPoint = (
+  point: Point,
+  canvasRect: Rect,
+  { width: maskWidth, height: maskHeight }: MaskSize,
+  mirrored: boolean,
+): Point => {
+  const fromLeft = mirrored ? canvasRect.right - point.x : point.x - canvasRect.left;
+  return {
+    x: (fromLeft / (canvasRect.right - canvasRect.left)) * maskWidth,
+    y: ((point.y - canvasRect.top) / (canvasRect.bottom - canvasRect.top)) * maskHeight,
+  };
+};
 
 /**
  * Where a person's feet are: midway between the feet the model placed, at the lower foot's height.

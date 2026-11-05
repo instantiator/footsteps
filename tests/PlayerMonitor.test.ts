@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { FootPosition, MaskRect } from "../src/components/camera/CameraSupport";
+import { EMPTY_MASK_RECT, type FootPosition, type MaskRect } from "../src/components/camera/CameraSupport";
 import {
   PlayerMonitor,
   type MonitorTarget,
@@ -65,6 +65,150 @@ const monitorWithEvents = () => {
   monitor.update(frame([]), {}, 0);
   return { events, monitor };
 };
+
+describe("PlayerMonitor jump anywhere", () => {
+  let timestamp = 1000;
+  const riseAndLand = (monitor: PlayerMonitor, targets: Record<string, MonitorTarget>) => {
+    const at = (y: number) => {
+      timestamp += 100;
+      monitor.update(frame([], {}, feetAt(y)), targets, timestamp);
+    };
+    for (const y of [9, 9, 9, 5, 5, 9, 9, 9]) at(y);
+  };
+
+  it("fires on every landing, wherever the player is", () => {
+    const { events, monitor } = monitorWithEvents();
+    const targets = { any: { ...target(["jump"], 0, EMPTY_MASK_RECT), anywhere: true } };
+    riseAndLand(monitor, targets);
+    expect(events).toEqual([{ key: "any", interaction: "jump" }]);
+    riseAndLand(monitor, targets);
+    expect(events).toHaveLength(2);
+  });
+
+  it("still needs a jump on an element to be on it", () => {
+    const { events, monitor } = monitorWithEvents();
+    riseAndLand(monitor, { door: target(["jump"], 0, EMPTY_MASK_RECT) });
+    expect(events).toEqual([]);
+  });
+});
+
+describe("PlayerMonitor near", () => {
+  /** A target whose centre is at this point, near within this distance. */
+  const nearTarget = (x: number, y: number, within: number, holdMs = 0): MonitorTarget => ({
+    ...target(["near-enter", "near-exit"], 0, EMPTY_MASK_RECT),
+    near: { centre: { x, y }, within },
+    holdMs,
+  });
+  const withSilhouette = (pixels: [number, number][], timestamp: number, monitor: PlayerMonitor, near: MonitorTarget) =>
+    monitor.update(frame(pixels), { near }, timestamp);
+
+  it("fires as the silhouette comes within range, and as it leaves, with no key points placed", () => {
+    const { events, monitor } = monitorWithEvents();
+    const near = nearTarget(0, 0, 3);
+    withSilhouette([[9, 9]], 1, monitor, near);
+    expect(events).toEqual([]);
+    withSilhouette([[2, 2]], 2, monitor, near);
+    expect(events).toEqual([{ key: "near", interaction: "near-enter" }]);
+    withSilhouette([[2, 2]], 3, monitor, near);
+    expect(events).toHaveLength(1);
+    withSilhouette([[9, 9]], 4, monitor, near);
+    expect(events.at(-1)).toEqual({ key: "near", interaction: "near-exit" });
+  });
+
+  it("is a circle, not a box", () => {
+    const { events, monitor } = monitorWithEvents();
+    const near = nearTarget(0, 0, 3);
+    withSilhouette([[2, 3]], 1, monitor, near); // inside the box, but 3.6 away
+    expect(events).toEqual([]);
+    withSilhouette([[0, 3]], 2, monitor, near);
+    expect(events).toHaveLength(1);
+  });
+
+  it("measures from a centre outside the mask", () => {
+    const { events, monitor } = monitorWithEvents();
+    withSilhouette([[0, 5]], 1, monitor, nearTarget(-2, 5, 3));
+    expect(events).toHaveLength(1);
+  });
+
+  it("doesn't fire for a flicker on the boundary", () => {
+    const events: PlayerMonitorEvent[] = [];
+    const monitor = new PlayerMonitor((event) => events.push(event), 2);
+    const near = nearTarget(0, 0, 3);
+    monitor.update(frame([]), {}, 0);
+    withSilhouette([[2, 2]], 1, monitor, near);
+    withSilhouette([[9, 9]], 2, monitor, near);
+    withSilhouette([[2, 2]], 3, monitor, near);
+    expect(events).toEqual([]);
+    withSilhouette([[2, 2]], 4, monitor, near);
+    expect(events).toEqual([{ key: "near", interaction: "near-enter" }]);
+    withSilhouette([[9, 9]], 5, monitor, near);
+    withSilhouette([[2, 2]], 6, monitor, near);
+    expect(events).toHaveLength(1);
+  });
+
+  it("waits for its hold", () => {
+    const { events, monitor } = monitorWithEvents();
+    const near = nearTarget(0, 0, 3, 100);
+    withSilhouette([[2, 2]], 1000, monitor, near);
+    withSilhouette([[2, 2]], 1050, monitor, near);
+    expect(events).toEqual([]);
+    withSilhouette([[2, 2]], 1100, monitor, near);
+    expect(events).toHaveLength(1);
+  });
+
+  it("makes a player already near when it starts leave and come back", () => {
+    const events: PlayerMonitorEvent[] = [];
+    const monitor = new PlayerMonitor((event) => events.push(event));
+    const near = nearTarget(0, 0, 3);
+    withSilhouette([[2, 2]], 1, monitor, near);
+    withSilhouette([[2, 2]], 2, monitor, near);
+    expect(events).toEqual([]);
+    withSilhouette([[9, 9]], 3, monitor, near);
+    expect(events).toEqual([]);
+    withSilhouette([[2, 2]], 4, monitor, near);
+    expect(events).toEqual([{ key: "near", interaction: "near-enter" }]);
+  });
+
+  it("fires its exit when the player goes", () => {
+    const { events, monitor } = monitorWithEvents();
+    withSilhouette([[2, 2]], 1, monitor, nearTarget(0, 0, 3));
+    monitor.release();
+    expect(events.at(-1)).toEqual({ key: "near", interaction: "near-exit" });
+  });
+
+  it("ignores threshold and whether it is covered", () => {
+    const { events, monitor } = monitorWithEvents();
+    const near = { ...nearTarget(0, 0, 3), threshold: 1, isTopmostAt: () => false };
+    withSilhouette([[2, 2]], 1, monitor, near);
+    expect(events).toHaveLength(1);
+  });
+});
+
+describe("PlayerMonitor rearm", () => {
+  it("makes what is over a target move in again, fires no exit, and leaves other targets alone", () => {
+    const { events, monitor } = monitorWithEvents();
+    const targets = {
+      "a#0": target(["hand-enter", "hand-exit"], 0),
+      "b#0": target(["hand-exit"], 0),
+    };
+    monitor.update(handFrame([[1, 1]]), targets, 1);
+    expect(events).toEqual([{ key: "a#0", interaction: "hand-enter" }]);
+
+    monitor.rearm("a#");
+    monitor.update(handFrame([[1, 1]]), targets, 2);
+    monitor.update(handFrame([[1, 1]]), targets, 3);
+    expect(events).toHaveLength(1);
+
+    monitor.update(handFrame([]), targets, 4);
+    expect(events).toEqual([
+      { key: "a#0", interaction: "hand-enter" },
+      { key: "b#0", interaction: "hand-exit" },
+    ]);
+
+    monitor.update(handFrame([[1, 1]]), targets, 5);
+    expect(events.at(-1)).toEqual({ key: "a#0", interaction: "hand-enter" });
+  });
+});
 
 describe("PlayerMonitor first frame", () => {
   it("ignores what already holds on its first frame, and fires once it begins again", () => {

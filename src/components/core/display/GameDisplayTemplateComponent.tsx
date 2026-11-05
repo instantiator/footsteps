@@ -32,6 +32,8 @@ interface GameDisplayTemplateProps {
   templateStyle?: React.CSSProperties;
   /** Identifies the display this template belongs to, so camera rules can find its elements. */
   scope?: string;
+  /** Which run of the display this is; a new one rebuilds the template. */
+  run?: number;
   /** Called with clicks, key activations, mouse moves, and animation and transition ends inside the template. */
   onDisplayEvent?: (event: DisplayDomEvent) => void;
 }
@@ -112,7 +114,8 @@ const displayEventHandlers = (onDisplayEvent: GameDisplayTemplateProps["onDispla
  * inside a container. Both styles' string values are rendered too. Children follow the rendered template.
  *
  * The rendered HTML is patched into place rather than replaced, keeping elements with the same `id`, so CSS
- * transitions and animations carry on between renders.
+ * transitions and animations carry on between renders. A new run of the display, or another display, starts on a new
+ * body instead, which ends all of them and restarts the template's animations.
  */
 export default function GameDisplayTemplateComponent({
   templateSource,
@@ -120,6 +123,7 @@ export default function GameDisplayTemplateComponent({
   containerStyle,
   templateStyle,
   scope,
+  run = 0,
   onDisplayEvent,
   children,
 }: PropsWithChildren<GameDisplayTemplateProps>) {
@@ -140,12 +144,13 @@ export default function GameDisplayTemplateComponent({
     [template, templateData],
   );
   const bodyRef = useRef<HTMLDivElement>(null);
+  const bodyKey = `${scope}#${run}`;
 
   // Patches the template's DOM in place, matching elements by id, so CSS transitions run between renders
   useLayoutEffect(() => {
     if (!isDefined(html) || !bodyRef.current) return;
     Idiomorph.morph(bodyRef.current, DOMPurify.sanitize(html, SANITIZE_OPTIONS), { morphStyle: "innerHTML" });
-  }, [html]);
+  }, [html, bodyKey]);
 
   useEffect(() => {
     getTemplate(templateSource)
@@ -167,7 +172,9 @@ export default function GameDisplayTemplateComponent({
       style={{ width: "100%", height: "100%", ...containerStyleParsed }}
       {...displayEventHandlers(onDisplayEvent)}
     >
-      {isDefined(html) && <div ref={bodyRef} className="templateBody" style={templateStyleParsed} />}
+      {isDefined(html) && (
+        <div key={bodyKey} ref={bodyRef} className="templateBody" data-display-run={run} style={templateStyleParsed} />
+      )}
       {children}
     </div>
   );

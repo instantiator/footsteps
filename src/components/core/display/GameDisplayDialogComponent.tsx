@@ -17,6 +17,7 @@ import type { DisplayDomEvent } from "../logic/TemplateUtils";
 import type { LayerHint } from "./GameDisplayComponent";
 import GameDisplayTemplateComponent from "./GameDisplayTemplateComponent";
 import GameTextInputComponent, { type GameTextInputComponentProps } from "./GameTextInputComponent";
+import { DIALOG_CONTAINER_CLASS, DISPLAY_FRAME_CLASS } from "../effects/EffectTargets";
 import useImageAspectRatio from "./ImageAspectRatioHook";
 
 /** Props for {@link GameDisplayDialogComponent}. */
@@ -45,6 +46,8 @@ export interface GameDisplayDialogComponentProps {
   onAnswer?: GameAnswerFunction;
   /** Identifies the display, so camera rules can find its elements. */
   scope?: string;
+  /** Which run of the display this is; a new one rebuilds its template. */
+  run?: number;
   /** Called with events inside the dialog's template, for the display's rules. */
   onDisplayEvent?: (event: DisplayDomEvent) => void;
 }
@@ -188,6 +191,7 @@ export default function GameDisplayDialogComponent({
   challengeId,
   onAnswer,
   scope,
+  run,
   onDisplayEvent,
 }: GameDisplayDialogComponentProps) {
   const [solved, setSolved] = useState<boolean>(false);
@@ -196,14 +200,15 @@ export default function GameDisplayDialogComponent({
   const content: GameDisplayPageData | undefined = contents[contentIndex];
 
   return (
-    <div style={OUTER_STYLE}>
-      <div style={frameStyle(ratio)}>
+    <div className={DIALOG_CONTAINER_CLASS} style={OUTER_STYLE}>
+      <div className={DISPLAY_FRAME_CLASS} style={frameStyle(ratio)}>
         <GameDisplayTemplateComponent
           templateSource={templateSource ?? defaultTemplate(layerHint)}
           containerStyle={layerStyle(layerHint, image, margins, containerStyle)}
           templateStyle={{ ...(layerHint === "foreground" && SCROLLING_TEXT_STYLE), ...templateStyle }}
           templateData={{ text: content?.text, lines: parseLines(content?.text), ...templateData }}
           scope={scope}
+          run={run}
           onDisplayEvent={onDisplayEvent}
         >
           {layerHint === "foreground" && (

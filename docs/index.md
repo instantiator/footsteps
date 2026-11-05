@@ -7,6 +7,8 @@ Published as HTML at <https://instantiator.dev/footsteps/docs/>, with the API re
 - [Deployment](deployment.md): deployment details.
 - [Game data](game-data.md): how a game's data, displays, resources, and templates fit together.
 - [Game repository data](game-repository-data.md): the repository file that holds games, and where it's loaded from.
+- [Special effects](special-effects.md): effects, animations and rewards, and the coordinate system for positions and distances.
+- [Player tracking](player-tracking.md): how players are followed and numbered, what can happen to them, and how they are restored.
 - [How filtrex works](filtrex.md): the expression language used by display rules, and why it is safe.
 - [Configuration](configuration.md): app settings, the `.env` files, and URL query parameters.
 - [Camera mode](camera-mode.md): what camera mode is, and how the camera view is layered into the game.
@@ -27,3 +29,4 @@ Published as HTML at <https://instantiator.dev/footsteps/docs/>, with the API re
 - [0008 Jump detection](ADRs/0008-jump-detection.md)
 - [0009 Reset displays and rule effects](ADRs/0009-reset-displays-and-rule-effects.md)
 - [0010 Tracking players from behind](ADRs/0010-player-tracking-from-behind.md)
+- [0011 Effects and player state](ADRs/0011-effects-and-player-state.md)

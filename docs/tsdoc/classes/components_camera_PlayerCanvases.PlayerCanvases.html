@@ -12,12 +12,14 @@
 <li><a href="" aria-current="page">PlayerCanvases</a></li></ul>
 <h1>Class PlayerCanvases</h1></div>
 <section class="tsd-panel tsd-comment">
-<div class="tsd-comment tsd-typography"><p>Gives each player in a frame their own canvas, so each can be layered separately. The first player uses the canvas
-given; others get a copy of it, made and removed as the number of players changes.</p>
-<p>Canvases are redrawn every frame, so they go by position in the frame, not by player.</p>
+<div class="tsd-comment tsd-typography"><p>Gives each player in a frame their own canvas, so each can be layered and moved separately, for as long as the player
+is there.</p>
+<p>The canvas given is only a reference: it isn't shown, and it never moves, so it stays the thing to measure against
+when a player's canvas is falling off the screen. Players' canvases look as it does, but take nothing from each
+other, so a new player doesn't inherit another's effects.</p>
 </div></section><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerCanvases.ts#L9">components/camera/PlayerCanvases.ts:9</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerCanvases.ts#L21">components/camera/PlayerCanvases.ts:21</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -30,7 +32,9 @@ given; others get a copy of it, made and removed as the number of players change
 <section class="tsd-index-section">
 <h3 class="tsd-index-heading tsd-anchor-link" id="methods">Methods<a href="#methods" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-index-list"><a href="#draw" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>draw</span></a>
-<a href="#removeextras" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>remove<wbr/>Extras</span></a>
+<a href="#removeallbut" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>remove<wbr/>All<wbr/>But</span></a>
+<a href="#resize" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>resize</span></a>
+<a href="#wrapperof" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>wrapper<wbr/>Of</span></a>
 </div></section></div></details></section></section>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Constructors"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="constructors-1">Constructors<a href="#constructors-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
@@ -39,17 +43,17 @@ given; others get a copy of it, made and removed as the number of players change
 <h3 class="tsd-anchor-link" id="constructor"><span>constructor</span><a href="#constructor" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="">
-<div class="tsd-signature tsd-anchor-link" id="constructorplayercanvases"><span class="tsd-signature-keyword">new</span> <span class="tsd-kind-constructor-signature">PlayerCanvases</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">first</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">HTMLCanvasElement</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="" class="tsd-signature-type tsd-kind-class">PlayerCanvases</a><a href="#constructorplayercanvases" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-signature tsd-anchor-link" id="constructorplayercanvases"><span class="tsd-signature-keyword">new</span> <span class="tsd-kind-constructor-signature">PlayerCanvases</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">reference</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">HTMLCanvasElement</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="" class="tsd-signature-type tsd-kind-class">PlayerCanvases</a><a href="#constructorplayercanvases" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
-<li><span><span class="tsd-kind-parameter">first</span>: <span class="tsd-signature-type">HTMLCanvasElement</span></span>
-<div class="tsd-comment tsd-typography"><p>the canvas for the first player, already at its final size</p>
+<li><span><span class="tsd-kind-parameter">reference</span>: <span class="tsd-signature-type">HTMLCanvasElement</span></span>
+<div class="tsd-comment tsd-typography"><p>what players' canvases are made to look like, already at its final size</p>
 </div></li></ul></div>
 <h4 class="tsd-returns-title">Returns <a href="" class="tsd-signature-type tsd-kind-class">PlayerCanvases</a></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerCanvases.ts#L14">components/camera/PlayerCanvases.ts:14</a></li></ul></aside></div></li></ul></section></section></details>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerCanvases.ts#L26">components/camera/PlayerCanvases.ts:26</a></li></ul></aside></div></li></ul></section></section></details>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="methods-1">Methods<a href="#methods-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
 <section>
@@ -57,32 +61,64 @@ given; others get a copy of it, made and removed as the number of players change
 <h3 class="tsd-anchor-link" id="draw"><span>draw</span><a href="#draw" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="">
-<div class="tsd-signature tsd-anchor-link" id="draw-1"><span class="tsd-kind-call-signature">draw</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">frame</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/vision_VisionTypes.VisionFrame.html" class="tsd-signature-type tsd-kind-interface">VisionFrame</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">draw</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">canvas</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">HTMLCanvasElement</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">playerFrame</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/vision_VisionTypes.VisionFrame.html" class="tsd-signature-type tsd-kind-interface">VisionFrame</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">HTMLCanvasElement</span><span class="tsd-signature-symbol">[]</span><a href="#draw-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-signature tsd-anchor-link" id="draw-1"><span class="tsd-kind-call-signature">draw</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">frame</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/vision_VisionTypes.VisionFrame.html" class="tsd-signature-type tsd-kind-interface">VisionFrame</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">draw</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">player</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/components_camera_PlayerCanvases.PlayerCanvas.html" class="tsd-signature-type tsd-kind-interface">PlayerCanvas</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">playerFrame</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/vision_VisionTypes.VisionFrame.html" class="tsd-signature-type tsd-kind-interface">VisionFrame</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">knownIds</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">ReadonlySet</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#draw-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>Draws each person on their own canvas, or clears the first if nobody is there.</p>
+<div class="tsd-comment tsd-typography"><p>Draws each person on their own canvas, or clears the reference if nobody is there, so a frame always draws something.</p>
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li><span><span class="tsd-kind-parameter">frame</span>: <a href="../interfaces/vision_VisionTypes.VisionFrame.html" class="tsd-signature-type tsd-kind-interface">VisionFrame</a></span></li>
-<li><span><span class="tsd-kind-parameter">draw</span>: <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">canvas</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">HTMLCanvasElement</span><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">playerFrame</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/vision_VisionTypes.VisionFrame.html" class="tsd-signature-type tsd-kind-interface">VisionFrame</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></span>
-<div class="tsd-comment tsd-typography"><p>draws the frame given, which holds one person or nobody, on the canvas given</p>
+<li><span><span class="tsd-kind-parameter">draw</span>: <span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">player</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/components_camera_PlayerCanvases.PlayerCanvas.html" class="tsd-signature-type tsd-kind-interface">PlayerCanvas</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">playerFrame</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/vision_VisionTypes.VisionFrame.html" class="tsd-signature-type tsd-kind-interface">VisionFrame</a><span class="tsd-signature-symbol">)</span> <span class="tsd-signature-symbol">=&gt;</span> <span class="tsd-signature-type">void</span></span>
+<div class="tsd-comment tsd-typography"><p>draws the frame given, which holds one person or nobody, on the player's canvas</p>
+</div></li>
+<li><span><span class="tsd-kind-parameter">knownIds</span>: <span class="tsd-signature-type">ReadonlySet</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = ...</span></span>
+<div class="tsd-comment tsd-typography"><p>the players whose canvases stay even though they aren't in this frame; those in it always do</p>
 </div></li></ul></div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">HTMLCanvasElement</span><span class="tsd-signature-symbol">[]</span></h4><p>each person's canvas, in the frame's order</p>
-<aside class="tsd-sources">
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerCanvases.ts#L23">components/camera/PlayerCanvases.ts:23</a></li></ul></aside></div></li></ul></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerCanvases.ts#L35">components/camera/PlayerCanvases.ts:35</a></li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
-<h3 class="tsd-anchor-link" id="removeextras"><span>remove<wbr/>Extras</span><a href="#removeextras" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<h3 class="tsd-anchor-link" id="removeallbut"><span>remove<wbr/>All<wbr/>But</span><a href="#removeallbut" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
 <li class="">
-<div class="tsd-signature tsd-anchor-link" id="removeextras-1"><span class="tsd-kind-call-signature">removeExtras</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#removeextras-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-signature tsd-anchor-link" id="removeallbut-1"><span class="tsd-kind-call-signature">removeAllBut</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">knownIds</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">ReadonlySet</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#removeallbut-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>Removes every canvas but the first.</p>
+<div class="tsd-comment tsd-typography"><p>Removes every player's canvas but those given.</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">knownIds</span>: <span class="tsd-signature-type">ReadonlySet</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol"> = ...</span></span></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerCanvases.ts#L55">components/camera/PlayerCanvases.ts:55</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="resize"><span>resize</span><a href="#resize" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="resize-1"><span class="tsd-kind-call-signature">resize</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">void</span><a href="#resize-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Matches every player's canvas to the reference's size, which clears it.</p>
 </div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerCanvases.ts#L32">components/camera/PlayerCanvases.ts:32</a></li></ul></aside></div></li></ul></section></section></details></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerCanvases.ts#L47">components/camera/PlayerCanvases.ts:47</a></li></ul></aside></div></li></ul></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="wrapperof"><span>wrapper<wbr/>Of</span><a href="#wrapperof" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="wrapperof-1"><span class="tsd-kind-call-signature">wrapperOf</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">id</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">HTMLElement</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><a href="#wrapperof-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>A player's wrapper, while they have one.</p>
+</div>
+<div class="tsd-parameters">
+<h4 class="tsd-parameters-title">Parameters</h4>
+<ul class="tsd-parameter-list">
+<li><span><span class="tsd-kind-parameter">id</span>: <span class="tsd-signature-type">number</span></span></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">HTMLElement</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerCanvases.ts#L60">components/camera/PlayerCanvases.ts:60</a></li></ul></aside></div></li></ul></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -101,7 +137,7 @@ given; others get a copy of it, made and removed as the number of players change
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Constructors"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Constructors</summary>
 <div><a href="#constructor"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Constructor"><use href="../assets/icons.svg#icon-512"></use></svg><span>constructor</span></a></div></details>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Methods</summary>
-<div><a href="#draw"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>draw</span></a><a href="#removeextras"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>remove<wbr/>Extras</span></a></div></details></div></details></div>
+<div><a href="#draw"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>draw</span></a><a href="#removeallbut"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>remove<wbr/>All<wbr/>But</span></a><a href="#resize"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>resize</span></a><a href="#wrapperof"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>wrapper<wbr/>Of</span></a></div></details></div></details></div>
 <div class="site-menu">
 <nav class="tsd-navigation"><a href="../index.html">Footsteps API</a>
 <ul class="tsd-small-nested-navigation" id="tsd-nav-container">

@@ -38,6 +38,7 @@ export default function GameDisplayComponent({
     templateStyle: background ? component.backgroundTemplateStyle : component.foregroundTemplateStyle,
     templateData: render.templateData,
     scope: render.scope,
+    run: render.run,
     onDisplayEvent,
   };
   if (component.type === "template") return <GameDisplayTemplateComponent {...common} />;

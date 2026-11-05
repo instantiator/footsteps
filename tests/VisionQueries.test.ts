@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BodyPart } from "../src/vision/BodyPart";
 import {
+  isSilhouetteWithin,
   bodyPartsAt,
   bodyPartsIn,
   partRegion,
@@ -28,6 +29,31 @@ const frame = (...people: VisionPerson[]): VisionFrame => ({ width: WIDTH, heigh
 
 /** A person filling the frame, with a left hand at (10, 10). */
 const handPerson = (id = 0) => person(id, [0, 0, WIDTH, HEIGHT], { leftHand: { x: 10, y: 10 } });
+
+describe("isSilhouetteWithin", () => {
+  const SIZE = { width: 10, height: 6 };
+  const silhouette = (x: number, y: number) => {
+    const mask = new Uint8Array(SIZE.width * SIZE.height);
+    mask[y * SIZE.width + x] = 1;
+    return { mask };
+  };
+
+  it("finds a pixel within the distance, including exactly at it", () => {
+    expect(isSilhouetteWithin(silhouette(3, 0), SIZE, { x: 0, y: 0 }, 3)).toBe(true);
+    expect(isSilhouetteWithin(silhouette(4, 0), SIZE, { x: 0, y: 0 }, 3)).toBe(false);
+  });
+
+  it("uses a circle, not a box", () => {
+    expect(isSilhouetteWithin(silhouette(2, 3), SIZE, { x: 0, y: 0 }, 3)).toBe(false);
+    expect(isSilhouetteWithin(silhouette(2, 2), SIZE, { x: 0, y: 0 }, 3)).toBe(true);
+  });
+
+  it("handles a point outside the mask, and a mask with nobody in it", () => {
+    expect(isSilhouetteWithin(silhouette(0, 3), SIZE, { x: -2, y: 3 }, 3)).toBe(true);
+    expect(isSilhouetteWithin(silhouette(0, 3), SIZE, { x: -20, y: 3 }, 3)).toBe(false);
+    expect(isSilhouetteWithin({ mask: new Uint8Array(60) }, SIZE, { x: 5, y: 3 }, 100)).toBe(false);
+  });
+});
 
 describe("bodyPartsAt", () => {
   it("finds the hand and the body at a point in the hand's region", () => {

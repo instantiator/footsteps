@@ -47,7 +47,10 @@ const demo = (change: (game: GameData) => void): GameData => {
     display.resetDisplay ? [display, ...withResets(display.resetDisplay)] : [display];
   for (const display of [
     ...game.displays,
-    ...game.stages.flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.displays)),
+    // The effects stage acts on players, so it can't load without the camera
+    ...game.stages
+      .filter((stage) => stage.id !== "effects")
+      .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.displays)),
   ].flatMap(withResets)) {
     display.camera = { requirement: false };
     if (display.component.type !== "template") continue;
@@ -70,10 +73,18 @@ const wait = (ms: number) =>
 const touch = (selector: string, interaction: CameraInteraction) => {
   const element = document.querySelector(selector);
   const layout = receivedLayout.at(-1)!;
-  const rule = layout.cameraRules!.find((r) => element?.matches(r.selector) && r.interactions.includes(interaction));
+  const rule = layout.cameraRules!.find(
+    (r) => element?.matches(r.selector ?? "") && r.interactions.includes(interaction),
+  );
   expect(rule, `a camera rule for ${interaction} on ${selector}`).toBeDefined();
   act(() =>
-    layout.onPlayerInteraction!({ scope: rule!.scope, ruleIndex: rule!.ruleIndex, element: element!, interaction }),
+    layout.onPlayerInteraction!({
+      scope: rule!.scope,
+      ruleIndex: rule!.ruleIndex,
+      element: element!,
+      interaction,
+      player: 0,
+    }),
   );
 };
 
@@ -147,7 +158,7 @@ describe("rules demo, played by camera", () => {
   it("starts each new balloon in a different column, in the next colour", async () => {
     await start();
     await startBalloons();
-    expect($("#balloon-0")).toHaveStyle({ left: "45%" });
+    expect($("#balloon-0")).toHaveStyle({ left: "45cqw" });
     expect($("#balloon-0 .balloon-body")).toHaveAttribute("data-colour", "0");
 
     touch("#balloon-0", "hand-enter");
@@ -156,7 +167,7 @@ describe("rules demo, played by camera", () => {
     const popEnd = Object.assign(new Event("webkitAnimationEnd", { bubbles: true }), { animationName: "pop" });
     act(() => void $("#balloon-0 .balloon-body")!.dispatchEvent(popEnd));
 
-    await waitFor(() => expect($("#balloon-1")).toHaveStyle({ left: "47%" }));
+    await waitFor(() => expect($("#balloon-1")).toHaveStyle({ left: "47cqw" }));
     expect($("#balloon-1 .balloon-body")).toHaveAttribute("data-colour", "1");
   });
 

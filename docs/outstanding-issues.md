@@ -140,16 +140,35 @@ proportions (`PoseGeometry.ts`), not the mask.
 **Act when:** a game uses `head` interactions with `mediapipe` or `movenet`, and they fire in the wrong place.
 Then measure the head's extent from the mask above the shoulders.
 
-## Rule conditions can't speak for all players
+## Player effects are unproven on a real camera
 
-Interaction triggers fire for any one player. A game can't say "when every player's feet are on the start", because
-expressions can't see how many players there are, or which player did what, and player identities are only stable
-across frames while tracking holds.
+The automated browser tests use one photo at a time, so can't show two people crossing, a person really walking out of shot, or how a filter on a player's canvas feels. See [Player effects](testing/manual-testing.md#player-effects).
 
-**Act when:** a game needs a condition over all players (or a count of them). Then design player counts (and possibly
-per-player identities) for `event` or `game`, and the trigger that uses them. Session state (`GameState.session`,
-which isn't saved) is the place for per-player bookkeeping like this, as identities don't survive a reload. The lava
-reset display waits for any one player on the start, for this reason.
+**Act when:** before a game ships that uses player effects. Run those checks; if crossing players swap often enough to spoil a game, or stuttering shows, revisit tracking by appearance, or the filter.
+
+## A stranger can inherit a removed player's note
+
+A new person appearing near where a removed player was lost inherits their removal, so someone walking through that place can drop out of play ([player tracking](player-tracking.md#limits)).
+
+**Act when:** a tester hits this in play. Then limit how long a note lasts, or how close counts, by what they were doing.
+
+## Near rules scan the mask each frame
+
+Each near rule looks at the circle around its element, for each player, every frame. The bench shows no cost with one rule and one person.
+
+**Act when:** the bench's `monitor-ms` is over 2 ms with near rules in a game. Then share the scan between rules, or do it at a lower resolution.
+
+## A delayed effect finds its player by number
+
+A delayed `"triggering"` effect looks up the player's number when it runs, so if they have left and the number has been reused, it reaches the new holder.
+
+**Act when:** a game delays an effect by more than a few seconds, or a tester sees an effect land on the wrong person. Then carry the player's stable id on the event as well.
+
+## A challenge's sibling counts for the camera check, across chunks
+
+The load check that a display's camera can be on counts another challenge in the same stage as turning it on if the stage shows several at once, even if they fall in different chunks, so aren't shown together. It can miss a mistake, but never rejects a working game.
+
+**Act when:** a game hits this and is confused by a player effect silently doing nothing. Then work out which challenges share a chunk.
 
 ## Displays can't share state
 

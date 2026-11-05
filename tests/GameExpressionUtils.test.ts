@@ -9,7 +9,7 @@ const context = (overrides: Partial<ExpressionContext> = {}): ExpressionContext 
   state: { score: 3, position: 1, popping: false },
   data: { target: 3, nested: { x: 1 } },
   game: { stages: [{ completion: "completed" }] },
-  event: { id: "", interaction: "" },
+  event: { id: "", interaction: "", player: 0 },
   ...overrides,
 });
 
@@ -38,7 +38,7 @@ describe("GameExpressionUtils", () => {
   });
 
   it("reads single-quoted names and tests membership", () => {
-    const ctx = context({ state: { "my-key": 5 }, event: { id: "lava-1", interaction: "foot-enter" } });
+    const ctx = context({ state: { "my-key": 5 }, event: { id: "lava-1", interaction: "foot-enter", player: 0 } });
     expect(run("'state.my-key' + 1", ctx)).toBe(6);
     expect(run('event.id in ("lava-1", "lava-2")', ctx)).toBe(true);
   });

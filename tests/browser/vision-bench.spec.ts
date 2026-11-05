@@ -53,7 +53,9 @@ const sample = async (page: Page, readout: Locator): Promise<Record<(typeof MEAS
 // VISION_BENCH_PLAIN=1 measures the game as played (plain silhouettes, readout from showFps) rather than in debug
 // VISION_BENCH_QUERY adds config (eg. "&visionModel=mediapipe"); VISION_BENCH_SHOTS saves each scene's debug view
 // to that folder, named VISION_BENCH_LABEL-<scene>.png; VISION_BENCH_CAMERA sets the fake camera's size, eg. 640x480
-// (by default 1280x720, the resolution the game asks a real camera for)
+// (by default 1280x720, the resolution the game asks a real camera for); VISION_BENCH_NEAR, VISION_BENCH_STATIC and
+// VISION_BENCH_FILTER add a near rule, static on the player, and a filter highlight on them to the play;
+// VISION_BENCH_PHOTO changes who it is played with (by default "jumping-side-on")
 test.skip(!process.env.VISION_BENCH, "set VISION_BENCH=1 to run the vision benchmark");
 
 test("measures the vision loop on an empty room and on photos of people", async ({ page }) => {
@@ -80,7 +82,7 @@ test("measures the vision loop on an empty room and on photos of people", async 
     if (shots) {
       const label = process.env.VISION_BENCH_LABEL ?? "bench";
       await page
-        .locator("#character-canvas-container canvas")
+        .locator("#character-canvas-container .player canvas")
         .screenshot({ path: `${shots}/${label}-${scene.name}.png` });
     }
     // Hands are expected whatever the framing; feet only when the people are in shot to their feet
@@ -105,7 +107,29 @@ const openRulesDemoWithCamera = async (page: Page, query: string): Promise<void>
   await page.route("**/game-repository.json", async (route) => {
     const response = await route.fetch();
     const repository = (await response.json()) as GameRepository;
-    repository.games["rules-demo"].modules = { camera: { requirement: "enabled", preview: false } };
+    const game = repository.games["rules-demo"];
+    game.modules = { camera: { requirement: "enabled", preview: false } };
+    if (process.env.VISION_BENCH_STATIC) {
+      const [{ component }] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].displays;
+      const again = { on: { every: 500 }, do: [{ effect: "player-static" as const, players: "all" as const }] };
+      component.rules = [...(component.rules ?? []), again];
+    }
+    if (process.env.VISION_BENCH_FILTER) {
+      const [{ component }] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].displays;
+      const sequence = [{ filter: "brightness(1.5) drop-shadow(0 0 1cqw gold)" }];
+      const highlight = {
+        effect: "highlight" as const,
+        target: ".player",
+        durationMs: "indefinite" as const,
+        sequence,
+      };
+      component.rules = [...(component.rules ?? []), { on: { every: 1000 }, do: [highlight] }];
+    }
+    if (process.env.VISION_BENCH_NEAR) {
+      const [{ component }] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].displays;
+      const near = { interact: ["near-enter" as const], target: "#score", within: 10 };
+      component.rules = [...(component.rules ?? []), { on: near, do: [] }];
+    }
     await route.fulfill({ response, json: repository });
   });
   await page.goto(`/game/rules-demo/play${query}`);
@@ -121,7 +145,8 @@ test("measures the vision loop while the balloons challenge plays", async ({ pag
   await openRulesDemoWithCamera(page, `?showFps=true${query}`);
   await page.locator("#demo-title").click();
   await page.locator("#stage-link-balloons").click();
-  await page.evaluate(() => window.__fakeCamera.setImage("photo:jumping-side-on"));
+  const photo = process.env.VISION_BENCH_PHOTO ?? "jumping-side-on";
+  await page.evaluate((name) => window.__fakeCamera.setImage(`photo:${name}`), photo);
   const readout = page.locator("output.vision-stats");
   await expect(readout).toBeVisible({ timeout: MODEL_TIMEOUT });
   await page.waitForTimeout(SETTLE_MS);

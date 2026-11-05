@@ -2,7 +2,7 @@ import type { GameInteraction, PointerInteraction } from "../../entities/data/di
 import { DEFAULT_APP_CONFIG } from "../../config/AppConfig";
 import { isDefined } from "../../util/ObjectUtils";
 import { BODY_PARTS, BodyPart } from "../../vision/BodyPart";
-import { bodyPartsIn, partRegion } from "../../vision/VisionQueries";
+import { bodyPartsIn, partRegion, isSilhouetteWithin } from "../../vision/VisionQueries";
 import type { Point, VisionPerson } from "../../vision/VisionTypes";
 import type { FootPosition, MaskRect } from "./CameraSupport";
 import { JumpDetector, jumpSettingsOf, type JumpSettings } from "./JumpDetector";
@@ -28,6 +28,14 @@ export interface PlayerMonitorEvent {
   interaction: CameraInteraction;
 }
 
+/** What being near an element means, in mask pixels. */
+export interface NearTarget {
+  /** The element's centre, which may be outside the mask. */
+  centre: Point;
+  /** How close counts. */
+  within: number;
+}
+
 /** An element the player can interact with, and where it is in the mask. */
 export interface MonitorTarget {
   /** The element's bounds in mask pixels. */
@@ -43,6 +51,10 @@ export interface MonitorTarget {
    * the element counts wherever it is, even under others.
    */
   isTopmostAt?: (point: Point) => boolean;
+  /** For being near the element. */
+  near?: NearTarget;
+  /** For a jump with no element: it fires on every landing. */
+  anywhere?: boolean;
 }
 
 /** The interactions that come from a jump, all reported as the player lands. */
@@ -51,11 +63,17 @@ const JUMP_INTERACTIONS = ["jump", "jump-from", "jump-onto"] as const;
 /** An interaction that comes from a jump. */
 type JumpInteraction = (typeof JUMP_INTERACTIONS)[number];
 
+/** Interactions detected from how close a player's silhouette is to an element. */
+type NearInteraction = "near-enter" | "near-exit";
+
 /** Interactions detected from how much of a body part is inside an element. */
-type CoverageInteraction = Exclude<CameraInteraction, JumpInteraction>;
+type CoverageInteraction = Exclude<CameraInteraction, JumpInteraction | NearInteraction>;
 
 /** What a coverage interaction looks for: a group of body parts. */
 type PartGroup = "hand" | "foot" | "head" | "body" | "any";
+
+/** What is followed over a target from frame to frame: a group of body parts, or the player being near it. */
+type PresenceGroup = PartGroup | "near";
 
 /** The body parts in each group; any one of them over the element counts. */
 const PART_GROUPS: Record<PartGroup, readonly BodyPart[]> = {
@@ -90,8 +108,8 @@ interface Arrival {
   targetKey: string;
   /** The target. */
   target: MonitorTarget;
-  /** The group of body parts. */
-  group: PartGroup;
+  /** The group of body parts, or the player being near. */
+  group: PresenceGroup;
   /** When the frame was taken, in milliseconds. */
   timestamp: number;
 }
@@ -100,8 +118,8 @@ interface Arrival {
 interface Presence {
   /** The target's key. */
   key: string;
-  /** The group of body parts. */
-  group: PartGroup;
+  /** The group of body parts, or the player being near. */
+  group: PresenceGroup;
   /** Frames in a row the group has been over the target; {@link ALREADY_HELD} if it was over when the monitor was armed. */
   streak: number;
   /** When the streak began, in milliseconds, for the target's {@link MonitorTarget.holdMs}. */
@@ -127,6 +145,10 @@ const isJumpInteraction = (value: string): value is JumpInteraction => JUMP_INTE
 
 /** Whether a value is an interaction detected from coverage, rather than unknown game data or a jump. */
 const isCoverageInteraction = (value: string): value is CoverageInteraction => Object.hasOwn(COVERAGE_GROUPS, value);
+
+/** Whether an interaction needs to know how much of each body part is over a target. */
+const usesCoverage = (interaction: string): boolean =>
+  isCoverageInteraction(interaction) || isJumpInteraction(interaction);
 
 /** Clamps an authored threshold to the range it means. */
 const clampThreshold = (threshold: number): number => Math.min(Math.max(threshold, 0), 1);
@@ -164,6 +186,20 @@ const visibility = (frame: PlayerFrame, { isTopmostAt, rect }: MonitorTarget): (
     return seen.get(part)!;
   };
 };
+
+/** One frame's reading of a player and a target they may be near. */
+interface NearReading {
+  /** The target's key. */
+  key: string;
+  /** The target. */
+  target: MonitorTarget;
+  /** What being near it means. */
+  near: NearTarget;
+  /** The player's frame. */
+  frame: PlayerFrame;
+  /** When the frame was taken, in milliseconds. */
+  timestamp: number;
+}
 
 /** Marks an interaction that already held when the monitor was armed: it can't fire until it lets go. */
 const ALREADY_HELD = -1;
@@ -203,6 +239,8 @@ export class PlayerMonitor {
   private targets: Record<string, MonitorTarget> = {};
   /** Whether a frame has been seen, so coverage on later frames can count as beginning. */
   private armed = false;
+  /** The starts of target keys to treat as new in the next frame, as on the monitor's first; see {@link rearm}. */
+  private rearming: string[] = [];
   private readonly jump: JumpDetector;
   /** The keys of the jump targets the feet were on when last on the ground, ie. where a jump takes off from. */
   private takeoffKeys = new Set<string>();
@@ -234,6 +272,8 @@ export class PlayerMonitor {
     const feetOn = new Set<string>();
 
     for (const [key, target] of Object.entries(targets)) {
+      if (isDefined(target.near)) this.reportNear({ key, target, near: target.near, frame, timestamp }, presence);
+      if (target.anywhere === true || !target.interactions.some(usesCoverage)) continue;
       const found = bodyPartsIn({ width: frame.width, height: frame.height, timestamp, people: [frame] }, target.rect);
       const coverage = {
         proportions: new Map(found.map(({ part, proportion }) => [part, proportion])),
@@ -248,6 +288,7 @@ export class PlayerMonitor {
     this.presence = presence;
     this.targets = targets;
     this.armed = true;
+    this.rearming = [];
     this.followJump(frame, targets, feetOn, timestamp);
   }
 
@@ -260,8 +301,9 @@ export class PlayerMonitor {
   ): void {
     const landed = this.jump.update(frame.feet?.absolute.y ?? null, bodyHeightOf(frame), timestamp) === "landed";
     if (landed) {
-      for (const [key, { interactions }] of Object.entries(targets)) {
-        for (const interaction of landingInteractions(interactions, this.takeoffKeys.has(key), feetOn.has(key))) {
+      for (const [key, { interactions, anywhere }] of Object.entries(targets)) {
+        const [from, onto] = anywhere === true ? [true, true] : [this.takeoffKeys.has(key), feetOn.has(key)];
+        for (const interaction of landingInteractions(interactions, from, onto)) {
           this.onEvent({ key, interaction });
         }
       }
@@ -278,6 +320,30 @@ export class PlayerMonitor {
       if (entered) this.report(key, `${group}-exit`, this.targets[key]);
     }
     this.presence.clear();
+  }
+
+  /**
+   * Starts afresh with some targets, without firing anything: their exits won't fire, and what is over them must move
+   * into them again.
+   * @param keyPrefix how the keys of those targets begin
+   */
+  rearm(keyPrefix: string): void {
+    for (const [presenceKey, { key }] of this.presence) {
+      if (key.startsWith(keyPrefix)) this.presence.delete(presenceKey);
+    }
+    this.rearming.push(keyPrefix);
+  }
+
+  /** Follows the player being near a target, in the same way as a group of body parts over it. */
+  private reportNear({ key, target, near, frame, timestamp }: NearReading, presence: Map<string, Presence>): void {
+    const presenceKey = `${key}:near`;
+    const before = this.presence.get(presenceKey);
+    const now = isSilhouetteWithin(frame, frame, near.centre, near.within)
+      ? this.stay(before, { targetKey: key, target, group: "near", timestamp })
+      : this.leave(before);
+    if (isDefined(now)) presence.set(presenceKey, now);
+    const [wasIn, isIn] = [before?.entered === true, now?.entered === true];
+    if (wasIn !== isIn) this.report(key, isIn ? "near-enter" : "near-exit", target);
   }
 
   /** Follows each group of body parts the target looks for over it, and reports it entering and leaving. */
@@ -305,10 +371,16 @@ export class PlayerMonitor {
    * and the target's hold.
    */
   private stay(before: Presence | undefined, { targetKey, target, group, timestamp }: Arrival): Presence {
-    const streak = !this.armed || before?.streak === ALREADY_HELD ? ALREADY_HELD : (before?.streak ?? 0) + 1;
+    const streak =
+      this.isStarting(targetKey) || before?.streak === ALREADY_HELD ? ALREADY_HELD : (before?.streak ?? 0) + 1;
     const since = before?.since ?? timestamp;
     const entered = before?.entered === true || this.hasHeld(streak, timestamp - since, target);
     return { key: targetKey, group, streak, since, entered, away: 0 };
+  }
+
+  /** Whether this frame is the first the monitor has seen of a target, so what is over it already held. */
+  private isStarting(targetKey: string): boolean {
+    return !this.armed || this.rearming.some((prefix) => targetKey.startsWith(prefix));
   }
 
   /** Whether a streak (not one held when the monitor was armed) has lasted the stable frames and the target's hold. */
@@ -323,7 +395,11 @@ export class PlayerMonitor {
   }
 
   /** Reports an interaction with a target, if the target accepts it. */
-  private report(key: string, interaction: CoverageInteraction, target: MonitorTarget | undefined): void {
+  private report(
+    key: string,
+    interaction: CoverageInteraction | NearInteraction,
+    target: MonitorTarget | undefined,
+  ): void {
     if (target?.interactions.includes(interaction) === true) this.onEvent({ key, interaction });
   }
 }

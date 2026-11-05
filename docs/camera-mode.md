@@ -103,7 +103,8 @@ The game is a stack of layers. A larger `zIndex` paints later, so it covers the 
 Without the camera, the stack fills the game container. With the camera, it is fitted to the
 camera's aspect ratio and centred, so the whole game is inside what the camera can see. The
 container's background shows in the space around it. The game view is a size container, so game
-templates can use `cqw` and `cqh` to follow it; `vw` and `vh` still follow the browser window.
+templates can use `cqw` and `cqh` to follow it; `vw` and `vh` still follow the browser window. See the
+[coordinate system](special-effects.md#coordinate-system).
 
 The display and camera layers sit inside one `.gameScene` wrapper, which fades as a whole; the HUD
 sits outside it. For a camera change, `#game-viewport` animates its `aspect-ratio` with a 2s CSS
@@ -170,7 +171,7 @@ game's elements underneath. Each element's `id` says what a click or camera inte
    they were, then fades them out, so the silhouette doesn't flicker ([ADR 0007](ADRs/0007-camera-flicker.md)).
 4. For each player, `drawPeople` (`DrawPeople.ts`) draws the video onto their own canvas (`PlayerCanvases.ts`) and
    keeps only that player, with their edges blurred by `cameraFeatherPx`. `binary` keeps the players' own colours; `colored` tints each person and their head, hands and feet; `extremities` tints only
-   the hands and feet. The first player uses the original canvas, and others get copies laid over it.
+   the hands and feet. Each canvas sits in a wrapper of its own, laid over the others; the original canvas stays hidden, to measure against.
 5. If the player chose to mirror the picture, the canvases are flipped with a CSS transform. The masks are always in
    the camera's own (unmirrored) orientation.
 6. When the stream goes away, the model is disposed and the loop is cancelled. Starting a new stream loads a
@@ -292,33 +293,37 @@ toggling it.
 
 ## Where the code lives
 
-| Path                                                  | What it does                                                                      |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `src/config/AppConfig.ts`                             | the settings, their defaults, and reading them from `.env` and the URL            |
-| `src/components/camera/CharacterCamera.tsx`           | webcam stream and the preview video                                               |
-| `src/components/camera/CameraChoice.ts`               | the saved camera choice and mirror setting                                        |
-| `src/components/landing/CameraPicker.tsx`             | the landing page's dropdown, checkbox and preview (`useCameraPicker.ts`)          |
-| `src/components/camera/PlayerCanvases.ts`             | one canvas per player                                                             |
-| `src/components/camera/PlayerDepth.ts`                | each player's depth, and sorting players and items by it                          |
-| `src/components/camera/CharacterCanvas.tsx`           | tracking loop; draws the silhouettes; reports players and feet; the stats readout |
-| `src/components/camera/DrawPeople.ts`                 | cuts the people out of the video, and tints them for debugging                    |
-| `src/components/camera/PlayerMonitor.ts`              | turns body-part coverage and feet into edge-triggered interactions                |
-| `src/components/camera/JumpDetector.ts`               | follows a player's feet for jumps                                                 |
-| `src/components/camera/CameraSupport.ts`              | camera request, feet position, and screen-to-mask rectangles                      |
-| `src/components/camera/FrameStats.ts`                 | frame rate, inference time, and what each frame found                             |
-| `src/components/camera/CameraDebugOverlay.tsx`        | green feet markers                                                                |
-| `src/vision/FootstepsVisionModelImplementation.ts`    | the base class every vision model implements, with the body-part queries          |
-| `src/vision/BodyPart.ts`, `VisionTypes.ts`            | our body parts, and the frames models return                                      |
-| `src/vision/VisionQueries.ts`                         | body parts at a point or in an area; splitting one silhouette between people      |
-| `src/vision/Tracking.ts`                              | stable player ids, key-point smoothing, holding lost players, and filling gaps    |
-| `src/vision/models/`                                  | BodyPix, MediaPipe Pose and MoveNet, and the tfjs backend choice                  |
-| `src/vision/VisionWorkerProxy.ts`, `vision.worker.ts` | runs a model in a web worker                                                      |
-| `src/components/core/logic/CameraModeUtils.ts`        | per-display camera resolution                                                     |
-| `src/components/core/logic/GameClickUtils.ts`         | targets, and the state changes for clicks and interactions                        |
-| `src/components/core/layout/GameLayersLayout.tsx`     | the layer stack, scene transitions, shared camera state, and the interaction hook |
-| `src/components/core/layout/useSceneTransition.ts`    | fades display changes and times the camera reshape and reduced motion             |
-| `src/components/core/layout/PlayerInteractionHook.ts` | one monitor per player, and mask-space target rectangles                          |
-| `src/components/core/layout/GameLayerWrappers.tsx`    | one wrapper component per layer                                                   |
+| Path                                                  | What it does                                                                                                       |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `src/config/AppConfig.ts`                             | the settings, their defaults, and reading them from `.env` and the URL                                             |
+| `src/components/camera/CharacterCamera.tsx`           | webcam stream and the preview video                                                                                |
+| `src/components/camera/CameraChoice.ts`               | the saved camera choice and mirror setting                                                                         |
+| `src/components/landing/CameraPicker.tsx`             | the landing page's dropdown, checkbox and preview (`useCameraPicker.ts`)                                           |
+| `src/components/camera/PlayerCanvases.ts`             | one canvas and wrapper per player, and the hidden reference canvas                                                 |
+| `src/components/camera/PlayerRegistry.ts`             | stable player ids and numbers, player states, and notes of lost players; see [player tracking](player-tracking.md) |
+| `src/components/camera/PlayerStatic.ts`               | how a player's static changes over time                                                                            |
+| `src/components/camera/PlayerDepth.ts`                | each player's depth, and sorting players and items by it                                                           |
+| `src/components/camera/CharacterCanvas.tsx`           | tracking loop; draws the silhouettes; reports players and feet; the stats readout                                  |
+| `src/components/camera/DrawPeople.ts`                 | cuts the people out of the video, and tints them for debugging                                                     |
+| `src/components/camera/DrawPlayers.ts`                | draws each player on their canvas, frozen or with static, sorted to their depth                                    |
+| `src/components/camera/PlayerMonitor.ts`              | turns body-part coverage and feet into edge-triggered interactions                                                 |
+| `src/components/camera/JumpDetector.ts`               | follows a player's feet for jumps                                                                                  |
+| `src/components/camera/CameraSupport.ts`              | camera request, feet position, and screen-to-mask rectangles                                                       |
+| `src/components/camera/FrameStats.ts`                 | frame rate, inference time, and what each frame found                                                              |
+| `src/components/camera/CameraDebugOverlay.tsx`        | green feet markers                                                                                                 |
+| `src/vision/FootstepsVisionModelImplementation.ts`    | the base class every vision model implements, with the body-part queries                                           |
+| `src/vision/BodyPart.ts`, `VisionTypes.ts`            | our body parts, and the frames models return                                                                       |
+| `src/vision/VisionQueries.ts`                         | body parts at a point or in an area; splitting one silhouette between people                                       |
+| `src/vision/Tracking.ts`                              | stable player ids, key-point smoothing, holding lost players, and filling gaps                                     |
+| `src/vision/models/`                                  | BodyPix, MediaPipe Pose and MoveNet, and the tfjs backend choice                                                   |
+| `src/vision/VisionWorkerProxy.ts`, `vision.worker.ts` | runs a model in a web worker                                                                                       |
+| `src/components/core/logic/CameraModeUtils.ts`        | per-display camera resolution                                                                                      |
+| `src/components/core/logic/GameClickUtils.ts`         | targets, and the state changes for clicks and interactions                                                         |
+| `src/components/core/layout/GameLayersLayout.tsx`     | the layer stack, scene transitions, shared camera state, and the interaction hook                                  |
+| `src/components/core/layout/useSceneTransition.ts`    | fades display changes and times the camera reshape and reduced motion                                              |
+| `src/components/core/layout/PlayerInteractionHook.ts` | one monitor per player, and mask-space target rectangles                                                           |
+| `src/components/core/layout/GameLayerWrappers.tsx`    | one wrapper component per layer                                                                                    |
+| `src/components/core/effects/`                        | [special effects](special-effects.md): their targets, and playing them on items and players                        |
 
 ## Testing
 

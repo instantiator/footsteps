@@ -14,6 +14,8 @@ export interface ExpressionContext {
     id: string;
     /** How the element was interacted with, eg. `click` or `hand`. */
     interaction: string;
+    /** The number of the player who fired the rule; 0 if no player did. */
+    player: number;
   };
 }
 
