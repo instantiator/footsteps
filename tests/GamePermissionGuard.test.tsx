@@ -10,7 +10,7 @@ import { simpleGameData } from "./data/SampleGameState";
 import { stubGetUserMedia, stubPermissionQuery, type PermissionQueryResult } from "./helpers/permissions";
 
 const GAME_ID = "camera-game";
-const cameraGame: GameData = { ...simpleGameData, modules: { camera: { requirement: "required" } } };
+const cameraGame: GameData = { ...simpleGameData, modules: { avatar: { mode: "camera" } } };
 
 const restores: (() => void)[] = [];
 
@@ -82,7 +82,7 @@ describe("GamePermissionGuard", () => {
 
   it("lets the player in without a grant when the camera is only enabled", async () => {
     permissionQuery("denied");
-    renderGuard({ ...simpleGameData, modules: { camera: { requirement: "enabled" } } });
+    renderGuard({ ...simpleGameData, modules: { avatar: { mode: "camera", fallback: "mouse" } } });
 
     expect(await screen.findByText("Playing the game")).toBeInTheDocument();
   });

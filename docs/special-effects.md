@@ -286,11 +286,11 @@ Fires when an effect finishes, so a game can follow one thing with another witho
 
 ## Player effects
 
-These use `players` rather than `target`, as a rule usually means "whoever did this": see [choosing players](player-tracking.md#choosing-players). They need the camera, and `visionSmoothing` on. With a camera refused or failed in play, they do nothing and the game plays on. On a scene where the camera can never be on, they are an error on load:
+These use `players` rather than `target`, as a rule usually means "whoever did this": see [choosing players](player-tracking.md#choosing-players). They need the camera, and `visionSmoothing` on. With a camera refused or failed in play, they do nothing and the game plays on. On a scene whose [avatar mode](game-data.md#scene-and-avatar-modes) can never be `camera`, they are an error on load:
 
 ```text
 stages[0] (lava) › challenges[0] (floor) › scenes[0] (challenge-in-progress) › rules[2].do[0]:
-player-fall needs a player, but this scene doesn't have the camera enabled
+player-fall needs a player, but this scene's avatar mode is never "camera"
 ```
 
 ### Falling

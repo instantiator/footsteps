@@ -1,6 +1,7 @@
 import { useMediaQuery } from "@uidotdev/usehooks";
 import {
   useCallback,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -14,7 +15,7 @@ import { loadCameraChoice } from "../../camera/CameraChoice";
 import type { FeetPositions } from "../../camera/CameraSupport";
 import { DEPTH_STACK_CLASS, UNSORTED_PLAYER_Z_INDEX } from "../../camera/PlayerDepth";
 import type { PlayerFrame } from "../../camera/PlayerMonitor";
-import type { ResolvedCameraMode } from "../logic/CameraModeUtils";
+import { cameraModeOf, type ResolvedAvatarMode, type ResolvedCameraMode } from "../logic/AvatarModeUtils";
 import "./GameLayersLayout.css";
 import {
   CharacterCameraLayerWrapper,
@@ -24,6 +25,7 @@ import {
   HudLayerWrapper,
 } from "./GameLayerWrappers";
 import { usePlayerInteractions, type CameraRuleEvent, type CameraRuleTarget } from "./PlayerInteractionHook";
+import { useMouseFeet } from "./MouseFeetHook";
 import useSceneTransition, { type SceneTransition } from "./useSceneTransition";
 
 /** Props for {@link GameLayersLayout}. */
@@ -32,10 +34,12 @@ interface GameLayersLayoutProps {
   gameLayers?: GameLayers;
   /** Identifies the scene these layers belong to, so a cut to another scene can fade. */
   sceneKey?: string;
-  /** The game's camera settings, already resolved for the scenes currently shown. */
-  camera: ResolvedCameraMode;
+  /** The game's avatar settings, already resolved for the scenes currently shown. */
+  avatar: ResolvedAvatarMode;
   /** Shows the debug overlay and the camera's colour key. */
   debug?: boolean;
+  /** Switches the debug aids on or off, from the HUD. */
+  onToggleDebug?: () => void;
   /** The rules the camera can fire, for the scenes shown now. */
   cameraRules?: CameraRuleTarget[];
   /** Called when a player interacts with an element a camera rule watches. */
@@ -66,9 +70,6 @@ export interface GameLayers {
     foregroundLayerNodes: ReactNode[] | undefined;
   };
 }
-
-/** Camera mode switched off, for when the camera can't start: the game falls back to clicks. */
-const CAMERA_OFF: ResolvedCameraMode = { enabled: false, preview: false };
 
 /** The given element's width-to-height ratio, if it has a size. */
 const aspectRatioOf = (element: Element | null | undefined): number | undefined => {
@@ -251,13 +252,15 @@ function useViewportMeasurements() {
 }
 
 /**
- * The camera mode to use: as requested, until the camera fails to start. A camera that can't start
- * would hold the scene waiting for its shape, so the game plays on without it, by clicks.
+ * The avatar mode to use: as requested, until the camera fails to start. A camera that can't start
+ * would hold the scene waiting for its shape, so the game plays on without it, in the fallback mode (or by mouse).
  */
-function useCameraFallback(requested: ResolvedCameraMode) {
+function useCameraFallback(requested: ResolvedAvatarMode) {
   const [failed, setFailed] = useState(false);
   const onCameraError = useCallback(() => setFailed(true), []);
-  return { camera: failed ? CAMERA_OFF : requested, onCameraError };
+  const mode = failed && requested.mode === "camera" ? (requested.fallback ?? "mouse") : requested.mode;
+  const camera = useMemo(() => cameraModeOf({ mode, preview: requested.preview }), [mode, requested.preview]);
+  return { mouseFeet: mode === "mouse-feet", camera, onCameraError };
 }
 
 /** The viewport's target shape, and the shape a camera reshape starts from while one is running. */
@@ -272,14 +275,14 @@ const viewportStyle = (scene: SceneTransition<GameLayers>): CSSProperties => {
   return style;
 };
 
-/** Stacks the game's scene layers, the optional camera character, debug overlay, and HUD. */
+/** Stacks the game's scene layers, the optional camera character, debug overlay, and HUD, and runs mouse-feet input. */
 export default function GameLayersLayout({
   gameLayers = {},
   sceneKey = "default",
-  camera: requestedCamera,
-  debug,
+  avatar: requestedAvatar,
   cameraRules,
   onPlayerInteraction,
+  ...aids
 }: GameLayersLayoutProps) {
   const [feetPositions, setFeetPositions] = useState<FeetPositions>({});
   const [cameraAspectRatio, setCameraAspectRatio] = useState<number>();
@@ -287,7 +290,7 @@ export default function GameLayersLayout({
   const [mirror] = useState(() => loadCameraChoice().mirror);
   const { viewportRef, measureViewport, measureContainer } = useViewportMeasurements();
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
-  const { camera, onCameraError } = useCameraFallback(requestedCamera);
+  const { mouseFeet, camera, onCameraError } = useCameraFallback(requestedAvatar);
   const scene = useSceneTransition({
     layers: gameLayers,
     sceneKey,
@@ -313,6 +316,7 @@ export default function GameLayersLayout({
     scene.camera.enabled && !scene.transitioning,
     mirror,
   );
+  useMouseFeet(viewportRef, cameraRules, onPlayerInteraction, { enabled: mouseFeet, paused: scene.transitioning });
 
   return (
     <div
@@ -327,7 +331,7 @@ export default function GameLayersLayout({
         showPreview={showPreview}
         show={show}
         mirror={mirror}
-        debug={debug}
+        debug={aids.debug}
         media={{ ...media, onCameraError }}
         aspectRatio={cameraAspectRatio}
         setFeetPositions={setFeetPositions}
@@ -336,7 +340,7 @@ export default function GameLayersLayout({
         handlePlayers={handlePlayers}
         setAspectRatio={setCameraAspectRatio}
       />
-      <HudLayerWrapper zIndex={10} />
+      <HudLayerWrapper zIndex={10} {...aids} />
     </div>
   );
 }

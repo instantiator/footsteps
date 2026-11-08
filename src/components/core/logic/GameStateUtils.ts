@@ -47,7 +47,8 @@ export function validateAnswer(
 /**
  * Retrieves the current stage state and its active challenges from the game state.
  * @param gameState the current game state
- * @returns the current stage state and the first chunk of challenges with any still active, or nulls if no current stage is set.
+ * @returns the current stage state and the chunk of challenges to show: the focused challenge's while any of it is
+ * unsolved (see `GameSession.focusedChallenge`), otherwise the first with any unsolved; or nulls if no stage is open
  */
 export const getActiveStageStateChallenges = (
   gameState: GameState,
@@ -62,9 +63,25 @@ export const getActiveStageStateChallenges = (
   }
   const stageState = getStageState(gameState, gameState.current.stageId);
   const chunkedChallengeStates = getChunkedChallengeStates(stageState!);
-  const currentChallengeStates = getCurrentChallengeStates(chunkedChallengeStates);
+  const currentChallengeStates =
+    focusedChunk(gameState, chunkedChallengeStates) ?? getCurrentChallengeStates(chunkedChallengeStates);
   return { stageState: stageState ?? null, activeChallengeStates: currentChallengeStates ?? null };
 };
+
+/** The open stage's chunk holding the focused challenge, while any of that chunk is unsolved. */
+const focusedChunk = (gameState: GameState, chunks: GameChallengeState[][]): GameChallengeState[] | undefined => {
+  const focused = gameState.session.focusedChallenge;
+  if (focused?.stageId !== gameState.current.stageId) return undefined;
+  return chunks.find(
+    (chunk) => chunk.some((c) => c.challenge.id === focused.challengeId) && chunk.some((c) => !c.succeeded),
+  );
+};
+
+/** Forgets the focused challenge, if there is one. */
+export const withoutFocus = (gameState: GameState): GameState =>
+  gameState.session.focusedChallenge === null
+    ? gameState
+    : { ...gameState, session: { ...gameState.session, focusedChallenge: null } };
 
 /**
  * Retrieves the stage state for the given stage id from the game state.
@@ -140,7 +157,7 @@ export function completeChallenge(gameState: GameState, stageId: GameStageId, ch
       : null
     : gameState.current.stageId;
 
-  return {
+  const completed: GameState = {
     ...gameStateWithUpdatedStageStateAndUnlocks,
     current: {
       ...gameState.current,
@@ -148,6 +165,9 @@ export function completeChallenge(gameState: GameState, stageId: GameStageId, ch
       overviewScene: allStagesComplete ? calcFinaleOverviewScene(gameState) : gameState.current.overviewScene,
     },
   };
+  // Once the focused chunk is solved (or the stage closes), the stage goes back to showing its challenges in order
+  const chunks = getChunkedChallengeStates(updatedStageState);
+  return isDefined(focusedChunk(completed, chunks)) ? completed : withoutFocus(completed);
 }
 
 /**

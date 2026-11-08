@@ -1,4 +1,9 @@
-import type { GameSceneCameraData } from "./scenes/GameSceneData";
+import type { GameSceneAvatarData, GameSceneMode } from "./scenes/GameSceneData";
 
-/** Settings for the camera module, which layers the player's camera view into the game. */
-export type CameraModuleData = GameSceneCameraData;
+/** Game-wide settings, which any scene can override. */
+export interface GameModulesData {
+  /** How scenes are laid out, unless a scene says otherwise. Defaults to `2D`. */
+  scene?: GameSceneMode;
+  /** What stands in for the player, unless a scene says otherwise. Defaults to `mouse`. */
+  avatar?: GameSceneAvatarData;
+}

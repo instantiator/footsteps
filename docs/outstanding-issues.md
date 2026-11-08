@@ -318,3 +318,27 @@ rules up with an effect by its `delayMs` and a matching `after` or `every`.
 
 **Act when:** a game needs to act when a sound or animation ends (eg. reveal a scene after a fanfare). Then add
 an `effectEnd` trigger, naming the effect, fired by `useRuleEffects` in `Game.tsx`.
+
+## Mouse-feet has no body for player effects
+
+In `mouse-feet` the pointer is player 1's feet only: there's no silhouette, so effects that act on players
+(`player-fall`, `players`, `.player-*` targets) can't run, and a scene that uses them must be able to be in `camera`
+mode. The session's player count stays 0.
+
+**Act when:** [996 (player avatars)](prompts/996.00.00.prompt%20-%20player%20avatars.md) is planned. Give mouse-feet a
+drawn avatar there, and let player effects act on it.
+
+## Mouse-feet feet are a point
+
+`MouseFeet` (`src/components/core/layout/MouseFeetHook.ts`) treats the feet as the pointer's single point, so a rule's
+`threshold` has no effect in `mouse-feet`.
+
+**Act when:** an author reports a threshold behaving differently by mouse than by camera. Give the feet a small
+area (a foot-sized box under the pointer) and measure coverage against it.
+
+## Scene mode is set but never read
+
+`scene` (only `"2D"` so far) is in the game data and schema, but nothing resolves it, as there's only one mode.
+
+**Act when:** [002.03.04](prompts/002.03.04.prompt%20-%20calibration.md) adds `2.5D`. Resolve it like the avatar
+mode, most specific first, in `AvatarModeUtils.ts` or beside it.

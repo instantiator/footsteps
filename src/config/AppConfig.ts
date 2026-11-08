@@ -3,9 +3,9 @@ export const VISION_MODELS = ["bodypix", "mediapipe", "movenet"] as const;
 
 /** Application-level settings: set per environment in the `.env*` files, and overridable by URL query. */
 export interface AppConfig {
-  /** Shows debugging aids. */
+  /** Whether the debugging aids start on; the HUD's menu switches them while a game runs. */
   debug: boolean;
-  /** Shows the camera tracking's frame rate in the HUD, while a camera is being tracked. */
+  /** Shows the vision stats readout alone, without the other debugging aids, while a camera is being tracked. */
   showFps: boolean;
   /** Which vision model tracks the players. */
   visionModel: (typeof VISION_MODELS)[number];

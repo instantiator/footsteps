@@ -35,11 +35,9 @@ test("keeps the silhouette loop running when debug changes the mask type", async
   await expect.poll(() => drawCount(page), { timeout: MODEL_TIMEOUT }).toBeGreaterThan(2);
   const before = await drawCount(page);
 
-  // Change the debug flag without reloading, as a developer would while the camera runs
-  await page.evaluate(() => {
-    history.pushState({}, "", "?debug=true");
-    dispatchEvent(new PopStateEvent("popstate"));
-  });
+  // Switch the debug aids on from the HUD, as a developer would while the camera runs
+  await page.getByRole("button", { name: "Menu" }).click();
+  await page.getByRole("button", { name: "Debug on" }).click();
 
   await expect(page.locator("#debug-overlay-container")).toBeVisible();
   await expect.poll(() => drawCount(page), { timeout: MODEL_TIMEOUT }).toBeGreaterThan(before);

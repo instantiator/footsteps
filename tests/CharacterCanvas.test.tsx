@@ -6,7 +6,6 @@ import CharacterCanvas from "../src/components/camera/CharacterCanvas";
 import type { FeetPositions } from "../src/components/camera/CameraSupport";
 import type { PlayerFrame } from "../src/components/camera/PlayerMonitor";
 import { PlayerRegistry } from "../src/components/camera/PlayerRegistry";
-import * as fpsStore from "../src/components/camera/TrackingFpsStore";
 import type { AppConfig } from "../src/config/AppConfig";
 import AppConfigProvider from "../src/providers/AppConfigProvider";
 import { PlayerRegistryContext } from "../src/providers/PlayerRegistryContext";
@@ -130,21 +129,6 @@ describe("CharacterCanvas", () => {
     for (const step of ["inference", "track", "monitor", "draw"]) {
       expect(Number(readout.getAttribute(`data-${step}-ms`))).toBeGreaterThanOrEqual(0);
     }
-  });
-
-  it("publishes the tracking frame rate for the HUD, and clears it when tracking stops", async () => {
-    const seen: (number | null)[] = [];
-    const publish = vi.spyOn(fpsStore, "setTrackingFps").mockImplementation((fps) => void seen.push(fps));
-    const onPlayersChange = vi.fn();
-    const { unmount } = renderCanvas({ onPlayersChange });
-    await waitFor(() => expect(onPlayersChange).toHaveBeenCalled());
-    await act(async () => runNextFrame()); // a second frame, so there is an interval to measure
-    await waitFor(() => expect(seen.some((fps) => typeof fps === "number")).toBe(true));
-
-    unmount();
-
-    expect(seen.at(-1)).toBeNull();
-    publish.mockRestore();
   });
 
   it("reports an empty list when nobody is found", async () => {

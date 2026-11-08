@@ -12,6 +12,10 @@ const oldGame = (): unknown => {
   return data;
 };
 
+/** How the error says to rewrite an old camera setting. */
+const CAMERA_HINT =
+  ': requirement "required" → mode "camera"; "enabled" → mode "camera", fallback "mouse"; false → mode "mouse"';
+
 describe("renamedKeyProblems", () => {
   it("finds nothing in current game data", () => {
     expect(renamedKeyProblems(game(["game-overview-title"], [stage("lava", [challenge("floor")])]))).toEqual([]);
@@ -31,10 +35,23 @@ describe("renamedKeyProblems", () => {
     ]);
   });
 
+  it("names avatar for an old camera setting, with how to rewrite it", () => {
+    expect(renamedKeyProblems({ modules: { camera: { requirement: "enabled" } } })).toEqual([
+      `modules: "camera" is now "avatar"${CAMERA_HINT}`,
+    ]);
+  });
+
+  it("names the path of a camera setting inside a reset scene", () => {
+    const data = { stages: [{ challenges: [{ scenes: [{ resetScene: { camera: { requirement: false } } }] }] }] };
+    expect(renamedKeyProblems(data)).toEqual([
+      `stages[0].challenges[0].scenes[0].resetScene: "camera" is now "avatar"${CAMERA_HINT}`,
+    ]);
+  });
+
   it("leaves the author's own data and state alone", () => {
-    expect(renamedKeyProblems({ component: { data: { displays: 3 }, initialState: { resetDisplay: true } } })).toEqual(
-      [],
-    );
+    expect(
+      renamedKeyProblems({ component: { data: { displays: 3, camera: 1 }, initialState: { resetDisplay: true } } }),
+    ).toEqual([]);
   });
 
   it("fails loading old game data, naming the new key", () => {

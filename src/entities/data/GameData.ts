@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import type { GameOverviewScene } from "./scenes/GameSceneData";
-import type { CameraModuleData } from "./GameModuleData";
+import type { GameModulesData } from "./GameModuleData";
 import type { GameStageData } from "./GameStageData";
 
 /** Unique identifier for a game within a repository. */
@@ -82,11 +82,8 @@ export interface GameData {
     /** Where to link the text to, if anywhere. */
     url?: string;
   }[];
-  /** Optional modules to switch on for this game. */
-  modules?: {
-    /** Layers the player's camera view into the game. */
-    camera?: CameraModuleData;
-  };
+  /** Game-wide scene and avatar settings. */
+  modules?: GameModulesData;
   /** Game-wide behaviour settings. */
   config?: {
     /** If true (the default when `config` is omitted), each stage unlocks only after the previous one is completed. */

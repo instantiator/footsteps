@@ -45,7 +45,7 @@ const gameWithStageScene: GameData = {
           scenes: [
             {
               purpose: "shared",
-              camera: { requirement: "required" },
+              avatar: { mode: "camera" },
               component: { type: "template", data: {}, foregroundTemplate: { sourceType: "embedded", content: "" } },
             },
           ],
@@ -61,13 +61,19 @@ describe("requiredGamePermissions", () => {
   });
 
   it("uses the camera, but doesn't need it, when it is only enabled", () => {
-    const game: GameData = { ...smallGame, modules: { camera: { requirement: "enabled" } } };
+    const game: GameData = { ...smallGame, modules: { avatar: { mode: "camera", fallback: "mouse" } } };
     expect(usedGamePermissions(game)).toEqual(["camera"]);
     expect(requiredGamePermissions(game)).toEqual([]);
   });
 
   it("neither uses nor needs the camera when everything turns it off", () => {
-    const game: GameData = { ...smallGame, modules: { camera: { requirement: false } } };
+    const game: GameData = { ...smallGame, modules: { avatar: { mode: "mouse" } } };
+    expect(usedGamePermissions(game)).toEqual([]);
+    expect(requiredGamePermissions(game)).toEqual([]);
+  });
+
+  it("neither uses nor needs the camera for mouse-feet", () => {
+    const game: GameData = { ...smallGame, modules: { avatar: { mode: "mouse-feet" } } };
     expect(usedGamePermissions(game)).toEqual([]);
     expect(requiredGamePermissions(game)).toEqual([]);
   });
@@ -76,8 +82,8 @@ describe("requiredGamePermissions", () => {
     const [overview, ...others] = smallGame.scenes;
     const game: GameData = {
       ...smallGame,
-      modules: { camera: { requirement: "enabled" } },
-      scenes: [{ ...overview, camera: { requirement: "required" } }, ...others],
+      modules: { avatar: { mode: "camera", fallback: "mouse" } },
+      scenes: [{ ...overview, avatar: { mode: "camera" } }, ...others],
     };
     expect(requiredGamePermissions(game)).toEqual(["camera"]);
   });
@@ -90,7 +96,7 @@ describe("requiredGamePermissions", () => {
       scenes: [
         {
           ...overview,
-          resetScene: { component, resetScene: { component, camera: { requirement: "required" } } },
+          resetScene: { component, resetScene: { component, avatar: { mode: "camera" } } },
         },
         ...others,
       ],
@@ -99,14 +105,14 @@ describe("requiredGamePermissions", () => {
   });
 
   it("needs the camera when the game module requires it", () => {
-    const game: GameData = { ...smallGame, modules: { camera: { requirement: "required" } } };
+    const game: GameData = { ...smallGame, modules: { avatar: { mode: "camera" } } };
     expect(requiredGamePermissions(game)).toEqual(["camera"]);
   });
 
   it("needs the camera when an overview scene requires it", () => {
     const game: GameData = {
       ...smallGame,
-      scenes: smallGame.scenes.map((scene) => ({ ...scene, camera: { requirement: "required" } })),
+      scenes: smallGame.scenes.map((scene) => ({ ...scene, avatar: { mode: "camera" } })),
     };
     expect(requiredGamePermissions(game)).toEqual(["camera"]);
   });
@@ -122,7 +128,7 @@ describe("requiredGamePermissions", () => {
         ...stage,
         challenges: stage.challenges.map((challenge) => ({
           ...challenge,
-          scenes: challenge.scenes.map((scene) => ({ ...scene, camera: { requirement: "required" } })),
+          scenes: challenge.scenes.map((scene) => ({ ...scene, avatar: { mode: "camera" } })),
         })),
       })),
     };

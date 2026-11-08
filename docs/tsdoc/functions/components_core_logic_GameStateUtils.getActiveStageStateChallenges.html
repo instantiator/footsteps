@@ -24,7 +24,8 @@
 <li><span><span class="tsd-kind-parameter">gameState</span>: <a href="../interfaces/entities_state_GameState.GameState.html" class="tsd-signature-type tsd-kind-interface">GameState</a></span>
 <div class="tsd-comment tsd-typography"><p>the current game state</p>
 </div></li></ul></div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-symbol">{</span><br/>    <span class="tsd-kind-property">activeChallengeStates</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/entities_state_GameChallengeState.GameChallengeState.html" class="tsd-signature-type tsd-kind-interface">GameChallengeState</a><span class="tsd-signature-symbol">[]</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">null</span><span class="tsd-signature-symbol">;</span><br/>    <span class="tsd-kind-property">stageState</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/entities_state_GameStageState.GameStageState.html" class="tsd-signature-type tsd-kind-interface">GameStageState</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">null</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></h4><p>the current stage state and the first chunk of challenges with any still active, or nulls if no current stage is set.</p>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-symbol">{</span><br/>    <span class="tsd-kind-property">activeChallengeStates</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/entities_state_GameChallengeState.GameChallengeState.html" class="tsd-signature-type tsd-kind-interface">GameChallengeState</a><span class="tsd-signature-symbol">[]</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">null</span><span class="tsd-signature-symbol">;</span><br/>    <span class="tsd-kind-property">stageState</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/entities_state_GameStageState.GameStageState.html" class="tsd-signature-type tsd-kind-interface">GameStageState</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">null</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></h4><p>the current stage state and the chunk of challenges to show: the focused challenge's while any of it is
+unsolved (see <code>GameSession.focusedChallenge</code>), otherwise the first with any unsolved; or nulls if no stage is open</p>
 
 <ul class="tsd-parameters">
 <li class="tsd-parameter">
@@ -36,7 +37,7 @@
 <div class="tsd-comment tsd-typography"><p>The current stage's state, or null if no stage is open.</p>
 </div></li></ul><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/logic/GameStateUtils.ts#L52">components/core/logic/GameStateUtils.ts:52</a></li></ul></aside></div></li></ul></section></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/logic/GameStateUtils.ts#L53">components/core/logic/GameStateUtils.ts:53</a></li></ul></aside></div></li></ul></section></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

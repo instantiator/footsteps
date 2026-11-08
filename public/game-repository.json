@@ -7,8 +7,9 @@
       "description": "A rhyming Christmas treasure hunt through the house: follow the clues from room to room to find Nanny's magic trifle.",
       "tileGraphic": "title-background",
       "modules": {
-        "camera": {
-          "requirement": false
+        "scene": "2D",
+        "avatar": {
+          "mode": "mouse"
         }
       },
       "config": {
@@ -158,7 +159,7 @@
               }
             ]
           },
-          "camera": { "requirement": "enabled" }
+          "avatar": { "mode": "camera", "fallback": "mouse" }
         }
       ],
       "stages": [
@@ -167,7 +168,7 @@
           "scenes": [
             {
               "purpose": "shared",
-              "camera": { "requirement": false },
+              "avatar": { "mode": "mouse" },
               "component": {
                 "type": "template",
                 "foregroundTemplate": {
@@ -196,7 +197,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": false },
+                  "avatar": { "mode": "mouse" },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -227,7 +228,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": false },
+                  "avatar": { "mode": "mouse" },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -262,7 +263,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": false },
+                  "avatar": { "mode": "mouse" },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -288,7 +289,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": false },
+                  "avatar": { "mode": "mouse" },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -319,7 +320,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": false },
+                  "avatar": { "mode": "mouse" },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -354,7 +355,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": false },
+                  "avatar": { "mode": "mouse" },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -385,7 +386,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": false },
+                  "avatar": { "mode": "mouse" },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -416,7 +417,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": false },
+                  "avatar": { "mode": "mouse" },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -464,7 +465,7 @@
       "id": "rules-demo",
       "title": "Rules demo",
       "description": "Pop balloons and cross a floor of lava: a demonstration of scene rules and state, by mouse or camera.",
-      "modules": { "camera": { "requirement": false } },
+      "modules": { "scene": "2D", "avatar": { "mode": "mouse" } },
       "config": { "sequential": false, "autoAdvanceStages": false },
       "stylesheets": ["demo-css"],
       "resources": {
@@ -486,7 +487,7 @@
         },
         {
           "purpose": "game-overview-stages",
-          "camera": { "requirement": "enabled" },
+          "avatar": { "mode": "camera", "fallback": "mouse" },
           "component": {
             "type": "template",
             "data": {
@@ -494,7 +495,8 @@
                 "balloons": "Balloons",
                 "lava": "The floor is lava",
                 "depth": "Walk around",
-                "effects": "Effects"
+                "effects": "Effects",
+                "stone-hop": "Stone hop"
               }
             },
             "initialState": { "position": 1, "lit": false },
@@ -524,6 +526,14 @@
                 "do": [{ "enterStage": "effects" }]
               },
               {
+                "on": {
+                  "interact": ["click", "hand-enter"],
+                  "target": "#stage-link-stone-hop",
+                  "threshold": 0.5
+                },
+                "do": [{ "enterStage": "stone-hop" }]
+              },
+              {
                 "on": { "interact": ["click", "hand-enter"], "target": "#switch", "threshold": 0.5 },
                 "do": [{ "set": { "position": "if state.position == 1 then 2 else 1" } }]
               }
@@ -543,7 +553,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": "enabled" },
+                  "avatar": { "mode": "camera", "fallback": "mouse" },
                   "component": {
                     "type": "template",
                     "data": { "target": 10 },
@@ -622,7 +632,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": "enabled" },
+                  "avatar": { "mode": "camera", "fallback": "mouse" },
                   "component": {
                     "type": "template",
                     "data": {},
@@ -690,7 +700,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": "enabled" },
+                  "avatar": { "mode": "camera", "fallback": "mouse" },
                   "component": {
                     "type": "template",
                     "data": {},
@@ -717,7 +727,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": "enabled", "preview": false },
+                  "avatar": { "mode": "camera", "fallback": "mouse", "preview": false },
                   "component": {
                     "type": "template",
                     "data": {},
@@ -846,6 +856,81 @@
                       "templateSource": "games/rules-demo/effects.hbs"
                     },
                     "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "stone-hop",
+          "challenges": [
+            {
+              "id": "hop-the-stones",
+              "solution": { "answers": [] },
+              "scenes": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "avatar": { "mode": "mouse-feet" },
+                  "component": {
+                    "type": "template",
+                    "data": {},
+                    "initialState": { "on": 1, "doorOpen": false },
+                    "resetStateOnShow": true,
+                    "rules": [
+                      { "on": { "interact": ["foot-enter"], "target": "#lava" }, "do": [{ "resetChallenge": true }] },
+                      {
+                        "on": { "interact": ["jump-onto"], "target": "#stone-2" },
+                        "if": "state.on == 1",
+                        "do": [
+                          { "set": { "on": "2" } },
+                          { "effect": "item-fall", "target": "#stone-1", "easing": "ease-in" },
+                          { "sound": "chime" }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["jump-onto"], "target": "#stone-3" },
+                        "if": "state.on == 2",
+                        "do": [
+                          { "set": { "on": "3", "doorOpen": "true" } },
+                          { "effect": "item-fall", "target": "#stone-2", "easing": "ease-in" },
+                          { "sound": "chime" }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["jump-onto"], "target": "#stone-3" },
+                        "if": "state.on == 1",
+                        "do": [{ "resetChallenge": true }]
+                      },
+                      {
+                        "on": { "interact": ["click"], "target": "#door" },
+                        "if": "state.doorOpen",
+                        "do": [
+                          { "completeChallenge": true },
+                          { "sound": "fanfare" },
+                          { "reward": { "animation": "fireworks", "particleCount": 150 } }
+                        ]
+                      }
+                    ],
+                    "backgroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/stones.hbs" },
+                    "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
+                  },
+                  "resetScene": {
+                    "component": {
+                      "type": "template",
+                      "data": {},
+                      "rules": [
+                        {
+                          "on": { "interact": ["foot-enter"], "target": "#reset-start" },
+                          "do": [{ "sound": "chime" }, { "finishReset": true }]
+                        }
+                      ],
+                      "backgroundTemplate": {
+                        "sourceType": "relative",
+                        "templateSource": "games/rules-demo/stones-reset.hbs"
+                      },
+                      "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
+                    }
                   }
                 }
               ]

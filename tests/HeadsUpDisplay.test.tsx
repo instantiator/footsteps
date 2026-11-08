@@ -1,23 +1,46 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
-import { useState } from "react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { useState, type ReactNode } from "react";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { setTrackingFps } from "../src/components/camera/TrackingFpsStore";
 import HeadsUpDisplay from "../src/components/core/HeadsUpDisplay";
-import { ENV_APP_CONFIG } from "../src/config/AppConfig";
+import { completeChallenge } from "../src/components/core/logic/GameStateUtils";
 import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
-import { AppConfigContext } from "../src/providers/AppConfigContext";
+import { GameDataContext } from "../src/providers/GameDataContext";
 import { GameStateContext } from "../src/providers/GameStateContext";
 import { simpleGameData } from "./data/SampleGameState";
 import { smallGame } from "./data/SmallGame";
+
+/** The router and loaded game the HUD runs in; the route shows where Go to navigated. */
+const InGame = ({ gameState, children }: { gameState: GameState; children: ReactNode }) => (
+  <MemoryRouter initialEntries={["/game/hud-game/play"]}>
+    <GameDataContext.Provider
+      value={{ gameData: gameState.gameData, gameId: "hud-game", resources: {}, expressions: new Map() }}
+    >
+      {children}
+      <Routes>
+        <Route path="*" element={<RoutePath />} />
+      </Routes>
+    </GameDataContext.Provider>
+  </MemoryRouter>
+);
+
+/** Prints the current route. */
+const RoutePath = () => <p data-testid="route">{useLocation().pathname}</p>;
 
 /** Holds the state the HUD changes, and prints the part of it the HUD controls. */
 const Harness = ({ initial }: { initial: GameState }) => {
   const [gameState, setGameState] = useState(initial);
   return (
-    <GameStateContext.Provider value={{ gameState, setGameState }}>
-      <HeadsUpDisplay />
-      <output>{JSON.stringify(gameState.current)}</output>
-    </GameStateContext.Provider>
+    <InGame gameState={gameState}>
+      <GameStateContext.Provider value={{ gameState, setGameState }}>
+        <HeadsUpDisplay debug={false} />
+        <output data-testid="current">{JSON.stringify(gameState.current)}</output>
+        <output data-testid="stages">
+          {JSON.stringify(gameState.stages.map((stage) => stage.challengeStates.map((c) => c.succeeded)))}
+        </output>
+        <output data-testid="focus">{JSON.stringify(gameState.session.focusedChallenge)}</output>
+      </GameStateContext.Provider>
+    </InGame>
   );
 };
 
@@ -32,7 +55,7 @@ const overviewState: GameState = {
   current: { stageId: null, overviewScene: "game-overview-stages" },
 };
 
-const current = () => JSON.parse(screen.getByRole("status").textContent!);
+const current = () => JSON.parse(screen.getByTestId("current").textContent!);
 
 /** What the document reports as its fullscreen element, as the browser would. */
 let fullscreenElement: Element | null = null;
@@ -139,33 +162,107 @@ describe("HeadsUpDisplay", () => {
   });
 });
 
-describe("HeadsUpDisplay frame rate", () => {
-  afterEach(() => act(() => setTrackingFps(null)));
+/** Opens the HUD's menu, if it isn't open. */
+const openMenu = () => {
+  const menu = screen.getByRole("button", { name: "Menu" });
+  if (menu.getAttribute("aria-expanded") !== "true") fireEvent.click(menu);
+};
 
-  /** The HUD over the title screen, with `showFps` as given. */
-  const renderHud = (showFps: boolean) =>
-    render(
-      <AppConfigContext.Provider value={{ ...ENV_APP_CONFIG, showFps }}>
-        <Harness initial={titleState} />
-      </AppConfigContext.Provider>,
-    );
+describe("HeadsUpDisplay Go to and Reset", () => {
+  /** Picks an entry by its label, and presses the list's button. */
+  const pick = (list: string, label: string, button: string) => {
+    openMenu();
+    const select = screen.getByRole("combobox", { name: list });
+    const option = within(select).getByRole<HTMLOptionElement>("option", { name: label });
+    fireEvent.change(select, { target: { value: option.value } });
+    fireEvent.click(screen.getByRole("button", { name: button }));
+  };
 
-  const indicator = () => screen.queryByLabelText("Camera tracking frame rate");
-
-  it("shows the tracking frame rate, in whole frames, while a camera is tracked", () => {
-    renderHud(true);
-    expect(indicator()).toBeNull(); // no camera yet
-
-    act(() => setTrackingFps(12.4));
-    expect(indicator()).toHaveTextContent("12 fps");
-
-    act(() => setTrackingFps(null));
-    expect(indicator()).toBeNull();
+  it("goes to the catalogue and the game's landing page", () => {
+    render(<Harness initial={titleState} />);
+    pick("Go to", "Catalogue (all games)", "Go");
+    expect(screen.getByTestId("route")).toHaveTextContent(/^\/$/);
+    pick("Go to", "Game: Simple Game", "Go");
+    expect(screen.getByTestId("route")).toHaveTextContent("/game/hud-game");
   });
 
-  it("hides the frame rate when the setting is off", () => {
-    renderHud(false);
-    act(() => setTrackingFps(12));
-    expect(indicator()).toBeNull();
+  it("goes to a stage, a challenge, and back to the title", () => {
+    render(<Harness initial={overviewState} />);
+    pick("Go to", "Stage: 1", "Go");
+    expect(current().stageId).toBe("stage-1");
+    pick("Go to", "Challenge: 1.1", "Go");
+    expect(JSON.parse(screen.getByTestId("focus").textContent!)).toEqual({
+      stageId: "stage-1",
+      challengeId: simpleGameData.stages[0].challenges[0].id,
+    });
+    pick("Go to", "Title: Simple Game", "Go");
+    expect(current()).toEqual({ stageId: null, overviewScene: "game-overview-title" });
+    expect(screen.getByTestId("focus")).toHaveTextContent("null");
+  });
+
+  it("keeps them in a menu, which closes after an action", () => {
+    render(<Harness initial={overviewState} />);
+    expect(screen.queryByRole("combobox", { name: "Go to" })).toBeNull();
+    pick("Go to", "Stage: 1", "Go");
+    expect(screen.getByRole("button", { name: "Menu" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("combobox", { name: "Go to" })).toBeNull();
+  });
+
+  it("won't pick a locked stage", () => {
+    render(<Harness initial={titleState} />);
+    openMenu();
+    expect(screen.getByRole("option", { name: "🔒 Stage: 2" })).toBeDisabled();
+  });
+
+  it("offers nothing to reset until a challenge is solved, then resets it", () => {
+    const stageId = simpleGameData.stages[0].id;
+    const challengeId = simpleGameData.stages[0].challenges[0].id;
+    const { unmount } = render(<Harness initial={titleState} />);
+    openMenu();
+    expect(screen.getByRole("combobox", { name: "Reset" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Reset" })).toBeDisabled();
+    unmount();
+
+    render(<Harness initial={completeChallenge(titleState, stageId, challengeId)} />);
+    pick("Reset", "✓ Challenge: 1.1", "Reset");
+    expect(JSON.parse(screen.getByTestId("stages").textContent!)[0][0]).toBe(false);
+    openMenu();
+    expect(screen.getByRole("button", { name: "Reset" })).toBeDisabled();
+  });
+});
+
+describe("HeadsUpDisplay debug button, in the menu", () => {
+  /** The HUD over the title screen, with the debug aids as given. */
+  const renderHud = (debug: boolean, onToggleDebug?: () => void) =>
+    render(
+      <InGame gameState={titleState}>
+        <GameStateContext.Provider value={{ gameState: titleState, setGameState: () => {} }}>
+          <HeadsUpDisplay debug={debug} onToggleDebug={onToggleDebug} />
+        </GameStateContext.Provider>
+      </InGame>,
+    );
+
+  it("offers to switch the debug aids on while they are off, and off while they are on", () => {
+    const { unmount } = renderHud(false, () => {});
+    openMenu();
+    expect(screen.getByRole("button", { name: "Debug on" })).toHaveAttribute("aria-pressed", "false");
+    unmount();
+    renderHud(true, () => {});
+    openMenu();
+    expect(screen.getByRole("button", { name: "Debug off" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("switches them when pressed", () => {
+    const onToggleDebug = vi.fn();
+    renderHud(false, onToggleDebug);
+    openMenu();
+    fireEvent.click(screen.getByRole("button", { name: "Debug on" }));
+    expect(onToggleDebug).toHaveBeenCalledOnce();
+  });
+
+  it("shows no frame rate, which the vision stats readout shows instead", () => {
+    renderHud(true, () => {});
+    openMenu();
+    expect(screen.queryByText(/fps/)).toBeNull();
   });
 });

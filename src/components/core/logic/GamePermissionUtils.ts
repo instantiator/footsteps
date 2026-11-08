@@ -1,5 +1,6 @@
-import type { GameSceneBase, GameSceneCameraData } from "../../../entities/data/scenes/GameSceneData";
+import type { GameSceneAvatarData, GameSceneBase } from "../../../entities/data/scenes/GameSceneData";
 import type { GameData } from "../../../entities/data/GameData";
+import { isDefined } from "../../../util/ObjectUtils";
 import { getCameraStream } from "../../camera/CameraSupport";
 
 /** A browser permission a game may need before it starts. */
@@ -16,27 +17,30 @@ const PERMISSION_LABELS: Record<GamePermissionId, string> = {
 /** The human-readable name of a permission. */
 export const gamePermissionLabel = (id: GamePermissionId): string => PERMISSION_LABELS[id];
 
-/** A scene's camera settings, then those of each reset scene nested in it. */
-const cameraSettingsOf = ({
-  camera,
+/** A scene's avatar settings, then those of each reset scene nested in it. */
+const avatarSettingsOf = ({
+  avatar,
   resetScene,
-}: Pick<GameSceneBase, "camera" | "resetScene">): (GameSceneCameraData | undefined)[] => [
-  camera,
-  ...(resetScene ? cameraSettingsOf(resetScene) : []),
+}: Pick<GameSceneBase, "avatar" | "resetScene">): (GameSceneAvatarData | undefined)[] => [
+  avatar,
+  ...(resetScene ? avatarSettingsOf(resetScene) : []),
 ];
 
-/** The most the game asks of the camera, anywhere: `"required"`, else `"enabled"`, else `false`. */
-const gameCameraRequirement = (gameData: GameData): NonNullable<GameSceneCameraData["requirement"]> => {
+/**
+ * The most the game asks of the camera, anywhere: `"required"` if any setting is `camera` with no fallback, else
+ * `"enabled"` if any is `camera`, else `false`.
+ */
+const gameCameraRequirement = (gameData: GameData): "required" | "enabled" | false => {
   const scenes = [
     ...gameData.scenes,
     ...gameData.stages.flatMap((stage) => stage.scenes ?? []),
     ...gameData.stages.flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
   ];
-  const requirements = [gameData.modules?.camera, ...scenes.flatMap(cameraSettingsOf)].map(
-    (settings) => settings?.requirement,
+  const cameras = [gameData.modules?.avatar, ...scenes.flatMap(avatarSettingsOf)].filter(
+    (settings) => settings?.mode === "camera",
   );
-  if (requirements.includes("required")) return "required";
-  return requirements.includes("enabled") ? "enabled" : false;
+  if (cameras.some((settings) => !isDefined(settings?.fallback))) return "required";
+  return cameras.length > 0 ? "enabled" : false;
 };
 
 /** The permissions a game can use, in the order to show them on its landing page. */

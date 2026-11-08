@@ -10,7 +10,7 @@ GameData
 ├── tileGraphic?                       resource name of the tile's background image (see Landing tile)
 ├── gameContainerStyle                 applied to the game's outer container
 ├── config?                            { sequential, autoAdvanceStages }
-├── modules?.camera?                   { requirement?, preview? }: show the player's camera silhouette
+├── modules?                           { scene?, avatar? }: how scenes are laid out, and what stands in for the player
 ├── resources?                         name → { type, target }        (see Resources)
 ├── sounds?                            resource names of music and sound effects (see Sounds)
 ├── reward?                            { animation, particleCount? }: celebration on stage completion
@@ -51,36 +51,51 @@ timers and changes in the game: see [Rules and state](#rules-and-state). A click
 takes moves on to the stages overview. Clicks remain the keyboard-accessible route; for keyboard access, see
 [clickable elements in templates](dev-overview.md#clickable-elements-in-templates).
 
-### Camera settings
+### Scene and avatar modes
 
-`modules.camera` switches camera mode on for a whole game:
+`modules` sets two things for the whole game, and any scene (or reset scene) can override either with its own
+`scene` or `avatar`:
 
 ```json
 "modules": {
-  "camera": { "requirement": "enabled", "preview": true }
+  "scene": "2D",
+  "avatar": { "mode": "camera", "fallback": "mouse", "preview": true }
 }
 ```
 
-`requirement` is `"enabled"` (camera mode is on, and the game can start without the camera), `"required"` (camera mode
-is on, and the game can't start until the camera permission is granted), or `false` (camera mode is off).
+**`scene`** is how a scene is laid out. The only mode so far is `"2D"`, the default: a full-screen background, the
+players, and a foreground. With only one mode, nothing reads the setting yet. Elements in a challenge's foreground can have a `data-depth`, so that players pass in
+front of and behind them: see [player depth](camera-mode.md#player-depth).
 
-Elements in a challenge's foreground can have a `data-depth`, so that players pass in front of and behind them: see
-[player depth](camera-mode.md#player-depth).
+**`avatar`** is what stands in for the player:
 
-`preview` defaults to `true`. Any scene can override either setting with
-`"camera": { "requirement": false }` or `{ "preview": false }`; an unset field inherits from broader
-scenes.
+| `mode`       | The player plays with                                                                                                                  |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `mouse`      | Clicks and mouse moves. The default.                                                                                                   |
+| `camera`     | Their [camera](camera-mode.md) silhouette, and clicks.                                                                                 |
+| `mouse-feet` | Clicks and mouse moves, and the pointer is player 1's feet: see [mouse-feet](camera-mode.md#mouse-feet). Scenes play without a camera. |
 
-Camera mode and its preview resolve separately, most specific first:
+- `fallback` is the mode to use when the camera isn't available: `mouse` or `mouse-feet`. A `camera` mode with no
+  fallback means the camera is required: the game can't start until the camera permission is granted. With a
+  fallback, it can start without it.
+- `preview` (default `true`) shows the webcam preview. It is always off unless the mode is `camera`.
 
-1. Any active challenge that turns it on wins.
-2. Otherwise, any active challenge that turns it off wins.
-3. Otherwise, the open stage's `shared` scene.
-4. Otherwise, the overview scene.
-5. Otherwise, the game's `modules.camera`.
-6. Otherwise, the default: camera off, preview on.
+`mode` and `fallback` go together: a scene that sets `mode` doesn't inherit a broader `fallback`, so
+`"avatar": { "mode": "camera" }` requires the camera however the game is set. `preview` inherits on its own, so
+`"avatar": { "preview": false }` keeps the broader mode.
 
-The preview is always off while camera mode is off. See [camera mode](camera-mode.md) for what the
+The avatar resolves most specific first:
+
+1. Mode: the strongest mode any active challenge sets, `camera` before `mouse-feet` before `mouse`. Preview: any
+   active challenge that turns it on, otherwise any that turns it off.
+2. Otherwise, the open stage's `shared` scene.
+3. Otherwise, the overview scene.
+4. Otherwise, the game's `modules`.
+5. Otherwise, the default: the mouse, preview on.
+
+`modules.avatar` replaced `modules.camera`. Game data that still uses `camera` fails validation and loading, naming
+`avatar` and the rewrite: `requirement: "required"` is `mode: "camera"` with no fallback, `"enabled"` is
+`mode: "camera", fallback: "mouse"`, and `false` is `mode: "mouse"`. See [camera mode](camera-mode.md) for what the
 player sees and how the settings behave in practice.
 
 ### Rules and state
@@ -145,7 +160,7 @@ a countdown before balloons fall. Until then, the scene's own rules, timers and 
 - `resetChallenge` shows the challenge's reset scenes again, and so does reloading the game: whether a reset
   scene is finished is never saved.
 - A reset scene's state starts from its `initialState` each time it is shown.
-- It inherits the scene's camera settings, and may override them with its own `camera`.
+- It inherits the scene's `scene` and `avatar` settings, and may override them with its own.
 - A reset scene can have a reset scene of its own, shown first.
 - Revealing the scene fades, like any scene change. Camera interactions pause during the fade, so a player
   already standing on something doesn't trigger it on the revealed scene.
@@ -196,8 +211,8 @@ Every action can have a [`delayMs`](special-effects.md#delay).
   is up. `holdMs` works only with `-enter` interactions.
 - Everything is checked when the game loads: an expression that doesn't parse, an invalid selector, a negative
   duration, a challenge action outside a challenge scene, `enterStage` to a stage the game doesn't have, a `start`
-  rule that resets its own scene, a mistake in an [effect](special-effects.md), or a rule only the camera could fire
-  on a scene where the camera can never be on, stops the game loading, with a message naming the scene and rule. A selector that matches nothing in the scene is
+  rule that resets its own scene, a mistake in an [effect](special-effects.md), or a rule that no avatar mode the
+  scene can have would fire, stops the game loading, with a message naming the scene and rule. A selector that matches nothing in the scene is
   a console warning. So does a `holdMs` on an interaction that isn't an `-enter`, `finishReset` outside a reset
   scene, a `sound` naming a resource the game doesn't have, or an old name: an interaction (eg. `hand`, now
   `hand-enter`), or a layer class (`.display-foreground`, now `.scene-foreground`).
@@ -251,14 +266,16 @@ shape, and it works from behind, where key points may not be found. It follows `
 already in range when a scene appears must leave and come back. `holdMs` works with `near-enter`, and `threshold` and
 `includeCovered` don't apply. There's no mouse equivalent, though a rule can use `mouse-enter` as well.
 
-A rule whose interactions all need the camera is an error on a scene where the camera can never be on. A scene set
-to `"enabled"` can have them, for when there is a camera.
+A rule whose interactions no avatar mode the scene can have would fire is an error: a `hand-enter` rule on a scene
+that is only ever `mouse` or `mouse-feet`, say. A `camera` mode with a fallback counts as both, so its scene can have
+camera rules for when there is a camera. In `mouse-feet` the pointer fires `foot-enter`, `foot-exit`, `any-enter`,
+`any-exit` and the jumps, as player 1. Effects that act on players need a scene that can be in `camera` mode.
 
 #### What can be clicked or touched
 
 Only elements a template draws take clicks: empty space in a layer lets them through to whatever is beneath,
 including background layers. An element drawn over another covers it, so the one beneath gets neither the click
-nor the camera's touch, unless its rule sets `"includeCovered": true` (camera interactions only). Give decorative
+nor the camera's touch, unless its rule sets `"includeCovered": true` (camera and mouse-feet interactions only). Give decorative
 elements `pointer-events: none` so they don't cover what's beneath them.
 
 #### Elements that animate or keep state

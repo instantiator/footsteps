@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isDefined } from "../../../util/ObjectUtils";
-import type { ResolvedCameraMode } from "../logic/CameraModeUtils";
+import type { ResolvedCameraMode } from "../logic/AvatarModeUtils";
 
 /** How long each half of an ordinary scene change takes. */
 export const SCENE_FADE_MS = 1000;

@@ -47,6 +47,8 @@ export interface LayerNodeProps {
   mirror?: boolean;
   /** Whether debug aids (colour key, coloured mask) are shown. */
   debug?: boolean;
+  /** Switches the debug aids on or off, from the HUD. */
+  onToggleDebug?: () => void;
   /** The scene components to render in the layer, one per grid column. */
   nodes?: ReactNode[];
   /** Whether the game uses the camera. */
@@ -154,8 +156,8 @@ export const CharacterCanvasLayerWrapper = ({
 };
 
 /** Top layer, holding the {@link HeadsUpDisplay}. */
-export const HudLayerWrapper = ({ style, zIndex }: LayerNodeProps) => (
+export const HudLayerWrapper = ({ style, zIndex, debug, onToggleDebug }: LayerNodeProps) => (
   <div id="hud-layer-container" className="hudStyle childClicksOnly" style={{ ...style, zIndex: zIndex }}>
-    <HeadsUpDisplay />
+    <HeadsUpDisplay debug={debug === true} onToggleDebug={onToggleDebug} />
   </div>
 );

@@ -20,7 +20,7 @@ import type { PlayerEffects } from "./effects/PlayerEffects";
 import "./Game.css";
 import GameStylesheets from "./GameStylesheets";
 import GameLayersLayout, { type GameLayers } from "./layout/GameLayersLayout";
-import { resolveCameraMode } from "./logic/CameraModeUtils";
+import { resolveAvatarMode } from "./logic/AvatarModeUtils";
 import { leaveTitleScreen } from "./logic/GameClickUtils";
 import { findChallengeState } from "./logic/GameDataUtils";
 import type { SceneDomEvent } from "./logic/TemplateUtils";
@@ -275,7 +275,10 @@ function useAnswerHandler(): GameAnswerFunction {
  * along with the click handling, feedback (music, sound effects, rewards) and title screen keys.
  */
 export default function Game() {
-  const { debug } = useAppConfig();
+  const config = useAppConfig();
+  // Starts as the config says, and the HUD switches it
+  const [debug, setDebug] = useState(config.debug);
+  const toggleDebug = useCallback(() => setDebug((on) => !on), []);
   const { gameId, resources } = useGameData();
   const { gameState } = useGameState();
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
@@ -292,7 +295,7 @@ export default function Game() {
     () => createLayers(renderData, { onAnswer, onSceneEvent }),
     [renderData, onAnswer, onSceneEvent],
   );
-  const camera = useMemo(() => resolveCameraMode(gameState.gameData, renderData), [gameState.gameData, renderData]);
+  const avatar = useMemo(() => resolveAvatarMode(gameState.gameData, renderData), [gameState.gameData, renderData]);
 
   return (
     <div
@@ -318,9 +321,10 @@ export default function Game() {
       <PlayerRegistryContext.Provider value={players}>
         <GameLayersLayout
           debug={debug}
+          onToggleDebug={toggleDebug}
           gameLayers={layers}
           sceneKey={sceneKey}
-          camera={camera}
+          avatar={avatar}
           cameraRules={cameraRules}
           onPlayerInteraction={onPlayerInteraction}
         />

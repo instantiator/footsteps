@@ -1,4 +1,4 @@
-<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>resolveCameraMode | Footsteps API</title><meta name="description" content="Documentation for Footsteps API"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>resolveAvatarMode | Footsteps API</title><meta name="description" content="Documentation for Footsteps API"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script><script async src="../assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
 <div class="tsd-toolbar-contents container"><a href="../index.html" class="title">Footsteps API</a>
 <div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
 <ul role="listbox" id="tsd-search-results"></ul>
@@ -8,28 +8,28 @@
 <div class="col-content">
 <div class="tsd-page-title">
 <ul class="tsd-breadcrumb" aria-label="Breadcrumb">
-<li><a href="../modules/components_core_logic_CameraModeUtils.html">components/core/logic/CameraModeUtils</a></li>
-<li><a href="" aria-current="page">resolveCameraMode</a></li></ul>
-<h1>Function resolveCameraMode</h1></div>
+<li><a href="../modules/components_core_logic_AvatarModeUtils.html">components/core/logic/AvatarModeUtils</a></li>
+<li><a href="" aria-current="page">resolveAvatarMode</a></li></ul>
+<h1>Function resolveAvatarMode</h1></div>
 <section class="tsd-panel">
 <ul class="tsd-signatures">
 <li class="">
-<div class="tsd-signature tsd-anchor-link" id="resolvecameramode"><span class="tsd-kind-call-signature">resolveCameraMode</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">gameData</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/entities_data_GameData.GameData.html" class="tsd-signature-type tsd-kind-interface">GameData</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">renderData</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/components_core_logic_RenderDataUtils.LayeredGameSceneRenderData.html" class="tsd-signature-type tsd-kind-interface">LayeredGameSceneRenderData</a><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/components_core_logic_CameraModeUtils.ResolvedCameraMode.html" class="tsd-signature-type tsd-kind-interface">ResolvedCameraMode</a><a href="#resolvecameramode" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-signature tsd-anchor-link" id="resolveavatarmode"><span class="tsd-kind-call-signature">resolveAvatarMode</span><span class="tsd-signature-symbol">(</span><br/>    <span class="tsd-kind-parameter">gameData</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/entities_data_GameData.GameData.html" class="tsd-signature-type tsd-kind-interface">GameData</a><span class="tsd-signature-symbol">,</span><br/>    <span class="tsd-kind-parameter">renderData</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/components_core_logic_RenderDataUtils.LayeredGameSceneRenderData.html" class="tsd-signature-type tsd-kind-interface">LayeredGameSceneRenderData</a><span class="tsd-signature-symbol">,</span><br/><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/components_core_logic_AvatarModeUtils.ResolvedAvatarMode.html" class="tsd-signature-type tsd-kind-interface">ResolvedAvatarMode</a><a href="#resolveavatarmode" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>Resolves camera mode and its preview by inheritance, most specific first.</p>
-<p>Any active challenge that enables a setting wins. If none does, an explicit challenge
-setting disables it. If no challenge declares the setting, the stage, then the overview,
-then the game's camera module decide. Both <code>&quot;enabled&quot;</code> and <code>&quot;required&quot;</code> turn camera mode on.</p>
-<p>NB. The preview is always off while camera mode is off.</p>
+<div class="tsd-comment tsd-typography"><p>Resolves the avatar settings for the scenes shown, most specific first.</p>
+<p>Mode, with its fallback: the strongest mode any active challenge declares (<code>camera</code>, then <code>mouse-feet</code>, then
+<code>mouse</code>), else the stage scene's, the overview scene's, the game's <code>modules.avatar</code>, and finally <code>mouse</code>.</p>
+<p>Preview: any active challenge turning it on wins, then any turning it off, then the stage, overview and game, and
+finally on. It is always off unless the mode is <code>camera</code>.</p>
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li><span><span class="tsd-kind-parameter">gameData</span>: <a href="../interfaces/entities_data_GameData.GameData.html" class="tsd-signature-type tsd-kind-interface">GameData</a></span></li>
 <li><span><span class="tsd-kind-parameter">renderData</span>: <a href="../interfaces/components_core_logic_RenderDataUtils.LayeredGameSceneRenderData.html" class="tsd-signature-type tsd-kind-interface">LayeredGameSceneRenderData</a></span></li></ul></div>
-<h4 class="tsd-returns-title">Returns <a href="../interfaces/components_core_logic_CameraModeUtils.ResolvedCameraMode.html" class="tsd-signature-type tsd-kind-interface">ResolvedCameraMode</a></h4><aside class="tsd-sources">
+<h4 class="tsd-returns-title">Returns <a href="../interfaces/components_core_logic_AvatarModeUtils.ResolvedAvatarMode.html" class="tsd-signature-type tsd-kind-interface">ResolvedAvatarMode</a></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/logic/CameraModeUtils.ts#L77">components/core/logic/CameraModeUtils.ts:77</a></li></ul></aside></div></li></ul></section></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/logic/AvatarModeUtils.ts#L94">components/core/logic/AvatarModeUtils.ts:94</a></li></ul></aside></div></li></ul></section></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

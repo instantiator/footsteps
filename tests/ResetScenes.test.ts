@@ -86,11 +86,18 @@ describe("reset scenes", () => {
     expect(key(start(state, RESET))).not.toBe(key(state));
   });
 
-  it("take their parent's camera settings, with their own over them", () => {
-    const data = gameWithReset(resetScene("get-ready", { camera: { preview: false } }));
-    data.stages[0].challenges[0].scenes[0].camera = { requirement: "enabled", preview: true };
+  it("take their parent's avatar settings, with their own over them", () => {
+    const data = gameWithReset(resetScene("get-ready", { avatar: { preview: false } }));
+    data.stages[0].challenges[0].scenes[0].avatar = { mode: "camera", fallback: "mouse", preview: true };
     const [render] = getLayeredRenderData(playing(data), {}, "reset-test").challengesRenderData!;
-    expect(render.camera).toEqual({ requirement: "enabled", preview: false });
+    expect(render.avatar).toEqual({ mode: "camera", fallback: "mouse", preview: false });
+  });
+
+  it("drop their parent's fallback when they set their own mode", () => {
+    const data = gameWithReset(resetScene("get-ready", { avatar: { mode: "camera" } }));
+    data.stages[0].challenges[0].scenes[0].avatar = { mode: "camera", fallback: "mouse", preview: false };
+    const [render] = getLayeredRenderData(playing(data), {}, "reset-test").challengesRenderData!;
+    expect(render.avatar).toEqual({ mode: "camera", preview: false });
   });
 
   describe("showing again", () => {

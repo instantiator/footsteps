@@ -14,7 +14,6 @@ import { PlayerCanvases } from "./PlayerCanvases";
 import type { PlayerRegistry } from "./PlayerRegistry";
 import { PlayerRegistryContext } from "../../providers/PlayerRegistryContext";
 import { PlayerDepths, type DepthSettings } from "./PlayerDepth";
-import { setTrackingFps } from "./TrackingFpsStore";
 import type { PlayerFrame } from "./PlayerMonitor";
 
 /** Props for {@link CharacterCanvas}. */
@@ -215,7 +214,6 @@ const statsReporter = (onStats?: (stats: FrameStats) => void) => {
     const now = performance.now();
     if (!timing || now - shownAt < STATS_INTERVAL_MS) return;
     shownAt = now;
-    setTrackingFps(timing.fps);
     onStats?.({ ...timing, ...frameQuality(frame) });
   };
 };
@@ -369,7 +367,6 @@ const startTrackingLoop = (
   const stopDetecting = runDetections(detections, reportAndDraw);
   return () => {
     stopDetecting();
-    setTrackingFps(null);
     registry.resetTracking(reference.width);
     canvases.removeAllBut(registry.knownIds());
     depths.clearItems();

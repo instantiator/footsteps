@@ -1,6 +1,7 @@
 import type { GameOverviewScenePurpose } from "../../../entities/data/scenes/GameSceneData";
 import type { GameState } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
+import { getStageState, withoutFocus } from "./GameStateUtils";
 import { calcOverviewScene } from "./RenderDataUtils";
 
 /** The order in which the overview scenes are normally shown. */
@@ -28,5 +29,17 @@ export const enterStage = (state: GameState, stageId: string): GameState | undef
   if (stageState.completion === "completed" || stageState.availability === "locked") {
     return undefined;
   }
-  return { ...state, current: { ...state.current, stageId } };
+  return withoutFocus({ ...state, current: { ...state.current, stageId } });
+};
+
+/**
+ * Opens a challenge's stage showing that challenge (and its chunk) first, even if earlier ones are unsolved.
+ * @returns the new state, or undefined if the stage is locked or completed, or the challenge solved
+ * @throws if the game has no such stage
+ */
+export const goToChallenge = (state: GameState, stageId: string, challengeId: string): GameState | undefined => {
+  const entered = enterStage(state, stageId);
+  const challenge = getStageState(state, stageId)?.challengeStates.find((c) => c.challenge.id === challengeId);
+  if (!isDefined(entered) || !isDefined(challenge) || challenge.succeeded) return undefined;
+  return { ...entered, session: { ...entered.session, focusedChallenge: { stageId, challengeId } } };
 };

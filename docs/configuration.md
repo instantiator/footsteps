@@ -19,10 +19,10 @@ The `.env` files are committed, and every `VITE_` value is visible in the built 
 
 The committed mode files change only these:
 
-| File               | Sets                                                                                   |
-| ------------------ | -------------------------------------------------------------------------------------- |
-| `.env.development` | `VITE_SHOW_FPS=true`; the browser tests run against the dev server, so they get it too |
-| `.env.test`        | `VITE_VISION_WORKER=false` (jsdom has no workers), `VITE_VISION_STABLE_FRAMES=1`       |
+| File               | Sets                                                                                |
+| ------------------ | ----------------------------------------------------------------------------------- |
+| `.env.development` | Nothing yet; the browser tests run against the dev server, so they would get it too |
+| `.env.test`        | `VITE_VISION_WORKER=false` (jsdom has no workers), `VITE_VISION_STABLE_FRAMES=1`    |
 
 ## Query parameters
 
@@ -37,10 +37,10 @@ React Router re-reads the query when the URL changes, so a setting can be change
 
 ### General
 
-| Query     | Default | Values  | What it does                                                                      |
-| --------- | ------- | ------- | --------------------------------------------------------------------------------- |
-| `debug`   | `false` | boolean | Debugging aids; see [camera mode debugging](camera-mode.md#debugging)             |
-| `showFps` | `false` | boolean | The camera tracking's frame rate in the HUD, while a camera is tracked; on in dev |
+| Query     | Default | Values  | What it does                                                                                                             |
+| --------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `debug`   | `false` | boolean | Debugging aids at the start; the HUD's Debug button switches them. See [camera mode debugging](camera-mode.md#debugging) |
+| `showFps` | `false` | boolean | The vision stats readout alone, without the other debug aids, while a camera is tracked                                  |
 
 ### Vision
 
