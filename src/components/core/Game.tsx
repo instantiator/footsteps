@@ -14,7 +14,7 @@ import useGameMusic from "../../providers/GameMusicHook";
 import { useGameState } from "../../providers/GameStateHook";
 import { PlayerRegistryContext } from "../../providers/PlayerRegistryContext";
 import { isDefined } from "../../util/ObjectUtils";
-import GameDisplayComponent, { type LayerHint } from "./display/GameDisplayComponent";
+import GameSceneComponent, { type LayerHint } from "./scene/GameSceneComponent";
 import { centreOnScreen, playerWrappers, resolveTargets } from "./effects/EffectTargets";
 import type { PlayerEffects } from "./effects/PlayerEffects";
 import "./Game.css";
@@ -110,7 +110,7 @@ interface ShownReward {
 
 /**
  * The rewards a rule's reward action shows: one from each element it targets, or one from the middle of the game if it
- * has no target. So does one whose element has gone by now, as rewards outlive their display.
+ * has no target. So does one whose element has gone by now, as rewards outlive their scene.
  */
 const rewardsFor = (
   { id, effect, scope, event }: QueuedEffect,
@@ -125,7 +125,7 @@ const rewardsFor = (
       ? resolveTargets(scope, selector, shownScopes)
       : [];
   if (elements.length === 0) return [{ id, reward }];
-  // A player's canvas fills the display, so its centre would be the middle of the display, not the player
+  // A player's canvas fills the scene, so its centre would be the middle of the scene, not the player
   const centreOf = (element: Element) =>
     element.classList.contains("player") ? playerEffects.bodyCentre(element) : centreOnScreen(element);
   return elements.map((element, index) => ({ id: `${id}-${index}`, reward, at: centreOf(element) }));
@@ -159,7 +159,7 @@ function useRuleEffects(reducedMotion: boolean, playerEffects: PlayerEffects) {
         timersRef.current.delete(timer);
         if ("sound" in effect) void playAudio(resources[effect.sound]);
         else if (!reducedMotion) {
-          const shownScopes = getShownScenes(stateRef.current).map((display) => display.scope);
+          const shownScopes = getShownScenes(stateRef.current).map((scene) => scene.scope);
           setShown((rewards) => [...rewards, ...rewardsFor(queued, effect.reward, { shownScopes, playerEffects })]);
         }
       }, effect.delayMs ?? 0);
@@ -203,25 +203,25 @@ function useTitleScreenKeys() {
   }, [gameState, setGameState]);
 }
 
-/** What the displays call when the player answers, or something happens in a template. */
-interface DisplayHandlers {
+/** What the scenes call when the player answers, or something happens in a template. */
+interface SceneHandlers {
   /** Submits an answer to a challenge. */
   onAnswer: GameAnswerFunction;
-  /** Responds to an event inside a display's template. */
+  /** Responds to an event inside a scene's template. */
   onSceneEvent: (scope: SceneScope, event: SceneDomEvent) => void;
 }
 
-/** One display component per render datum, for the given layer. */
-const createDisplayComponents = (
+/** One scene component per render datum, for the given layer. */
+const createSceneComponents = (
   renderData: (GameSceneRenderData | undefined)[] | undefined,
   layerHint: LayerHint,
-  handlers: DisplayHandlers,
+  handlers: SceneHandlers,
 ): ReactNode[] | undefined =>
   renderData
     ?.filter(isDefined)
     .map((renderDatum) => (
-      <GameDisplayComponent
-        key={`${renderDatum.stageId}-${renderDatum.challengeId}-display-component`}
+      <GameSceneComponent
+        key={`${renderDatum.stageId}-${renderDatum.challengeId}-scene-component`}
         render={renderDatum}
         layerHint={layerHint}
         onAnswer={handlers.onAnswer}
@@ -230,10 +230,10 @@ const createDisplayComponents = (
     ));
 
 /** Background and foreground nodes for the overview, stage, and challenge layers. */
-const createLayers = (renderData: LayeredGameSceneRenderData, handlers: DisplayHandlers): GameLayers => {
+const createLayers = (renderData: LayeredGameSceneRenderData, handlers: SceneHandlers): GameLayers => {
   const layer = (data: (GameSceneRenderData | undefined)[] | undefined) => ({
-    backgroundLayerNodes: createDisplayComponents(data, "background", handlers),
-    foregroundLayerNodes: createDisplayComponents(data, "foreground", handlers),
+    backgroundLayerNodes: createSceneComponents(data, "background", handlers),
+    foregroundLayerNodes: createSceneComponents(data, "foreground", handlers),
   });
   return {
     overview: layer([renderData.overviewRenderData]),
@@ -243,7 +243,7 @@ const createLayers = (renderData: LayeredGameSceneRenderData, handlers: DisplayH
 };
 
 /**
- * The callback function used when an answer is submitted (or tested) by a display component.
+ * The callback function used when an answer is submitted (or tested) by a scene component.
  * Accepts the answer, and if correct, updates the game state to complete the challenge.
  *
  * @returns true if the answer is correct (ie. the challenge is completed), or an array of validations.
@@ -285,7 +285,7 @@ export default function Game() {
 
   const onAnswer = useAnswerHandler();
   const renderData = useMemo(() => getLayeredRenderData(gameState, resources, gameId), [gameState, resources, gameId]);
-  const displayKey = useMemo(() => getSceneKey(renderData), [renderData]);
+  const sceneKey = useMemo(() => getSceneKey(renderData), [renderData]);
   const { onSceneEvent, cameraRules, onPlayerInteraction, players, playerEffects } = useGameRules();
   const ruleRewards = useRuleEffects(reducedMotion, playerEffects);
   const layers = useMemo(
@@ -319,7 +319,7 @@ export default function Game() {
         <GameLayersLayout
           debug={debug}
           gameLayers={layers}
-          displayKey={displayKey}
+          sceneKey={sceneKey}
           camera={camera}
           cameraRules={cameraRules}
           onPlayerInteraction={onPlayerInteraction}

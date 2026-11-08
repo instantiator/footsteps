@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { PageNavigation } from "../src/components/core/display/GameDisplayDialogComponent";
+import { PageNavigation } from "../src/components/core/scene/GameSceneDialogComponent";
 
 describe("PageNavigation", () => {
   it("offers labelled buttons (so keyboard activation is native) for the pages that exist", () => {

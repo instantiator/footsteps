@@ -21,7 +21,7 @@ const Harness = ({ initial }: { initial: GameState }) => {
   );
 };
 
-/** The title screen, a stage open, or the stages overview, in a game that has a title display. */
+/** The title screen, a stage open, or the stages overview, in a game that has a title scene. */
 const titleState = createBlankGameState(simpleGameData);
 const stageState: GameState = {
   ...titleState,
@@ -98,7 +98,7 @@ describe("HeadsUpDisplay", () => {
     expect(screen.queryByRole("button", { name: "Close challenge" })).toBeNull();
   });
 
-  it("does not offer 'To title' in a game with no title display", () => {
+  it("does not offer 'To title' in a game with no title scene", () => {
     render(<Harness initial={createBlankGameState(smallGame)} />);
     expect(screen.queryByRole("button", { name: "To title" })).toBeNull();
   });

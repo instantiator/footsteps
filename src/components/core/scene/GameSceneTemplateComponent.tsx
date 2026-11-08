@@ -15,24 +15,24 @@ import {
   type PropsWithChildren,
   type SyntheticEvent,
 } from "react";
-import type { GameSceneTemplateSourceData as GameDisplayTemplateData } from "../../../entities/data/scenes/GameSceneTemplateComponentData";
+import type { GameSceneTemplateSourceData as GameSceneTemplateData } from "../../../entities/data/scenes/GameSceneTemplateComponentData";
 import useContentCache from "../../../providers/GameContentCacheHook";
 import { isDefined } from "../../../util/ObjectUtils";
 import { summariseTemplateSource, type SceneDomEvent } from "../logic/TemplateUtils";
 
-/** Props for {@link GameDisplayTemplateComponent}. */
-interface GameDisplayTemplateProps {
+/** Props for {@link GameSceneTemplateComponent}. */
+interface GameSceneTemplateProps {
   /** Where to get the Handlebars template from; fetched via the content cache. */
-  templateSource: GameDisplayTemplateData | undefined;
+  templateSource: GameSceneTemplateData | undefined;
   /** Template context: any object whose fields the template may reference. */
   templateData: object;
   /** Style for the container; its string values are rendered as Handlebars templates over `templateData`. */
   containerStyle?: React.CSSProperties;
   /** Style for the rendered template itself; its string values are rendered as Handlebars templates too. */
   templateStyle?: React.CSSProperties;
-  /** Identifies the display this template belongs to, so camera rules can find its elements. */
+  /** Identifies the scene this template belongs to, so camera rules can find its elements. */
   scope?: string;
-  /** Which run of the display this is; a new one rebuilds the template. */
+  /** Which run of the scene this is; a new one rebuilds the template. */
   run?: number;
   /** Called with clicks, key activations, mouse moves, and animation and transition ends inside the template. */
   onSceneEvent?: (event: SceneDomEvent) => void;
@@ -83,8 +83,8 @@ const isTemplateButtonActivation = (event: KeyboardEvent<HTMLElement>): boolean 
   event.target instanceof Element &&
   event.target.getAttribute("role") === "button";
 
-/** The container's handlers, which pass events inside the template on to the display, with the container they stop at. */
-const displayEventHandlers = (onSceneEvent: GameDisplayTemplateProps["onSceneEvent"]) => {
+/** The container's handlers, which pass events inside the template on to the scene, with the container they stop at. */
+const sceneEventHandlers = (onSceneEvent: GameSceneTemplateProps["onSceneEvent"]) => {
   const emit = (event: SyntheticEvent<HTMLElement>, kind: SceneDomEvent["kind"], name?: string) => {
     if (event.target instanceof Element)
       onSceneEvent?.({ kind, target: event.target, root: event.currentTarget, name });
@@ -114,10 +114,10 @@ const displayEventHandlers = (onSceneEvent: GameDisplayTemplateProps["onSceneEve
  * inside a container. Both styles' string values are rendered too. Children follow the rendered template.
  *
  * The rendered HTML is patched into place rather than replaced, keeping elements with the same `id`, so CSS
- * transitions and animations carry on between renders. A new run of the display, or another display, starts on a new
+ * transitions and animations carry on between renders. A new run of the scene, or another scene, starts on a new
  * body instead, which ends all of them and restarts the template's animations.
  */
-export default function GameDisplayTemplateComponent({
+export default function GameSceneTemplateComponent({
   templateSource,
   templateData,
   containerStyle,
@@ -126,8 +126,8 @@ export default function GameDisplayTemplateComponent({
   run = 0,
   onSceneEvent,
   children,
-}: PropsWithChildren<GameDisplayTemplateProps>) {
-  const [render, setRender] = useState<GameDisplayTemplateData | undefined>();
+}: PropsWithChildren<GameSceneTemplateProps>) {
+  const [render, setRender] = useState<GameSceneTemplateData | undefined>();
 
   const { getTemplate } = useContentCache();
 
@@ -168,12 +168,12 @@ export default function GameDisplayTemplateComponent({
       id={summariseTemplateSource(templateSource, uid)}
       key={`template-${uid}`}
       className="templateContent"
-      data-display-scope={scope}
+      data-scene-scope={scope}
       style={{ width: "100%", height: "100%", ...containerStyleParsed }}
-      {...displayEventHandlers(onSceneEvent)}
+      {...sceneEventHandlers(onSceneEvent)}
     >
       {isDefined(html) && (
-        <div key={bodyKey} ref={bodyRef} className="templateBody" data-display-run={run} style={templateStyleParsed} />
+        <div key={bodyKey} ref={bodyRef} className="templateBody" data-scene-run={run} style={templateStyleParsed} />
       )}
       {children}
     </div>

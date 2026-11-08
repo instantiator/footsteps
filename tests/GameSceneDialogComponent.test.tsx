@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import GameDisplayDialogComponent from "../src/components/core/display/GameDisplayDialogComponent";
+import GameSceneDialogComponent from "../src/components/core/scene/GameSceneDialogComponent";
 import type { GameSceneDialogMargins } from "../src/entities/data/scenes/GameSceneDialogComponentData";
 import { SMALL_GAME_ID, smallRepository } from "./data/SmallGame";
 import GameProviders from "./helpers/GameProviders";
@@ -29,15 +29,15 @@ const renderDialog = (
 ) =>
   render(
     <GameProviders repository={smallRepository} gameId={SMALL_GAME_ID}>
-      <GameDisplayDialogComponent contents={[{ text: "Hello" }]} layerHint={layerHint} {...props} />
+      <GameSceneDialogComponent contents={[{ text: "Hello" }]} layerHint={layerHint} {...props} />
     </GameProviders>,
   );
 
-/** The box sized to the image, inside the display-filling outer element (the size container). */
+/** The box sized to the image, inside the scene-filling outer element (the size container). */
 const frameOf = (container: HTMLElement) =>
   container.querySelector("[style*='container-type']")?.firstElementChild as HTMLElement;
 
-describe("GameDisplayDialogComponent", () => {
+describe("GameSceneDialogComponent", () => {
   it.each([
     ["a small image", { width: 100, height: 50 }, 2],
     ["a large image", { width: 4000, height: 5000 }, 0.8],
@@ -49,7 +49,7 @@ describe("GameDisplayDialogComponent", () => {
     expect(frameOf(container).style.width).toBe(`min(100cqw, ${ratio * 100}cqh)`);
   });
 
-  it("fills the display until the image loads", async () => {
+  it("fills the scene until the image loads", async () => {
     stubImage();
     const { container } = renderDialog("foreground", { image: "paper.png" });
     await screen.findByText("Hello");

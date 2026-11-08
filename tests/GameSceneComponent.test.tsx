@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import GameDisplayComponent from "../src/components/core/display/GameDisplayComponent";
+import GameSceneComponent from "../src/components/core/scene/GameSceneComponent";
 import type { GameSceneComponentData } from "../src/entities/data/scenes/GameSceneData";
 import type { GameSceneRenderData } from "../src/components/core/logic/RenderDataUtils";
 import { toGameSnapshot } from "../src/entities/state/GameSnapshot";
@@ -9,12 +9,12 @@ import { SMALL_GAME_ID, smallRepository } from "./data/SmallGame";
 import { simpleGameState } from "./data/SampleGameState";
 import GameProviders from "./helpers/GameProviders";
 
-const renderDisplay = (
+const renderScene = (
   component: GameSceneComponentData,
   layerHint: "foreground" | "background",
   resources: Record<string, string> = {},
 ) => {
-  const display: GameSceneRenderData = {
+  const scene: GameSceneRenderData = {
     purpose: "game-overview-stages",
     component,
     scope: "overview:game-overview-stages",
@@ -35,7 +35,7 @@ const renderDisplay = (
   };
   return render(
     <GameProviders repository={smallRepository} gameId={SMALL_GAME_ID}>
-      <GameDisplayComponent render={display} layerHint={layerHint} />
+      <GameSceneComponent render={scene} layerHint={layerHint} />
     </GameProviders>,
   );
 };
@@ -51,7 +51,7 @@ const templateComponent: GameSceneComponentData = {
   foregroundTemplateStyle: { fontFamily: "Georgia" },
 };
 
-describe("GameDisplayComponent", () => {
+describe("GameSceneComponent", () => {
   it("renders a dialog on the game's image resource, with its pages in the foreground", async () => {
     const dialog: GameSceneComponentData = {
       type: "dialog",
@@ -59,10 +59,10 @@ describe("GameDisplayComponent", () => {
       imageResource: "parchment",
       contents: [{ text: "A dialog page" }],
     };
-    const { container, unmount } = renderDisplay(dialog, "background", { parchment: "https://img.example/p.png" });
+    const { container, unmount } = renderScene(dialog, "background", { parchment: "https://img.example/p.png" });
     await vi.waitFor(() => expect(container.querySelector("[style*='img.example/p.png']")).not.toBeNull());
     unmount();
-    renderDisplay(dialog, "foreground");
+    renderScene(dialog, "foreground");
     expect(await screen.findByText("A dialog page")).toBeInTheDocument();
   });
 
@@ -72,7 +72,7 @@ describe("GameDisplayComponent", () => {
   ] as const)(
     "renders the %s template with that layer's container and template styles",
     async (hint, text, colour, font) => {
-      renderDisplay(templateComponent, hint);
+      renderScene(templateComponent, hint);
       const element = await screen.findByText(text);
       expect(element.parentElement!.style.fontFamily).toBe(font);
       expect(element.parentElement!.parentElement!.style.color).toBe(colour);
@@ -80,13 +80,13 @@ describe("GameDisplayComponent", () => {
   );
 
   it("renders only the layer it is asked for", async () => {
-    renderDisplay(templateComponent, "foreground");
+    renderScene(templateComponent, "foreground");
     await screen.findByText("tree");
     expect(screen.queryByText("sky")).toBeNull();
   });
 
-  it("renders a scroll display as a scroll, with its text in the foreground", async () => {
-    renderDisplay(
+  it("renders a scroll scene as a scroll, with its text in the foreground", async () => {
+    renderScene(
       { type: "scroll", data: {}, contents: [{ text: "Once upon a time" }, { text: "The end" }] },
       "foreground",
     );
@@ -95,7 +95,7 @@ describe("GameDisplayComponent", () => {
   });
 
   it("uses a scroll's own foreground template and style when it has them", async () => {
-    renderDisplay(
+    renderScene(
       {
         type: "scroll",
         data: {},

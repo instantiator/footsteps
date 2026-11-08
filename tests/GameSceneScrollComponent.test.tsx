@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import GameDisplayScrollComponent from "../src/components/core/display/GameDisplayScrollComponent";
+import GameSceneScrollComponent from "../src/components/core/scene/GameSceneScrollComponent";
 import type { GameSceneScrollComponentData } from "../src/entities/data/scenes/GameSceneScrollComponentData";
 import { SMALL_GAME_ID, smallRepository } from "./data/SmallGame";
 import GameProviders from "./helpers/GameProviders";
@@ -22,11 +22,11 @@ const scroll: GameSceneScrollComponentData = {
 const renderScroll = (layerHint: "foreground" | "background" = "foreground") =>
   render(
     <GameProviders repository={smallRepository} gameId={SMALL_GAME_ID}>
-      <GameDisplayScrollComponent contents={scroll.contents} layerHint={layerHint} stageId="s" challengeId="c" />
+      <GameSceneScrollComponent contents={scroll.contents} layerHint={layerHint} stageId="s" challengeId="c" />
     </GameProviders>,
   );
 
-describe("GameDisplayScrollComponent", () => {
+describe("GameSceneScrollComponent", () => {
   it("shows the first page's text as one paragraph per line, with no input or audio", async () => {
     const { container } = renderScroll();
     expect((await screen.findByText("First line")).tagName).toBe("P");

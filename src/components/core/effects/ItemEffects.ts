@@ -8,7 +8,7 @@ import type {
   GameQuakeEffect,
 } from "../../../entities/data/scenes/GameEffectData";
 import { easingFunction } from "./EasingProbe";
-import { DISPLAY_FRAME_CLASS, centreOnScreen, sceneDistance, sceneRect, type ScreenPoint } from "./EffectTargets";
+import { SCENE_FRAME_CLASS, centreOnScreen, sceneDistance, sceneRect, type ScreenPoint } from "./EffectTargets";
 
 /** How far an item is shaken at some point in a quake, as a % of the scene. */
 export interface QuakeStep extends ScreenPoint {
@@ -241,7 +241,7 @@ export class ItemEffects {
     const motion = quakeMotion(effect);
     const shared = motion();
     for (const element of elements) {
-      const sharesMotion = consistentMotion || element.classList.contains(DISPLAY_FRAME_CLASS);
+      const sharesMotion = consistentMotion || element.classList.contains(SCENE_FRAME_CLASS);
       const scale = quakeScale(element, dx, dy);
       const keyframes = (sharesMotion ? shared : motion()).map(({ offset, x, y }) => ({
         offset,

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DISPLAY_FRAME_CLASS } from "../src/components/core/effects/EffectTargets";
+import { SCENE_FRAME_CLASS } from "../src/components/core/effects/EffectTargets";
 import {
   ItemEffects,
   coverScale,
@@ -345,7 +345,7 @@ describe("ItemEffects", () => {
     });
 
     it("keeps a dialog's frames together regardless", () => {
-      quakeOf(false, [element(DISPLAY_FRAME_CLASS), element(DISPLAY_FRAME_CLASS)]);
+      quakeOf(false, [element(SCENE_FRAME_CLASS), element(SCENE_FRAME_CLASS)]);
       expect(translatesOf(0)).toEqual(translatesOf(1));
     });
 

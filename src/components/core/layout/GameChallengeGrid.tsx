@@ -2,7 +2,7 @@ import { Children } from "react";
 
 /**
  * Lays a layer's challenges side by side in equal-width columns. Pointer events pass through the grid
- * and its columns; only what the displays' templates draw takes them.
+ * and its columns; only what the scenes' templates draw takes them.
  */
 export default function GameChallengeGrid({
   className,

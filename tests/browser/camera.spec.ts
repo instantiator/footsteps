@@ -56,7 +56,7 @@ test("hides the preview but keeps the camera running when the preview is off", a
   await expect.poll(() => streamCount(page)).toBe(1);
 });
 
-test("stops the camera on a camera-off display, and reacquires it on return", async ({ page }) => {
+test("stops the camera on a camera-off scene, and reacquires it on return", async ({ page }) => {
   await openCameraGame(page, { cameraOffStage: "stage-1" });
 
   await expect(characterLayer(page)).toBeAttached();

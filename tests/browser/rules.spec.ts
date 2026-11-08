@@ -2,12 +2,12 @@ import { expect, test, type Page } from "@playwright/test";
 import type { GameData } from "../../src/entities/data/GameData";
 import type { GameRepository } from "../../src/entities/GameRepository";
 
-/** The example game for display rules. */
+/** The example game for scene rules. */
 const GAME_ID = "rules-demo";
 
 /**
- * Serves the example game with the camera off on every display, so it plays by mouse without the vision model,
- * after the test's own changes. Motion is reduced so the game's display changes are immediate: during a fade the
+ * Serves the example game with the camera off on every scene, so it plays by mouse without the vision model,
+ * after the test's own changes. Motion is reduced so the game's scene changes are immediate: during a fade the
  * scene ignores clicks, and raw mouse clicks (unlike locator clicks) don't wait for it.
  */
 const openDemo = async (page: Page, change: (game: GameData) => void = () => {}): Promise<void> => {
@@ -15,14 +15,14 @@ const openDemo = async (page: Page, change: (game: GameData) => void = () => {})
     const response = await route.fetch();
     const repository = (await response.json()) as GameRepository;
     const game = repository.games[GAME_ID];
-    for (const display of [
+    for (const scene of [
       ...game.scenes,
       // The effects stage acts on players, so it can't load without the camera
       ...game.stages
         .filter((stage) => stage.id !== "effects")
         .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
     ]) {
-      display.camera = { requirement: false };
+      scene.camera = { requirement: false };
     }
     change(game);
     await route.fulfill({ response, json: repository });
@@ -33,7 +33,7 @@ const openDemo = async (page: Page, change: (game: GameData) => void = () => {})
   await expect(page.locator("#switch")).toBeVisible();
 };
 
-/** The challenge display of a stage. */
+/** The challenge scene of a stage. */
 const challengeOf = (game: GameData, stageId: string) =>
   game.stages.find((stage) => stage.id === stageId)!.challenges[0].scenes[0].component;
 
@@ -49,7 +49,7 @@ const clickNow = async (page: Page, selector: string) => {
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 };
 
-/** Stands the mouse on the lava's reset display's start, and waits for the floor to be revealed. */
+/** Stands the mouse on the lava's reset scene's start, and waits for the floor to be revealed. */
 const returnToStart = async (page: Page) => {
   await expect(page.locator("#reset-message")).toHaveText("Return to the start");
   await page.locator("#reset-start").hover();
@@ -87,7 +87,7 @@ test.describe("rules demo", () => {
     expect(during.x).toBeGreaterThanOrEqual(before.x);
   });
 
-  test("keeps a display's state while it is hidden", async ({ page }) => {
+  test("keeps a scene's state while it is hidden", async ({ page }) => {
     await openDemo(page);
     await page.locator("#switch").click();
     await expect(page.locator("#switch")).toHaveClass(/position-2/);
@@ -125,7 +125,7 @@ test.describe("rules demo", () => {
     await expect(page.locator("#stage-link-effects")).toHaveClass(/completed/);
   });
 
-  test("rebuilds a display's template when it resets, restarting its animations", async ({ page }) => {
+  test("rebuilds a scene's template when it resets, restarting its animations", async ({ page }) => {
     await openDemo(page, (game) => {
       challengeOf(game, "balloons").rules!.push({
         on: { interact: ["click"], target: "#score" },

@@ -33,7 +33,7 @@ const targetOf = (effect: GameEffect): string | undefined => ("target" in effect
 
 /** Whether a run of a scene has reached the screen. The game's state moves on before the scene does. */
 const isOnScreen = (scope: string, run: number): boolean =>
-  sceneRoots(scope).some((root) => root.querySelector(`:scope > .templateBody[data-display-run="${run}"]`) !== null);
+  sceneRoots(scope).some((root) => root.querySelector(`:scope > .templateBody[data-scene-run="${run}"]`) !== null);
 
 /** Starts an effect on its elements. */
 const runEffect = (effects: ItemEffects, effect: GameEffect, elements: Element[], run: EffectRun): void => {

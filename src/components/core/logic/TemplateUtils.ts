@@ -81,6 +81,6 @@ export const matchTarget = ({ target, root }: Pick<SceneDomEvent, "target" | "ro
 
 /** The template containers of a scene (its background and foreground), by its scope. */
 export const sceneRoots = (scope: string): Element[] =>
-  Array.from(document.querySelectorAll("[data-display-scope]")).filter(
-    (element) => element instanceof HTMLElement && element.dataset.displayScope === scope,
+  Array.from(document.querySelectorAll("[data-scene-scope]")).filter(
+    (element) => element instanceof HTMLElement && element.dataset.sceneScope === scope,
   );

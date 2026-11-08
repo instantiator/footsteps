@@ -10,16 +10,16 @@ export interface ScreenPoint {
 }
 
 /** Marks the frame around a dialog or scroll's image and text, which a quake moves as a whole. */
-export const DISPLAY_FRAME_CLASS = "displayFrame";
+export const SCENE_FRAME_CLASS = "sceneFrame";
 
 /** Marks a dialog or scroll's own size container, so `cq*` units inside it measure it, not the scene. */
 export const DIALOG_CONTAINER_CLASS = "dialogContainer";
 
 /** The classes targets can use to reach what isn't inside a scene's templates. */
-const OUTSIDE_TEMPLATES = ".player, .display-foreground, .display-background";
+const OUTSIDE_TEMPLATES = ".player, .scene-foreground, .scene-background";
 
 /** The classes of the layers' containers, whose items an effect moves in their place. */
-const LAYER_CONTAINERS = ".display-foreground, .display-background";
+const LAYER_CONTAINERS = ".scene-foreground, .scene-background";
 
 /** An item with something inside it that sorts among players, which a stacking context on the item would trap. */
 const holdsDepthItems = (element: Element): boolean => element.querySelector("[data-depth]") !== null;
@@ -30,7 +30,7 @@ const withoutDepthWrappers = (element: Element): Element[] =>
 
 /** The items in a scene's template: its frame if it is a dialog or scroll, as a quake must keep those lined up. */
 const itemsOf = (root: Element): Element[] => {
-  const frame = root.closest(`.${DISPLAY_FRAME_CLASS}`);
+  const frame = root.closest(`.${SCENE_FRAME_CLASS}`);
   if (frame !== null) return [frame];
   return Array.from(root.querySelectorAll(":scope > .templateBody > *")).flatMap(withoutDepthWrappers);
 };
@@ -38,7 +38,7 @@ const itemsOf = (root: Element): Element[] => {
 /** A matching element as an effect should treat it: a layer's container gives the items inside it. */
 const asItems = (element: Element): Element[] =>
   element.matches(LAYER_CONTAINERS)
-    ? Array.from(element.querySelectorAll("[data-display-scope]")).flatMap(itemsOf)
+    ? Array.from(element.querySelectorAll("[data-scene-scope]")).flatMap(itemsOf)
     : [element];
 
 /**

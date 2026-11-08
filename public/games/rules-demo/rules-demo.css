@@ -1,4 +1,4 @@
-/* The rules demo: each screen fills its display, and positions its pieces in cqw and cqh: percentages of the whole display, so they mean the same at any scale and in any column */
+/* The rules demo: each screen fills its scene, and positions its pieces in cqw and cqh: percentages of the whole scene, so they mean the same at any scale and in any column */
 .demo-screen {
   position: relative;
   width: 100%;
@@ -201,7 +201,7 @@
   pointer-events: auto;
 }
 
-/* Reset displays: a dark floor with the start picked out, and a countdown before the balloons */
+/* Reset scenes: a dark floor with the start picked out, and a countdown before the balloons */
 .demo-reset {
   background: #1b1b2f;
 }

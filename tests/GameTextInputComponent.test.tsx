@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import GameTextInputComponent from "../src/components/core/display/GameTextInputComponent";
+import GameTextInputComponent from "../src/components/core/scene/GameTextInputComponent";
 import type { GameAnswerFunction } from "../src/components/core/Game";
 
 const renderInput = (onAnswer: GameAnswerFunction, setSolved = vi.fn()) => {

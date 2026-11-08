@@ -43,19 +43,19 @@ const inline = (source: GameSceneTemplateSourceData | undefined): GameSceneTempl
 const demo = (change: (game: GameData) => void): GameData => {
   const game: GameData = structuredClone((localRepository as GameRepository).games["rules-demo"]);
   change(game);
-  const withResets = (display: GameResetScene | GameSceneBase): (GameResetScene | GameSceneBase)[] =>
-    display.resetScene ? [display, ...withResets(display.resetScene)] : [display];
-  for (const display of [
+  const withResets = (scene: GameResetScene | GameSceneBase): (GameResetScene | GameSceneBase)[] =>
+    scene.resetScene ? [scene, ...withResets(scene.resetScene)] : [scene];
+  for (const scene of [
     ...game.scenes,
     // The effects stage acts on players, so it can't load without the camera
     ...game.stages
       .filter((stage) => stage.id !== "effects")
       .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
   ].flatMap(withResets)) {
-    display.camera = { requirement: false };
-    if (display.component.type !== "template") continue;
-    display.component.foregroundTemplate = inline(display.component.foregroundTemplate);
-    display.component.backgroundTemplate = inline(display.component.backgroundTemplate);
+    scene.camera = { requirement: false };
+    if (scene.component.type !== "template") continue;
+    scene.component.foregroundTemplate = inline(scene.component.foregroundTemplate);
+    scene.component.backgroundTemplate = inline(scene.component.backgroundTemplate);
   }
   return game;
 };
@@ -171,7 +171,7 @@ describe("rules demo, played by camera", () => {
     expect($("#balloon-1 .balloon-body")).toHaveAttribute("data-colour", "1");
   });
 
-  /** Stands on the lava's reset display's start, and waits for the floor to be revealed. */
+  /** Stands on the lava's reset scene's start, and waits for the floor to be revealed. */
   const returnToStart = async () => {
     await waitFor(() => expect($("#reset-message")).toHaveTextContent("Return to the start"));
     touch("#reset-start", "foot-enter");

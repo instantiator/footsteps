@@ -14,15 +14,15 @@ import type { GameTemplateData } from "../logic/RenderDataUtils";
 import { parseLines } from "../logic/TemplateUtils";
 import GameAudioComponent from "./GameAudioComponent";
 import type { SceneDomEvent } from "../logic/TemplateUtils";
-import type { LayerHint } from "./GameDisplayComponent";
-import GameDisplayTemplateComponent from "./GameDisplayTemplateComponent";
+import type { LayerHint } from "./GameSceneComponent";
+import GameSceneTemplateComponent from "./GameSceneTemplateComponent";
 import GameTextInputComponent, { type GameTextInputComponentProps } from "./GameTextInputComponent";
-import { DIALOG_CONTAINER_CLASS, DISPLAY_FRAME_CLASS } from "../effects/EffectTargets";
+import { DIALOG_CONTAINER_CLASS, SCENE_FRAME_CLASS } from "../effects/EffectTargets";
 import useImageAspectRatio from "./ImageAspectRatioHook";
 
-/** Props for {@link GameDisplayDialogComponent}. */
-export interface GameDisplayDialogComponentProps {
-  /** URL of the background image. Without one, the dialog fills its display. */
+/** Props for {@link GameSceneDialogComponent}. */
+export interface GameSceneDialogComponentProps {
+  /** URL of the background image. Without one, the dialog fills its scene. */
   image?: string;
   /** Where the text sits on the image. */
   margins?: GameSceneDialogMargins;
@@ -44,11 +44,11 @@ export interface GameDisplayDialogComponentProps {
   challengeId?: GameChallengeId;
   /** Called when the player submits an answer on a page. */
   onAnswer?: GameAnswerFunction;
-  /** Identifies the display, so camera rules can find its elements. */
+  /** Identifies the scene, so camera rules can find its elements. */
   scope?: string;
-  /** Which run of the display this is; a new one rebuilds its template. */
+  /** Which run of the scene this is; a new one rebuilds its template. */
   run?: number;
-  /** Called with events inside the dialog's template, for the display's rules. */
+  /** Called with events inside the dialog's template, for the scene's rules. */
   onSceneEvent?: (event: SceneDomEvent) => void;
 }
 
@@ -58,7 +58,7 @@ const defaultTemplate = (layerHint: LayerHint): GameSceneTemplateSourceData => (
   content: layerHint === "foreground" ? "{{#lines}}<p>{{.}}</p>{{/lines}}" : "<!-- dialog -->",
 });
 
-/** Fills the display, and centres the frame in it. The display's size is the container for `cq*` units. */
+/** Fills the scene, and centres the frame in it. The scene's size is the container for `cq*` units. */
 const OUTER_STYLE: CSSProperties = {
   width: "100%",
   height: "100%",
@@ -68,8 +68,8 @@ const OUTER_STYLE: CSSProperties = {
 };
 
 /**
- * The image's box: the largest of its aspect ratio that fits the display, whether that means scaling the
- * image up or down. Until the ratio is known (or with no image), it fills the display.
+ * The image's box: the largest of its aspect ratio that fits the scene, whether that means scaling the
+ * image up or down. Until the ratio is known (or with no image), it fills the scene.
  */
 const frameStyle = (ratio: number | undefined): CSSProperties =>
   isDefined(ratio)
@@ -175,10 +175,10 @@ function PageControls({ content, input, onRetreat, onAdvance }: PageControlsProp
 
 /**
  * Pages of text on a background image, optionally with audio and an answer input on each page. The image
- * scales to fit the display, and the text stays within its margins. The background and foreground layers
+ * scales to fit the scene, and the text stays within its margins. The background and foreground layers
  * size themselves from the image independently, so they line up without knowing each other.
  */
-export default function GameDisplayDialogComponent({
+export default function GameSceneDialogComponent({
   image,
   margins,
   templateSource,
@@ -193,7 +193,7 @@ export default function GameDisplayDialogComponent({
   scope,
   run,
   onSceneEvent,
-}: GameDisplayDialogComponentProps) {
+}: GameSceneDialogComponentProps) {
   const [solved, setSolved] = useState<boolean>(false);
   const [contentIndex, setContentIndex] = useState<number>(0);
   const ratio = useImageAspectRatio(image);
@@ -201,8 +201,8 @@ export default function GameDisplayDialogComponent({
 
   return (
     <div className={DIALOG_CONTAINER_CLASS} style={OUTER_STYLE}>
-      <div className={DISPLAY_FRAME_CLASS} style={frameStyle(ratio)}>
-        <GameDisplayTemplateComponent
+      <div className={SCENE_FRAME_CLASS} style={frameStyle(ratio)}>
+        <GameSceneTemplateComponent
           templateSource={templateSource ?? defaultTemplate(layerHint)}
           containerStyle={layerStyle(layerHint, image, margins, containerStyle)}
           templateStyle={{ ...(layerHint === "foreground" && SCROLLING_TEXT_STYLE), ...templateStyle }}
@@ -219,7 +219,7 @@ export default function GameDisplayDialogComponent({
               onAdvance={contentIndex < contents.length - 1 ? () => setContentIndex(contentIndex + 1) : undefined}
             />
           )}
-        </GameDisplayTemplateComponent>
+        </GameSceneTemplateComponent>
       </div>
     </div>
   );

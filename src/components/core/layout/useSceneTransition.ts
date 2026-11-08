@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { isDefined } from "../../../util/ObjectUtils";
 import type { ResolvedCameraMode } from "../logic/CameraModeUtils";
 
-/** How long each half of an ordinary display change takes. */
+/** How long each half of an ordinary scene change takes. */
 export const SCENE_FADE_MS = 1000;
 
 /** How long the viewport takes to reshape for a camera change. */
@@ -11,7 +11,7 @@ export const CAMERA_RESHAPE_MS = 2000;
 /** The scene currently on screen, and the targets it is heading towards. */
 interface SceneTarget<T> {
   layers: T;
-  displayKey: string;
+  sceneKey: string;
   camera: ResolvedCameraMode;
   cameraAspectRatio: number | undefined;
 }
@@ -26,7 +26,7 @@ export interface ViewportShape {
 
 /** What to render for a scene, and whether it is mid-change. */
 export interface SceneTransition<T> {
-  /** The display layers to render now. */
+  /** The scene layers to render now. */
   layers: T;
   /** The camera settings that belong to those layers. */
   camera: ResolvedCameraMode;
@@ -36,16 +36,16 @@ export interface SceneTransition<T> {
   reshaping: boolean;
   /** 1 when visible, 0 while faded out. */
   opacity: 0 | 1;
-  /** Whether a display or camera change is running, so interactions must wait. */
+  /** Whether a scene or camera change is running, so interactions must wait. */
   transitioning: boolean;
 }
 
-/** The latest display, camera and motion preference. */
+/** The latest scene, camera and motion preference. */
 interface SceneTransitionOptions<T> {
-  /** The latest display layers from the game state. */
+  /** The latest scene layers from the game state. */
   layers: T;
-  /** Identifies the latest display, so content-only updates do not fade. */
-  displayKey: string;
+  /** Identifies the latest scene, so content-only updates do not fade. */
+  sceneKey: string;
   /** The latest camera settings. */
   camera: ResolvedCameraMode;
   /** The shape the camera reports, once its video is playing. */
@@ -89,7 +89,7 @@ const syncScene = <T>(run: TransitionRun<T>) => {
   run.setViewport({ ratio: latest.camera.enabled ? latest.cameraAspectRatio : undefined, from: undefined });
 };
 
-/** Fades the shown display out, swaps to the latest scene, and fades it in. */
+/** Fades the shown scene out, swaps to the latest scene, and fades it in. */
 const fadeScene = async <T>(run: TransitionRun<T>) => {
   run.setOpacity(0);
   await wait(SCENE_FADE_MS);
@@ -99,7 +99,7 @@ const fadeScene = async <T>(run: TransitionRun<T>) => {
   await wait(SCENE_FADE_MS);
 };
 
-/** Reshapes the viewport over two seconds, fading the display out over the final second when it changes. */
+/** Reshapes the viewport over two seconds, fading the scene out over the final second when it changes. */
 const reshapeScene = async <T>(run: TransitionRun<T>) => {
   const target = run.latestRef.current;
   const targetRatio = target.camera.enabled
@@ -112,7 +112,7 @@ const reshapeScene = async <T>(run: TransitionRun<T>) => {
 
   await wait(CAMERA_RESHAPE_MS / 2);
   if (!run.mountedRef.current) return;
-  const fading = run.latestRef.current.displayKey !== run.shownRef.current.displayKey;
+  const fading = run.latestRef.current.sceneKey !== run.shownRef.current.sceneKey;
   if (fading) run.setOpacity(0);
 
   await wait(CAMERA_RESHAPE_MS / 2);
@@ -131,10 +131,10 @@ const runTransition = async <T>(run: TransitionRun<T>) => {
   while (run.mountedRef.current) {
     const latest = run.latestRef.current;
     const shown = run.shownRef.current;
-    const displayChanged = latest.displayKey !== shown.displayKey;
+    const sceneChanged = latest.sceneKey !== shown.sceneKey;
     const cameraChanged = latest.camera.enabled !== shown.camera.enabled;
 
-    if (!displayChanged && !cameraChanged) {
+    if (!sceneChanged && !cameraChanged) {
       syncScene(run);
       run.setTransitioning(false);
       return;
@@ -206,14 +206,14 @@ function useSceneTargets<T>(target: SceneTarget<T>, reducedMotion: boolean) {
 }
 
 /**
- * Shows the current display, fading out the old one and fading in the new one when the display key
- * changes. A camera on/off change reshapes the viewport over two seconds instead, and a display that
+ * Shows the current scene, fading out the old one and fading in the new one when the scene key
+ * changes. A camera on/off change reshapes the viewport over two seconds instead, and a scene that
  * changes with it fades out over the final second of the reshape before fading in. Content updates
- * within the same display pass straight through.
+ * within the same scene pass straight through.
  */
 export default function useSceneTransition<T>({
   layers,
-  displayKey,
+  sceneKey,
   camera,
   cameraAspectRatio,
   reducedMotion,
@@ -230,7 +230,7 @@ export default function useSceneTransition<T>({
     transitioningRef,
     show,
     setTransitioning,
-  } = useSceneTargets<T>({ layers, displayKey, camera, cameraAspectRatio }, reducedMotion);
+  } = useSceneTargets<T>({ layers, sceneKey, camera, cameraAspectRatio }, reducedMotion);
   const [opacity, setOpacity] = useState<0 | 1>(1);
   const [reshaping, setReshaping] = useState(false);
   const [viewport, setViewport] = useState<ViewportShape>({
@@ -255,7 +255,7 @@ export default function useSceneTransition<T>({
     });
   }, [
     layers,
-    displayKey,
+    sceneKey,
     camera.enabled,
     camera.preview,
     cameraAspectRatio,

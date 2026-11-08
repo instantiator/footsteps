@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { installFakeCamera } from "./fixtures/fakeCamera";
 
 test.beforeEach(async ({ context }) => {
-  // The committed game needs the camera on one of its displays, so grant it before the landing check.
+  // The committed game needs the camera on one of its scenes, so grant it before the landing check.
   await context.grantPermissions(["camera"]);
 });
 

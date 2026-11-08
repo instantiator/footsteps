@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
-import GameDisplayTemplateComponent from "../src/components/core/display/GameDisplayTemplateComponent";
+import GameSceneTemplateComponent from "../src/components/core/scene/GameSceneTemplateComponent";
 import type { SceneDomEvent } from "../src/components/core/logic/TemplateUtils";
 import type { GameSceneTemplateSourceData } from "../src/entities/data/scenes/GameSceneTemplateComponentData";
 import type { GameSource } from "../src/entities/GameSource";
@@ -23,10 +23,10 @@ const Wrapper = ({ children }: { children: ReactNode }) => (
 
 const embedded = (content: string): GameSceneTemplateSourceData => ({ sourceType: "embedded", content });
 
-describe("GameDisplayTemplateComponent", () => {
+describe("GameSceneTemplateComponent", () => {
   it("renders an embedded template with the template data", async () => {
     render(
-      <GameDisplayTemplateComponent
+      <GameSceneTemplateComponent
         templateSource={embedded('<p id="x">Hello {{name}}</p>')}
         templateData={{ name: "Nanny" }}
       />,
@@ -37,7 +37,7 @@ describe("GameDisplayTemplateComponent", () => {
 
   it("escapes {{value}} in the template body, but not {{{value}}}, so markup needs triple braces", async () => {
     const { container } = render(
-      <GameDisplayTemplateComponent
+      <GameSceneTemplateComponent
         templateSource={embedded("<div><p>{{markup}}</p>{{{markup}}}</div>")}
         templateData={{ markup: "<b id='bold'>hi</b>" }}
       />,
@@ -50,7 +50,7 @@ describe("GameDisplayTemplateComponent", () => {
   it("fetches a url template", async () => {
     const url = new URL("games/magic-trifle/title/foreground.hbs", getBaseURL()).toString();
     const { container } = render(
-      <GameDisplayTemplateComponent
+      <GameSceneTemplateComponent
         templateSource={{ sourceType: "url", templateSource: url }}
         templateData={{ resources: { "title-foreground": "title.png" } }}
       />,
@@ -62,7 +62,7 @@ describe("GameDisplayTemplateComponent", () => {
 
   it("fetches a local template from the site, for a local repository", async () => {
     render(
-      <GameDisplayTemplateComponent
+      <GameSceneTemplateComponent
         templateSource={{ sourceType: "local", templateSource: "games/magic-trifle/title/foreground.hbs" }}
         templateData={{ resources: { "title-foreground": "local.png" } }}
       />,
@@ -73,7 +73,7 @@ describe("GameDisplayTemplateComponent", () => {
 
   it("renders string container style values as Handlebars templates over the data", async () => {
     const { container } = render(
-      <GameDisplayTemplateComponent
+      <GameSceneTemplateComponent
         templateSource={embedded("<p>x</p>")}
         templateData={{ resources: { bg: "bg.png" }, colour: "red" }}
         containerStyle={{ backgroundImage: "url('{{resources.bg}}')", color: "{{colour}}" }}
@@ -88,7 +88,7 @@ describe("GameDisplayTemplateComponent", () => {
 
   it("keeps the template's elements while the run stays the same, and rebuilds them for a new run", async () => {
     const shown = (text: string, run: number) => (
-      <GameDisplayTemplateComponent
+      <GameSceneTemplateComponent
         templateSource={embedded('<p id="line">{{text}}</p>')}
         templateData={{ text }}
         scope="s"
@@ -100,18 +100,18 @@ describe("GameDisplayTemplateComponent", () => {
 
     rerender(shown("two", 1));
     expect(screen.getByText("two")).toBe(first);
-    expect(container.querySelector(".templateBody")).toHaveAttribute("data-display-run", "1");
+    expect(container.querySelector(".templateBody")).toHaveAttribute("data-scene-run", "1");
 
     rerender(shown("two", 2));
     expect(screen.getByText("two")).not.toBe(first);
-    expect(container.querySelector(".templateBody")).toHaveAttribute("data-display-run", "2");
+    expect(container.querySelector(".templateBody")).toHaveAttribute("data-scene-run", "2");
   });
 
   it("renders children after the template", async () => {
     render(
-      <GameDisplayTemplateComponent templateSource={embedded("<p>template</p>")} templateData={{}}>
+      <GameSceneTemplateComponent templateSource={embedded("<p>template</p>")} templateData={{}}>
         <span>child</span>
-      </GameDisplayTemplateComponent>,
+      </GameSceneTemplateComponent>,
       { wrapper: Wrapper },
     );
     const template = await screen.findByText("template");
@@ -121,7 +121,7 @@ describe("GameDisplayTemplateComponent", () => {
 
   it("applies numeric container style values", async () => {
     const { container } = render(
-      <GameDisplayTemplateComponent
+      <GameSceneTemplateComponent
         templateSource={embedded("<p>x</p>")}
         templateData={{}}
         containerStyle={{ zIndex: 2 }}
@@ -134,7 +134,7 @@ describe("GameDisplayTemplateComponent", () => {
 
   it("renders template style values as Handlebars templates over the data", async () => {
     render(
-      <GameDisplayTemplateComponent
+      <GameSceneTemplateComponent
         templateSource={embedded("<p>x</p>")}
         templateData={{ font: "Courier" }}
         templateStyle={{ fontFamily: "{{font}}" }}
@@ -147,7 +147,7 @@ describe("GameDisplayTemplateComponent", () => {
 
   it("renders the built-in if and each helpers", async () => {
     render(
-      <GameDisplayTemplateComponent
+      <GameSceneTemplateComponent
         templateSource={embedded("{{#each items}}{{#if this.on}}<p>{{this.name}}</p>{{/if}}{{/each}}")}
         templateData={{
           items: [
@@ -164,7 +164,7 @@ describe("GameDisplayTemplateComponent", () => {
 
   it("reaches top-level data from inside a block with @root, but not without it", async () => {
     render(
-      <GameDisplayTemplateComponent
+      <GameSceneTemplateComponent
         templateSource={embedded("{{#stages}}<p>[{{@root.title}}|{{title}}]</p>{{/stages}}")}
         templateData={{ title: "Trifle", stages: [{ id: "s1" }] }}
       />,
@@ -175,7 +175,7 @@ describe("GameDisplayTemplateComponent", () => {
 
   it("strips scripts, event handlers, and forms from the rendered HTML", async () => {
     const { container } = render(
-      <GameDisplayTemplateComponent
+      <GameSceneTemplateComponent
         templateSource={embedded(
           '<p>safe</p><script>window.hacked = true</script><img id="i" src="x.png" onerror="alert(1)" />' +
             '<form action="https://evil.example"><input name="answer" /></form>',
@@ -193,7 +193,7 @@ describe("GameDisplayTemplateComponent", () => {
   it("logs and renders nothing for a template that calls a helper that isn't built in", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const { container } = render(
-      <GameDisplayTemplateComponent templateSource={embedded("<p>{{shout name}}</p>")} templateData={{ name: "x" }} />,
+      <GameSceneTemplateComponent templateSource={embedded("<p>{{shout name}}</p>")} templateData={{ name: "x" }} />,
       { wrapper: Wrapper },
     );
     await vi.waitFor(() => expect(error).toHaveBeenCalledWith("Error rendering template:", expect.any(Error)));
@@ -206,7 +206,7 @@ describe("GameDisplayTemplateComponent", () => {
     const badStyle: React.CSSProperties = JSON.parse('{"zIndex": {"oops": true}}');
     expect(() =>
       render(
-        <GameDisplayTemplateComponent
+        <GameSceneTemplateComponent
           templateSource={embedded("<p>x</p>")}
           templateData={{}}
           containerStyle={badStyle}
@@ -220,7 +220,7 @@ describe("GameDisplayTemplateComponent", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     server.use(http.get("/missing.hbs", () => HttpResponse.text("<h1>Not found</h1>", { status: 404 })));
     const { container } = render(
-      <GameDisplayTemplateComponent
+      <GameSceneTemplateComponent
         templateSource={{ sourceType: "url", templateSource: new URL("missing.hbs", getBaseURL()).toString() }}
         templateData={{}}
       />,
@@ -230,7 +230,7 @@ describe("GameDisplayTemplateComponent", () => {
     expect(container).not.toHaveTextContent("Not found");
   });
 
-  it("fetches a template once for displays that ask for it at the same time", async () => {
+  it("fetches a template once for scenes that ask for it at the same time", async () => {
     let fetches = 0;
     server.use(
       http.get("/shared.hbs", () => {
@@ -244,8 +244,8 @@ describe("GameDisplayTemplateComponent", () => {
     };
     render(
       <>
-        <GameDisplayTemplateComponent templateSource={source} templateData={{}} />
-        <GameDisplayTemplateComponent templateSource={source} templateData={{}} />
+        <GameSceneTemplateComponent templateSource={source} templateData={{}} />
+        <GameSceneTemplateComponent templateSource={source} templateData={{}} />
       </>,
       { wrapper: Wrapper },
     );
@@ -260,13 +260,13 @@ describe("GameDisplayTemplateComponent", () => {
 
     it("keeps an element with the same id when the data changes, so its transitions run", async () => {
       const { container, rerender } = render(
-        <GameDisplayTemplateComponent templateSource={toggle} templateData={{ position: 1 }} />,
+        <GameSceneTemplateComponent templateSource={toggle} templateData={{ position: 1 }} />,
         { wrapper: Wrapper },
       );
       await waitFor(() => expect(container.querySelector("#switch")).not.toBeNull());
       const before = container.querySelector("#switch");
 
-      rerender(<GameDisplayTemplateComponent templateSource={toggle} templateData={{ position: 2, extra: true }} />);
+      rerender(<GameSceneTemplateComponent templateSource={toggle} templateData={{ position: 2, extra: true }} />);
 
       await waitFor(() => expect(container.querySelector("#extra")).not.toBeNull());
       expect(container.querySelector("#switch")).toBe(before);
@@ -276,35 +276,35 @@ describe("GameDisplayTemplateComponent", () => {
     it("creates a new element when its id changes", async () => {
       const balloon = embedded('<div id="balloon-{{n}}" class="balloon"></div>');
       const { container, rerender } = render(
-        <GameDisplayTemplateComponent templateSource={balloon} templateData={{ n: 0 }} />,
+        <GameSceneTemplateComponent templateSource={balloon} templateData={{ n: 0 }} />,
         { wrapper: Wrapper },
       );
       await waitFor(() => expect(container.querySelector("#balloon-0")).not.toBeNull());
       const first = container.querySelector(".balloon");
 
-      rerender(<GameDisplayTemplateComponent templateSource={balloon} templateData={{ n: 1 }} />);
+      rerender(<GameSceneTemplateComponent templateSource={balloon} templateData={{ n: 1 }} />);
 
       await waitFor(() => expect(container.querySelector("#balloon-1")).not.toBeNull());
       expect(container.querySelector(".balloon")).not.toBe(first);
     });
   });
 
-  describe("display events", () => {
+  describe("scene events", () => {
     const renderEvents = async () => {
       const onSceneEvent = vi.fn<(event: SceneDomEvent) => void>();
       const { container } = render(
-        <GameDisplayTemplateComponent
+        <GameSceneTemplateComponent
           templateSource={embedded('<div id="door" role="button" tabindex="0"><span id="knob">o</span></div>')}
           templateData={{}}
           scope="overview:game-overview-stages"
           onSceneEvent={onSceneEvent}
         >
           <input aria-label="Answer" />
-        </GameDisplayTemplateComponent>,
+        </GameSceneTemplateComponent>,
         { wrapper: Wrapper },
       );
       await waitFor(() => expect(container.querySelector("#knob")).not.toBeNull());
-      const root = container.querySelector('[data-display-scope="overview:game-overview-stages"]')!;
+      const root = container.querySelector('[data-scene-scope="overview:game-overview-stages"]')!;
       return { onSceneEvent, root, knob: container.querySelector("#knob")!, door: container.querySelector("#door")! };
     };
 

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DIALOG_CONTAINER_CLASS,
-  DISPLAY_FRAME_CLASS,
+  SCENE_FRAME_CLASS,
   centreOnScreen,
   sceneDistance,
   sceneRect,
@@ -15,17 +15,17 @@ const B = "challenge:s:b:challenge-in-progress";
 /** A foreground layer holding a template for each scene, each with the same ids. */
 const page = (html = '<div id="door" class="item"></div><p class="item"></p>') => {
   document.body.innerHTML = `
-    <div id="stage" class="display-background">
-      <div data-display-scope="${A}"><div class="templateBody"><div id="sky"></div></div></div>
+    <div id="stage" class="scene-background">
+      <div data-scene-scope="${A}"><div class="templateBody"><div id="sky"></div></div></div>
     </div>
-    <div id="challenges" class="display-foreground">
-      <div data-display-scope="${A}"><div class="templateBody">${html}</div></div>
-      <div data-display-scope="${B}"><div class="templateBody">${html}</div></div>
+    <div id="challenges" class="scene-foreground">
+      <div data-scene-scope="${A}"><div class="templateBody">${html}</div></div>
+      <div data-scene-scope="${B}"><div class="templateBody">${html}</div></div>
     </div>
     <div class="playerWrapper player player-1" id="p1"></div>
     <div id="outside"></div>`;
 };
-const roots = (scope: string) => Array.from(document.querySelectorAll(`[data-display-scope="${scope}"]`));
+const roots = (scope: string) => Array.from(document.querySelectorAll(`[data-scene-scope="${scope}"]`));
 const ids = (elements: Element[]) => elements.map((element) => element.id || element.tagName);
 
 afterEach(() => {
@@ -54,8 +54,8 @@ describe("resolveTargets", () => {
 
   it("gives the items inside a layer's containers, not the containers", () => {
     page();
-    expect(ids(resolveTargets(A, ".display-background", [A]))).toEqual(["sky"]);
-    expect(ids(resolveTargets(A, ".display-foreground", [A]))).toEqual(["door", "P", "door", "P"]);
+    expect(ids(resolveTargets(A, ".scene-background", [A]))).toEqual(["sky"]);
+    expect(ids(resolveTargets(A, ".scene-foreground", [A]))).toEqual(["door", "P", "door", "P"]);
   });
 
   it("without a target, gives each top-level item in the shown scenes' templates", () => {
@@ -71,7 +71,7 @@ describe("resolveTargets", () => {
 
   it("gives a dialog's frame, not its text", () => {
     document.body.innerHTML = `
-      <div class="${DISPLAY_FRAME_CLASS}" id="frame"><div data-display-scope="${A}">
+      <div class="${SCENE_FRAME_CLASS}" id="frame"><div data-scene-scope="${A}">
         <div class="templateBody"><p>text</p></div>
       </div></div>`;
     expect(ids(resolveTargets(A, undefined, [A]))).toEqual(["frame"]);

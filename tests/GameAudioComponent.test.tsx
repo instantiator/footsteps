@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import GameAudioComponent from "../src/components/core/display/GameAudioComponent";
+import GameAudioComponent from "../src/components/core/scene/GameAudioComponent";
 import type { GameSceneMediaData } from "../src/entities/data/scenes/GameSceneMediaData";
 import { GameDataProvider } from "../src/providers/GameDataProvider";
 import GameRepositoryProvider from "../src/providers/GameRepositoryProvider";

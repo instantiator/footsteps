@@ -463,7 +463,7 @@
     "rules-demo": {
       "id": "rules-demo",
       "title": "Rules demo",
-      "description": "Pop balloons and cross a floor of lava: a demonstration of display rules and state, by mouse or camera.",
+      "description": "Pop balloons and cross a floor of lava: a demonstration of scene rules and state, by mouse or camera.",
       "modules": { "camera": { "requirement": false } },
       "config": { "sequential": false, "autoAdvanceStages": false },
       "stylesheets": ["demo-css"],

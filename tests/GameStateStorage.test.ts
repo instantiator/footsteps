@@ -116,7 +116,7 @@ describe("GameStateStorage", () => {
     expect(loadGameState(GAME_ID, simpleGameData)).toBeUndefined();
   });
 
-  it("reads progress saved with version 1, before displays were called scenes, as blank", () => {
+  it("reads progress saved with version 1, before scenes were called scenes, as blank", () => {
     const { current, ...rest } = storedProgress;
     const version1 = {
       ...rest,
