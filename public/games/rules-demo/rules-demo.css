@@ -296,3 +296,56 @@
 .effects-player {
   background: #99615b;
 }
+
+/* Stone hop: everything is lava but three stones, jumped between by dragging */
+.stones-lava {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 70%, #ffd166, #ef476f 60%, #9d0208);
+}
+
+.stone {
+  position: absolute;
+  width: 18cqw;
+  height: 20cqh;
+  border-radius: 45%;
+  background: #6c757d;
+  box-shadow: inset 0 -1cqh 0 #495057;
+}
+
+#stone-1,
+#reset-start.stone {
+  left: 6cqw;
+  top: 62cqh;
+}
+
+#stone-2 {
+  left: 41cqw;
+  top: 40cqh;
+}
+
+#stone-3 {
+  left: 74cqw;
+  top: 18cqh;
+}
+
+.stones-door {
+  position: absolute;
+  left: 30%;
+  bottom: 40%;
+  width: 40%;
+  height: 120%;
+  border-radius: 1cqh 1cqh 0 0;
+  background: #5c3d2e;
+  cursor: pointer;
+}
+
+.stones-door.open {
+  background: #ffe8a3;
+  box-shadow: 0 0 3cqh #ffd166;
+}
+
+/* Text over the lava is not somewhere to stand */
+.stones-message {
+  pointer-events: none;
+}

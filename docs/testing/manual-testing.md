@@ -162,7 +162,7 @@ Play the rules demo with `?debug=true`:
 
 ## The rules demo
 
-`rules-demo` exercises scene rules and state, reset scenes, sounds and rewards, and turns the camera on for its stages overview and all its stages but stepping stones, which is `mouse-feet`.
+`rules-demo` exercises scene rules and state, reset scenes, sounds and rewards, and turns the camera on for its stages overview and all its stages but stone hop, which is `mouse-feet`.
 Play it once with the mouse and once with the camera (`?debug=true` shows where your hands and feet are found).
 
 - [ ] **Toggle:** click the yellow switch on the stages overview, then touch it with a hand. It slides between two
@@ -181,10 +181,12 @@ Play it once with the mouse and once with the camera (`?debug=true` shows where 
       and about 3 s later the floor fades in. Step on a lava pool: you are asked back to the start. Step on the
       door's base: fireworks and a fanfare, and the stage completes. Reload partway: you are asked for the start
       again. The same works by walking the mouse over them.
-- [ ] **Stepping stones** (mouse-feet, no camera): moving the mouse onto a lava pool starts the floor again. Press on
-      the start and drag onto the door's base: fireworks and a fanfare, and the stage completes. A plain click on the
-      door's base does nothing, and nor does walking the mouse onto it without a drag. Nothing gets selected or
-      dragged while you drag.
+- [ ] **Stone hop** (mouse-feet, no camera): you are asked to put the mouse on the first stone. Drag from the first
+      stone to the second, passing over the lava: a chime, and the first stone falls. Drag from the second to the
+      third: the second falls, and the door opens. Click the door: fireworks and a fanfare, and the stage completes.
+      Each of these sends you back to the first stone, with both stones back and the door shut: moving the mouse onto
+      the lava without a drag, a drag that lands in the lava, and a drag from the first stone straight to the third.
+      The door doesn't open to a click before then. Nothing gets selected or dragged while you drag.
 - [ ] **Walk around:** see [From behind](#from-behind). "Done" completes the stage.
 - [ ] **Effects:** see [Player effects](#player-effects). The top row also works by mouse. "Done" completes the stage.
 - [ ] **Reduced motion:** with the system's reduce-motion setting on, the sounds still play but there are no

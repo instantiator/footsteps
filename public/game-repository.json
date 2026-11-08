@@ -496,7 +496,7 @@
                 "lava": "The floor is lava",
                 "depth": "Walk around",
                 "effects": "Effects",
-                "stepping-stones": "Stepping stones"
+                "stone-hop": "Stone hop"
               }
             },
             "initialState": { "position": 1, "lit": false },
@@ -528,10 +528,10 @@
               {
                 "on": {
                   "interact": ["click", "hand-enter"],
-                  "target": "#stage-link-stepping-stones",
+                  "target": "#stage-link-stone-hop",
                   "threshold": 0.5
                 },
-                "do": [{ "enterStage": "stepping-stones" }]
+                "do": [{ "enterStage": "stone-hop" }]
               },
               {
                 "on": { "interact": ["click", "hand-enter"], "target": "#switch", "threshold": 0.5 },
@@ -863,10 +863,10 @@
           ]
         },
         {
-          "id": "stepping-stones",
+          "id": "stone-hop",
           "challenges": [
             {
-              "id": "jump-the-lava",
+              "id": "hop-the-stones",
               "solution": { "answers": [] },
               "scenes": [
                 {
@@ -874,30 +874,63 @@
                   "avatar": { "mode": "mouse-feet" },
                   "component": {
                     "type": "template",
-                    "data": {
-                      "hint": "Your mouse is your feet. Drag from the start to the door to jump over the lava."
-                    },
-                    "initialState": { "done": false },
+                    "data": {},
+                    "initialState": { "on": 1, "doorOpen": false },
                     "resetStateOnShow": true,
                     "rules": [
+                      { "on": { "interact": ["foot-enter"], "target": "#lava" }, "do": [{ "resetChallenge": true }] },
                       {
-                        "on": { "interact": ["foot-enter"], "target": ".lava" },
-                        "if": "not state.done",
+                        "on": { "interact": ["jump-onto"], "target": "#stone-2" },
+                        "if": "state.on == 1",
+                        "do": [
+                          { "set": { "on": "2" } },
+                          { "effect": "item-fall", "target": "#stone-1", "easing": "ease-in" },
+                          { "sound": "chime" }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["jump-onto"], "target": "#stone-3" },
+                        "if": "state.on == 2",
+                        "do": [
+                          { "set": { "on": "3", "doorOpen": "true" } },
+                          { "effect": "item-fall", "target": "#stone-2", "easing": "ease-in" },
+                          { "sound": "chime" }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["jump-onto"], "target": "#stone-3" },
+                        "if": "state.on == 1",
                         "do": [{ "resetChallenge": true }]
                       },
                       {
-                        "on": { "interact": ["jump-onto"], "target": "#door-base" },
-                        "if": "not state.done",
+                        "on": { "interact": ["click"], "target": "#door" },
+                        "if": "state.doorOpen",
                         "do": [
-                          { "set": { "done": "true" } },
                           { "completeChallenge": true },
                           { "sound": "fanfare" },
                           { "reward": { "animation": "fireworks", "particleCount": 150 } }
                         ]
                       }
                     ],
-                    "backgroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/lava.hbs" },
+                    "backgroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/stones.hbs" },
                     "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
+                  },
+                  "resetScene": {
+                    "component": {
+                      "type": "template",
+                      "data": {},
+                      "rules": [
+                        {
+                          "on": { "interact": ["foot-enter"], "target": "#reset-start" },
+                          "do": [{ "sound": "chime" }, { "finishReset": true }]
+                        }
+                      ],
+                      "backgroundTemplate": {
+                        "sourceType": "relative",
+                        "templateSource": "games/rules-demo/stones-reset.hbs"
+                      },
+                      "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
+                    }
                   }
                 }
               ]

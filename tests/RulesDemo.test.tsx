@@ -37,7 +37,7 @@ const inline = (source: GameSceneTemplateSourceData | undefined): GameSceneTempl
     : source;
 
 /**
- * The committed rules demo, with its templates inlined and the camera itself off (mouse-feet stays): jsdom has no
+ * The committed rules demo, with its templates inlined and the camera itself off (other modes stay): jsdom has no
  * camera, and the rules the camera can fire don't depend on it.
  */
 const demo = (change: (game: GameData) => void): GameData => {
@@ -52,7 +52,7 @@ const demo = (change: (game: GameData) => void): GameData => {
       .filter((stage) => stage.id !== "effects")
       .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
   ].flatMap(withResets)) {
-    if (scene.avatar?.mode !== "mouse-feet") scene.avatar = { mode: "mouse" };
+    if (scene.avatar?.mode === "camera") scene.avatar = { mode: "mouse" };
     if (scene.component.type !== "template") continue;
     scene.component.foregroundTemplate = inline(scene.component.foregroundTemplate);
     scene.component.backgroundTemplate = inline(scene.component.backgroundTemplate);
@@ -198,18 +198,25 @@ describe("rules demo, played by camera", () => {
   });
 });
 
-describe("rules demo, played by mouse-feet", () => {
-  /** Where the stepping-stones elements sit on the screen, as jsdom has no layout. */
-  const BOXES: Record<string, [number, number, number, number]> = {
-    start: [0, 0, 50, 50],
-    "lava-2": [100, 0, 150, 50],
-    "door-base": [200, 0, 250, 50],
-  };
+describe("rules demo, stone hop, played by mouse-feet", () => {
+  /** Where each element sits on the screen, as jsdom has no layout; later ones are drawn on top. */
+  const BOXES: [string, [number, number, number, number]][] = [
+    ["lava", [0, 0, 1000, 1000]],
+    ["stone-1", [0, 0, 50, 50]],
+    ["reset-start", [0, 0, 50, 50]],
+    ["stone-2", [100, 0, 150, 50]],
+    ["stone-3", [200, 0, 250, 50]],
+    ["door", [220, 0, 230, 50]],
+  ];
+  const [STONE_1, STONE_2, STONE_3, DOOR, LAVA] = [25, 125, 210, 225, 500];
 
-  /** The element at a point, by the boxes. */
+  /** The topmost element at a point, by the boxes. */
   const elementAt = (x: number, y: number): Element | null => {
-    const hit = Object.entries(BOXES).find(([, [l, t, r, b]]) => x >= l && x < r && y >= t && y < b);
-    return hit ? document.getElementById(hit[0]) : null;
+    const hits = BOXES.filter(
+      ([id, [l, t, r, b]]) => document.getElementById(id) && x >= l && x < r && y >= t && y < b,
+    );
+    const top = hits.at(-1);
+    return top ? document.getElementById(top[0]) : null;
   };
 
   /** The pointer, on the game viewport. */
@@ -217,17 +224,56 @@ describe("rules demo, played by mouse-feet", () => {
     move: (x: number, buttons = 0) => fireEvent.pointerMove($("#game-viewport")!, { clientX: x, clientY: 25, buttons }),
     down: (x: number) => fireEvent.pointerDown($("#game-viewport")!, { clientX: x, clientY: 25, button: 0 }),
     up: (x: number) => fireEvent.pointerUp($("#game-viewport")!, { clientX: x, clientY: 25, button: 0 }),
+    /** A jump: press, drag through `via` (eg. across lava), and release. */
+    jump: (from: number, to: number, via = (from + to) / 2) => {
+      pointer.down(from);
+      pointer.move(via, 1);
+      pointer.move(to, 1);
+      pointer.up(to);
+    },
   };
 
-  /** The stepping-stones challenge's run, which a reset moves on. */
-  const run = () => $("#door-base")?.closest("[data-scene-run]")?.getAttribute("data-scene-run");
+  /** The elements the item effects have animated, by id. */
+  const animated: string[] = [];
 
   beforeEach(() => {
+    animated.length = 0;
     Object.defineProperty(document, "elementFromPoint", { configurable: true, value: elementAt });
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+      const box = BOXES.find(([id]) => id === this.id)?.[1];
+      return box
+        ? DOMRect.fromRect({ x: box[0], y: box[1], width: box[2] - box[0], height: box[3] - box[1] })
+        : DOMRect.fromRect({ width: 0, height: 0 });
+    });
+    // jsdom has no Web Animations, which item effects play with
+    Element.prototype.animate = vi.fn<Element["animate"]>(function (this: Element) {
+      animated.push(this.id);
+      const animation: Pick<Animation, "cancel" | "persist" | "onfinish" | "finish"> = {
+        cancel: vi.fn(),
+        persist: vi.fn(),
+        finish: vi.fn(),
+        onfinish: null,
+      };
+      return Object.assign(new EventTarget(), animation) as EventTarget & typeof animation as Animation;
+    });
   });
-  afterEach(() => Reflect.deleteProperty(document, "elementFromPoint"));
+  afterEach(() => {
+    Reflect.deleteProperty(document, "elementFromPoint");
+    Reflect.deleteProperty(Element.prototype, "animate");
+    vi.restoreAllMocks();
+  });
 
-  /** Opens the stepping-stones stage, lays out its elements, and arms the feet away from them. */
+  /** Puts the mouse on the reset scene's first stone, and waits for the stones. */
+  const returnToStart = async () => {
+    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Put your mouse on the first stone"));
+    await wait(3000); // the scene change, during which the feet wait
+    pointer.move(LAVA);
+    pointer.move(STONE_1);
+    await waitFor(() => expect($("#stone-1")).not.toBeNull());
+    await wait(3000);
+  };
+
+  /** Opens stone hop, and stands on the first stone. */
   const openStage = async () => {
     render(
       <GameProviders repository={{ games: { "rules-demo": demo(() => {}) } }} gameId="rules-demo">
@@ -236,49 +282,50 @@ describe("rules demo, played by mouse-feet", () => {
     );
     await waitFor(() => expect($("#demo-title")).not.toBeNull());
     fireEvent.click($("#demo-title")!);
-    await waitFor(() => expect($("#stage-link-stepping-stones")).not.toBeNull());
-    fireEvent.click($("#stage-link-stepping-stones")!);
-    await waitFor(() => expect($("#door-base")).not.toBeNull());
-    await wait(3000); // the scene change, during which the feet wait
+    await waitFor(() => expect($("#stage-link-stone-hop")).not.toBeNull());
+    fireEvent.click($("#stage-link-stone-hop")!);
+    await returnToStart();
     expect(receivedLayout.at(-1)!.avatar.mode).toBe("mouse-feet");
-    for (const [id, [left, top, right, bottom]] of Object.entries(BOXES)) {
-      vi.spyOn($(`#${id}`)!, "getBoundingClientRect").mockReturnValue(
-        DOMRect.fromRect({ x: left, y: top, width: right - left, height: bottom - top }),
-      );
-    }
-    pointer.move(300);
   };
 
-  it("tells the player to drag to jump", async () => {
+  it("tells the player to drag between the stones", async () => {
     await openStage();
-    expect($("#lava-message")).toHaveTextContent("Drag from the start to the door");
+    expect($("#stones-message")).toHaveTextContent("Drag from the first stone to the second");
   });
 
-  it("resets the challenge when the feet step onto lava", async () => {
+  it("sends the player back to the start for walking onto the lava", async () => {
     await openStage();
-    const before = run();
-    pointer.move(120);
-    await waitFor(() => expect(run()).not.toBe(before));
+    pointer.move(LAVA);
+    await returnToStart();
   });
 
-  it("completes when the player drags from the start onto the door's base, jumping the lava", async () => {
+  it("drops each stone as the player jumps on, over the lava, and opens the door on the last", async () => {
     await openStage();
-    pointer.move(10);
-    pointer.down(10);
-    pointer.move(120, 1);
-    pointer.move(210, 1);
-    pointer.up(210);
-    await waitFor(() => expect($("#stage-link-stepping-stones")).toHaveClass("completed"));
+    pointer.jump(STONE_1, STONE_2, LAVA);
+    await waitFor(() => expect(animated).toEqual(["stone-1"]));
+    pointer.jump(STONE_2, STONE_3, LAVA);
+    await waitFor(() => expect($("#door")).toHaveClass("open"));
+    expect(animated).toEqual(["stone-1", "stone-2"]);
+    expect($("#reset-message")).toBeNull();
+
+    pointer.move(DOOR);
+    fireEvent.click($("#door")!);
+    await waitFor(() => expect($("#stage-link-stone-hop")).toHaveClass("completed"));
   });
 
-  it("doesn't complete for a click on, or a walk onto, the door's base", async () => {
+  it("sends the player back for jumping from the first stone straight to the last, or into the lava", async () => {
     await openStage();
-    pointer.move(210);
-    pointer.down(210);
-    pointer.up(210);
-    fireEvent.click($("#door-base")!);
+    pointer.jump(STONE_1, STONE_3);
+    await returnToStart();
+    pointer.jump(STONE_1, LAVA);
+    await returnToStart();
+  });
+
+  it("keeps the door shut to a click until the player stands on the last stone", async () => {
+    await openStage();
+    fireEvent.click($("#door")!);
     await wait(1000);
-    expect($("#door-base")).not.toBeNull();
-    expect($("#stage-link-stepping-stones")).not.toHaveClass("completed");
+    expect($("#door")).not.toHaveClass("open");
+    expect($("#stage-link-stone-hop")).not.toHaveClass("completed");
   });
 });

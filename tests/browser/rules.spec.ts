@@ -6,7 +6,7 @@ import type { GameRepository } from "../../src/entities/GameRepository";
 const GAME_ID = "rules-demo";
 
 /**
- * Serves the example game with the camera off on every scene (mouse-feet stays), so it plays by mouse without the
+ * Serves the example game with the camera off on every scene (other modes stay), so it plays by mouse without the
  * vision model,
  * after the test's own changes. Motion is reduced so the game's scene changes are immediate: during a fade the
  * scene ignores clicks, and raw mouse clicks (unlike locator clicks) don't wait for it.
@@ -23,7 +23,7 @@ const openDemo = async (page: Page, change: (game: GameData) => void = () => {})
         .filter((stage) => stage.id !== "effects")
         .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
     ]) {
-      if (scene.avatar?.mode !== "mouse-feet") scene.avatar = { mode: "mouse" };
+      if (scene.avatar?.mode === "camera") scene.avatar = { mode: "mouse" };
     }
     change(game);
     await route.fulfill({ response, json: repository });
@@ -56,6 +56,15 @@ const returnToStart = async (page: Page) => {
   await page.locator("#reset-start").hover();
   await expect(page.locator("#reset-message")).toHaveText("Get ready!");
   await expect(page.locator("#door-base")).toBeVisible({ timeout: 6000 });
+};
+
+/**
+ * Puts the mouse on stone hop's first stone in its reset scene. The feet start afresh when a scene changes, and what
+ * they first find under them counts as already there, so the mouse moves off and back on.
+ */
+const standOnFirstStoneOf = (page: Page) => async () => {
+  await page.mouse.move(5, 5);
+  await moveTo(page, "#reset-start");
 };
 
 /** Opens the balloons stage, and waits out its countdown. */
@@ -218,17 +227,40 @@ test.describe("rules demo", () => {
     await expect(page.locator("#stage-link-lava")).toHaveClass(/completed/);
   });
 
-  test("jumps the lava in mouse-feet by dragging from the start onto the door", async ({ page }) => {
+  test("hops the stones in mouse-feet by dragging over the lava, then clicks the open door", async ({ page }) => {
+    const standOnFirstStone = standOnFirstStoneOf(page);
+    /** Drags the mouse from one element to another, through the moves between, as a jump. */
+    const jump = async (from: string, to: string) => {
+      await moveTo(page, from);
+      await page.mouse.down();
+      const box = (await page.locator(to).boundingBox())!;
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 10 });
+      await page.mouse.up();
+    };
+
     await openDemo(page);
-    await page.locator("#stage-link-stepping-stones").click();
-    await expect(page.locator("#lava-message")).toContainText("Drag from the start to the door");
+    await page.locator("#stage-link-stone-hop").click();
+    await expect(page.locator("#reset-message")).toHaveText("Put your mouse on the first stone");
+    await standOnFirstStone();
+    await expect(page.locator("#stones-message")).toContainText("Drag from the first stone to the second");
 
-    await moveTo(page, "#start");
-    await page.mouse.down();
-    await moveTo(page, "#door-base");
-    await page.mouse.up();
+    await jump("#stone-1", "#stone-2");
+    await expect(page.locator("#reset-message")).toHaveCount(0);
+    await jump("#stone-2", "#stone-3");
+    await expect(page.locator("#door")).toHaveClass(/open/);
 
-    await expect(page.locator("#stage-link-stepping-stones")).toHaveClass(/completed/);
+    await clickNow(page, "#door");
+    await expect(page.locator("#stage-link-stone-hop")).toHaveClass(/completed/);
+  });
+
+  test("sends the mouse back to the first stone for stepping onto the lava", async ({ page }) => {
+    const standOnFirstStone = standOnFirstStoneOf(page);
+    await openDemo(page);
+    await page.locator("#stage-link-stone-hop").click();
+    await standOnFirstStone();
+    await expect(page.locator("#stone-1")).toBeVisible();
+    await page.mouse.move(5, 5);
+    await expect(page.locator("#reset-message")).toHaveText("Put your mouse on the first stone");
   });
 
   test("asks for the start again when the game is reloaded", async ({ page }) => {

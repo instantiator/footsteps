@@ -1,0 +1,11 @@
+<div class="demo-screen">
+  <div id="lava" class="stones-lava"></div>
+  <div id="stone-1" class="stone"></div>
+  <div id="stone-2" class="stone"></div>
+  <div id="stone-3" class="stone">
+    <div id="door" class="stones-door{{#if state.doorOpen}} open{{/if}}" role="button" tabindex="0"></div>
+  </div>
+  <p id="stones-message" class="demo-score stones-message">
+    {{#if state.doorOpen}}You made it! Click the door.{{else}}Your mouse is your feet. Drag from the first stone to the second to jump between them. Don't stray!{{/if}}
+  </p>
+</div>

@@ -63,7 +63,7 @@ without a camera, as a stand-in while designing, or as a camera mode's `fallback
 
 Hand, head, body and near interactions never fire in `mouse-feet`, and nor do effects that act on players. Mouse
 interactions (`click`, `mouse-enter`, `mouse-exit`) work as usual. The code is `MouseFeet` and `useMouseFeet` in
-`src/components/core/layout/MouseFeetHook.ts`. The rules demo's stepping-stones stage uses it.
+`src/components/core/layout/MouseFeetHook.ts`. The rules demo's stone hop stage uses it: the player drags between three stones over lava, each stone falling behind them.
 
 ## Permission
 
