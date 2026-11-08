@@ -185,7 +185,7 @@ export default function CalibrationView({ backTo }: { backTo: string }) {
         <button type="button" onClick={calibration.save} disabled={!onePerson}>
           Save
         </button>
-        <span role="status">{savedText(corners, calibration.saved)}</span>
+        <output>{savedText(corners, calibration.saved)}</output>
         <button type="button" onClick={calibration.forget}>
           Forget all saved areas
         </button>

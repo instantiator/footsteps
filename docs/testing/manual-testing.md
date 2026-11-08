@@ -38,12 +38,10 @@ Open <http://localhost:5173/game/magic-trifle>.
 
 Now add `?debug=true` to the URL and reload ([Configuration](../configuration.md) lists every setting).
 
-- [ ] Each player is tinted, with their head, hands and feet in their own colours, and a colour key
-      appears below the preview.
+- [ ] Each player is tinted their own colour, and their head, hands and feet are marked with dots.
 - [ ] A readout over the silhouette shows the frame rate, inference time, and the people, hands and
       feet found. With one player standing full length in a lit room, it shows 1 person, 2 hands and
       2 feet, at 10 fps or more.
-- [ ] Small markers show where the camera found each foot.
 - [ ] The console still shows no errors.
 
 ## Landing, progress, and keep-awake
@@ -187,11 +185,34 @@ Play it once with the mouse and once with the camera (`?debug=true` shows where 
       Each of these sends you back to the first stone, with both stones back and the door shut: moving the mouse onto
       the lava without a drag, a drag that lands in the lava, and a drag from the first stone straight to the third.
       The door doesn't open to a click before then. Nothing gets selected or dragged while you drag.
-- [ ] **Walk around:** see [From behind](#from-behind). "Done" completes the stage.
+- [ ] **Walk around:** a 2.5D stage, so see [The floor and 2.5D scenes](#the-floor-and-25d-scenes) first, then
+      [From behind](#from-behind). "Done" completes the stage.
 - [ ] **Effects:** see [Player effects](#player-effects). The top row also works by mouse. "Done" completes the stage.
 - [ ] **Reduced motion:** with the system's reduce-motion setting on, the sounds still play but there are no
       sparkles or fireworks.
 - [ ] **Covering:** with the HUD over part of the game, a hand under the HUD's buttons does not count.
+
+## The floor and 2.5D scenes
+
+Use `rules-demo`, whose "Walk around" stage is 2.5D, with the camera granted on its landing page. Start with no saved
+floor: on the calibration page, **Forget all saved areas**.
+
+- [ ] The landing page outlines the default floor on the preview, says the camera has no saved floor area, and New
+      game is disabled with "Calibrate the floor before you start".
+- [ ] **Default corners:** with the camera set up as the defaults assume (about 2 m high, tilted down a little), the
+      outline lines up roughly with a floor about 2.6 m wide and 2 m deep, starting 2.5 m from the camera.
+- [ ] **Calibrate:** open "Calibrate the floor", and drag each corner to a corner of the real floor, then try the
+      arrow keys on a corner. A drag that would fold the shape stops. The outline lines up with the real floor.
+- [ ] **Walking the edges:** walk to every edge and corner of the calibrated floor. Your feet stay tracked and
+      green, red just past an edge, and your whole body stays in view at the back.
+- [ ] **A second person:** someone else stepping into view shows "Only one person should be in view", the feet
+      stop turning green or red, and Save is disabled, until they step out again.
+- [ ] Save, then go back: the landing page says the camera has a saved floor, and New game is enabled.
+- [ ] **The fitted view:** open "Walk around". The view eases into the crop's shape: your feet reach the bottom edge
+      at the floor's front, and your head stays in view at the back. Leaving the stage eases back to the camera's shape.
+- [ ] **A small calibration:** calibrate a small floor, about a metre square, and play "Walk around" again. The view
+      is narrower, with wide side bars, and nothing important is cut off: the posts, "Done" and your head at the back.
+- [ ] With `?debug=true`, "Walk around" outlines the floor over the scene, and your feet are green on it.
 
 ## Player effects
 

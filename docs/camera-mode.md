@@ -93,6 +93,74 @@ none of this shows before one. The choice is saved in `localStorage`, and only t
 **Mirroring** is off by default, for a camera behind the player: they see themselves from behind, and step right to
 move right. Turn it on for a camera facing the player, so the picture behaves like a mirror.
 
+## The floor and 2.5D scenes
+
+A [2.5D scene](game-data.md#scene-and-avatar-modes) is fitted to the floor the player can walk around on, so their
+feet stay in view all over it. The player marks the floor once per camera, and every game shares it, because it
+describes the room rather than a game.
+
+### Calibrating the floor
+
+For a game with 2.5D scenes, the landing page's camera preview outlines the chosen camera's floor and says whether it
+has been saved. **Calibrate the floor** opens `/game/:id/calibrate`, which shows the camera picture with the floor
+over it and steps on screen:
+
+1. Drag each blue corner to a corner of the space you can walk around in. The floor can be any convex shape. A drag
+   that would fold it stops at the limit. With the keyboard, Tab moves between the corners, and the arrow keys move
+   the focused one (Shift moves it further).
+2. Walk to each corner. Your feet should stay green: each foot is green on the floor and red off it, and the head and
+   hands are marked too.
+3. Press **Save** when it fits.
+
+Calibration expects one person. While more are in view, it warns, the feet stop turning green or red, and Save is
+disabled, though everyone is still marked. **Reset to the default area** puts the corners back to the defaults
+until you save. **Forget all saved areas** clears every camera's floor after asking.
+
+Corners are saved in `localStorage` per camera (the camera chosen on the landing page, so "System default" is one
+camera), as fractions of the camera's own, unmirrored picture. Changing the mirror setting doesn't change them.
+
+**When it's required.** A game with 2.5D scenes can't be started or continued with a granted camera until that
+camera's floor is saved. A direct link to `/game/:id/play` goes back to the landing page too. A game without a camera,
+or a player who hasn't granted it and plays by mouse, needs no floor. A 2.5D scene without a camera uses the default
+floor on a 4:3 picture.
+
+### The default floor
+
+Before calibration, the corners are:
+
+| Corners | Left | Right | From top |
+| ------- | ---- | ----- | -------- |
+| Front   | 8%   | 92%   | 90%      |
+| Back    | 25%  | 75%   | 55%      |
+
+They are calculated, not measured, for a 4:3 webcam with a 42° vertical field of view, 2 m high and tilted down 22°.
+A row of the picture at fraction _y_ from the top looks down at `22° + atan((y − 0.5) / f)`, where
+`f = 0.5 / tan 21°` in picture heights:
+
+| Row from top | Distance on the ground | Width the row covers | Floor width |
+| ------------ | ---------------------- | -------------------- | ----------- |
+| 90% (front)  | 2.5 m                  | 3.1 m                | 84%: 2.6 m  |
+| 55% (back)   | 4.5 m                  | 5.0 m                | 50%: 2.5 m  |
+| 33%          | 7.6 m                  | 8.0 m                | a third     |
+
+So the default floor is a rectangle about 2.6 m wide and 2 m deep, from 2.5 m to 4.5 m away, with a whole body in
+view at the back. The front is inset, because tracking is weakest at the picture's edges. A camera set up differently
+needs calibrating: a back edge at a third of the height would be 7.6 m away.
+
+### Fitting the view to the floor
+
+A 2.5D scene crops the camera picture, not the scene: to the floor's width (its bounding box, as the front edge can
+slant), from the top of the picture down to the floor's lowest point. The game view takes the crop's shape, with side
+bars around it, so the floor spans the view's width, its lowest point sits on the bottom edge, and players at the back
+keep their heads in view. Scenes laid out in `cqw` and `cqh` reflow to the new shape. A change between a 2D and a
+2.5D scene reshapes the view as turning the camera on does. 2D scenes show the whole picture.
+
+The default floor on a 4:3 camera gives a view of about 1.24:1, a little squarer than the camera's. All the
+conversions between the camera picture, the screen and the floor (the floor's perspective transform, the crop, and
+screen-to-mask rectangles) are in `src/components/camera/FloorGeometry.ts`, and nothing else does this maths.
+Interactions still map elements through the camera canvas's rectangle on screen, which the crop only moves and
+enlarges, so they work unchanged.
+
 ## What the player sees
 
 - **Their own silhouette.** The player is cut out of the webcam picture and shown in the game. They are not a drawn
@@ -118,27 +186,28 @@ The game is a stack of layers. A larger `zIndex` paints later, so it covers the 
 `GameLayersLayout` builds the stack and `GameLayerWrappers` makes each layer.
 
 Without the camera, the stack fills the game container. With the camera, it is fitted to the
-camera's aspect ratio and centred, so the whole game is inside what the camera can see. The
+camera's aspect ratio and centred, so the whole game is inside what the camera can see. A 2.5D scene fits it to the
+[floor's crop](#fitting-the-view-to-the-floor) of the camera instead. The
 container's background shows in the space around it. The game view is a size container, so game
 templates can use `cqw` and `cqh` to follow it; `vw` and `vh` still follow the browser window. See the
 [coordinate system](special-effects.md#coordinate-system).
 
 The scene and camera layers sit inside one `.gameScene` wrapper, which fades as a whole; the HUD
-sits outside it. For a camera change, `#game-viewport` animates its `aspect-ratio` with a 2s CSS
+sits outside it. For a camera change, or a change between 2D and 2.5D, `#game-viewport` animates its `aspect-ratio` with a 2s CSS
 keyframe between the current shape and the camera's or container's shape, keeping the old scene
 visible until the swap.
 
-| `zIndex` | Layer                 | What it holds                                           |
-| -------- | --------------------- | ------------------------------------------------------- |
-| 1        | overview background   | the title or stages artwork, behind everything          |
-| 2        | overview foreground   | its clickable parts, still behind the player            |
-| 3        | stage background      | the open stage's shared artwork                         |
-| 4        | stage foreground      | its clickable parts, still behind the player            |
-| 5        | challenge backgrounds | the active challenges, side by side                     |
-| 6        | depth stack           | the players and challenge foregrounds, sorted together  |
-| 7        | webcam preview        | the small video (`CharacterCamera`)                     |
-| 9        | debug overlay         | feet markers; only with `?debug=true` and the camera on |
-| 10       | HUD                   | the application's buttons (`HeadsUpDisplay`)            |
+| `zIndex` | Layer                 | What it holds                                          |
+| -------- | --------------------- | ------------------------------------------------------ |
+| 1        | overview background   | the title or stages artwork, behind everything         |
+| 2        | overview foreground   | its clickable parts, still behind the player           |
+| 3        | stage background      | the open stage's shared artwork                        |
+| 4        | stage foreground      | its clickable parts, still behind the player           |
+| 5        | challenge backgrounds | the active challenges, side by side                    |
+| 6        | depth stack           | the players and challenge foregrounds, sorted together |
+| 7        | webcam preview        | the small video (`CharacterCamera`)                    |
+| 9        | debug overlay         | the floor and body-part markers; only when debugging   |
+| 10       | HUD                   | the application's buttons (`HeadsUpDisplay`)           |
 
 Backgrounds sit behind the player, so they seem to stand inside the scene. A challenge's foreground
 sits in front, which lets a game put a doorway over them, for example, unless an item has a depth.
@@ -187,8 +256,8 @@ game's elements underneath. Each element's `id` says what a click or camera inte
    stable between frames and smooths their key points. It also holds someone the model loses for a moment where
    they were, then fades them out, so the silhouette doesn't flicker ([ADR 0007](ADRs/0007-camera-flicker.md)).
 4. For each player, `drawPeople` (`DrawPeople.ts`) draws the video onto their own canvas (`PlayerCanvases.ts`) and
-   keeps only that player, with their edges blurred by `cameraFeatherPx`. `binary` keeps the players' own colours; `colored` tints each person and their head, hands and feet; `extremities` tints only
-   the hands and feet. Each canvas sits in a wrapper of its own, laid over the others; the original canvas stays hidden, to measure against.
+   keeps only that player, with their edges blurred by `cameraFeatherPx`. `binary` keeps the players' own colours;
+   `colored` tints each person in their own colour, for debugging. Each canvas sits in a wrapper of its own, laid over the others; the original canvas stays hidden, to measure against.
 5. If the player chose to mirror the picture, the canvases are flipped with a CSS transform. The masks are always in
    the camera's own (unmirrored) orientation.
 6. When the stream goes away, the model is disposed and the loop is cancelled. Starting a new stream loads a
@@ -296,15 +365,15 @@ counts as new, so give an `id` to elements whose interactions should carry over.
 In the HUD's **Menu**, **Debug on** switches the debug aids on, and **Debug off** off again. They start off, unless the URL
 has `?debug=true` (the [`debug` setting](configuration.md)). In camera mode they:
 
-- tint each player differently, with their head, hands and feet in their own colours;
-- show a colour key under the preview;
+- tint each player differently;
+- mark each player's head, hands and feet, with the same drawing as the calibration page. In a 2.5D scene, the floor is
+  outlined, and each foot is green on it and red off it. A player the tracker is holding while they are missed is
+  marked faded (they can't interact until found again);
 - show the vision stats readout over the silhouette: the frame rate, the time each step takes (inference, tracking,
   monitors, drawing), and the people, hands and feet found. `?showFps=true` shows the readout on its own;
-- draw a green dot where each person's feet were found, and a faded green ring for a player the tracker is
-  holding while they are missed (they can't interact until found again);
 - draw a bright green line across the scene at each player's [depth](#player-depth).
 
-Lower a rule's `threshold` when testing interactions, and use the feet dots to see where the
+Lower a rule's `threshold` when testing interactions, and use the feet markers to see where the
 camera thinks the player is. Switching the debug aids restarts the tracking loop with the new
 mask type, and cancels the old one; check the console for model or "disposed" errors after
 toggling it.
@@ -326,9 +395,12 @@ toggling it.
 | `src/components/camera/DrawPlayers.ts`                | draws each player on their canvas, frozen or with static, sorted to their depth                                    |
 | `src/components/camera/PlayerMonitor.ts`              | turns body-part coverage and feet into edge-triggered interactions                                                 |
 | `src/components/camera/JumpDetector.ts`               | follows a player's feet for jumps                                                                                  |
-| `src/components/camera/CameraSupport.ts`              | camera request, feet position, and screen-to-mask rectangles                                                       |
+| `src/components/camera/CameraSupport.ts`              | camera request and feet position                                                                                   |
+| `src/components/camera/FloorGeometry.ts`              | every conversion between the camera picture, the screen and the floor; the crop                                    |
+| `src/components/camera/FloorCalibration.ts`           | each camera's saved floor                                                                                          |
+| `src/components/camera/FloorOverlay.tsx`              | the floor outline and body-part markers, for calibration and debugging                                             |
+| `src/components/landing/CalibrationView.tsx`          | the calibration page                                                                                               |
 | `src/components/camera/FrameStats.ts`                 | frame rate, inference time, and what each frame found                                                              |
-| `src/components/camera/CameraDebugOverlay.tsx`        | green feet markers                                                                                                 |
 | `src/vision/FootstepsVisionModelImplementation.ts`    | the base class every vision model implements, with the body-part queries                                           |
 | `src/vision/BodyPart.ts`, `VisionTypes.ts`            | our body parts, and the frames models return                                                                       |
 | `src/vision/VisionQueries.ts`                         | body parts at a point or in an area; splitting one silhouette between people                                       |
@@ -348,7 +420,9 @@ toggling it.
 
 Unit tests cover the camera choice (`tests/CameraPicker.test.tsx`), player depth (`tests/Depth.test.ts`), per-player
 canvases (`tests/PlayerCanvases.test.ts`), the avatar mode resolution (`tests/AvatarModeUtils.test.ts`), mouse-feet (`tests/MouseFeetHook.test.tsx`), the monitor and its jump
-interactions (`tests/PlayerMonitor.test.ts`), jump detection (`tests/JumpDetector.test.ts`), mask rectangles and feet (`tests/CameraSupport.test.ts`), the
+interactions (`tests/PlayerMonitor.test.ts`), jump detection (`tests/JumpDetector.test.ts`), feet (`tests/CameraSupport.test.ts`), the floor geometry and mask rectangles (`tests/FloorGeometry.test.ts`), saved
+floors (`tests/FloorCalibration.test.ts`), the floor overlay (`tests/FloorOverlay.test.tsx`), the calibration page
+(`tests/CalibrationView.test.tsx`), the
 tracking loop (`tests/CharacterCanvas.test.tsx`), the config (`tests/AppConfig*.test.ts*`), each vision
 model and the worker proxy (`tests/*Model.test.ts`, `tests/VisionWorkerProxy.test.ts`), the body-part
 queries and tracking (`tests/VisionQueries.test.ts`, `tests/Tracking.test.ts`), and the layout and game

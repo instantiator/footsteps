@@ -44,6 +44,10 @@ the camera feedback work too ([ADRs 0007](ADRs/0007-camera-flicker.md) and [0008
 
 Tune the `VITE_JUMP_*` and `VITE_CAMERA_HOLD_MS` / `FADE_MS` defaults from what you see, as they are estimates.
 
+Run [the floor and 2.5D scenes](testing/manual-testing.md#the-floor-and-25d-scenes) checklist too: the default
+corners are calculated for an assumed camera, not measured, and whether a calibrated floor lines up, keeps feet green
+at every edge and fits a small floor without cutting anything off can only be seen in a real room.
+
 ## Tracking from behind is not proven on a real camera
 
 The game is built for a camera behind the player, but this has only been tested with photos, and only one is from
