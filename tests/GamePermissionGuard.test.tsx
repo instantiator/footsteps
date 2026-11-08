@@ -2,6 +2,8 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import GamePermissionGuard from "../src/components/core/GamePermissionGuard";
+import { saveCalibration } from "../src/components/camera/FloorCalibration";
+import { DEFAULT_CORNERS } from "../src/components/camera/FloorGeometry";
 import { requestGamePermission } from "../src/components/core/logic/GamePermissionUtils";
 import type { GameData } from "../src/entities/data/GameData";
 import { GameDataProvider } from "../src/providers/GameDataProvider";
@@ -21,6 +23,7 @@ const permissionQuery = (result: PermissionQueryResult) => {
 };
 
 afterEach(() => {
+  localStorage.clear();
   restores.forEach((restore) => restore());
   restores.length = 0;
   vi.restoreAllMocks();
@@ -46,6 +49,37 @@ const renderGuard = (game: GameData = cameraGame) =>
       </GameRepositoryProvider>
     </MemoryRouter>,
   );
+
+describe("GamePermissionGuard for a game with 2.5D scenes", () => {
+  const floorGame = (avatar: NonNullable<GameData["modules"]>["avatar"]): GameData => ({
+    ...simpleGameData,
+    modules: { scene: "2.5D", avatar },
+  });
+
+  it("sends the player to the landing page to calibrate the floor, when a direct link skips it", async () => {
+    permissionQuery("granted");
+    renderGuard(floorGame({ mode: "camera", fallback: "mouse" }));
+    expect(await screen.findByText("Landing page")).toBeInTheDocument();
+  });
+
+  it("lets the player in once the chosen camera has a floor", async () => {
+    permissionQuery("granted");
+    saveCalibration("default", DEFAULT_CORNERS);
+    renderGuard(floorGame({ mode: "camera" }));
+    expect(await screen.findByText("Playing the game")).toBeInTheDocument();
+  });
+
+  it("lets a player without the camera play by mouse, uncalibrated", async () => {
+    permissionQuery("prompt");
+    renderGuard(floorGame({ mode: "camera", fallback: "mouse" }));
+    expect(await screen.findByText("Playing the game")).toBeInTheDocument();
+  });
+
+  it("needs no floor for a game without a camera", () => {
+    renderGuard(floorGame({ mode: "mouse" }));
+    expect(screen.getByText("Playing the game")).toBeInTheDocument();
+  });
+});
 
 describe("GamePermissionGuard", () => {
   it("lets the player in when the camera is granted", async () => {

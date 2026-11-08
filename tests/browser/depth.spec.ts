@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { MODEL_TIMEOUT } from "./fixtures/cameraGame";
+import { MODEL_TIMEOUT, seedCalibration } from "./fixtures/cameraGame";
 import { installCameraDrawCounter } from "./fixtures/cameraDraws";
 import { installFakeCamera } from "./fixtures/fakeCamera";
 import { peoplePhotoUrls } from "./fixtures/people/people";
@@ -10,6 +10,7 @@ const openDepthStage = async (page: Page, query = "") => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await installFakeCamera(page, peoplePhotoUrls());
   await installCameraDrawCounter(page);
+  await seedCalibration(page); // the stage is 2.5D
   await page.goto(`/game/rules-demo/play${query}`);
   await page.locator("#demo-title").click({ force: true });
   await page.locator("#stage-link-depth").click();

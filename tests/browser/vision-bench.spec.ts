@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import type { GameRepository } from "../../src/entities/GameRepository";
-import { MODEL_TIMEOUT, openCameraGame } from "./fixtures/cameraGame";
+import { MODEL_TIMEOUT, openCameraGame, seedCalibration } from "./fixtures/cameraGame";
 import { installFakeCamera, type FakeCameraImage } from "./fixtures/fakeCamera";
 import { PEOPLE_PHOTOS, peoplePhotoUrls } from "./fixtures/people/people";
 import { installReactCommitCounter } from "./fixtures/reactCommits";
@@ -132,6 +132,7 @@ const openRulesDemoWithCamera = async (page: Page, query: string): Promise<void>
     }
     await route.fulfill({ response, json: repository });
   });
+  await seedCalibration(page); // the demo has a 2.5D stage
   await page.goto(`/game/rules-demo/play${query}`);
 };
 

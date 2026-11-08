@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { saveCalibration } from "../src/components/camera/FloorCalibration";
+import { DEFAULT_CORNERS } from "../src/components/camera/FloorGeometry";
 import {
+  calibrationNeeded,
   checkGamePermission,
   gamePermissionLabel,
   gameUsesFloor,
@@ -226,5 +229,28 @@ describe("gameUsesFloor", () => {
     const reset = { component: shared.component, resetScene: { component: shared.component, scene: "2.5D" as const } };
     const stages = [{ ...gameWithStageScene.stages[0], scenes: [{ ...shared, resetScene: reset }] }];
     expect(gameUsesFloor({ ...gameWithStageScene, stages })).toBe(true);
+  });
+});
+
+describe("calibrationNeeded", () => {
+  const floorGame: GameData = {
+    ...smallGame,
+    modules: { scene: "2.5D", avatar: { mode: "camera", fallback: "mouse" } },
+  };
+  afterEach(() => localStorage.clear());
+
+  it("needs the floor calibrated for a 2.5D game played by camera", () => {
+    expect(calibrationNeeded(floorGame, true, "default")).toBe(true);
+  });
+
+  it("is satisfied by a saved floor for the chosen camera only", () => {
+    saveCalibration("laptop", DEFAULT_CORNERS);
+    expect(calibrationNeeded(floorGame, true, "laptop")).toBe(false);
+    expect(calibrationNeeded(floorGame, true, "rear")).toBe(true);
+  });
+
+  it("exempts people playing by mouse, and games with only 2D scenes", () => {
+    expect(calibrationNeeded(floorGame, false, "default")).toBe(false);
+    expect(calibrationNeeded({ ...floorGame, modules: { scene: "2D" } }, true, "default")).toBe(false);
   });
 });

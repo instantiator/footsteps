@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { saveCalibration } from "../src/components/camera/FloorCalibration";
+import { DEFAULT_CORNERS } from "../src/components/camera/FloorGeometry";
 import GameLanding from "../src/components/landing/GameLanding";
 import { completeChallenge } from "../src/components/core/logic/GameStateUtils";
 import type { GameData } from "../src/entities/data/GameData";
@@ -15,6 +17,7 @@ const GAME_ID = "simple-game";
 
 const cameraGame: GameData = { ...simpleGameData, modules: { avatar: { mode: "camera" } } };
 const optionalCameraGame: GameData = { ...simpleGameData, modules: { avatar: { mode: "camera", fallback: "mouse" } } };
+const floorGame: GameData = { ...optionalCameraGame, modules: { ...optionalCameraGame.modules, scene: "2.5D" } };
 
 /** A state with stage 1 complete and stage 2 partly complete. */
 const partlyComplete = (): GameState => {
@@ -37,6 +40,7 @@ const getUserMedia = (error?: Error) => {
 };
 
 afterEach(() => {
+  localStorage.clear();
   restores.forEach((restore) => restore());
   restores.length = 0;
   vi.restoreAllMocks();
@@ -51,11 +55,47 @@ const renderLanding = (game: GameData = simpleGameData) =>
           <Routes>
             <Route path="/game/:id" element={<GameLanding />} />
             <Route path="/game/:id/play" element={<p>Playing the game</p>} />
+            <Route path="/game/:id/calibrate" element={<p>Calibrating</p>} />
           </Routes>
         </GameDataProvider>
       </GameRepositoryProvider>
     </MemoryRouter>,
   );
+
+describe("GameLanding for a game with 2.5D scenes", () => {
+  it("holds New game back until the camera's floor is calibrated, and links to calibrate it", async () => {
+    permissionQuery("granted");
+    getUserMedia();
+    renderLanding(floorGame);
+
+    expect(await screen.findByText("Calibrate the floor before you start.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New game" })).toBeDisabled();
+    expect(await screen.findByText(/This camera has no saved floor area yet/)).toBeInTheDocument();
+    expect(document.querySelector(".game-camera-preview polygon")).not.toBeNull();
+
+    fireEvent.click(screen.getByRole("link", { name: "Calibrate the floor" }));
+    expect(screen.getByText("Calibrating")).toBeInTheDocument();
+  });
+
+  it("lets the player start once the camera has a saved floor", async () => {
+    saveCalibration("default", DEFAULT_CORNERS);
+    permissionQuery("granted");
+    getUserMedia();
+    renderLanding(floorGame);
+
+    expect(await screen.findByText(/This camera has a saved floor area/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New game" })).toBeEnabled();
+  });
+
+  it("lets a player without the camera start, to play by mouse", async () => {
+    permissionQuery("prompt");
+    renderLanding(floorGame);
+
+    expect(await screen.findByText("Not granted")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New game" })).toBeEnabled();
+    expect(screen.queryByText("Calibrate the floor before you start.")).toBeNull();
+  });
+});
 
 describe("GameLanding", () => {
   it("shows the game's title and description", () => {

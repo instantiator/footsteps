@@ -296,3 +296,7 @@ export const imageFractionOf = ({ x, y }: Point, { width, height }: MaskSize): P
   x: x / width,
   y: y / height,
 });
+
+/** Converts a screen point to image fractions, through the on-screen rectangle the image fills, even outside it. */
+export const imagePointForScreenPoint = (point: Point, imageRect: Rect, mirrored: boolean): Point =>
+  maskPointForScreenPoint(point, imageRect, { width: 1, height: 1 }, mirrored);

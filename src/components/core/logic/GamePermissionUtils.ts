@@ -2,6 +2,7 @@ import type { GameSceneBase } from "../../../entities/data/scenes/GameSceneData"
 import type { GameData } from "../../../entities/data/GameData";
 import { isDefined } from "../../../util/ObjectUtils";
 import { getCameraStream } from "../../camera/CameraSupport";
+import { isCalibrated } from "../../camera/FloorCalibration";
 
 /** A browser permission a game may need before it starts. */
 export type GamePermissionId = "camera";
@@ -49,6 +50,13 @@ const gameCameraRequirement = (gameData: GameData): "required" | "enabled" | fal
 /** Whether any of the game's scenes is laid out on the calibrated floor. */
 export const gameUsesFloor = (gameData: GameData): boolean =>
   gameData.modules?.scene === "2.5D" || allScenes(gameData).some(({ scene }) => scene === "2.5D");
+
+/**
+ * Whether the floor must be calibrated before the game can start: it has 2.5D scenes, the player has granted the
+ * camera (people playing by mouse don't need it), and the chosen camera has no saved floor.
+ */
+export const calibrationNeeded = (gameData: GameData, cameraGranted: boolean, cameraKey: string): boolean =>
+  cameraGranted && gameUsesFloor(gameData) && !isCalibrated(cameraKey);
 
 /** The permissions a game can use, in the order to show them on its landing page. */
 export const usedGamePermissions = (gameData: GameData): GamePermissionId[] =>
