@@ -13,9 +13,9 @@ const renderCamera = () => {
     onAspectChange: vi.fn(),
     onError: vi.fn(),
   };
-  const view = render(<CharacterCamera stream={undefined} video={null} colorKey={false} mirror={false} {...props} />);
+  const view = render(<CharacterCamera stream={undefined} video={null} mirror={false} {...props} />);
   const video = view.container.querySelector("video");
-  view.rerender(<CharacterCamera stream={undefined} video={video} colorKey={false} mirror={false} {...props} />);
+  view.rerender(<CharacterCamera stream={undefined} video={video} mirror={false} {...props} />);
   return { ...view, ...props };
 };
 

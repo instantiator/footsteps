@@ -3,7 +3,6 @@ import type { ComponentProps, ReactNode } from "react";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CharacterCanvas from "../src/components/camera/CharacterCanvas";
-import type { FeetPositions } from "../src/components/camera/CameraSupport";
 import type { PlayerFrame } from "../src/components/camera/PlayerMonitor";
 import { PlayerRegistry } from "../src/components/camera/PlayerRegistry";
 import type { AppConfig } from "../src/config/AppConfig";
@@ -161,25 +160,19 @@ describe("CharacterCanvas", () => {
     expect(container.querySelector(".player-1 canvas")).not.toBeNull();
   });
 
-  it("reports feet positions separately, for the debug overlay", async () => {
-    const onFeetPositionsChange = vi.fn<(feetPositions: FeetPositions) => void>();
-    renderCanvas({ onFeetPositionsChange });
-
-    await waitFor(() => expect(onFeetPositionsChange).toHaveBeenCalled());
-    expect(Object.keys(onFeetPositionsChange.mock.calls[0][0])).toEqual(["1", "2"]);
-  });
-
-  it("reports the feet of a player the model has lost for a moment, flagged as held", async () => {
-    const onFeetPositionsChange = vi.fn<(feetPositions: FeetPositions) => void>();
+  it("reports a player the model has lost for a moment as held, where their feet last were", async () => {
+    const onPlayersChange = vi.fn<(players: PlayerFrame[], timestamp: number) => void>();
     model.people = 1;
-    renderCanvas({ onFeetPositionsChange });
-    await waitFor(() => expect(onFeetPositionsChange).toHaveBeenCalled());
-    expect(onFeetPositionsChange.mock.calls[0][0][1].held).toBeUndefined();
+    renderCanvas({ onPlayersChange });
+    await waitFor(() => expect(onPlayersChange).toHaveBeenCalled());
+    expect(onPlayersChange.mock.calls[0][0][0].held).toBeUndefined();
 
     model.people = 0; // lost by the model, so held by the tracker
     await act(async () => runNextFrame());
-    await waitFor(() => expect(onFeetPositionsChange).toHaveBeenCalledTimes(2));
-    expect(onFeetPositionsChange.mock.calls[1][0][1]).toMatchObject({ held: true, percent: { y: 87.5 } });
+    await waitFor(() => expect(onPlayersChange).toHaveBeenCalledTimes(2));
+    const [held] = onPlayersChange.mock.calls[1][0];
+    expect(held.held).toBeDefined();
+    expect(held.feet).toMatchObject({ percent: { y: 87.5 } });
   });
 
   it("skips a frame that fails to be tracked, and carries on with the next", async () => {

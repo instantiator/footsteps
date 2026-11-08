@@ -290,3 +290,9 @@ export const maskPointForScreenPoint = (
     y: ((point.y - canvasRect.top) / (canvasRect.bottom - canvasRect.top)) * maskHeight,
   };
 };
+
+/** Converts a point in mask pixels to image fractions. */
+export const imageFractionOf = ({ x, y }: Point, { width, height }: MaskSize): Point => ({
+  x: x / width,
+  y: y / height,
+});

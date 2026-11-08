@@ -1,16 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { silhouettePixels, staticGrid, staticPixels, tintPixels } from "../src/components/camera/DrawPeople";
-import { BODY_PART_STYLES } from "../src/vision/BodyPart";
-import { noKeyPoints, type KeyPoints, type VisionFrame, type VisionPerson } from "../src/vision/VisionTypes";
+import { noKeyPoints, type VisionFrame, type VisionPerson } from "../src/vision/VisionTypes";
 
 const WIDTH = 4;
 const HEIGHT = 1;
 
-/** A person covering the given pixels of a 4×1 frame, with the given key points and no part radius. */
-const person = (id: number, pixels: number[], keyPoints: Partial<KeyPoints> = {}): VisionPerson => {
+/** A person covering the given pixels of a 4×1 frame, with no key points. */
+const person = (id: number, pixels: number[]): VisionPerson => {
   const mask = new Uint8Array(WIDTH * HEIGHT);
   for (const i of pixels) mask[i] = 1;
-  return { id, mask, keyPoints: { ...noKeyPoints(), ...keyPoints }, scale: 0 };
+  return { id, mask, keyPoints: noKeyPoints(), scale: 0 };
 };
 
 const frame = (...people: VisionPerson[]): VisionFrame => ({ width: WIDTH, height: HEIGHT, timestamp: 0, people });
@@ -19,8 +18,6 @@ const frame = (...people: VisionPerson[]): VisionFrame => ({ width: WIDTH, heigh
 const rgba = (pixels: Uint8ClampedArray) =>
   Array.from({ length: pixels.length / 4 }, (_, i) => Array.from(pixels.slice(i * 4, i * 4 + 4)));
 
-const { r, g, b, a } = BODY_PART_STYLES.leftHand.color;
-const HAND = [r, g, b, a];
 const CLEAR = [0, 0, 0, 0];
 
 describe("staticPixels", () => {
@@ -58,10 +55,10 @@ describe("staticGrid", () => {
 
 describe("tintPixels for a coloured mask", () => {
   it("picks the tint by the person's id, not where they are in the list", () => {
-    const alone = rgba(tintPixels(frame(person(1, [0])), "colored"));
-    const second = rgba(tintPixels(frame(person(0, [1]), person(1, [0])), "colored"));
+    const alone = rgba(tintPixels(frame(person(1, [0]))));
+    const second = rgba(tintPixels(frame(person(0, [1]), person(1, [0]))));
     expect(alone[0]).toEqual(second[0]);
-    expect(rgba(tintPixels(frame(person(0, [0])), "colored"))[0]).not.toEqual(alone[0]);
+    expect(rgba(tintPixels(frame(person(0, [0]))))[0]).not.toEqual(alone[0]);
   });
 });
 
@@ -91,34 +88,22 @@ describe("silhouettePixels", () => {
 });
 
 describe("tintPixels", () => {
-  const withHand = frame(person(0, [0, 1], { leftHand: { x: 1, y: 0 } }));
-
-  it("tints only the hands and feet for extremities", () => {
-    expect(rgba(tintPixels(withHand, "extremities"))).toEqual([CLEAR, HAND, CLEAR, CLEAR]);
-  });
-
-  it("tints the whole person, and the hand over it, for colored", () => {
-    const [body, hand, outside] = rgba(tintPixels(withHand, "colored"));
+  it("tints the whole person in one colour, and nothing outside them", () => {
+    const [body, alsoBody, outside] = rgba(tintPixels(frame(person(0, [0, 1]))));
     expect(body[3]).toBe(255);
-    expect(body).not.toEqual(HAND);
-    expect(hand).toEqual(HAND);
+    expect(alsoBody).toEqual(body);
     expect(outside).toEqual(CLEAR);
   });
 
-  it("tints each person differently for colored", () => {
-    const [first, , second] = rgba(tintPixels(frame(person(0, [0]), person(1, [2])), "colored"));
+  it("tints each person differently", () => {
+    const [first, , second] = rgba(tintPixels(frame(person(0, [0]), person(1, [2]))));
     expect(first).not.toEqual(second);
   });
 
   it("fills the buffer it is given, clearing the last frame's tint from it", () => {
-    const buffer = tintPixels(withHand, "colored");
-    const reused = tintPixels(frame(person(0, [3])), "extremities", buffer);
+    const buffer = tintPixels(frame(person(0, [0, 1])));
+    const reused = tintPixels(frame(person(0, [3])), buffer);
     expect(reused).toBe(buffer);
-    expect(rgba(reused)).toEqual([CLEAR, CLEAR, CLEAR, CLEAR]);
-  });
-
-  it("leaves a part's key point unpainted where the silhouette isn't", () => {
-    const offMask = frame(person(0, [0], { leftHand: { x: 3, y: 0 } }));
-    expect(rgba(tintPixels(offMask, "extremities"))[3]).toEqual(CLEAR);
+    expect(rgba(reused).slice(0, 3)).toEqual([CLEAR, CLEAR, CLEAR]);
   });
 });

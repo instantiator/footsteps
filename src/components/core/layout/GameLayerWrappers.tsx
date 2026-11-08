@@ -1,11 +1,10 @@
 import { Fragment, type CSSProperties, type ReactNode } from "react";
 import useAppConfig from "../../../providers/AppConfigHook";
 import { isDefined } from "../../../util/ObjectUtils";
-import CameraDebugOverlay from "../../camera/CameraDebugOverlay";
-import type { FeetPositions } from "../../camera/CameraSupport";
-import type { CropPlacement } from "../../camera/FloorGeometry";
 import CharacterCamera from "../../camera/CharacterCamera";
 import CharacterCanvas from "../../camera/CharacterCanvas";
+import type { Corners, CropPlacement } from "../../camera/FloorGeometry";
+import FloorOverlay from "../../camera/FloorOverlay";
 import type { PlayerFrame } from "../../camera/PlayerMonitor";
 import HeadsUpDisplay from "../HeadsUpDisplay";
 import type { LayerHint } from "../scene/GameSceneComponent";
@@ -36,10 +35,10 @@ export interface LayerNodeProps {
   setCharacterStream?: React.Dispatch<React.SetStateAction<MediaStream | undefined>>;
   /** Whether the camera preview shows; defaults to true. */
   showPreview?: boolean;
-  /** Where the player's feet were last seen, for the debug overlay. */
-  feetPositions?: FeetPositions;
-  /** Lets the character canvas report the feet positions. */
-  setFeetPositions?: React.Dispatch<React.SetStateAction<FeetPositions>>;
+  /** The people the camera last found, for the debug overlay; none without a camera. */
+  players?: PlayerFrame[];
+  /** The floor a 2.5D scene shows, for the debug overlay; none in a 2D scene. */
+  corners?: Corners;
   /** The character canvas's element, for converting element positions into mask positions. */
   canvasRef?: React.RefObject<HTMLCanvasElement | null>;
   /** Called every frame with the people the camera found, and when the frame was taken. */
@@ -48,14 +47,12 @@ export interface LayerNodeProps {
   mirror?: boolean;
   /** Where the camera image sits so a 2.5D scene's crop of it fills the viewport; the whole image fits it if not given. */
   crop?: CropPlacement;
-  /** Whether debug aids (colour key, coloured mask) are shown. */
+  /** Whether debug aids (people tinted apart, body-part markers, the floor) are shown. */
   debug?: boolean;
   /** Switches the debug aids on or off, from the HUD. */
   onToggleDebug?: () => void;
   /** The scene components to render in the layer, one per grid column. */
   nodes?: ReactNode[];
-  /** Whether the game uses the camera. */
-  cameraEnabled?: boolean;
   /** Name of the layer (overview, stage or challenges). */
   layer?: string;
   /** Whether this is the layer's background or foreground. */
@@ -94,7 +91,6 @@ export const CharacterCameraLayerWrapper = ({
   onCameraError,
   showPreview = true,
   mirror,
-  debug,
 }: LayerNodeProps) => (
   <div
     id="character-camera-layer"
@@ -107,32 +103,39 @@ export const CharacterCameraLayerWrapper = ({
       stream={characterStream}
       setStream={setCharacterStream!}
       onAspectChange={onAspectChange!}
-      colorKey={debug!}
       onError={onCameraError!}
       mirror={mirror!}
     />
   </div>
 );
 
-/** Layer holding the debug overlay: feet markers when the camera is enabled. They take no pointer events, so they never cover what the player touches. */
-export const DebugLayerWrapper = ({ style, zIndex, feetPositions, cameraEnabled, mirror }: LayerNodeProps) => (
+/** The box the whole camera image fills: the viewport, or a larger box when a 2.5D scene crops the image to its floor. */
+const imageBoxStyle = (crop: CropPlacement | undefined): CSSProperties | undefined =>
+  isDefined(crop)
+    ? { width: `${crop.width * 100}%`, height: `${crop.height * 100}%`, left: `${crop.left * 100}%`, top: 0 }
+    : undefined;
+
+/**
+ * Layer holding the debug overlay, over the camera image's box: the floor in a 2.5D scene, and each player's head,
+ * hands and feet with the camera on. It takes no pointer events, so it never covers what the player touches.
+ */
+export const DebugLayerWrapper = ({ style, zIndex, players, corners, crop, mirror }: LayerNodeProps) => (
   <div
     id="debug-overlay-container"
     className="outerStyle noClicks"
-    style={{ ...style, zIndex: zIndex, transform: mirror ? "scaleX(-1)" : undefined }}
+    style={{ ...style, ...imageBoxStyle(crop), zIndex: zIndex, transform: mirror ? "scaleX(-1)" : undefined }}
   >
-    {cameraEnabled && <CameraDebugOverlay className="innerStyle noClicks" feetPositions={feetPositions} />}
+    <FloorOverlay className="innerStyle" corners={corners} players={players} />
   </div>
 );
 
-/** Layer holding the player's silhouette ({@link CharacterCanvas}), which also reports their feet positions. */
+/** Layer holding the players' silhouettes ({@link CharacterCanvas}), which also reports the people it finds. */
 export const CharacterCanvasLayerWrapper = ({
   style,
   zIndex,
   video,
   characterStream,
   aspectRatio,
-  setFeetPositions,
   canvasRef,
   onPlayersChange,
   mirror,
@@ -140,19 +143,18 @@ export const CharacterCanvasLayerWrapper = ({
   crop,
 }: LayerNodeProps) => {
   const { showFps } = useAppConfig();
-  const cropped = isDefined(crop)
-    ? { width: `${crop.width * 100}%`, height: `${crop.height * 100}%`, left: `${crop.left * 100}%`, top: 0 }
-    : undefined;
   return (
     // Clicks pass through to the game layers beneath; the silhouette is decoration
-    <div id="character-canvas-container" className="outerStyle noClicks characterCanvasStack" style={cropped}>
+    <div
+      id="character-canvas-container"
+      className="outerStyle noClicks characterCanvasStack"
+      style={imageBoxStyle(crop)}
+    >
       <CharacterCanvas
         video={video ?? null}
         mediaStream={characterStream}
         className="innerStyle"
         style={{ ...style, transform: mirror ? "scaleX(-1)" : undefined, aspectRatio: aspectRatio, zIndex }}
-        // Only the debug overlay shows the feet; reporting them otherwise would re-render the game every frame
-        onFeetPositionsChange={debug ? setFeetPositions : undefined}
         onPlayersChange={onPlayersChange}
         canvasRef={canvasRef}
         maskType={debug ? "colored" : "binary"}

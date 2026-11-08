@@ -112,3 +112,19 @@ test("draws each player's depth as a line when debugging", async ({ page }) => {
     });
   await expect.poll(hasDepthLine).toBe(true);
 });
+
+test("outlines the floor and marks the player's feet when debugging the 2.5D stage", async ({ page }) => {
+  await openDepthStage(page, "?debug=true");
+  const overlay = page.locator("#debug-overlay-container");
+  await expect(overlay.locator("polygon")).toBeAttached();
+  await expect(overlay.locator(".floorMarkerOn, .floorMarkerOff").first()).toBeAttached({ timeout: MODEL_TIMEOUT });
+
+  // The overlay covers the whole camera image, which a 2.5D scene crops: wider than the viewport
+  const widths = await page.evaluate(() =>
+    ["#game-viewport", "#debug-overlay-container", "#character-canvas-container"].map(
+      (selector) => document.querySelector(selector)!.getBoundingClientRect().width,
+    ),
+  );
+  expect(widths[1]).toBeGreaterThan(widths[0]);
+  expect(widths[1]).toBeCloseTo(widths[2], 0);
+});

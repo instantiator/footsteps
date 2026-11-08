@@ -33,14 +33,6 @@ export const getCameraStream = async (size?: { width: number; height: number }, 
 /** Stops every track in a stream, which turns the camera off. */
 export const stopTracks = (stream: MediaStream) => stream.getTracks().forEach((track) => track.stop());
 
-/** Each tracked person's feet position, keyed by their index in the segmentation. */
-export type FeetPositions = {
-  [personId: number]: FootPosition & {
-    /** Whether the model has lost the person for a moment, so this is where their feet last were. */
-    held?: boolean;
-  };
-};
-
 /** A person's feet position, both in pixels and as a percentage of the frame. */
 export interface FootPosition {
   /** Position in pixels of the mask. */

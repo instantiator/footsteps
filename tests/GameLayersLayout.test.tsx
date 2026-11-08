@@ -167,11 +167,10 @@ describe("GameLayersLayout", () => {
     expect(received.canvas.at(-1)?.maskType).toBe("colored");
   });
 
-  it("doesn't re-render the game for each camera frame unless the debug overlay shows the feet", async () => {
+  it("doesn't re-render the game for each camera frame unless the debug overlay shows the players", async () => {
     renderLayout({ avatar: { mode: "camera", fallback: "mouse", preview: true }, debug: false });
     await screen.findByTestId("canvas");
     const canvas = received.canvas.at(-1)!;
-    expect(canvas.onFeetPositionsChange).toBeUndefined();
     const renders = received.canvas.length;
 
     act(() => canvas.onPlayersChange?.([playerWithHandAt(1, 1)], 0));
@@ -179,10 +178,18 @@ describe("GameLayersLayout", () => {
     expect(received.canvas).toHaveLength(renders);
   });
 
-  it("reports the feet to the debug overlay when debugging", async () => {
-    renderLayout({ avatar: { mode: "camera", fallback: "mouse", preview: true }, debug: true });
+  it("marks the players' body parts on the debug overlay when debugging", async () => {
+    const { container } = renderLayout({ avatar: { mode: "camera", fallback: "mouse", preview: true }, debug: true });
     await screen.findByTestId("canvas");
-    expect(received.canvas.at(-1)?.onFeetPositionsChange).toBeDefined();
+    act(() => received.canvas.at(-1)?.onPlayersChange?.([playerWithHandAt(1, 1)], 0));
+    expect(container.querySelectorAll("#debug-overlay-container .floorMarker")).toHaveLength(1);
+    expect(container.querySelector("#debug-overlay-container polygon")).toBeNull();
+  });
+
+  it("outlines the floor on the debug overlay in a 2.5D scene, with or without a camera", async () => {
+    const { container } = renderLayout({ sceneMode: "2.5D", debug: true });
+    expect(container.querySelector("#debug-overlay-container polygon")).not.toBeNull();
+    expect(container.querySelectorAll("#debug-overlay-container .floorMarker")).toHaveLength(0);
   });
 
   it("hides the preview, but keeps the camera and canvas, when the preview is off", async () => {
