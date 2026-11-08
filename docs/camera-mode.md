@@ -4,7 +4,7 @@ Camera mode makes the player the game's character. A body-segmentation model cut
 webcam picture and layers their silhouette into the game's scenes, so they move through the artwork
 as they move in front of the camera.
 
-It is optional. A game can switch it on for the whole game, and any display can override it. It is built for a
+It is optional. A game can switch it on for the whole game, and any scene can override it. It is built for a
 camera behind and a little above the player, with the screen in front, and also works with one facing them.
 
 ## Switching it on
@@ -23,26 +23,26 @@ For a whole game, add the camera module to its data:
 | ------------ | ----------- | --------------------------------------------------------------------- |
 | `"enabled"`  | on          | The landing page offers the camera, but the game can start without it |
 | `"required"` | on          | The game can't start until the camera permission is granted           |
-| `false`      | off         | The camera isn't mentioned, unless another display uses it            |
+| `false`      | off         | The camera isn't mentioned, unless another scene uses it              |
 
 `preview` is optional and defaults to `true`. Set it to `false` to run the camera without showing the
 small webcam preview.
 
-Any display (overview, stage `shared`, or challenge) can override either setting:
+Any scene (overview, stage `shared`, or challenge) can override either setting:
 
 ```json
 "camera": { "requirement": false, "preview": false }
 ```
 
-Both fields are optional, so a display can change one without the other. The data shape is in
+Both fields are optional, so a scene can change one without the other. The data shape is in
 [game data](game-data.md#camera-settings).
 
 Camera mode is resolved separately for each setting, most specific first:
 
 1. If any active challenge turns it on, it is on.
 2. Otherwise, if any active challenge turns it off, it is off.
-3. Otherwise, the open stage's `shared` display decides.
-4. Otherwise, the overview display decides.
+3. Otherwise, the open stage's `shared` scene decides.
+4. Otherwise, the overview scene decides.
 5. Otherwise, the game's `modules.camera` decides.
 6. Otherwise, camera mode is off and the preview is on.
 
@@ -51,7 +51,7 @@ The preview is always off while camera mode is off. The code is `resolveCameraMo
 
 ## Permission
 
-A game's landing page scans the game data, reset displays included. If anything uses the camera, it asks the browser
+A game's landing page scans the game data, reset scenes included. If anything uses the camera, it asks the browser
 for the permission and shows a Grant button until it is granted. If anything requires the camera, New game and
 Continue stay disabled until then. See [Playing a game](game-play.md#permissions) for the full flow.
 
@@ -86,12 +86,12 @@ move right. Turn it on for a camera facing the player, so the picture behaves li
   [depths](#player-depth).
 - **The HUD** in the top-right: "Close challenge", "To title", and the fullscreen button.
 
-An ordinary display change fades the old display out over 1s, swaps, then fades the new one in over
+An ordinary scene change fades the old scene out over 1s, swaps, then fades the new one in over
 1s. When camera mode turns on or off, the game view instead eases between the container's shape and
-the camera's over 2s; if the display changes too, it fades out over the final second of the reshape
+the camera's over 2s; if the scene changes too, it fades out over the final second of the reshape
 and back in over 1s. With `prefers-reduced-motion: reduce`, every change is immediate.
 
-The game waits for the webcam's shape before drawing the display layers, so the silhouette and the
+The game waits for the webcam's shape before drawing the scene layers, so the silhouette and the
 artwork line up. If the player refuses the camera permission, the layers stay hidden and the error
 is logged in the browser console.
 
@@ -106,9 +106,9 @@ container's background shows in the space around it. The game view is a size con
 templates can use `cqw` and `cqh` to follow it; `vw` and `vh` still follow the browser window. See the
 [coordinate system](special-effects.md#coordinate-system).
 
-The display and camera layers sit inside one `.gameScene` wrapper, which fades as a whole; the HUD
+The scene and camera layers sit inside one `.gameScene` wrapper, which fades as a whole; the HUD
 sits outside it. For a camera change, `#game-viewport` animates its `aspect-ratio` with a 2s CSS
-keyframe between the current shape and the camera's or container's shape, keeping the old display
+keyframe between the current shape and the camera's or container's shape, keeping the old scene
 visible until the swap.
 
 | `zIndex` | Layer                 | What it holds                                           |
@@ -151,7 +151,7 @@ The "Walk around" stage of the rules demo shows this.
 A player's depth comes from the bottom of their silhouette, because models often can't find feet from behind. It keeps
 the lowest point of the last `cameraDepthWindowMs`, so a jump doesn't look like walking away: stepping nearer shows at
 once, and stepping away shows after that time. It ignores moves smaller than `cameraDepthDeadband`, so a player on an
-item's line doesn't flicker. A display with no `data-depth` items doesn't do this work. [ADR
+item's line doesn't flicker. A scene with no `data-depth` items doesn't do this work. [ADR
 0010](ADRs/0010-player-tracking-from-behind.md) explains the choice and the alternatives.
 
 The layers ignore the mouse (`pointer-events: none`), including the silhouette, so clicks reach the
@@ -186,7 +186,7 @@ MediaPipe Pose on the main thread. [ADR 0004](ADRs/0004-vision-optimisations.md)
 
 ## How interactions work
 
-Camera interactions fire display [rules](game-data.md#rules-and-state) whose trigger is an `interact`:
+Camera interactions fire scene [rules](game-data.md#rules-and-state) whose trigger is an `interact`:
 
 ```json
 {
@@ -196,8 +196,8 @@ Camera interactions fire display [rules](game-data.md#rules-and-state) whose tri
 ```
 
 The trigger names the elements (any CSS selector), which interactions it accepts, and how much of the body part
-must be inside an element. `threshold` defaults to `1`. Any display that is showing can have them, including a
-stage's shared display and its challenges.
+must be inside an element. `threshold` defaults to `1`. Any scene that is showing can have them, including a
+stage's shared scene and its challenges.
 
 | Interaction                                                    | Detected from                                       |
 | -------------------------------------------------------------- | --------------------------------------------------- |
@@ -223,7 +223,7 @@ pixel. `hand-enter`, `foot-enter` and `any-enter` fire when any one of their par
 Interactions are **edge-triggered**: one fires when the player has met the condition for
 `visionStableFrames` frames in a row (2 by default, so a one-frame flicker doesn't count), not on every frame
 they hold it. Moving away re-arms it, so a second approach fires again. A player who already
-meets the condition when their monitor starts (when camera mode starts, after a display change, or on
+meets the condition when their monitor starts (when camera mode starts, after a scene change, or on
 coming back into view) must move away and back first.
 
 With `holdMs` on the trigger, an `-enter` fires only once the player has also held it that long; moving away
@@ -257,15 +257,15 @@ element covered by another doesn't respond, unless the rule sets `"includeCovere
 only once the threshold is met, so it stays cheap every frame. The silhouette, the camera preview and the debug
 overlay take no pointer events, so they never count as covering.
 
-While a display or camera transition is running, clicks and camera interactions are ignored. The
+While a scene or camera transition is running, clicks and camera interactions are ignored. The
 scene is `inert`, the monitors are cleared, and the camera hook drops frames. The fresh monitors
-ignore whatever holds on their first frame, so a held hand cannot fire as the new display arrives.
+ignore whatever holds on their first frame, so a held hand cannot fire as the new scene arrives.
 
 ### From frame to event
 
 `CharacterCanvas` calls `onPlayersChange` once per frame with every player's mask, key points and feet,
 and the frame's timestamp. Each frame, `usePlayerInteractions` runs every camera rule's selector inside its
-display's templates (found by `data-display-scope`), so elements can appear, move and disappear between frames. It
+scene's templates (found by `data-scene-scope`), so elements can appear, move and disappear between frames. It
 builds a mask-space rectangle for each element, keeps one `PlayerMonitor` per player, and passes the monitors'
 events to `useGameRules`. The rectangle conversion mirrors the x axis if the canvas is mirrored, and
 `screenPointForMaskPoint` maps back for the covering check.
@@ -317,10 +317,10 @@ toggling it.
 | `src/vision/Tracking.ts`                              | stable player ids, key-point smoothing, holding lost players, and filling gaps                                     |
 | `src/vision/models/`                                  | BodyPix, MediaPipe Pose and MoveNet, and the tfjs backend choice                                                   |
 | `src/vision/VisionWorkerProxy.ts`, `vision.worker.ts` | runs a model in a web worker                                                                                       |
-| `src/components/core/logic/CameraModeUtils.ts`        | per-display camera resolution                                                                                      |
+| `src/components/core/logic/CameraModeUtils.ts`        | per-scene camera resolution                                                                                        |
 | `src/components/core/logic/GameClickUtils.ts`         | targets, and the state changes for clicks and interactions                                                         |
 | `src/components/core/layout/GameLayersLayout.tsx`     | the layer stack, scene transitions, shared camera state, and the interaction hook                                  |
-| `src/components/core/layout/useSceneTransition.ts`    | fades display changes and times the camera reshape and reduced motion                                              |
+| `src/components/core/layout/useSceneTransition.ts`    | fades scene changes and times the camera reshape and reduced motion                                                |
 | `src/components/core/layout/PlayerInteractionHook.ts` | one monitor per player, and mask-space target rectangles                                                           |
 | `src/components/core/layout/GameLayerWrappers.tsx`    | one wrapper component per layer                                                                                    |
 | `src/components/core/effects/`                        | [special effects](special-effects.md): their targets, and playing them on items and players                        |
@@ -333,11 +333,11 @@ interactions (`tests/PlayerMonitor.test.ts`), jump detection (`tests/JumpDetecto
 tracking loop (`tests/CharacterCanvas.test.tsx`), the config (`tests/AppConfig*.test.ts*`), each vision
 model and the worker proxy (`tests/*Model.test.ts`, `tests/VisionWorkerProxy.test.ts`), the body-part
 queries and tracking (`tests/VisionQueries.test.ts`, `tests/Tracking.test.ts`), and the layout and game
-wiring, including the display fades and camera reshape timings, waiting for a camera shape, and reduced
+wiring, including the scene fades and camera reshape timings, waiting for a camera shape, and reduced
 motion.
 
 The browser suite runs the real vision pipeline in Chromium against a fake webcam. It samples the
-viewport mid-reshape, waits for the new display to fade in, and checks that the fitted game view
+viewport mid-reshape, waits for the new scene to fade in, and checks that the fitted game view
 contains every stepping stone:
 
 ```bash

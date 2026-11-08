@@ -36,7 +36,7 @@ been granted.
 ## Permissions
 
 A game uses the camera when `modules.camera.requirement`, or the `camera.requirement` of any overview, stage `shared`,
-challenge or reset display, is `"enabled"` or `"required"`. It requires the camera when any of them is `"required"`.
+challenge or reset scene, is `"enabled"` or `"required"`. It requires the camera when any of them is `"required"`.
 A game that doesn't use the camera shows no permissions panel.
 
 The landing page asks the browser for each permission the game uses with
@@ -51,7 +51,7 @@ unless the browser later reports it as denied. So a browser that cannot report t
 The play route repeats the check for a required permission, so a bookmark or typed URL cannot skip the landing page.
 It allows play only when the permission is granted (including a grant remembered for the tab), and redirects to
 the landing page otherwise. A game that only enables the camera can start without a grant. The browser asks when the
-first camera display appears, and if the player refuses, the game plays on by clicks.
+first camera scene appears, and if the player refuses, the game plays on by clicks.
 
 ## Saved progress
 
@@ -60,7 +60,7 @@ versioned projection, not the runtime `GameState`:
 
 - the format version and game id;
 - the solved challenge ids for each stage;
-- the current stage and overview display.
+- the current stage and overview scene.
 
 On load, stage completion and sequential availability are rebuilt from the solved challenges. The
 authored game data always comes from the current repository. The saved value is ignored when it is

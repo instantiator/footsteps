@@ -1,6 +1,6 @@
 # How filtrex works
 
-Display rules use short expressions for their conditions (`if`, `when`), computed values (`set`), answers
+Scene rules use short expressions for their conditions (`if`, `when`), computed values (`set`), answers
 (`answer`) and timer durations (`every`, `after`). These are written in
 [filtrex](https://github.com/cshaa/filtrex), a small, safe expression language. This page explains what it
 does and how to write it.
@@ -29,8 +29,8 @@ site's Content Security Policy.
 
 | Name    | What it is                                                                                                                                                                                          |
 | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `state` | This display's own state, starting from `initialState`.                                                                                                                                             |
-| `data`  | The display component's `data`, as authored.                                                                                                                                                        |
+| `state` | This scene's own state, starting from `initialState`.                                                                                                                                               |
+| `data`  | The scene component's `data`, as authored.                                                                                                                                                          |
 | `game`  | A read-only snapshot of the game's progress: its stages, their challenges, what is showing, and [how many players there are](player-tracking.md#counting-players).                                  |
 | `event` | For element triggers: the matched element's `id` (empty if it has none), and the `interaction`. `player` is the [number of the player](player-tracking.md#player-numbers) who fired the rule, or 0. |
 
@@ -53,7 +53,7 @@ Values are not converted between types: `1 + true` is an error, not `2`.
 ## Errors
 
 - **When the game loads**, every expression is compiled. A syntax mistake stops the game from loading,
-  and the message names the display and rule, eg. `stages[1] (lava) › … › rules[2].if: Parse error …`.
+  and the message names the scene and rule, eg. `stages[1] (lava) › … › rules[2].if: Parse error …`.
 - **While playing**, a value of the wrong type (eg. adding a number to text) is logged to the console,
   naming the rule, and the expression's result is treated as `undefined`. A condition that fails this way
   counts as false, and a `set` that fails leaves the value unchanged.

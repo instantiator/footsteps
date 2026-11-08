@@ -28,14 +28,14 @@ Tracker ids only ever grow, so each tracked person also takes the lowest free nu
 | Frozen  | A `player-freeze` has applied, until `player-unfreeze`.                                         | Yes, frozen in place              | No        | Yes               |
 | Removed | The effect has finished, and they are off-screen.                                               | No                                | No        | No                |
 
-Leaving players count as active until they are off-screen, so a rule that resets the display when nobody is left lets the last fall finish.
+Leaving players count as active until they are off-screen, so a rule that resets the scene when nobody is left lets the last fall finish.
 
 ## Counting players
 
 | Expression             | Meaning                                                                                                                  |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `game.players.active`  | Players in shot and not removed. A player the model has lost for a moment, and is still holding, counts.                 |
-| `game.players.removed` | Players removed since their display last reset.                                                                          |
+| `game.players.removed` | Players removed since their scene last reset.                                                                            |
 | `game.players.frozen`  | Players frozen now. They also count as active. A frozen player who starts to fall or spin away stops counting as frozen. |
 
 ```json
@@ -51,17 +51,17 @@ The counts are in `GameState.session`, so aren't saved, and change only when the
 
 ## Restoring
 
-Everyone is restored, whatever has happened to them, when the game moves to another display, so nobody misses the next challenge. That is true even when a stage's shared display stays showing.
+Everyone is restored, whatever has happened to them, when the game moves to another scene, so nobody misses the next challenge. That is true even when a stage's shared scene stays showing.
 
-When a display resets (see [ending with the display](special-effects.md#ending-with-the-display)), the players its rules have affected are restored. With challenges side by side, one resetting doesn't revive a player removed by the other. A display and its own reset display showing in turn count as a reset.
+When a scene resets (see [ending with the scene](special-effects.md#ending-with-the-scene)), the players its rules have affected are restored. With challenges side by side, one resetting doesn't revive a player removed by the other. A scene and its own reset scene showing in turn count as a reset.
 
-To opt out, a display component sets `keepRemovedPlayers`:
+To opt out, a scene component sets `keepRemovedPlayers`:
 
-| Property             | Type    | Default | Meaning                                                |
-| -------------------- | ------- | ------- | ------------------------------------------------------ |
-| `keepRemovedPlayers` | boolean | `false` | Whether players stay removed when this display resets. |
+| Property             | Type    | Default | Meaning                                              |
+| -------------------- | ------- | ------- | ---------------------------------------------------- |
+| `keepRemovedPlayers` | boolean | `false` | Whether players stay removed when this scene resets. |
 
-It is read from the display being reset, even as its reset display shows. It keeps only removed players: one on the way there goes straight there, and frozen, invisible and static players return to normal. Moving to another display restores them anyway.
+It is read from the scene being reset, even as its reset scene shows. It keeps only removed players: one on the way there goes straight there, and frozen, invisible and static players return to normal. Moving to another scene restores them anyway.
 
 A rule can restore players at any time with [`player-restore`](special-effects.md#restore).
 
@@ -72,7 +72,7 @@ A removed or frozen state lasts much longer than the tracker follows anyone, so 
 - Someone unseen for over 500 ms (or the hold and fade time, if longer) comes back from the tracker with a new id.
 - Each tracking loop has a new `PersonTracker`, whose ids restart from 0.
 
-So when the tracker loses a player who isn't active, the registry keeps a note of where they were. A new person appearing within a quarter of the frame's width of there inherits the note, and with it the player's id, number and state. A frozen player stays drawn and counted while noted. A leaving player finishes leaving, and stays as a removed note. Notes last until the player's display resets or they are restored.
+So when the tracker loses a player who isn't active, the registry keeps a note of where they were. A new person appearing within a quarter of the frame's width of there inherits the note, and with it the player's id, number and state. A frozen player stays drawn and counted while noted. A leaving player finishes leaving, and stays as a removed note. Notes last until the player's scene resets or they are restored.
 
 ## Limits
 
