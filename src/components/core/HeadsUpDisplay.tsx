@@ -4,7 +4,15 @@ import { useGameData } from "../../providers/GameDataHook";
 import { useGameState } from "../../providers/GameStateHook";
 import useFullscreen from "./FullscreenHook";
 import { withoutFocus } from "./logic/GameStateUtils";
-import { goTo, goToOptions, resetOptions, resetTo, type GoToTarget, type HudOption } from "./logic/HudNavigation";
+import {
+  goTo,
+  goToOptions,
+  resetOptions,
+  resetTo,
+  type ChallengeRef,
+  type GoToTarget,
+  type HudOption,
+} from "./logic/HudNavigation";
 import { getRenderMode } from "./logic/RenderDataUtils";
 
 /**
@@ -100,8 +108,28 @@ function HudPicker<T>({ label, options, action, onPick }: HudPickerProps<T>) {
   );
 }
 
-/** Go to anywhere in the game (or out to the catalogue or its landing page), and Reset a solved challenge. */
-function NavigationPickers() {
+/** The menu's panel, hung below the HUD's row so it covers nothing until opened. */
+const menuStyle = {
+  ...panelStyle,
+  position: "absolute",
+  top: "100%",
+  right: 0,
+  flexDirection: "column",
+  alignItems: "stretch",
+  borderRadius: "0 0 0 10px",
+} as const;
+
+/** Props for {@link HudMenu}. */
+interface HudMenuProps extends HeadsUpDisplayProps {
+  /** Closes the menu, after any of its actions. */
+  onDone: () => void;
+}
+
+/**
+ * The menu's contents: Go to anywhere in the game (or out to the catalogue or its landing page), Reset a solved
+ * challenge, and switch the debug aids.
+ */
+function HudMenu({ debug, onToggleDebug, onDone }: HudMenuProps) {
   const { gameState, setGameState } = useGameState();
   const { gameId } = useGameData();
   const navigate = useNavigate();
@@ -109,35 +137,51 @@ function NavigationPickers() {
     if (target.kind === "catalogue") navigate("/");
     else if (target.kind === "game") navigate(`/game/${gameId}`);
     else setGameState((state) => goTo(state, target) ?? state);
+    onDone();
+  };
+  const reset = (target: ChallengeRef) => {
+    setGameState((state) => resetTo(state, target));
+    onDone();
   };
   return (
-    <>
+    <div id="hud-menu" style={menuStyle}>
       <HudPicker label="Go to" options={goToOptions(gameState)} action="Go" onPick={go} />
-      <HudPicker
-        label="Reset"
-        options={resetOptions(gameState)}
-        action="Reset"
-        onPick={(target) => setGameState((state) => resetTo(state, target))}
-      />
-    </>
+      <HudPicker label="Reset" options={resetOptions(gameState)} action="Reset" onPick={reset} />
+      {onToggleDebug && (
+        <button
+          style={buttonStyle}
+          onClick={() => {
+            onToggleDebug();
+            onDone();
+          }}
+          aria-pressed={debug}
+        >
+          {debug ? "Debug off" : "Debug on"}
+        </button>
+      )}
+    </div>
   );
 }
 
 /**
- * The HUD: Go to and Reset lists, buttons to leave the current challenge or return to the title screen when either
- * applies, and buttons to toggle the debug aids and fullscreen.
+ * The HUD: a Menu (Go to, Reset and the debug aids), buttons to leave the current challenge or return to the title
+ * screen when either applies, and the fullscreen toggle.
  */
-export default function HeadsUpDisplay({ debug, onToggleDebug }: HeadsUpDisplayProps) {
+export default function HeadsUpDisplay(props: HeadsUpDisplayProps) {
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
-    <div style={panelStyle}>
-      <NavigationPickers />
+    <div style={{ ...panelStyle, position: "relative" }}>
+      <button
+        style={buttonStyle}
+        onClick={() => setMenuOpen((open) => !open)}
+        aria-expanded={menuOpen}
+        aria-controls="hud-menu"
+      >
+        Menu
+      </button>
+      {menuOpen && <HudMenu {...props} onDone={() => setMenuOpen(false)} />}
       <LeaveButtons />
-      {onToggleDebug && (
-        <button style={buttonStyle} onClick={onToggleDebug} aria-pressed={debug}>
-          {debug ? "Debug off" : "Debug on"}
-        </button>
-      )}
       <button style={buttonStyle} onClick={toggleFullscreen} aria-pressed={isFullscreen}>
         {isFullscreen ? "Exit full screen" : "Full screen"}
       </button>

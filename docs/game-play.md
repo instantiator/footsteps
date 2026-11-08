@@ -89,6 +89,25 @@ below 20% and not charging, so a game isn't cut short by the device shutting dow
 Battery Status API, which only Chromium browsers (Chrome, Edge, Android) provide; elsewhere it shows
 nothing.
 
+## The HUD
+
+The HUD sits at the top right of every game, over the scenes, kept small so it covers little of them: **Menu**,
+**Close challenge** (while a stage is open), **To title** (when the game has a title screen that isn't showing), and
+**Full screen**. Menu opens a panel below it, which closes again after any of its actions:
+
+| Control                  | What it does                                                                                                                                                                                                    |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Go to** and **Go**     | Goes to the catalogue of games, the game's landing page, its title screen and stages overview (if it has them), or any stage or challenge. Completed (✓) and locked (🔒) stages and challenges can't be picked. |
+| **Reset** and **Reset**  | Lists each solved challenge (✓), and makes the picked one playable again. Disabled while nothing is solved.                                                                                                     |
+| **Debug on / Debug off** | Switches the [debug aids](camera-mode.md#debugging). They start as the [`debug` setting](configuration.md) says.                                                                                                |
+
+Stages and challenges have no names of their own in game data, so Go to numbers them: `Stage: 2`, and under it
+`Challenge: 2.1`. Going to a challenge opens its stage showing that challenge (with any shown alongside it, if the
+stage shows several at once), even if earlier ones are unsolved. Once those are solved, or the stage closes, the stage
+goes back to showing its challenges in order. Resetting a challenge is the same as a rule's `resetChallenge`: it is
+unsolved again, its stage's completion follows, and its scenes and reset scenes start afresh. A stage it unlocked stays
+unlocked.
+
 ## Where the code lives
 
 | Path                                               | What it does                                                 |
@@ -103,4 +122,6 @@ nothing.
 | `src/entities/state/GameStateStorage.ts`           | Versioned local-storage projection, validation, and clearing |
 | `src/providers/GameStateProvider.tsx`              | Loads saved progress and saves each change                   |
 | `src/components/core/WakeLockHook.ts`              | Screen wake lock lifecycle                                   |
+| `src/components/core/HeadsUpDisplay.tsx`           | The HUD's controls                                           |
+| `src/components/core/logic/HudNavigation.ts`       | What Go to and Reset offer, and where each entry leads       |
 | `src/components/core/BatteryWarning.tsx`           | Low-battery banner on every page                             |

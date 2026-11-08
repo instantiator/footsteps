@@ -293,18 +293,19 @@ counts as new, so give an `id` to elements whose interactions should carry over.
 
 ## Debugging
 
-Add `?debug=true` to the URL to turn on the [`debug` setting](configuration.md). In camera mode that:
+In the HUD's **Menu**, **Debug on** switches the debug aids on, and **Debug off** off again. They start off, unless the URL
+has `?debug=true` (the [`debug` setting](configuration.md)). In camera mode they:
 
-- tints each player differently, with their head, hands and feet in their own colours;
-- shows a colour key under the preview;
-- shows the frame rate, the time each step takes (inference, tracking, monitors, drawing), and the people, hands and
-  feet found, over the silhouette (`showFps` shows this too);
-- draws a green dot where each person's feet were found, and a faded green ring for a player the tracker is
+- tint each player differently, with their head, hands and feet in their own colours;
+- show a colour key under the preview;
+- show the vision stats readout over the silhouette: the frame rate, the time each step takes (inference, tracking,
+  monitors, drawing), and the people, hands and feet found. `?showFps=true` shows the readout on its own;
+- draw a green dot where each person's feet were found, and a faded green ring for a player the tracker is
   holding while they are missed (they can't interact until found again);
-- draws a bright green line across the scene at each player's [depth](#player-depth).
+- draw a bright green line across the scene at each player's [depth](#player-depth).
 
 Lower a rule's `threshold` when testing interactions, and use the feet dots to see where the
-camera thinks the player is. Changing the debug setting restarts the tracking loop with the new
+camera thinks the player is. Switching the debug aids restarts the tracking loop with the new
 mask type, and cancels the old one; check the console for model or "disposed" errors after
 toggling it.
 

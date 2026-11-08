@@ -146,17 +146,20 @@ describe("Game debug aids", () => {
     expect(document.querySelector("#debug-overlay-container")).toBeNull();
     expect(receivedLayout.at(-1)!.debug).toBe(false);
 
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
     fireEvent.click(screen.getByRole("button", { name: "Debug on" }));
     expect(receivedLayout.at(-1)!.debug).toBe(true);
     expect(document.querySelector("#debug-overlay-container")).not.toBeNull();
 
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
     fireEvent.click(screen.getByRole("button", { name: "Debug off" }));
     expect(document.querySelector("#debug-overlay-container")).toBeNull();
   });
 
   it("starts on with debug set", async () => {
     renderWith(true);
-    expect(await screen.findByRole("button", { name: "Debug off" })).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "Menu" }));
+    expect(screen.getByRole("button", { name: "Debug off" })).toBeInTheDocument();
   });
 });
 

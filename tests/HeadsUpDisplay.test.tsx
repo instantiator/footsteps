@@ -162,9 +162,16 @@ describe("HeadsUpDisplay", () => {
   });
 });
 
+/** Opens the HUD's menu, if it isn't open. */
+const openMenu = () => {
+  const menu = screen.getByRole("button", { name: "Menu" });
+  if (menu.getAttribute("aria-expanded") !== "true") fireEvent.click(menu);
+};
+
 describe("HeadsUpDisplay Go to and Reset", () => {
   /** Picks an entry by its label, and presses the list's button. */
   const pick = (list: string, label: string, button: string) => {
+    openMenu();
     const select = screen.getByRole("combobox", { name: list });
     const option = within(select).getByRole<HTMLOptionElement>("option", { name: label });
     fireEvent.change(select, { target: { value: option.value } });
@@ -193,8 +200,17 @@ describe("HeadsUpDisplay Go to and Reset", () => {
     expect(screen.getByTestId("focus")).toHaveTextContent("null");
   });
 
+  it("keeps them in a menu, which closes after an action", () => {
+    render(<Harness initial={overviewState} />);
+    expect(screen.queryByRole("combobox", { name: "Go to" })).toBeNull();
+    pick("Go to", "Stage: 1", "Go");
+    expect(screen.getByRole("button", { name: "Menu" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("combobox", { name: "Go to" })).toBeNull();
+  });
+
   it("won't pick a locked stage", () => {
     render(<Harness initial={titleState} />);
+    openMenu();
     expect(screen.getByRole("option", { name: "🔒 Stage: 2" })).toBeDisabled();
   });
 
@@ -202,6 +218,7 @@ describe("HeadsUpDisplay Go to and Reset", () => {
     const stageId = simpleGameData.stages[0].id;
     const challengeId = simpleGameData.stages[0].challenges[0].id;
     const { unmount } = render(<Harness initial={titleState} />);
+    openMenu();
     expect(screen.getByRole("combobox", { name: "Reset" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Reset" })).toBeDisabled();
     unmount();
@@ -209,11 +226,12 @@ describe("HeadsUpDisplay Go to and Reset", () => {
     render(<Harness initial={completeChallenge(titleState, stageId, challengeId)} />);
     pick("Reset", "✓ Challenge: 1.1", "Reset");
     expect(JSON.parse(screen.getByTestId("stages").textContent!)[0][0]).toBe(false);
+    openMenu();
     expect(screen.getByRole("button", { name: "Reset" })).toBeDisabled();
   });
 });
 
-describe("HeadsUpDisplay debug button", () => {
+describe("HeadsUpDisplay debug button, in the menu", () => {
   /** The HUD over the title screen, with the debug aids as given. */
   const renderHud = (debug: boolean, onToggleDebug?: () => void) =>
     render(
@@ -226,21 +244,25 @@ describe("HeadsUpDisplay debug button", () => {
 
   it("offers to switch the debug aids on while they are off, and off while they are on", () => {
     const { unmount } = renderHud(false, () => {});
+    openMenu();
     expect(screen.getByRole("button", { name: "Debug on" })).toHaveAttribute("aria-pressed", "false");
     unmount();
     renderHud(true, () => {});
+    openMenu();
     expect(screen.getByRole("button", { name: "Debug off" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("switches them when pressed", () => {
     const onToggleDebug = vi.fn();
     renderHud(false, onToggleDebug);
+    openMenu();
     fireEvent.click(screen.getByRole("button", { name: "Debug on" }));
     expect(onToggleDebug).toHaveBeenCalledOnce();
   });
 
   it("shows no frame rate, which the vision stats readout shows instead", () => {
     renderHud(true, () => {});
+    openMenu();
     expect(screen.queryByText(/fps/)).toBeNull();
   });
 });

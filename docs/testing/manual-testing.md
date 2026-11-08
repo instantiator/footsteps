@@ -206,7 +206,7 @@ The rules demo's Effects stage has one thing to touch for each effect, and shows
 - [ ] **Static at distance:** touch the static square near the camera and far from it. The blocks are the same size on screen, and it flickers, unless reduced motion is on.
 - [ ] **Invisible:** touch the ghost: you fade out, and can still set off other things, and return after 3 s.
 - [ ] **Quake on a jump:** jump. Everything shakes, and you can still walk behind and in front of depth items while it does.
-- [ ] **Speed:** with `?showFps=true`, quake a player's image, or give them a filter highlight, in a large window. Look for stutter that the frame rate readout doesn't show, as a filter's cost falls on the browser's drawing rather than on the vision loop.
+- [ ] **Speed:** with `?showFps=true` (the readout without the debug aids), quake a player's image, or give them a filter highlight, in a large window. Look for stutter that the frame rate readout doesn't show, as a filter's cost falls on the browser's drawing rather than on the vision loop.
 - [ ] **Reduced motion:** with the system's reduce-motion setting on, falls and spins jump to their end, nothing shakes, static holds still, and the stage can still be finished.
 
 ## Without a working camera
@@ -217,6 +217,20 @@ The rules demo's Effects stage has one thing to touch for each effect, and shows
 - [ ] Set a camera scene's `fallback` to `"mouse-feet"` and repeat: once the camera fails, moving and dragging the
       mouse fires its foot and jump rules.
 - [ ] With the camera free again, reload: camera mode works as before.
+
+## The HUD
+
+- [ ] With the camera on and no `?debug`, the HUD shows no frame rate, and the game shows no readout or feet
+      markers. In **Menu**, **Debug on** shows the readout, the feet markers and the tinted silhouette, and **Debug off** hides
+      them. With `?debug=true`, they start on.
+- [ ] **Go to** reaches the catalogue, the game's landing page, its title and stages overview, a stage, and a
+      challenge. Completed stages and challenges are marked ✓, locked ones 🔒, and neither can be picked.
+- [ ] Set Magic Trifle stage 3's `challengeChunking` to `1` locally, then Go to its second challenge: it shows first.
+      Revert the edit afterwards.
+- [ ] **Reset** lists each solved challenge. Reset one: it plays again from the start, its stage loses its ✓, and Go
+      to offers it again.
+- [ ] With the menu closed, the HUD covers no more of the game than Menu, Close challenge, To title and Full screen.
+      The menu closes after Go, Reset or Debug. On a phone-width window, nothing runs off the screen.
 
 ## Running the automated browser suite
 
