@@ -51,6 +51,8 @@ export const checkSelector = (selector: string, where: string): void => {
 /** Whether a selector parses; see {@link checkSelector}. */
 const selectorProblem = (selector: string | undefined, name: string): Problem => {
   if (!isDefined(selector)) return undefined;
+  const oldLayer = /\.display-(foreground|background)\b/.exec(selector);
+  if (isDefined(oldLayer)) return `${name}: "${oldLayer[0]}" is now ".scene-${oldLayer[1]}"`;
   try {
     checkSelector(selector, name);
     return undefined;

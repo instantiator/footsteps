@@ -300,4 +300,10 @@ describe("the camera when the game loads", () => {
       expect(() => compileGameRules(data)).not.toThrow();
     }
   });
+
+  it("rejects an old layer class as a target, naming the new one", () => {
+    expect(compilingEffect({ effect: "quake", target: ".display-foreground" })).toThrow(
+      `${RULE}.do[0]: target: ".display-foreground" is now ".scene-foreground"`,
+    );
+  });
 });

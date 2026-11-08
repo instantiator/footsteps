@@ -24,6 +24,7 @@ import {
 } from "./GameEffectCompile";
 import { declaredValue } from "./CameraModeUtils";
 import { isEntering, triggerInteractions, type GameExpressions } from "./GameRuleUtils";
+import { renamedKeyProblems } from "./RenamedKeys";
 
 /** Actions that act on the scene's own challenge, so only make sense on challenge scenes. */
 const CHALLENGE_ACTIONS = ["completeChallenge", "answer", "resetChallenge"] as const;
@@ -255,6 +256,8 @@ const ruleSources = (rule: GameRule, where: string, target: SceneToCompile, game
  * outside a challenge scene, or `enterStage` to a stage the game doesn't have
  */
 export const compileGameRules = (gameData: GameData): GameExpressions => {
+  const [renamed] = renamedKeyProblems(gameData);
+  if (isDefined(renamed)) throw new Error(renamed);
   const expressions = new Map<string, GameExpression>();
   for (const target of allScenes(gameData)) {
     (target.scene.component.rules ?? []).forEach((rule, r) => {
