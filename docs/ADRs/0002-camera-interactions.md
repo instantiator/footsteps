@@ -3,8 +3,8 @@
 - Status: Accepted; superseded in part by [ADR 0006](0006-display-rules-and-state.md) (camera targets come from rule selectors, and covered elements don't respond), and by [ADR 0008](0008-jump-detection.md) (jump detection)
 - Date: 2026-10-22
 
-Later changes: the `enabled` setting below is now `requirement`, and mirroring is now the player's choice. See
-[camera mode](../camera-mode.md).
+Later changes: the `enabled` setting below became `requirement`, and then `avatar: { mode, fallback }`
+(`modules.camera` is now `modules.avatar`). Mirroring is now the player's choice. See [camera mode](../camera-mode.md).
 
 ## Context
 

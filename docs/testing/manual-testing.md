@@ -11,11 +11,11 @@ this covers what only a person in front of a camera can confirm.
 
 ```json
 "modules": {
-  "camera": { "requirement": "required", "preview": true }
+  "avatar": { "mode": "camera", "preview": true }
 }
 ```
 
-Revert the module change when you have finished. The committed game leaves `modules.camera` off, but
+Revert the module change when you have finished. The committed game sets `modules.avatar` to the mouse, but
 one of its scenes turns the camera on, so the landing page still offers the camera, without requiring it.
 
 ## Camera smoke test
@@ -48,17 +48,18 @@ Now add `?debug=true` to the URL and reload ([Configuration](../configuration.md
 
 ## Landing, progress, and keep-awake
 
-Turn camera mode off everywhere for this section: set `modules.camera.requirement` to `false` and set
-every scene's `camera.requirement` to `false`. The committed game has one scene that turns the camera
+Turn camera mode off everywhere for this section: set `modules.avatar` and every scene's `avatar` to
+`{ "mode": "mouse" }`. The committed game has one scene that turns the camera
 on, so changing only the module is not enough.
 
 - [ ] `/game/magic-trifle` shows no permissions panel, and New game is enabled.
 - [ ] Complete a challenge, return to `/game/magic-trifle`, and Continue appears.
 - [ ] Continue opens `/game/magic-trifle/play` at the saved stage.
 - [ ] New game clears the saved progress: after it, Continue is gone on the next landing visit.
-- [ ] Set a camera scene's `requirement` to `"required"`, clear the site's camera permission, and visit
+- [ ] Set a scene's `avatar` to `{ "mode": "camera" }`, clear the site's camera permission, and visit
       `/game/magic-trifle/play` directly: it returns to the landing page, and New game is disabled until you grant
-      the camera. With `"enabled"`, it plays, and asks for the camera when the first camera scene appears.
+      the camera. With `"fallback": "mouse"` added, it plays, and asks for the camera when the first camera scene
+      appears.
 - [ ] While a game is open and incomplete, the device does not sleep or dim the screen. Completing
       the last stage releases the wake lock; check the browser console for wake-lock warnings if the
       device still sleeps.
@@ -87,18 +88,18 @@ dispatchEvent(new PopStateEvent("popstate"));
 
 ## Per-scene on, off, and preview
 
-Camera mode is resolved scene by scene: any active challenge that enables it wins; otherwise an
-explicit challenge setting, then the stage's shared scene, then the overview scene, then the
-game's `modules.camera` setting applies.
+The avatar mode is resolved scene by scene: the strongest mode an active challenge sets wins (`camera`, then
+`mouse-feet`, then `mouse`); otherwise the stage's shared scene, then the overview scene, then the game's
+`modules.avatar` setting applies.
 
-| Check                                               | How                                                                                                   | Expected                                              |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| The title screen uses the game default              | Load the game                                                                                         | Camera as configured in `modules.camera`              |
-| A stage can turn the camera off                     | Add `"camera": { "requirement": false }` to `stages[].scenes[0]` for `stage-1`                        | Entering stage 1 removes the preview and silhouette   |
-| Returning reacquires the camera                     | Close the challenge from the stage above                                                              | Preview and silhouette return, with a fresh stream    |
-| The preview can hide while the camera keeps working | Set `"preview": false` on the same scene                                                              | The preview container is hidden, the silhouette moves |
-| A challenge can override its stage                  | Add `"camera": { "requirement": "enabled" }` to one challenge scene, and `false` to the stage's scene | Entering that challenge turns the camera on           |
-| A challenge that says nothing inherits its stage    | Remove the challenge's `camera` setting and enable the stage's scene                                  | Entering the challenge keeps the camera on            |
+| Check                                               | How                                                                                                                  | Expected                                              |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| The title screen uses the game default              | Load the game                                                                                                        | Camera as configured in `modules.avatar`              |
+| A stage can turn the camera off                     | Add `"avatar": { "mode": "mouse" }` to `stages[].scenes[0]` for `stage-1`                                            | Entering stage 1 removes the preview and silhouette   |
+| Returning reacquires the camera                     | Close the challenge from the stage above                                                                             | Preview and silhouette return, with a fresh stream    |
+| The preview can hide while the camera keeps working | Set `"preview": false` on the same scene                                                                             | The preview container is hidden, the silhouette moves |
+| A challenge can override its stage                  | Add `"avatar": { "mode": "camera", "fallback": "mouse" }` to one challenge scene, and `"mouse"` to the stage's scene | Entering that challenge turns the camera on           |
+| A challenge that says nothing inherits its stage    | Remove the challenge's `avatar` setting and set the stage's scene to `camera`                                        | Entering the challenge keeps the camera on            |
 
 The preview is hidden with CSS rather than unmounted: the `<video>` is the segmentation source, so
 the silhouette must keep working when the preview is off.
@@ -161,7 +162,7 @@ Play the rules demo with `?debug=true`:
 
 ## The rules demo
 
-`rules-demo` exercises scene rules and state, reset scenes, sounds and rewards, and turns the camera on for its stages overview and all its stages.
+`rules-demo` exercises scene rules and state, reset scenes, sounds and rewards, and turns the camera on for its stages overview and all its stages but stepping stones, which is `mouse-feet`.
 Play it once with the mouse and once with the camera (`?debug=true` shows where your hands and feet are found).
 
 - [ ] **Toggle:** click the yellow switch on the stages overview, then touch it with a hand. It slides between two
@@ -180,6 +181,10 @@ Play it once with the mouse and once with the camera (`?debug=true` shows where 
       and about 3 s later the floor fades in. Step on a lava pool: you are asked back to the start. Step on the
       door's base: fireworks and a fanfare, and the stage completes. Reload partway: you are asked for the start
       again. The same works by walking the mouse over them.
+- [ ] **Stepping stones** (mouse-feet, no camera): moving the mouse onto a lava pool starts the floor again. Press on
+      the start and drag onto the door's base: fireworks and a fanfare, and the stage completes. Clicking the door's
+      base completes it too, but walking the mouse onto it without a drag doesn't. Nothing gets selected or
+      dragged while you drag.
 - [ ] **Walk around:** see [From behind](#from-behind). "Done" completes the stage.
 - [ ] **Effects:** see [Player effects](#player-effects). The top row also works by mouse. "Done" completes the stage.
 - [ ] **Reduced motion:** with the system's reduce-motion setting on, the sounds still play but there are no
@@ -207,6 +212,8 @@ The rules demo's Effects stage has one thing to touch for each effect, and shows
 - [ ] Open another app that holds the camera (a video call), then New game or Continue into a camera
       scene: the game shows without the preview or silhouette, the console warns once that the camera
       could not start, and clicking a stage link still enters the stage.
+- [ ] Set a camera scene's `fallback` to `"mouse-feet"` and repeat: once the camera fails, moving and dragging the
+      mouse fires its foot and jump rules.
 - [ ] With the camera free again, reload: camera mode works as before.
 
 ## Running the automated browser suite

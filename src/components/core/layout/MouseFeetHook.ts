@@ -94,7 +94,7 @@ export class MouseFeet {
   /** The rules the feet can fire, for the scenes shown now. */
   private rules: CameraRuleTarget[] = [];
   /** Called for each interaction that begins. */
-  private report: (event: CameraRuleEvent) => void = () => {};
+  private report: ((event: CameraRuleEvent) => void) | undefined;
 
   /**
    * Gives the feet the rules they can fire now, and what to call when they do.
@@ -139,7 +139,7 @@ export class MouseFeet {
     }
     for (const rule of this.rules) {
       if (!isDefined(rule.selector) && rule.interactions.includes("jump")) {
-        this.report({
+        this.report?.({
           scope: rule.scope,
           ruleIndex: rule.ruleIndex,
           element: null,
@@ -172,8 +172,8 @@ export class MouseFeet {
   /** Starts afresh with a scene's targets: their exits won't fire, and what is under the feet must be entered again. */
   rearm(scope: SceneScope): void {
     const prefix = `${scope}#`;
-    for (const key of [...this.entered.keys()]) if (key.startsWith(prefix)) this.entered.delete(key);
-    for (const [key, timer] of [...this.pending]) {
+    for (const key of this.entered.keys()) if (key.startsWith(prefix)) this.entered.delete(key);
+    for (const [key, timer] of this.pending) {
       if (!key.startsWith(prefix)) continue;
       clearTimeout(timer);
       this.pending.delete(key);
@@ -201,12 +201,12 @@ export class MouseFeet {
   /** Leaves the targets the feet are no longer on, and stops waiting on their holds. */
   private forgetAllBut(under: Map<string, FeetTarget>): void {
     for (const [key, target] of this.entered) if (!under.has(key)) this.exit(key, target);
-    for (const [key, timer] of [...this.pending]) {
+    for (const [key, timer] of this.pending) {
       if (under.has(key)) continue;
       clearTimeout(timer);
       this.pending.delete(key);
     }
-    for (const key of [...this.held]) if (!under.has(key)) this.held.delete(key);
+    for (const key of this.held) if (!under.has(key)) this.held.delete(key);
   }
 
   /** Leaves everything, as when the feet leave the ground or the game. */
@@ -230,7 +230,8 @@ export class MouseFeet {
 
   /** Reports an interaction with a target, if its rule listens for it. */
   private fire(target: FeetTarget, interaction: CameraInteraction): void {
-    if (target.interactions.includes(interaction)) this.report({ ...target.source, interaction, player: MOUSE_PLAYER });
+    if (target.interactions.includes(interaction))
+      this.report?.({ ...target.source, interaction, player: MOUSE_PLAYER });
   }
 }
 

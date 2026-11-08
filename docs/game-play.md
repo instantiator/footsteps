@@ -35,8 +35,8 @@ been granted.
 
 ## Permissions
 
-A game uses the camera when `modules.camera.requirement`, or the `camera.requirement` of any overview, stage `shared`,
-challenge or reset scene, is `"enabled"` or `"required"`. It requires the camera when any of them is `"required"`.
+A game uses the camera when `modules.avatar`, or the `avatar` of any overview, stage `shared`, challenge or reset
+scene, has `mode: "camera"`. It requires the camera when any of them has `mode: "camera"` with no `fallback`.
 A game that doesn't use the camera shows no permissions panel.
 
 The landing page asks the browser for each permission the game uses with

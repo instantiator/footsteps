@@ -9,45 +9,61 @@ camera behind and a little above the player, with the screen in front, and also 
 
 ## Switching it on
 
-For a whole game, add the camera module to its data:
+Camera mode is the `camera` [avatar mode](game-data.md#scene-and-avatar-modes). For a whole game, set it in the
+game's modules:
 
 ```json
 "modules": {
-  "camera": { "requirement": "enabled", "preview": true }
+  "avatar": { "mode": "camera", "fallback": "mouse", "preview": true }
 }
 ```
 
-`requirement` says whether camera mode is on, and how much the game depends on it:
-
-| Value        | Camera mode | Starting the game                                                     |
-| ------------ | ----------- | --------------------------------------------------------------------- |
-| `"enabled"`  | on          | The landing page offers the camera, but the game can start without it |
-| `"required"` | on          | The game can't start until the camera permission is granted           |
-| `false`      | off         | The camera isn't mentioned, unless another scene uses it              |
+| `avatar`                                  | Camera mode | Starting the game                                                     |
+| ----------------------------------------- | ----------- | --------------------------------------------------------------------- |
+| `{ "mode": "camera", "fallback": "..." }` | on          | The landing page offers the camera, but the game can start without it |
+| `{ "mode": "camera" }`                    | on          | The game can't start until the camera permission is granted           |
+| `{ "mode": "mouse" }` or `"mouse-feet"`   | off         | The camera isn't mentioned, unless another scene uses it              |
 
 `preview` is optional and defaults to `true`. Set it to `false` to run the camera without showing the
 small webcam preview.
 
-Any scene (overview, stage `shared`, or challenge) can override either setting:
+Any scene (overview, stage `shared`, challenge or reset scene) can override the mode or the preview:
 
 ```json
-"camera": { "requirement": false, "preview": false }
+"avatar": { "mode": "mouse" }
 ```
 
-Both fields are optional, so a scene can change one without the other. The data shape is in
-[game data](game-data.md#camera-settings).
+A scene that sets `mode` takes its `fallback` with it, rather than inheriting a broader one. `preview` inherits on
+its own. They resolve most specific first:
 
-Camera mode is resolved separately for each setting, most specific first:
+1. The strongest mode any active challenge sets (`camera`, then `mouse-feet`, then `mouse`) wins. For the preview,
+   any active challenge turning it on wins, then any turning it off.
+2. Otherwise, the open stage's `shared` scene decides.
+3. Otherwise, the overview scene decides.
+4. Otherwise, the game's `modules.avatar` decides.
+5. Otherwise, the mode is `mouse` and the preview is on.
 
-1. If any active challenge turns it on, it is on.
-2. Otherwise, if any active challenge turns it off, it is off.
-3. Otherwise, the open stage's `shared` scene decides.
-4. Otherwise, the overview scene decides.
-5. Otherwise, the game's `modules.camera` decides.
-6. Otherwise, camera mode is off and the preview is on.
+The preview is always off unless the mode is `camera`. The code is `resolveAvatarMode` in
+`src/components/core/logic/AvatarModeUtils.ts`.
 
-The preview is always off while camera mode is off. The code is `resolveCameraMode` in
-`src/components/core/logic/CameraModeUtils.ts`.
+## Mouse-feet
+
+`mouse-feet` plays the camera's foot and jump rules with a pointer, so a scene built for walking and jumping works
+without a camera, as a stand-in while designing, or as a camera mode's `fallback`. The pointer is player 1's feet:
+
+- **Moving** onto an element fires `foot-enter` and `any-enter` (after the rule's `holdMs`), and moving off it fires
+  `foot-exit` and `any-exit`. The feet are a point, so `threshold` doesn't apply. An element drawn over another
+  covers it, unless the rule sets `includeCovered`.
+- **A drag** from A to B is a jump that takes off from whatever is under A and lands on whatever is under B. Taking
+  off leaves everything, and landing fires `jump-from` for A, `jump-onto` for B, and `jump` for an element under both
+  (and for a `jump` rule with no target), then enters B. The browser's click at the end of a drag is dropped.
+- **A press and release** that moves no more than 8 pixels (`DRAG_PX`) is still a `click`.
+- Leaving the game viewport leaves everything. As with the camera, what is already under the feet when a scene starts
+  or resets must be left and entered again.
+
+Hand, head, body and near interactions never fire in `mouse-feet`, and nor do effects that act on players. Mouse
+interactions (`click`, `mouse-enter`, `mouse-exit`) work as usual. The code is `MouseFeet` and `useMouseFeet` in
+`src/components/core/layout/MouseFeetHook.ts`. The rules demo's stepping-stones stage uses it.
 
 ## Permission
 
@@ -58,7 +74,8 @@ Continue stay disabled until then. See [Playing a game](game-play.md#permissions
 A direct visit to `/game/:id/play` repeats the check for a required camera, and returns to the landing page when the
 permission is anything but granted. A grant made on the landing page in the same tab counts, even
 when the browser cannot report it. If the camera still fails to start in play (for example because
-another app is using it, or an optional camera was refused), the game carries on without it, playable by clicks.
+another app is using it, or an optional camera was refused), the game carries on in the scene's `fallback` mode,
+or by clicks if it has none.
 
 ## Choosing a camera
 
@@ -317,7 +334,8 @@ toggling it.
 | `src/vision/Tracking.ts`                              | stable player ids, key-point smoothing, holding lost players, and filling gaps                                     |
 | `src/vision/models/`                                  | BodyPix, MediaPipe Pose and MoveNet, and the tfjs backend choice                                                   |
 | `src/vision/VisionWorkerProxy.ts`, `vision.worker.ts` | runs a model in a web worker                                                                                       |
-| `src/components/core/logic/CameraModeUtils.ts`        | per-scene camera resolution                                                                                        |
+| `src/components/core/logic/AvatarModeUtils.ts`        | per-scene avatar mode resolution, and what each mode can fire                                                      |
+| `src/components/core/layout/MouseFeetHook.ts`         | [mouse-feet](#mouse-feet): the pointer as player 1's feet, and drags as jumps                                      |
 | `src/components/core/logic/GameClickUtils.ts`         | targets, and the state changes for clicks and interactions                                                         |
 | `src/components/core/layout/GameLayersLayout.tsx`     | the layer stack, scene transitions, shared camera state, and the interaction hook                                  |
 | `src/components/core/layout/useSceneTransition.ts`    | fades scene changes and times the camera reshape and reduced motion                                                |
@@ -328,7 +346,7 @@ toggling it.
 ## Testing
 
 Unit tests cover the camera choice (`tests/CameraPicker.test.tsx`), player depth (`tests/Depth.test.ts`), per-player
-canvases (`tests/PlayerCanvases.test.ts`), the camera resolution (`tests/CameraModeUtils.test.ts`), the monitor and its jump
+canvases (`tests/PlayerCanvases.test.ts`), the avatar mode resolution (`tests/AvatarModeUtils.test.ts`), mouse-feet (`tests/MouseFeetHook.test.tsx`), the monitor and its jump
 interactions (`tests/PlayerMonitor.test.ts`), jump detection (`tests/JumpDetector.test.ts`), mask rectangles and feet (`tests/CameraSupport.test.ts`), the
 tracking loop (`tests/CharacterCanvas.test.tsx`), the config (`tests/AppConfig*.test.ts*`), each vision
 model and the worker proxy (`tests/*Model.test.ts`, `tests/VisionWorkerProxy.test.ts`), the body-part

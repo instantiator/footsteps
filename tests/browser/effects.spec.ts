@@ -35,7 +35,7 @@ const openWith = async (page: Page, rules: GameRule[], change: (game: GameData) 
         .filter((stage) => stage.id !== "effects")
         .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
     ]) {
-      scene.avatar = { mode: "mouse" };
+      if (scene.avatar?.mode !== "mouse-feet") scene.avatar = { mode: "mouse" };
     }
     const stage = game.stages.find(({ id }) => id === "balloons")!;
     const [scene] = stage.challenges[0].scenes;
