@@ -1,6 +1,10 @@
+import { useState } from "react";
+import { useNavigate } from "react-router";
+import { useGameData } from "../../providers/GameDataHook";
 import { useGameState } from "../../providers/GameStateHook";
 import useFullscreen from "./FullscreenHook";
 import { withoutFocus } from "./logic/GameStateUtils";
+import { goTo, goToOptions, resetOptions, resetTo, type GoToTarget, type HudOption } from "./logic/HudNavigation";
 import { getRenderMode } from "./logic/RenderDataUtils";
 
 /**
@@ -55,14 +59,79 @@ function LeaveButtons() {
   );
 }
 
+/** Props for {@link HudPicker}. */
+interface HudPickerProps<T> {
+  /** Names the list, for screen readers and tests. */
+  label: string;
+  /** What the list offers. */
+  options: HudOption<T>[];
+  /** The button's text. */
+  action: string;
+  /** Called with the picked entry's target. */
+  onPick: (target: T) => void;
+}
+
+/** A list and a button that acts on the picked entry; both are disabled while nothing can be picked. */
+function HudPicker<T>({ label, options, action, onPick }: HudPickerProps<T>) {
+  const [chosen, setChosen] = useState(0);
+  // Keep a pick that is still allowed, else take the first that is, as entries complete and unlock
+  const index = options[chosen]?.disabled === false ? chosen : options.findIndex((option) => !option.disabled);
+  const none = index < 0;
+  return (
+    <span style={{ display: "inline-flex", gap: 2 }}>
+      <select
+        aria-label={label}
+        style={buttonStyle}
+        value={none ? "" : index}
+        disabled={none}
+        onChange={(event) => setChosen(Number(event.target.value))}
+      >
+        {none && <option value="">Nothing to {action.toLowerCase()}</option>}
+        {options.map((option, i) => (
+          <option key={i} value={i} disabled={option.disabled}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <button style={buttonStyle} disabled={none} onClick={() => onPick(options[index].target)}>
+        {action}
+      </button>
+    </span>
+  );
+}
+
+/** Go to anywhere in the game (or out to the catalogue or its landing page), and Reset a solved challenge. */
+function NavigationPickers() {
+  const { gameState, setGameState } = useGameState();
+  const { gameId } = useGameData();
+  const navigate = useNavigate();
+  const go = (target: GoToTarget) => {
+    if (target.kind === "catalogue") navigate("/");
+    else if (target.kind === "game") navigate(`/game/${gameId}`);
+    else setGameState((state) => goTo(state, target) ?? state);
+  };
+  return (
+    <>
+      <HudPicker label="Go to" options={goToOptions(gameState)} action="Go" onPick={go} />
+      <HudPicker
+        label="Reset"
+        options={resetOptions(gameState)}
+        action="Reset"
+        onPick={(target) => setGameState((state) => resetTo(state, target))}
+      />
+    </>
+  );
+}
+
 /**
- * Buttons to toggle fullscreen and the debug aids, and to leave the current challenge or return to the title screen,
- * when either applies.
+ * The HUD: Go to and Reset lists, buttons to leave the current challenge or return to the title screen when either
+ * applies, and buttons to toggle the debug aids and fullscreen.
  */
 export default function HeadsUpDisplay({ debug, onToggleDebug }: HeadsUpDisplayProps) {
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
   return (
     <div style={panelStyle}>
+      <NavigationPickers />
       <LeaveButtons />
       {onToggleDebug && (
         <button style={buttonStyle} onClick={onToggleDebug} aria-pressed={debug}>
