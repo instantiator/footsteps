@@ -182,8 +182,8 @@ Play it once with the mouse and once with the camera (`?debug=true` shows where 
       door's base: fireworks and a fanfare, and the stage completes. Reload partway: you are asked for the start
       again. The same works by walking the mouse over them.
 - [ ] **Stepping stones** (mouse-feet, no camera): moving the mouse onto a lava pool starts the floor again. Press on
-      the start and drag onto the door's base: fireworks and a fanfare, and the stage completes. Clicking the door's
-      base completes it too, but walking the mouse onto it without a drag doesn't. Nothing gets selected or
+      the start and drag onto the door's base: fireworks and a fanfare, and the stage completes. A plain click on the
+      door's base does nothing, and nor does walking the mouse onto it without a drag. Nothing gets selected or
       dragged while you drag.
 - [ ] **Walk around:** see [From behind](#from-behind). "Done" completes the stage.
 - [ ] **Effects:** see [Player effects](#player-effects). The top row also works by mouse. "Done" completes the stage.

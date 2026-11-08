@@ -875,7 +875,7 @@
                   "component": {
                     "type": "template",
                     "data": {
-                      "hint": "Your mouse is your feet. Drag from the start to the door to jump over the lava, or click the door."
+                      "hint": "Your mouse is your feet. Drag from the start to the door to jump over the lava."
                     },
                     "initialState": { "done": false },
                     "resetStateOnShow": true,
@@ -886,7 +886,7 @@
                         "do": [{ "resetChallenge": true }]
                       },
                       {
-                        "on": { "interact": ["jump-onto", "click"], "target": "#door-base" },
+                        "on": { "interact": ["jump-onto"], "target": "#door-base" },
                         "if": "not state.done",
                         "do": [
                           { "set": { "done": "true" } },

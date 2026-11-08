@@ -271,19 +271,14 @@ describe("rules demo, played by mouse-feet", () => {
     await waitFor(() => expect($("#stage-link-stepping-stones")).toHaveClass("completed"));
   });
 
-  it("completes for a click on the door's base, as a fallback to jumping", async () => {
+  it("doesn't complete for a click on, or a walk onto, the door's base", async () => {
     await openStage();
     pointer.move(210);
     pointer.down(210);
     pointer.up(210);
     fireEvent.click($("#door-base")!);
-    await waitFor(() => expect($("#stage-link-stepping-stones")).toHaveClass("completed"));
-  });
-
-  it("doesn't complete for walking onto the door's base without a jump", async () => {
-    await openStage();
-    pointer.move(210);
     await wait(1000);
+    expect($("#door-base")).not.toBeNull();
     expect($("#stage-link-stepping-stones")).not.toHaveClass("completed");
   });
 });
