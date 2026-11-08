@@ -1,5 +1,6 @@
 import { useGameState } from "../../providers/GameStateHook";
 import useFullscreen from "./FullscreenHook";
+import { withoutFocus } from "./logic/GameStateUtils";
 import { getRenderMode } from "./logic/RenderDataUtils";
 
 /**
@@ -37,7 +38,7 @@ function LeaveButtons() {
     gameState.current.overviewScene !== "game-overview-title" &&
     gameState.gameData.scenes.some((d) => d.purpose === "game-overview-title");
   const show = (current: Partial<typeof gameState.current>) =>
-    setGameState({ ...gameState, current: { ...gameState.current, ...current } });
+    setGameState(withoutFocus({ ...gameState, current: { ...gameState.current, ...current } }));
   return (
     <>
       {showCloseChallengeButton && (

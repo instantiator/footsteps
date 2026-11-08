@@ -5,6 +5,7 @@ import type { RuleEvent } from "../../components/core/logic/GameRuleUtils";
 import type { GameAction, GameFeedbackAction, GameOverviewScenePurpose } from "../data/scenes/GameSceneData";
 import type { GameEffect } from "../data/scenes/GameEffectData";
 import type { GameData } from "../data/GameData";
+import type { GameChallengeId } from "../data/GameChallengeData";
 import type { GameStageId } from "../data/GameStageData";
 import type { GameStageState } from "./GameStageState";
 
@@ -77,6 +78,16 @@ export interface GameSession {
    * (its timers, template animations, delays and effects) belongs to one run, and ends with it.
    */
   sceneRuns: Record<SceneScope, number>;
+  /**
+   * A challenge the player chose to go to, which its open stage shows (with its chunk) in place of the first unsolved
+   * chunk, until that chunk is solved or the stage closes. Null shows the stage's challenges in order.
+   */
+  focusedChallenge: {
+    /** The stage the challenge is in. */
+    stageId: GameStageId;
+    /** The challenge to show. */
+    challengeId: GameChallengeId;
+  } | null;
 }
 
 /** A session with nothing in it, as a game starts or loads. */
@@ -88,6 +99,7 @@ export const newGameSession = (): GameSession => ({
   players: NO_PLAYERS,
   nextEffectId: 1,
   sceneRuns: {},
+  focusedChallenge: null,
 });
 
 /** Runtime progress of a game: its definition, per-stage progress, what is currently showing, and scene states. */
