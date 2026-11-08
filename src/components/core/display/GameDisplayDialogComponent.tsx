@@ -13,7 +13,7 @@ import type { GameAnswerFunction } from "../Game";
 import type { GameTemplateData } from "../logic/RenderDataUtils";
 import { parseLines } from "../logic/TemplateUtils";
 import GameAudioComponent from "./GameAudioComponent";
-import type { DisplayDomEvent } from "../logic/TemplateUtils";
+import type { SceneDomEvent } from "../logic/TemplateUtils";
 import type { LayerHint } from "./GameDisplayComponent";
 import GameDisplayTemplateComponent from "./GameDisplayTemplateComponent";
 import GameTextInputComponent, { type GameTextInputComponentProps } from "./GameTextInputComponent";
@@ -49,7 +49,7 @@ export interface GameDisplayDialogComponentProps {
   /** Which run of the display this is; a new one rebuilds its template. */
   run?: number;
   /** Called with events inside the dialog's template, for the display's rules. */
-  onDisplayEvent?: (event: DisplayDomEvent) => void;
+  onSceneEvent?: (event: SceneDomEvent) => void;
 }
 
 /** The default template: the text, line by line, in the foreground; nothing (the image) behind it. */
@@ -192,7 +192,7 @@ export default function GameDisplayDialogComponent({
   onAnswer,
   scope,
   run,
-  onDisplayEvent,
+  onSceneEvent,
 }: GameDisplayDialogComponentProps) {
   const [solved, setSolved] = useState<boolean>(false);
   const [contentIndex, setContentIndex] = useState<number>(0);
@@ -209,7 +209,7 @@ export default function GameDisplayDialogComponent({
           templateData={{ text: content?.text, lines: parseLines(content?.text), ...templateData }}
           scope={scope}
           run={run}
-          onDisplayEvent={onDisplayEvent}
+          onSceneEvent={onSceneEvent}
         >
           {layerHint === "foreground" && (
             <PageControls

@@ -1,9 +1,9 @@
 import type { GameOverviewScenePurpose } from "../../../entities/data/scenes/GameSceneData";
 import type { GameState } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
-import { calcOverviewDisplay } from "./RenderDataUtils";
+import { calcOverviewScene } from "./RenderDataUtils";
 
-/** The order in which the overview displays are normally shown. */
+/** The order in which the overview scenes are normally shown. */
 export const GameOverviewPurposeSequence: GameOverviewScenePurpose[] = ["game-overview-title", "game-overview-stages"];
 
 /**
@@ -11,9 +11,8 @@ export const GameOverviewPurposeSequence: GameOverviewScenePurpose[] = ["game-ov
  * @returns the new state, or undefined if the title screen isn't showing
  */
 export const leaveTitleScreen = (state: GameState): GameState | undefined => {
-  if (isDefined(state.current.stageId) || calcOverviewDisplay(state)?.purpose !== "game-overview-title")
-    return undefined;
-  return { ...state, current: { ...state.current, overviewDisplay: "game-overview-stages" } };
+  if (isDefined(state.current.stageId) || calcOverviewScene(state)?.purpose !== "game-overview-title") return undefined;
+  return { ...state, current: { ...state.current, overviewScene: "game-overview-stages" } };
 };
 
 /**

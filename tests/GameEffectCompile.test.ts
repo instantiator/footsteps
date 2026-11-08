@@ -8,15 +8,15 @@ import type { GameRepository } from "../src/entities/GameRepository";
 import { challenge, game, stage } from "./data/GameBuilders";
 
 const ON_CAMERA: GameSceneCameraData = { requirement: "enabled" };
-const CHALLENGE_DISPLAY = "stages[0] (lava) › challenges[0] (floor) › displays[0] (challenge-in-progress)";
-const RULE = `${CHALLENGE_DISPLAY} › rules[0]`;
+const CHALLENGE_SCENE = "stages[0] (lava) › challenges[0] (floor) › scenes[0] (challenge-in-progress)";
+const RULE = `${CHALLENGE_SCENE} › rules[0]`;
 
-/** A game whose only challenge display has the given rules, with the camera on unless the test says otherwise. */
+/** A game whose only challenge scene has the given rules, with the camera on unless the test says otherwise. */
 const gameWith = (rules: GameRule[], camera: GameSceneCameraData | undefined = ON_CAMERA): GameData => {
   const data = game(["game-overview-stages"], [stage("lava", [challenge("floor")])]);
-  const [display] = data.stages[0].challenges[0].scenes;
-  display.component.rules = rules;
-  display.camera = camera;
+  const [scene] = data.stages[0].challenges[0].scenes;
+  scene.component.rules = rules;
+  scene.camera = camera;
   return data;
 };
 
@@ -159,9 +159,9 @@ describe("triggers when the game loads", () => {
 describe("the camera when the game loads", () => {
   const fall: GameEffect = { effect: "player-fall" };
 
-  it("names the rule and display of a player effect where the camera is off", () => {
+  it("names the rule and scene of a player effect where the camera is off", () => {
     expect(compilingEffect(fall, { requirement: false })).toThrow(
-      `${RULE}.do[0]: player-fall needs a player, but this display doesn't have the camera enabled`,
+      `${RULE}.do[0]: player-fall needs a player, but this scene doesn't have the camera enabled`,
     );
   });
 
@@ -170,7 +170,7 @@ describe("the camera when the game loads", () => {
     ["set nowhere", {}, true],
     ["enabled", { requirement: "enabled" }, false],
     ["required", { requirement: "required" }, false],
-  ] satisfies [string, GameSceneCameraData, boolean][])("with the display's camera %s", (_, camera, rejected) => {
+  ] satisfies [string, GameSceneCameraData, boolean][])("with the scene's camera %s", (_, camera, rejected) => {
     const compiling = compilingEffect(fall, camera);
     if (rejected) expect(compiling).toThrow("needs a player");
     else expect(compiling).not.toThrow();
@@ -233,7 +233,7 @@ describe("the camera when the game loads", () => {
       ).not.toThrow();
     });
 
-    it("follows the stage's shared display over the overview", () => {
+    it("follows the stage's shared scene over the overview", () => {
       expect(
         compiled((data) => {
           data.scenes[0].camera = ON_CAMERA;
@@ -244,7 +244,7 @@ describe("the camera when the game loads", () => {
       ).toThrow("needs a player");
     });
 
-    it("lets a display's own setting win", () => {
+    it("lets a scene's own setting win", () => {
       expect(
         compiled((data) => {
           data.modules = { camera: ON_CAMERA };
@@ -253,20 +253,18 @@ describe("the camera when the game loads", () => {
       ).toThrow("needs a player");
     });
 
-    it("uses a reset display's setting over its parent's, and its parent's when it has none", () => {
+    it("uses a reset scene's setting over its parent's, and its parent's when it has none", () => {
       const withReset = (reset: GameSceneCameraData | undefined, parent: GameSceneCameraData) => () => {
         const data = gameWith([], parent);
-        const [display] = data.stages[0].challenges[0].scenes;
-        display.resetScene = {
+        const [scene] = data.stages[0].challenges[0].scenes;
+        scene.resetScene = {
           camera: reset,
-          component: { ...display.component, rules: [{ on: { start: true }, do: [fall] }] },
+          component: { ...scene.component, rules: [{ on: { start: true }, do: [fall] }] },
         };
         return compileGameRules(data);
       };
       expect(withReset({ requirement: "enabled" }, { requirement: false })).not.toThrow();
-      expect(withReset({ requirement: false }, ON_CAMERA)).toThrow(
-        `${CHALLENGE_DISPLAY} › resetScene › rules[0].do[0]`,
-      );
+      expect(withReset({ requirement: false }, ON_CAMERA)).toThrow(`${CHALLENGE_SCENE} › resetScene › rules[0].do[0]`);
       expect(withReset(undefined, ON_CAMERA)).not.toThrow();
     });
 
@@ -284,14 +282,14 @@ describe("the camera when the game loads", () => {
       expect(sideBySide(1)).toThrow("needs a player");
     });
 
-    it("counts a challenge turning the camera on for its stage's shared display", () => {
+    it("counts a challenge turning the camera on for its stage's shared scene", () => {
       expect(
         compiled((data) => {
           const shared = { ...data.scenes[0].component, rules: [{ on: { start: true as const }, do: [fall] }] };
           data.stages[0].scenes = [{ purpose: "shared", component: shared }];
-          const [display] = data.stages[0].challenges[0].scenes;
-          display.component = { ...display.component, rules: [] };
-          display.camera = ON_CAMERA;
+          const [scene] = data.stages[0].challenges[0].scenes;
+          scene.component = { ...scene.component, rules: [] };
+          scene.camera = ON_CAMERA;
         }),
       ).not.toThrow();
     });

@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import GameDisplayComponent from "../src/components/core/display/GameDisplayComponent";
 import type { GameSceneComponentData } from "../src/entities/data/scenes/GameSceneData";
-import type { GameDisplayRenderData } from "../src/components/core/logic/RenderDataUtils";
+import type { GameSceneRenderData } from "../src/components/core/logic/RenderDataUtils";
 import { toGameSnapshot } from "../src/entities/state/GameSnapshot";
 import { decorateGameState } from "../src/components/core/logic/TemplateUtils";
 import { SMALL_GAME_ID, smallRepository } from "./data/SmallGame";
@@ -14,7 +14,7 @@ const renderDisplay = (
   layerHint: "foreground" | "background",
   resources: Record<string, string> = {},
 ) => {
-  const display: GameDisplayRenderData = {
+  const display: GameSceneRenderData = {
     purpose: "game-overview-stages",
     component,
     scope: "overview:game-overview-stages",

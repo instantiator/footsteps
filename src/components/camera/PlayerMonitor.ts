@@ -224,7 +224,7 @@ const bodyHeightOf = ({ feet, keyPoints, height }: PlayerFrame): number => {
  *
  * Events are edge-triggered: an interaction fires when it begins, not on every frame it holds.
  * The first frame only records what already holds, so a player who is already inside an element
- * when the monitor starts (as a display fades in) must move into it again.
+ * when the monitor starts (as a scene fades in) must move into it again.
  * The monitor also follows the player's feet for jumps ({@link JumpDetector}). When they land, it fires `jump` for an
  * element their feet were on both at take-off and at landing, `jump-from` for one they took off from, and
  * `jump-onto` for one they landed on.

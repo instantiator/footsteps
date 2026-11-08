@@ -7,7 +7,7 @@ import type { GameChallengeId } from "../../entities/data/GameChallengeData";
 import type { GameRewardData } from "../../entities/data/GameData";
 import type { GameChallengeAnswerValidation } from "../../entities/data/GameChallengeSolution";
 import type { GameStageId } from "../../entities/data/GameStageData";
-import type { DisplayScope, GameState, QueuedEffect } from "../../entities/state/GameState";
+import type { SceneScope, GameState, QueuedEffect } from "../../entities/state/GameState";
 import useAppConfig from "../../providers/AppConfigHook";
 import { useGameData } from "../../providers/GameDataHook";
 import useGameMusic from "../../providers/GameMusicHook";
@@ -23,14 +23,14 @@ import GameLayersLayout, { type GameLayers } from "./layout/GameLayersLayout";
 import { resolveCameraMode } from "./logic/CameraModeUtils";
 import { leaveTitleScreen } from "./logic/GameClickUtils";
 import { findChallengeState } from "./logic/GameDataUtils";
-import type { DisplayDomEvent } from "./logic/TemplateUtils";
+import type { SceneDomEvent } from "./logic/TemplateUtils";
 import { completeChallenge, validateAnswer } from "./logic/GameStateUtils";
 import {
-  getDisplayKey,
+  getSceneKey,
   getLayeredRenderData,
-  getShownDisplays,
-  type GameDisplayRenderData,
-  type LayeredGameDisplayRenderData,
+  getShownScenes,
+  type GameSceneRenderData,
+  type LayeredGameSceneRenderData,
 } from "./logic/RenderDataUtils";
 import { playAudio } from "./sfx/AudioUtils";
 import RewardBurst from "./sfx/RewardBurst";
@@ -82,13 +82,13 @@ function useGameFeedback(reducedMotion: boolean) {
   }, [gameState, reward, rewardData, resources, sounds, reducedMotion]);
 
   useEffect(() => {
-    const overviewDisplay = gameState.current.overviewDisplay;
-    if (overviewDisplay === overviewTracker.current) return;
+    const overviewScene = gameState.current.overviewScene;
+    if (overviewScene === overviewTracker.current) return;
     const opening = resourceUrl(resources, sounds?.openingMusicResource);
     const closing = resourceUrl(resources, sounds?.closingMusicResource);
-    if (overviewDisplay === "game-overview-stages" && isDefined(opening)) playMusic(opening);
-    if (overviewDisplay === "game-overview-complete" && isDefined(closing)) playMusic(closing);
-    overviewTracker.current = overviewDisplay;
+    if (overviewScene === "game-overview-stages" && isDefined(opening)) playMusic(opening);
+    if (overviewScene === "game-overview-complete" && isDefined(closing)) playMusic(closing);
+    overviewTracker.current = overviewScene;
   }, [gameState, playMusic, resources, sounds]);
 
   useEffect(() => {
@@ -115,7 +115,7 @@ interface ShownReward {
 const rewardsFor = (
   { id, effect, scope, event }: QueuedEffect,
   reward: GameRewardData,
-  { shownScopes, playerEffects }: { shownScopes: DisplayScope[]; playerEffects: PlayerEffects },
+  { shownScopes, playerEffects }: { shownScopes: SceneScope[]; playerEffects: PlayerEffects },
 ): ShownReward[] => {
   const selector = "reward" in effect ? effect.target : undefined;
   const choice = "reward" in effect ? effect.players : undefined;
@@ -159,7 +159,7 @@ function useRuleEffects(reducedMotion: boolean, playerEffects: PlayerEffects) {
         timersRef.current.delete(timer);
         if ("sound" in effect) void playAudio(resources[effect.sound]);
         else if (!reducedMotion) {
-          const shownScopes = getShownDisplays(stateRef.current).map((display) => display.scope);
+          const shownScopes = getShownScenes(stateRef.current).map((display) => display.scope);
           setShown((rewards) => [...rewards, ...rewardsFor(queued, effect.reward, { shownScopes, playerEffects })]);
         }
       }, effect.delayMs ?? 0);
@@ -208,12 +208,12 @@ interface DisplayHandlers {
   /** Submits an answer to a challenge. */
   onAnswer: GameAnswerFunction;
   /** Responds to an event inside a display's template. */
-  onDisplayEvent: (scope: DisplayScope, event: DisplayDomEvent) => void;
+  onSceneEvent: (scope: SceneScope, event: SceneDomEvent) => void;
 }
 
 /** One display component per render datum, for the given layer. */
 const createDisplayComponents = (
-  renderData: (GameDisplayRenderData | undefined)[] | undefined,
+  renderData: (GameSceneRenderData | undefined)[] | undefined,
   layerHint: LayerHint,
   handlers: DisplayHandlers,
 ): ReactNode[] | undefined =>
@@ -225,13 +225,13 @@ const createDisplayComponents = (
         render={renderDatum}
         layerHint={layerHint}
         onAnswer={handlers.onAnswer}
-        onDisplayEvent={(event) => handlers.onDisplayEvent(renderDatum.scope, event)}
+        onSceneEvent={(event) => handlers.onSceneEvent(renderDatum.scope, event)}
       />
     ));
 
 /** Background and foreground nodes for the overview, stage, and challenge layers. */
-const createLayers = (renderData: LayeredGameDisplayRenderData, handlers: DisplayHandlers): GameLayers => {
-  const layer = (data: (GameDisplayRenderData | undefined)[] | undefined) => ({
+const createLayers = (renderData: LayeredGameSceneRenderData, handlers: DisplayHandlers): GameLayers => {
+  const layer = (data: (GameSceneRenderData | undefined)[] | undefined) => ({
     backgroundLayerNodes: createDisplayComponents(data, "background", handlers),
     foregroundLayerNodes: createDisplayComponents(data, "foreground", handlers),
   });
@@ -285,12 +285,12 @@ export default function Game() {
 
   const onAnswer = useAnswerHandler();
   const renderData = useMemo(() => getLayeredRenderData(gameState, resources, gameId), [gameState, resources, gameId]);
-  const displayKey = useMemo(() => getDisplayKey(renderData), [renderData]);
-  const { onDisplayEvent, cameraRules, onPlayerInteraction, players, playerEffects } = useGameRules();
+  const displayKey = useMemo(() => getSceneKey(renderData), [renderData]);
+  const { onSceneEvent, cameraRules, onPlayerInteraction, players, playerEffects } = useGameRules();
   const ruleRewards = useRuleEffects(reducedMotion, playerEffects);
   const layers = useMemo(
-    () => createLayers(renderData, { onAnswer, onDisplayEvent }),
-    [renderData, onAnswer, onDisplayEvent],
+    () => createLayers(renderData, { onAnswer, onSceneEvent }),
+    [renderData, onAnswer, onSceneEvent],
   );
   const camera = useMemo(() => resolveCameraMode(gameState.gameData, renderData), [gameState.gameData, renderData]);
 

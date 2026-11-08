@@ -16,7 +16,7 @@ const PERMISSION_LABELS: Record<GamePermissionId, string> = {
 /** The human-readable name of a permission. */
 export const gamePermissionLabel = (id: GamePermissionId): string => PERMISSION_LABELS[id];
 
-/** A display's camera settings, then those of each reset display nested in it. */
+/** A scene's camera settings, then those of each reset scene nested in it. */
 const cameraSettingsOf = ({
   camera,
   resetScene,

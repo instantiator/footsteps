@@ -9,10 +9,10 @@ import type { GameStageId } from "../data/GameStageData";
 import type { GameStageState } from "./GameStageState";
 
 /**
- * Identifies one display, and so its state: `overview:<purpose>`, `stage:<stageId>:shared`, or
- * `challenge:<stageId>:<challengeId>:<purpose>`. A display's reset display adds `/reset` to its scope.
+ * Identifies one scene, and so its state: `overview:<purpose>`, `stage:<stageId>:shared`, or
+ * `challenge:<stageId>:<challengeId>:<purpose>`. A scene's reset scene adds `/reset` to its scope.
  */
-export type DisplayScope = string;
+export type SceneScope = string;
 
 /** A sound or reward a rule asked for, waiting for the game to play it. */
 export interface QueuedEffect {
@@ -20,8 +20,8 @@ export interface QueuedEffect {
   id: number;
   /** What to play. */
   effect: GameFeedbackAction;
-  /** The display whose rule asked for it. */
-  scope: DisplayScope;
+  /** The scene whose rule asked for it. */
+  scope: SceneScope;
   /** The event its rule fired with. */
   event: RuleEvent;
 }
@@ -30,9 +30,9 @@ export interface QueuedEffect {
 export interface DelayedAction {
   /** Identifies it, as a {@link QueuedEffect}'s id does. */
   id: number;
-  /** The display whose rule it belongs to. */
-  scope: DisplayScope;
-  /** Which run of the display the rule fired in: the action is dropped if the display has moved on from it. */
+  /** The scene whose rule it belongs to. */
+  scope: SceneScope;
+  /** Which run of the scene the rule fired in: the action is dropped if the scene has moved on from it. */
   run: number;
   /** What to do. */
   action: GameAction;
@@ -46,9 +46,9 @@ export interface DelayedAction {
 export interface QueuedVisualEffect {
   /** Identifies it, as a {@link QueuedEffect}'s id does. */
   id: number;
-  /** The display whose rule started it. */
-  scope: DisplayScope;
-  /** Which run of the display the rule fired in: it is dropped if the display has moved on from it. */
+  /** The scene whose rule started it. */
+  scope: SceneScope;
+  /** Which run of the scene the rule fired in: it is dropped if the scene has moved on from it. */
   run: number;
   /** What to play. */
   effect: GameEffect;
@@ -60,8 +60,8 @@ export interface QueuedVisualEffect {
 
 /** What lasts only while the game is open, and is never saved with its progress. */
 export interface GameSession {
-  /** The scopes of the reset displays finished since the game was loaded. */
-  finishedResets: DisplayScope[];
+  /** The scopes of the reset scenes finished since the game was loaded. */
+  finishedResets: SceneScope[];
   /** Sounds and rewards rules have asked for, until the game plays them. */
   effects: QueuedEffect[];
   /** Effects rules have started, until the game plays them. */
@@ -73,10 +73,10 @@ export interface GameSession {
   /** The id the next queued effect or delayed action gets. */
   nextEffectId: number;
   /**
-   * How many times each display has started or ended: as it is shown, as it closes, and as it resets. What a display starts
+   * How many times each scene has started or ended: as it is shown, as it closes, and as it resets. What a scene starts
    * (its timers, template animations, delays and effects) belongs to one run, and ends with it.
    */
-  displayRuns: Record<DisplayScope, number>;
+  sceneRuns: Record<SceneScope, number>;
 }
 
 /** A session with nothing in it, as a game starts or loads. */
@@ -87,10 +87,10 @@ export const newGameSession = (): GameSession => ({
   delayedActions: [],
   players: NO_PLAYERS,
   nextEffectId: 1,
-  displayRuns: {},
+  sceneRuns: {},
 });
 
-/** Runtime progress of a game: its definition, per-stage progress, what is currently showing, and display states. */
+/** Runtime progress of a game: its definition, per-stage progress, what is currently showing, and scene states. */
 export interface GameState {
   /** The authored definition of the game being played. */
   gameData: GameData;
@@ -100,19 +100,19 @@ export interface GameState {
   current: {
     /** The stage being played, or null while an overview is showing. */
     stageId: GameStageId | null;
-    /** The overview display showing when no stage is active. */
-    overviewDisplay: GameOverviewScenePurpose | null;
+    /** The overview scene showing when no stage is active. */
+    overviewScene: GameOverviewScenePurpose | null;
   };
-  /** Each display's own state, by scope. A display with no entry uses its component's `initialState`. */
-  displayStates: Record<DisplayScope, Record<string, unknown>>;
+  /** Each scene's own state, by scope. A scene with no entry uses its component's `initialState`. */
+  sceneStates: Record<SceneScope, Record<string, unknown>>;
   /** What lasts only while the game is open. */
   session: GameSession;
 }
 
 /**
- * Creates the starting state for a game: all challenges unsolved, and the first overview display showing.
+ * Creates the starting state for a game: all challenges unsolved, and the first overview scene showing.
  * With sequential config (the default) only the first stage is unlocked; otherwise all are.
- * @throws if the game has no overview display to start from
+ * @throws if the game has no overview scene to start from
  */
 export function createBlankGameState(game: GameData): GameState {
   const stages: GameStageState[] = game.stages.map((stage, index) => ({
@@ -125,9 +125,9 @@ export function createBlankGameState(game: GameData): GameState {
     })),
   }));
 
-  const overviewDisplay = GameOverviewPurposeSequence.find((purpose) => game.scenes.some((d) => purpose === d.purpose));
-  if (!isDefined(overviewDisplay)) {
-    throw new Error(`No initial overview display found, from: ${GameOverviewPurposeSequence.join(", ")}`);
+  const overviewScene = GameOverviewPurposeSequence.find((purpose) => game.scenes.some((d) => purpose === d.purpose));
+  if (!isDefined(overviewScene)) {
+    throw new Error(`No initial overview scene found, from: ${GameOverviewPurposeSequence.join(", ")}`);
   }
 
   return {
@@ -135,9 +135,9 @@ export function createBlankGameState(game: GameData): GameState {
     stages: stages,
     current: {
       stageId: null,
-      overviewDisplay,
+      overviewScene,
     },
-    displayStates: {},
+    sceneStates: {},
     session: newGameSession(),
   };
 }

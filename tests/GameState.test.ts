@@ -39,12 +39,12 @@ describe("createBlankGameState", () => {
 
   it("starts on the title overview when the game has one", () => {
     const state = createBlankGameState(game(["game-overview-stages", "game-overview-title"], stages()));
-    expect(state.current.overviewDisplay).toBe("game-overview-title");
+    expect(state.current.overviewScene).toBe("game-overview-title");
   });
 
   it("starts on the stages overview when there is no title", () => {
     const state = createBlankGameState(game(["game-overview-stages"], stages()));
-    expect(state.current.overviewDisplay).toBe("game-overview-stages");
+    expect(state.current.overviewScene).toBe("game-overview-stages");
   });
 
   it("throws when the game has neither a title nor a stages overview", () => {

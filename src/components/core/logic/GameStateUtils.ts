@@ -9,7 +9,7 @@ import type {
 import type { GameStageId } from "../../../entities/data/GameStageData";
 import type { GameChallengeState } from "../../../entities/state/GameChallengeState";
 import type { GameStageCompletionState, GameStageState } from "../../../entities/state/GameStageState";
-import type { DisplayScope, GameState } from "../../../entities/state/GameState";
+import type { SceneScope, GameState } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
 import { challengeScope, resetScope } from "./RenderDataUtils";
 
@@ -100,7 +100,7 @@ export const getCurrentChallengeStates = (
  * The recommended stage (the first incomplete one) is unlocked. If that completes the stage, the game moves
  * straight to the recommended stage when `config.autoAdvanceStages` is set or there is no stages overview,
  * and otherwise returns to the stages overview.
- * Once every stage is complete, the overview switches to the finale display.
+ * Once every stage is complete, the overview switches to the finale scene.
  * @param gameState the current game state
  * @param stageId the stage id for the challenge
  * @param challengeId the challenge id to complete
@@ -133,7 +133,7 @@ export function completeChallenge(gameState: GameState, stageId: GameStageId, ch
 
   // On completing a stage, advance if the game asks to or has no stages overview to return to
   const advance =
-    gameState.gameData.config?.autoAdvanceStages === true || !hasOverviewDisplay(gameState, "game-overview-stages");
+    gameState.gameData.config?.autoAdvanceStages === true || !hasOverviewScene(gameState, "game-overview-stages");
   const newCurrentStageId = allStageChallengesComplete
     ? advance
       ? recommendedStageId
@@ -145,7 +145,7 @@ export function completeChallenge(gameState: GameState, stageId: GameStageId, ch
     current: {
       ...gameState.current,
       stageId: newCurrentStageId,
-      overviewDisplay: allStagesComplete ? calcFinaleOverviewDisplay(gameState) : gameState.current.overviewDisplay,
+      overviewScene: allStagesComplete ? calcFinaleOverviewScene(gameState) : gameState.current.overviewScene,
     },
   };
 }
@@ -166,18 +166,18 @@ const markChallengeSucceeded = (stageState: GameStageState, challengeId: GameCha
   return { ...stageState, completion, challengeStates };
 };
 
-/** Whether the game defines an overview display with the given purpose. */
-const hasOverviewDisplay = (gameState: GameState, purpose: GameOverviewScenePurpose): boolean =>
+/** Whether the game defines an overview scene with the given purpose. */
+const hasOverviewScene = (gameState: GameState, purpose: GameOverviewScenePurpose): boolean =>
   gameState.gameData.scenes.some((d) => d.purpose === purpose);
 
 /**
- * The overview to show once every stage is complete: the finale display if the game has one,
+ * The overview to show once every stage is complete: the finale scene if the game has one,
  * otherwise the title screen, otherwise the stages overview.
  */
-const calcFinaleOverviewDisplay = (gameState: GameState): GameOverviewScenePurpose =>
-  hasOverviewDisplay(gameState, "game-overview-complete")
+const calcFinaleOverviewScene = (gameState: GameState): GameOverviewScenePurpose =>
+  hasOverviewScene(gameState, "game-overview-complete")
     ? "game-overview-complete"
-    : hasOverviewDisplay(gameState, "game-overview-title")
+    : hasOverviewScene(gameState, "game-overview-title")
       ? "game-overview-title"
       : "game-overview-stages";
 
@@ -198,22 +198,22 @@ export const stageCompletion = (challengeStates: GameChallengeState[]): GameStag
       ? "partial"
       : "ready";
 
-/** Which run of a display this is; see `GameSession.displayRuns`. 0 before it has first been shown. */
-export const displayRun = (state: GameState, scope: DisplayScope): number => state.session.displayRuns[scope] ?? 0;
+/** Which run of a scene this is; see `GameSession.sceneRuns`. 0 before it has first been shown. */
+export const sceneRun = (state: GameState, scope: SceneScope): number => state.session.sceneRuns[scope] ?? 0;
 
-/** Starts a new run of each of the given displays. */
-export const startDisplayRuns = (state: GameState, scopes: Iterable<DisplayScope>): GameState => {
-  const displayRuns = { ...state.session.displayRuns };
-  for (const scope of scopes) displayRuns[scope] = (displayRuns[scope] ?? 0) + 1;
-  return { ...state, session: { ...state.session, displayRuns } };
+/** Starts a new run of each of the given scenes. */
+export const startSceneRuns = (state: GameState, scopes: Iterable<SceneScope>): GameState => {
+  const sceneRuns = { ...state.session.sceneRuns };
+  for (const scope of scopes) sceneRuns[scope] = (sceneRuns[scope] ?? 0) + 1;
+  return { ...state, session: { ...state.session, sceneRuns } };
 };
 
-/** A display's scope, followed by those of its reset display, and theirs. */
-const withResetScopes = (scope: DisplayScope, display: GameSceneBase | GameResetScene): DisplayScope[] =>
-  isDefined(display.resetScene) ? [scope, ...withResetScopes(resetScope(scope), display.resetScene)] : [scope];
+/** A scene's scope, followed by those of its reset scene, and theirs. */
+const withResetScopes = (scope: SceneScope, scene: GameSceneBase | GameResetScene): SceneScope[] =>
+  isDefined(scene.resetScene) ? [scope, ...withResetScopes(resetScope(scope), scene.resetScene)] : [scope];
 
 /**
- * Clears a challenge: it is unsolved again, its stage's completion follows, and its displays' states are removed so
+ * Clears a challenge: it is unsolved again, its stage's completion follows, and its scenes' states are removed so
  * they start again from `initialState`. The stage's availability, and what is showing, are left alone.
  * @returns a new game state (the given state is not modified)
  * @throws if the stage or challenge has no state
@@ -233,19 +233,19 @@ export function resetChallenge(gameState: GameState, stageId: GameStageId, chall
     {
       ...gameState,
       stages: gameState.stages.map((s) => (s === stageState ? updatedStageState : s)),
-      displayStates: _.omitBy(gameState.displayStates, (_state, scope) => scopes.has(scope)),
+      sceneStates: _.omitBy(gameState.sceneStates, (_state, scope) => scopes.has(scope)),
     },
     scopes,
   );
-  return startDisplayRuns(
+  return startSceneRuns(
     reset,
     challengeState.challenge.scenes.flatMap((d) => withResetScopes(challengeScope(stageId, challengeId, d.purpose), d)),
   );
 }
 
-/** Forgets that the reset displays of the given displays (and theirs) were finished, so they show again. */
-export const forgetFinishedResets = (gameState: GameState, displayScopes: Iterable<DisplayScope>): GameState => {
-  const prefixes = Array.from(displayScopes, (scope) => `${scope}/`);
+/** Forgets that the reset scenes of the given scenes (and theirs) were finished, so they show again. */
+export const forgetFinishedResets = (gameState: GameState, sceneScopes: Iterable<SceneScope>): GameState => {
+  const prefixes = Array.from(sceneScopes, (scope) => `${scope}/`);
   const finishedResets = gameState.session.finishedResets.filter(
     (scope) => !prefixes.some((prefix) => scope.startsWith(prefix)),
   );

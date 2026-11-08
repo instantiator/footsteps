@@ -82,18 +82,18 @@ describe("GameStateProvider", () => {
   });
 });
 
-describe("GameStateProvider display resets", () => {
+describe("GameStateProvider scene resets", () => {
   const SCOPE = "challenge:s1:c1:challenge-in-progress";
   const resettingGame = game(["game-overview-stages"], [stage("s1", [challenge("c1")])]);
   resettingGame.stages[0].challenges[0].scenes[0].component.resetStateOnShow = true;
 
-  /** Moves in and out of the stage with plain states, as the HUD does, and sets the challenge display's state. */
-  function DisplayStateProbe() {
+  /** Moves in and out of the stage with plain states, as the HUD does, and sets the challenge scene's state. */
+  function SceneStateProbe() {
     const { gameState, setGameState } = useGameState();
     const go = (stageId: string | null) => setGameState({ ...gameState, current: { ...gameState.current, stageId } });
     return (
       <div>
-        <p>State: {JSON.stringify(gameState.displayStates[SCOPE] ?? null)}</p>
+        <p>State: {JSON.stringify(gameState.sceneStates[SCOPE] ?? null)}</p>
         <button type="button" onClick={() => go("s1")}>
           Enter
         </button>
@@ -102,7 +102,7 @@ describe("GameStateProvider display resets", () => {
         </button>
         <button
           type="button"
-          onClick={() => setGameState((s) => ({ ...s, displayStates: { ...s.displayStates, [SCOPE]: { n: 1 } } }))}
+          onClick={() => setGameState((s) => ({ ...s, sceneStates: { ...s.sceneStates, [SCOPE]: { n: 1 } } }))}
         >
           Set
         </button>
@@ -110,12 +110,12 @@ describe("GameStateProvider display resets", () => {
     );
   }
 
-  it("keeps state while hidden, and resets it when a flagged display is shown again", () => {
+  it("keeps state while hidden, and resets it when a flagged scene is shown again", () => {
     render(
       <GameRepositoryProvider source={{ type: "RawRepository", repository: { games: { g: resettingGame } } }}>
         <GameDataProvider id="g">
           <GameStateProvider>
-            <DisplayStateProbe />
+            <SceneStateProbe />
           </GameStateProvider>
         </GameDataProvider>
       </GameRepositoryProvider>,

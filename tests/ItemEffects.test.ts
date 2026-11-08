@@ -10,7 +10,7 @@ import {
   type EffectRun,
 } from "../src/components/core/effects/ItemEffects";
 
-const DISPLAY = { left: 0, top: 0, right: 1000, bottom: 500, width: 1000, height: 500 };
+const SCENE = { left: 0, top: 0, right: 1000, bottom: 500, width: 1000, height: 500 };
 
 describe("quakeSteps", () => {
   const shape = { dx: 2, dy: 4, cycles: 3, strength: () => 1 };
@@ -55,21 +55,21 @@ describe("quakeSteps", () => {
 });
 
 describe("coverScale", () => {
-  it("leaves an item alone unless it reaches every edge of the display", () => {
-    expect(coverScale({ ...DISPLAY, right: 900, width: 900 }, DISPLAY, 1, 1)).toBe(1);
+  it("leaves an item alone unless it reaches every edge of the scene", () => {
+    expect(coverScale({ ...SCENE, right: 900, width: 900 }, SCENE, 1, 1)).toBe(1);
   });
 
   it("enlarges a full-size item just enough to cover the shake, at its largest need", () => {
-    expect(coverScale(DISPLAY, DISPLAY, 1, 0)).toBeCloseTo(1.02);
-    expect(coverScale(DISPLAY, DISPLAY, 0, 5)).toBeCloseTo(1.1);
-    expect(coverScale(DISPLAY, DISPLAY, 1, 5)).toBeCloseTo(1.1);
+    expect(coverScale(SCENE, SCENE, 1, 0)).toBeCloseTo(1.02);
+    expect(coverScale(SCENE, SCENE, 0, 5)).toBeCloseTo(1.1);
+    expect(coverScale(SCENE, SCENE, 1, 5)).toBeCloseTo(1.1);
   });
 });
 
 describe("fallDistance", () => {
-  it("takes the item's top past the display's bottom", () => {
-    expect(fallDistance(100, DISPLAY)).toBe(80);
-    expect(fallDistance(0, DISPLAY)).toBe(100);
+  it("takes the item's top past the scene's bottom", () => {
+    expect(fallDistance(100, SCENE)).toBe(80);
+    expect(fallDistance(0, SCENE)).toBe(100);
   });
 });
 
@@ -77,11 +77,11 @@ describe("moveOffsets", () => {
   const measures = {
     visual: { x: 200, y: 100 },
     layout: { x: 100, y: 100 },
-    display: DISPLAY,
+    scene: SCENE,
     centreOf: (selector: string) => (selector === "#platform" ? { x: 500, y: 250 } : undefined),
   };
 
-  it("takes a place in the display as where its centre goes", () => {
+  it("takes a place in the scene as where its centre goes", () => {
     const [, end] = moveOffsets(undefined, { left: 50, top: 20 }, measures);
     expect(end).toEqual({ x: 40, y: 0 }); // 500, 100 on screen is 400 across and 0 down from the layout position
   });

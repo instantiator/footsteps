@@ -18,7 +18,7 @@ import {
 import type { GameSceneTemplateSourceData as GameDisplayTemplateData } from "../../../entities/data/scenes/GameSceneTemplateComponentData";
 import useContentCache from "../../../providers/GameContentCacheHook";
 import { isDefined } from "../../../util/ObjectUtils";
-import { summariseTemplateSource, type DisplayDomEvent } from "../logic/TemplateUtils";
+import { summariseTemplateSource, type SceneDomEvent } from "../logic/TemplateUtils";
 
 /** Props for {@link GameDisplayTemplateComponent}. */
 interface GameDisplayTemplateProps {
@@ -35,7 +35,7 @@ interface GameDisplayTemplateProps {
   /** Which run of the display this is; a new one rebuilds the template. */
   run?: number;
   /** Called with clicks, key activations, mouse moves, and animation and transition ends inside the template. */
-  onDisplayEvent?: (event: DisplayDomEvent) => void;
+  onSceneEvent?: (event: SceneDomEvent) => void;
 }
 
 /** Game content may come from a remote repository: allow only Handlebars' built-in helpers. */
@@ -84,16 +84,16 @@ const isTemplateButtonActivation = (event: KeyboardEvent<HTMLElement>): boolean 
   event.target.getAttribute("role") === "button";
 
 /** The container's handlers, which pass events inside the template on to the display, with the container they stop at. */
-const displayEventHandlers = (onDisplayEvent: GameDisplayTemplateProps["onDisplayEvent"]) => {
-  const emit = (event: SyntheticEvent<HTMLElement>, kind: DisplayDomEvent["kind"], name?: string) => {
+const displayEventHandlers = (onSceneEvent: GameDisplayTemplateProps["onSceneEvent"]) => {
+  const emit = (event: SyntheticEvent<HTMLElement>, kind: SceneDomEvent["kind"], name?: string) => {
     if (event.target instanceof Element)
-      onDisplayEvent?.({ kind, target: event.target, root: event.currentTarget, name });
+      onSceneEvent?.({ kind, target: event.target, root: event.currentTarget, name });
   };
   // The mouse moving over or out of an element, with where it came from or went to
   const emitMouse = (event: MouseEvent<HTMLElement>, kind: "mouseOver" | "mouseOut") => {
     if (!(event.target instanceof Element)) return;
     const related = event.relatedTarget instanceof Element ? event.relatedTarget : null;
-    onDisplayEvent?.({ kind, target: event.target, root: event.currentTarget, related });
+    onSceneEvent?.({ kind, target: event.target, root: event.currentTarget, related });
   };
   return {
     onClick: (event: MouseEvent<HTMLElement>) => emit(event, "click"),
@@ -124,7 +124,7 @@ export default function GameDisplayTemplateComponent({
   templateStyle,
   scope,
   run = 0,
-  onDisplayEvent,
+  onSceneEvent,
   children,
 }: PropsWithChildren<GameDisplayTemplateProps>) {
   const [render, setRender] = useState<GameDisplayTemplateData | undefined>();
@@ -170,7 +170,7 @@ export default function GameDisplayTemplateComponent({
       className="templateContent"
       data-display-scope={scope}
       style={{ width: "100%", height: "100%", ...containerStyleParsed }}
-      {...displayEventHandlers(onDisplayEvent)}
+      {...displayEventHandlers(onSceneEvent)}
     >
       {isDefined(html) && (
         <div key={bodyKey} ref={bodyRef} className="templateBody" data-display-run={run} style={templateStyleParsed} />

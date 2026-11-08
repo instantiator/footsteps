@@ -2,8 +2,8 @@ import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useGameRules } from "../src/components/core/GameRulesHook";
-import { completeChallenge, startDisplayRuns } from "../src/components/core/logic/GameStateUtils";
-import type { DisplayDomEvent } from "../src/components/core/logic/TemplateUtils";
+import { completeChallenge, startSceneRuns } from "../src/components/core/logic/GameStateUtils";
+import type { SceneDomEvent } from "../src/components/core/logic/TemplateUtils";
 import type { GameData } from "../src/entities/data/GameData";
 import type { GameSceneComponentBase, GameRule } from "../src/entities/data/scenes/GameSceneData";
 import { useGameState } from "../src/providers/GameStateHook";
@@ -16,7 +16,7 @@ const STAGES = "overview:game-overview-stages";
 const SHARED = "stage:s1:shared";
 const C1 = "challenge:s1:c1:challenge-in-progress";
 
-/** A game with a title, a stages overview, and stage s1 (a shared display and challenges c1, c2, one at a time). */
+/** A game with a title, a stages overview, and stage s1 (a shared scene and challenges c1, c2, one at a time). */
 const rulesGame = (components: Record<string, Partial<GameSceneComponentBase>> = {}): GameData => {
   const data = game(
     ["game-overview-title", "game-overview-stages"],
@@ -44,13 +44,13 @@ const renderRules = (data: GameData) => {
   const { result } = renderHook(() => ({ ...useGameRules(), ...useGameState() }), { wrapper });
   const set = (change: (state: ReturnType<typeof useGameState>["gameState"]) => typeof state) =>
     act(() => result.current.setGameState(change));
-  const go = (overviewDisplay: "game-overview-title" | "game-overview-stages", stageId: string | null = null) =>
-    set((state) => ({ ...state, current: { overviewDisplay, stageId } }));
+  const go = (overviewScene: "game-overview-title" | "game-overview-stages", stageId: string | null = null) =>
+    set((state) => ({ ...state, current: { overviewScene, stageId } }));
   return {
     hook: () => result.current,
     state: () => result.current.gameState,
-    displayState: (scope: string) => result.current.gameState.displayStates[scope],
-    send: (scope: string, event: DisplayDomEvent) => act(() => result.current.onDisplayEvent(scope, event)),
+    sceneState: (scope: string) => result.current.gameState.sceneStates[scope],
+    send: (scope: string, event: SceneDomEvent) => act(() => result.current.onSceneEvent(scope, event)),
     set,
     go,
   };
@@ -91,7 +91,7 @@ describe("useGameRules", () => {
       const rules = renderRules(rulesGame({ [TITLE]: { rules: clickRules } }));
       const { root, el } = template();
       rules.send(TITLE, { kind: "click", target: el("knob"), root });
-      expect(rules.displayState(TITLE)).toEqual({ opened: "door", by: "click" });
+      expect(rules.sceneState(TITLE)).toEqual({ opened: "door", by: "click" });
     });
 
     it("ignores a click no rule accepts, and an element only the camera can trigger", () => {
@@ -99,8 +99,8 @@ describe("useGameRules", () => {
       rules.go("game-overview-stages");
       const { root, el } = template();
       rules.send(STAGES, { kind: "click", target: el("window"), root });
-      expect(rules.displayState(STAGES)).toBeUndefined();
-      expect(rules.state().current.overviewDisplay).toBe("game-overview-stages");
+      expect(rules.sceneState(STAGES)).toBeUndefined();
+      expect(rules.state().current.overviewScene).toBe("game-overview-stages");
     });
 
     it("fires animation and transition end rules only for the named animation or property", () => {
@@ -108,24 +108,24 @@ describe("useGameRules", () => {
       const { root, el } = template();
       rules.send(TITLE, { kind: "animationEnd", name: "fall", target: el("door"), root });
       rules.send(TITLE, { kind: "transitionEnd", name: "top", target: el("door"), root });
-      expect(rules.displayState(TITLE)).toBeUndefined();
+      expect(rules.sceneState(TITLE)).toBeUndefined();
       rules.send(TITLE, { kind: "animationEnd", name: "pop", target: el("door"), root });
       rules.send(TITLE, { kind: "transitionEnd", name: "left", target: el("door"), root });
-      expect(rules.displayState(TITLE)).toEqual({ popped: true, slid: true });
+      expect(rules.sceneState(TITLE)).toEqual({ popped: true, slid: true });
     });
 
     it("moves on from the title screen on a click that no rule takes", () => {
       const rules = renderRules(rulesGame());
       const { root, el } = template();
       rules.send(TITLE, { kind: "click", target: el("window"), root });
-      expect(rules.state().current.overviewDisplay).toBe("game-overview-stages");
+      expect(rules.state().current.overviewScene).toBe("game-overview-stages");
     });
 
-    it("ignores events from a display that isn't shown", () => {
+    it("ignores events from a scene that isn't shown", () => {
       const rules = renderRules(rulesGame({ [STAGES]: { rules: clickRules } }));
       const { root, el } = template();
       rules.send(STAGES, { kind: "click", target: el("door"), root });
-      expect(rules.displayState(STAGES)).toBeUndefined();
+      expect(rules.sceneState(STAGES)).toBeUndefined();
     });
   });
 
@@ -145,28 +145,28 @@ describe("useGameRules", () => {
     it("fires mouse-enter when the mouse comes onto a matching element from outside it", () => {
       const { rules, root, el } = hovering();
       rules.send(TITLE, { kind: "mouseOver", target: el("knob"), root, related: el("window") });
-      expect(rules.displayState(TITLE)).toEqual({ entered: 1, left: 0, how: "mouse-enter" });
+      expect(rules.sceneState(TITLE)).toEqual({ entered: 1, left: 0, how: "mouse-enter" });
     });
 
     it("doesn't fire while the mouse moves between an element's own parts", () => {
       const { rules, root, el } = hovering();
       rules.send(TITLE, { kind: "mouseOver", target: el("knob"), root, related: el("door") });
       rules.send(TITLE, { kind: "mouseOut", target: el("knob"), root, related: el("door") });
-      expect(rules.displayState(TITLE)).toBeUndefined();
+      expect(rules.sceneState(TITLE)).toBeUndefined();
     });
 
     it("fires mouse-exit when the mouse leaves a matching element, including out of the page", () => {
       const { rules, root, el } = hovering();
       rules.send(TITLE, { kind: "mouseOut", target: el("door"), root, related: el("window") });
       rules.send(TITLE, { kind: "mouseOut", target: el("knob"), root, related: null });
-      expect(rules.displayState(TITLE)).toEqual({ entered: 0, left: 2 });
+      expect(rules.sceneState(TITLE)).toEqual({ entered: 0, left: 2 });
     });
 
     it("doesn't count a click as entering, or entering as a click", () => {
       const rules = renderRules(rulesGame({ [TITLE]: { rules: hoverRules, initialState: { entered: 0, left: 0 } } }));
       const { root, el } = template();
       rules.send(TITLE, { kind: "click", target: el("door"), root });
-      expect(rules.displayState(TITLE)).toBeUndefined();
+      expect(rules.sceneState(TITLE)).toBeUndefined();
     });
   });
 
@@ -183,9 +183,9 @@ describe("useGameRules", () => {
       const { rules, root, el } = holding();
       rules.send(TITLE, { kind: "mouseOver", target: el("door"), root, related: el("window") });
       advance(999);
-      expect(rules.displayState(TITLE)).toBeUndefined();
+      expect(rules.sceneState(TITLE)).toBeUndefined();
       advance(1);
-      expect(rules.displayState(TITLE)).toEqual({ held: 1 });
+      expect(rules.sceneState(TITLE)).toEqual({ held: 1 });
     });
 
     it("doesn't fire if the mouse leaves first, but keeps waiting while it moves between the element's parts", () => {
@@ -195,16 +195,16 @@ describe("useGameRules", () => {
       advance(500);
       rules.send(TITLE, { kind: "mouseOut", target: el("knob"), root, related: el("window") });
       advance(5000);
-      expect(rules.displayState(TITLE)).toBeUndefined();
+      expect(rules.sceneState(TITLE)).toBeUndefined();
     });
 
-    it("doesn't fire once the display is hidden", () => {
+    it("doesn't fire once the scene is hidden", () => {
       const { rules, root, el } = holding();
       rules.send(TITLE, { kind: "mouseOver", target: el("door"), root, related: el("window") });
       rules.go("game-overview-stages");
       rules.go("game-overview-title");
       advance(5000);
-      expect(rules.displayState(TITLE)).toBeUndefined();
+      expect(rules.sceneState(TITLE)).toBeUndefined();
     });
   });
 
@@ -215,12 +215,12 @@ describe("useGameRules", () => {
       const ready = (value: boolean) =>
         rules.set((state) => ({
           ...state,
-          displayStates: {
-            ...state.displayStates,
-            [TITLE]: { ...initialState, ...state.displayStates[TITLE], ready: value },
+          sceneStates: {
+            ...state.sceneStates,
+            [TITLE]: { ...initialState, ...state.sceneStates[TITLE], ready: value },
           },
         }));
-      const done = () => (rules.displayState(TITLE) as { done?: number } | undefined)?.done ?? 0;
+      const done = () => (rules.sceneState(TITLE) as { done?: number } | undefined)?.done ?? 0;
       return { rules, ready, done };
     };
 
@@ -249,7 +249,7 @@ describe("useGameRules", () => {
       expect(done()).toBe(1);
     });
 
-    it("doesn't fire once the display is hidden", () => {
+    it("doesn't fire once the scene is hidden", () => {
       const { rules, ready, done } = waiting();
       ready(true);
       rules.go("game-overview-stages");
@@ -258,7 +258,7 @@ describe("useGameRules", () => {
       expect(done()).toBe(0);
     });
 
-    it("doesn't count an expression that is already true when the display is shown", () => {
+    it("doesn't count an expression that is already true when the scene is shown", () => {
       const { done } = waiting({ ready: true, done: 0 });
       advance(5000);
       expect(done()).toBe(0);
@@ -266,29 +266,29 @@ describe("useGameRules", () => {
   });
 
   describe("start", () => {
-    it("fires once each time the display is shown, keeping state while hidden", () => {
+    it("fires once each time the scene is shown, keeping state while hidden", () => {
       const rules = renderRules(rulesGame({ [STAGES]: { rules: [count()], initialState: { n: 0 } } }));
       rules.go("game-overview-stages");
-      expect(rules.displayState(STAGES)).toEqual({ n: 1 });
-      rules.set((state) => ({ ...state, displayStates: { ...state.displayStates, other: {} } }));
-      expect(rules.displayState(STAGES)).toEqual({ n: 1 });
+      expect(rules.sceneState(STAGES)).toEqual({ n: 1 });
+      rules.set((state) => ({ ...state, sceneStates: { ...state.sceneStates, other: {} } }));
+      expect(rules.sceneState(STAGES)).toEqual({ n: 1 });
       rules.go("game-overview-title");
       rules.go("game-overview-stages");
-      expect(rules.displayState(STAGES)).toEqual({ n: 2 });
+      expect(rules.sceneState(STAGES)).toEqual({ n: 2 });
     });
 
-    it("starts from initialState each time a display with resetStateOnShow is shown", () => {
+    it("starts from initialState each time a scene with resetStateOnShow is shown", () => {
       const rules = renderRules(
         rulesGame({ [STAGES]: { rules: [count()], initialState: { n: 0 }, resetStateOnShow: true } }),
       );
       rules.go("game-overview-stages");
       rules.go("game-overview-title");
       rules.go("game-overview-stages");
-      expect(rules.displayState(STAGES)).toEqual({ n: 1 });
+      expect(rules.sceneState(STAGES)).toEqual({ n: 1 });
     });
   });
 
-  describe("reset displays", () => {
+  describe("reset scenes", () => {
     it("run their own rules first, and start their parent's when they finish", () => {
       const data = rulesGame({ [STAGES]: { rules: [count()], initialState: { n: 0 } } });
       data.scenes[1].resetScene = {
@@ -297,11 +297,11 @@ describe("useGameRules", () => {
       const rules = renderRules(data);
       rules.go("game-overview-stages");
       advance(999);
-      expect(rules.displayState(STAGES)).toBeUndefined();
+      expect(rules.sceneState(STAGES)).toBeUndefined();
 
       advance(1);
       expect(rules.state().session.finishedResets).toEqual([`${STAGES}/reset`]);
-      expect(rules.displayState(STAGES)).toEqual({ n: 1 });
+      expect(rules.sceneState(STAGES)).toEqual({ n: 1 });
     });
   });
 
@@ -311,31 +311,31 @@ describe("useGameRules", () => {
     it("fires an after rule once, after the delay", () => {
       const rules = renderRules(rulesGame({ [TITLE]: { rules: [tick({ after: 1000 })], initialState: { n: 0 } } }));
       advance(999);
-      expect(rules.displayState(TITLE)).toBeUndefined();
+      expect(rules.sceneState(TITLE)).toBeUndefined();
       advance(1);
-      expect(rules.displayState(TITLE)).toEqual({ n: 1 });
+      expect(rules.sceneState(TITLE)).toEqual({ n: 1 });
       advance(5000);
-      expect(rules.displayState(TITLE)).toEqual({ n: 1 });
+      expect(rules.sceneState(TITLE)).toEqual({ n: 1 });
     });
 
-    it("doesn't fire an after rule once its display is hidden", () => {
+    it("doesn't fire an after rule once its scene is hidden", () => {
       const rules = renderRules(rulesGame({ [TITLE]: { rules: [tick({ after: 1000 })], initialState: { n: 0 } } }));
       advance(500);
       rules.go("game-overview-stages");
       advance(5000);
-      expect(rules.displayState(TITLE)).toBeUndefined();
+      expect(rules.sceneState(TITLE)).toBeUndefined();
     });
 
     it("repeats an every rule, re-reading an expression duration each time, until hidden", () => {
       const speedUp: GameRule = { on: { every: "state.ms" }, do: [{ set: { n: "state.n + 1", ms: "state.ms / 2" } }] };
       const rules = renderRules(rulesGame({ [TITLE]: { rules: [speedUp], initialState: { n: 0, ms: 1000 } } }));
       advance(1000);
-      expect(rules.displayState(TITLE)).toEqual({ n: 1, ms: 500 });
+      expect(rules.sceneState(TITLE)).toEqual({ n: 1, ms: 500 });
       advance(500);
-      expect(rules.displayState(TITLE)).toEqual({ n: 2, ms: 250 });
+      expect(rules.sceneState(TITLE)).toEqual({ n: 2, ms: 250 });
       rules.go("game-overview-stages");
       advance(5000);
-      expect(rules.displayState(TITLE)).toEqual({ n: 2, ms: 250 });
+      expect(rules.sceneState(TITLE)).toEqual({ n: 2, ms: 250 });
     });
 
     describe("players", () => {
@@ -351,14 +351,14 @@ describe("useGameRules", () => {
             },
           }),
         );
-        expect(rules.displayState(TITLE)).toEqual({ first: 0 });
+        expect(rules.sceneState(TITLE)).toEqual({ first: 0 });
         const element = document.createElement("div");
         act(() =>
           rules
             .hook()
             .onPlayerInteraction({ scope: TITLE, ruleIndex: 0, element, interaction: "hand-enter", player: 2 }),
         );
-        expect(rules.displayState(TITLE)).toEqual({ first: 0, by: 2 });
+        expect(rules.sceneState(TITLE)).toEqual({ first: 0, by: 2 });
       });
 
       it("fires a when rule on the player counts, and doesn't save them", () => {
@@ -380,13 +380,13 @@ describe("useGameRules", () => {
           id = players.update(frame).interactive.people[0].id;
         });
         expect(rules.state().session.players).toEqual({ active: 1, removed: 0, frozen: 0 });
-        expect(rules.displayState(TITLE)).toBeUndefined();
+        expect(rules.sceneState(TITLE)).toBeUndefined();
         act(() => {
           players.startLeaving(id, TITLE);
           players.finishLeaving(id);
         });
         expect(rules.state().session.players).toEqual({ active: 0, removed: 1, frozen: 0 });
-        expect(rules.displayState(TITLE)).toEqual({ over: true });
+        expect(rules.sceneState(TITLE)).toEqual({ over: true });
       });
     });
 
@@ -399,35 +399,35 @@ describe("useGameRules", () => {
       it("runs once, after its delay, and empties the queue", () => {
         const rules = renderRules(rulesGame({ [TITLE]: { rules: [delayed(500)], initialState: { n: 0 } } }));
         advance(499);
-        expect(rules.displayState(TITLE)).toBeUndefined();
+        expect(rules.sceneState(TITLE)).toBeUndefined();
         advance(1);
-        expect(rules.displayState(TITLE)).toEqual({ n: 1 });
+        expect(rules.sceneState(TITLE)).toEqual({ n: 1 });
         advance(5000);
-        expect(rules.displayState(TITLE)).toEqual({ n: 1 });
+        expect(rules.sceneState(TITLE)).toEqual({ n: 1 });
         expect(rules.state().session.delayedActions).toEqual([]);
       });
 
-      it("is cancelled by the display closing", () => {
+      it("is cancelled by the scene closing", () => {
         const rules = renderRules(rulesGame({ [TITLE]: { rules: [delayed(500)], initialState: { n: 0 } } }));
         rules.go("game-overview-stages");
         advance(5000);
-        expect(rules.displayState(TITLE)).toBeUndefined();
+        expect(rules.sceneState(TITLE)).toBeUndefined();
       });
 
-      it("is cancelled by the display resetting", () => {
+      it("is cancelled by the scene resetting", () => {
         const rules = renderRules(rulesGame({ [TITLE]: { rules: [delayed(500)], initialState: { n: 0 } } }));
-        rules.set((state) => startDisplayRuns(state, [TITLE]));
+        rules.set((state) => startSceneRuns(state, [TITLE]));
         // The reset fires the `start` rule again, which waits afresh: the first one's 500 ms mustn't count
         advance(250);
-        rules.set((state) => startDisplayRuns(state, [TITLE]));
+        rules.set((state) => startSceneRuns(state, [TITLE]));
         advance(499);
-        expect(rules.displayState(TITLE)).toBeUndefined();
+        expect(rules.sceneState(TITLE)).toBeUndefined();
         advance(1);
-        expect(rules.displayState(TITLE)).toEqual({ n: 1 });
+        expect(rules.sceneState(TITLE)).toEqual({ n: 1 });
       });
     });
 
-    describe("when the display resets", () => {
+    describe("when the scene resets", () => {
       const resetOn = (trigger: GameRule["on"]): GameRule => ({ on: trigger, do: [{ resetState: true }] });
       const STAGE_STATE = { n: 0 };
 
@@ -446,18 +446,18 @@ describe("useGameRules", () => {
         );
         advance(600); // the reset starts every timer again; the first `after` would have fired 400 ms on
         advance(400);
-        expect(rules.displayState(TITLE)).toBeUndefined();
+        expect(rules.sceneState(TITLE)).toBeUndefined();
         advance(300); // 700 ms after the reset
-        expect(rules.displayState(TITLE)).toEqual({ n: 0, m: 1 });
+        expect(rules.sceneState(TITLE)).toEqual({ n: 0, m: 1 });
       });
 
       it("fires its start rules again", () => {
         const rules = renderRules(
           rulesGame({ [TITLE]: { rules: [count(), resetOn({ after: 100 })], initialState: { n: 0 } } }),
         );
-        expect(rules.displayState(TITLE)).toEqual({ n: 1 });
+        expect(rules.sceneState(TITLE)).toEqual({ n: 1 });
         advance(100);
-        expect(rules.displayState(TITLE)).toEqual({ n: 1 });
+        expect(rules.sceneState(TITLE)).toEqual({ n: 1 });
       });
 
       it("cancels a forMs wait, and an expression already true after it only records", () => {
@@ -469,14 +469,14 @@ describe("useGameRules", () => {
             },
           }),
         );
-        rules.set((state) => ({ ...state, displayStates: { [TITLE]: { go: true } } }));
+        rules.set((state) => ({ ...state, sceneStates: { [TITLE]: { go: true } } }));
         advance(600);
-        rules.set((state) => startDisplayRuns(state, [TITLE]));
+        rules.set((state) => startSceneRuns(state, [TITLE]));
         advance(5000);
-        expect(rules.displayState(TITLE)).toEqual({ go: true });
+        expect(rules.sceneState(TITLE)).toEqual({ go: true });
       });
 
-      it("stops and logs a display that keeps resetting itself through other rules", () => {
+      it("stops and logs a scene that keeps resetting itself through other rules", () => {
         const error = vi.spyOn(console, "error").mockImplementation(() => {});
         const rules = renderRules(
           rulesGame({
@@ -491,17 +491,17 @@ describe("useGameRules", () => {
         );
         advance(1000);
         expect(error).toHaveBeenCalledWith(expect.stringContaining(`${TITLE}: stopped`));
-        expect(rules.state().session.displayRuns[TITLE]).toBeLessThan(20);
+        expect(rules.state().session.sceneRuns[TITLE]).toBeLessThan(20);
       });
     });
 
-    it("keeps a stage display's timer running while its challenges move on", () => {
+    it("keeps a stage scene's timer running while its challenges move on", () => {
       const rules = renderRules(rulesGame({ [SHARED]: { rules: [tick({ after: 1000 })], initialState: { n: 0 } } }));
       rules.go("game-overview-stages", "s1");
       advance(600);
       rules.set((state) => completeChallenge(state, "s1", "c1"));
       advance(400);
-      expect(rules.displayState(SHARED)).toEqual({ n: 1 });
+      expect(rules.sceneState(SHARED)).toEqual({ n: 1 });
     });
 
     it("logs and skips a duration that isn't a number", () => {
@@ -523,7 +523,7 @@ describe("useGameRules", () => {
       );
       rules.go("game-overview-stages", "s1");
       const score = (value: number) =>
-        rules.set((state) => ({ ...state, displayStates: { ...state.displayStates, [C1]: { score: value } } }));
+        rules.set((state) => ({ ...state, sceneStates: { ...state.sceneStates, [C1]: { score: value } } }));
       score(1);
       expect(rules.state().stages[0].challengeStates[0].succeeded).toBe(false);
       score(2);
@@ -532,7 +532,7 @@ describe("useGameRules", () => {
   });
 
   describe("selector check", () => {
-    it("warns about a selector that matches nothing in the display, once its templates have had time to load", () => {
+    it("warns about a selector that matches nothing in the scene, once its templates have had time to load", () => {
       const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
       renderRules(rulesGame({ [TITLE]: { rules: [{ on: { interact: "click", target: "#nowhere" }, do: [] }] } }));
       expect(warn).not.toHaveBeenCalled();

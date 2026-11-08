@@ -4,6 +4,8 @@ import type { GameData } from "../src/entities/data/GameData";
 import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
 import { clearGameState, loadGameState, saveGameState } from "../src/entities/state/GameStateStorage";
 import { simpleGameData } from "./data/SampleGameState";
+import { SMALL_GAME_ID, smallGame } from "./data/SmallGame";
+import { allSceneScopes } from "../src/components/core/logic/RenderDataUtils";
 
 const GAME_ID = "simple-game";
 const STORAGE_KEY = `footsteps:game-state:${GAME_ID}`;
@@ -24,14 +26,14 @@ const complete = (): GameState => {
 };
 
 const storedProgress = {
-  version: 1,
+  version: 2,
   gameId: GAME_ID,
   stages: {
     "stage-1": ["stage-1-challenge-1"],
     "stage-2": [],
     "stage-3": [],
   },
-  current: { stageId: null, overviewDisplay: "game-overview-title" },
+  current: { stageId: null, overviewScene: "game-overview-title" },
 };
 
 describe("GameStateStorage", () => {
@@ -64,7 +66,7 @@ describe("GameStateStorage", () => {
     expect(loaded?.stages.every((stage) => stage.challengeStates.every((challenge) => !challenge.succeeded))).toBe(
       true,
     );
-    expect(loaded?.current).toEqual({ stageId: null, overviewDisplay: "game-overview-title" });
+    expect(loaded?.current).toEqual({ stageId: null, overviewScene: "game-overview-title" });
   });
 
   it("round trips a completed game", () => {
@@ -78,25 +80,25 @@ describe("GameStateStorage", () => {
   });
 
   it("keeps a saved current stage", () => {
-    const state: GameState = { ...partlyComplete(), current: { stageId: "stage-2", overviewDisplay: null } };
+    const state: GameState = { ...partlyComplete(), current: { stageId: "stage-2", overviewScene: null } };
     saveGameState(GAME_ID, state);
 
     const loaded = loadGameState(GAME_ID, simpleGameData);
 
-    expect(loaded?.current).toEqual({ stageId: "stage-2", overviewDisplay: "game-overview-title" });
+    expect(loaded?.current).toEqual({ stageId: "stage-2", overviewScene: "game-overview-title" });
   });
 
   it("ignores a saved current stage that is locked or complete", () => {
     const lockedStage: GameState = {
       ...createBlankGameState(simpleGameData),
-      current: { stageId: "stage-3", overviewDisplay: null },
+      current: { stageId: "stage-3", overviewScene: null },
     };
     saveGameState(GAME_ID, lockedStage);
     expect(loadGameState(GAME_ID, simpleGameData)?.current.stageId).toBeNull();
 
     const completedStage: GameState = {
       ...partlyComplete(),
-      current: { stageId: "stage-1", overviewDisplay: null },
+      current: { stageId: "stage-1", overviewScene: null },
     };
     saveGameState(GAME_ID, completedStage);
     expect(loadGameState(GAME_ID, simpleGameData)?.current.stageId).toBeNull();
@@ -109,7 +111,20 @@ describe("GameStateStorage", () => {
   });
 
   it("ignores progress from another version", () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...storedProgress, version: 2 }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...storedProgress, version: 3 }));
+
+    expect(loadGameState(GAME_ID, simpleGameData)).toBeUndefined();
+  });
+
+  it("reads progress saved with version 1, before displays were called scenes, as blank", () => {
+    const { current, ...rest } = storedProgress;
+    const version1 = {
+      ...rest,
+      version: 1,
+      current: { stageId: current.stageId, overviewDisplay: current.overviewScene },
+      displayStates: {},
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(version1));
 
     expect(loadGameState(GAME_ID, simpleGameData)).toBeUndefined();
   });
@@ -150,18 +165,18 @@ describe("GameStateStorage", () => {
   });
 
   it("ignores an unknown or missing current view", () => {
-    const unknownStage = { ...storedProgress, current: { stageId: "no-such-stage", overviewDisplay: null } };
+    const unknownStage = { ...storedProgress, current: { stageId: "no-such-stage", overviewScene: null } };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(unknownStage));
     expect(loadGameState(GAME_ID, simpleGameData)).toBeUndefined();
 
     const unknownOverview = {
       ...storedProgress,
-      current: { stageId: null, overviewDisplay: "game-overview-nope" },
+      current: { stageId: null, overviewScene: "game-overview-nope" },
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(unknownOverview));
     expect(loadGameState(GAME_ID, simpleGameData)).toBeUndefined();
 
-    const noView = { ...storedProgress, current: { stageId: null, overviewDisplay: null } };
+    const noView = { ...storedProgress, current: { stageId: null, overviewScene: null } };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(noView));
     expect(loadGameState(GAME_ID, simpleGameData)).toBeUndefined();
   });
@@ -211,31 +226,44 @@ describe("GameStateStorage", () => {
   });
 });
 
-describe("GameStateStorage display states", () => {
+describe("GameStateStorage scene states", () => {
   const scope = "challenge:stage-1:stage-1-challenge-1:challenge-in-progress";
 
-  it("round trips display states, dropping scopes the game doesn't have", () => {
+  it("round trips scene states, dropping scopes the game doesn't have", () => {
     const state: GameState = {
       ...createBlankGameState(simpleGameData),
-      displayStates: { [scope]: { score: 2, open: true }, "challenge:stage-9:nope:challenge-title": { x: 1 } },
+      sceneStates: { [scope]: { score: 2, open: true }, "challenge:stage-9:nope:challenge-title": { x: 1 } },
     };
     saveGameState(GAME_ID, state);
 
-    expect(loadGameState(GAME_ID, simpleGameData)?.displayStates).toEqual({ [scope]: { score: 2, open: true } });
+    expect(loadGameState(GAME_ID, simpleGameData)?.sceneStates).toEqual({ [scope]: { score: 2, open: true } });
   });
 
-  it("loads progress saved before displays had state", () => {
+  it("saves version 2 with `sceneStates` and `overviewScene`, and loads both back", () => {
+    const blank = createBlankGameState(smallGame);
+    const scenesScope = allSceneScopes(smallGame).values().next().value ?? scope;
+    const state: GameState = { ...blank, sceneStates: { [scenesScope]: { score: 2 } } };
+    saveGameState(SMALL_GAME_ID, state);
+
+    const saved: unknown = JSON.parse(localStorage.getItem(`footsteps:game-state:${SMALL_GAME_ID}`) ?? "null");
+    expect(saved).toMatchObject({ version: 2, current: { overviewScene: "game-overview-stages" } });
+    const loaded = loadGameState(SMALL_GAME_ID, smallGame);
+    expect(loaded?.current.overviewScene).toBe("game-overview-stages");
+    expect(loaded?.sceneStates).toEqual({ [scenesScope]: { score: 2 } });
+  });
+
+  it("loads progress saved before scenes had state", () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(storedProgress));
 
     const loaded = loadGameState(GAME_ID, simpleGameData);
 
     expect(loaded?.stages[0].challengeStates[0].succeeded).toBe(true);
-    expect(loaded?.displayStates).toEqual({});
+    expect(loaded?.sceneStates).toEqual({});
   });
 
-  it("drops a display state that isn't an object", () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...storedProgress, displayStates: { [scope]: 3 } }));
+  it("drops a scene state that isn't an object", () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...storedProgress, sceneStates: { [scope]: 3 } }));
 
-    expect(loadGameState(GAME_ID, simpleGameData)?.displayStates).toEqual({});
+    expect(loadGameState(GAME_ID, simpleGameData)?.sceneStates).toEqual({});
   });
 });

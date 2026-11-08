@@ -3,18 +3,18 @@ import type { GameId, GameData } from "../data/GameData";
 import type { GameOverviewScenePurpose } from "../data/scenes/GameSceneData";
 import type { GameStageId } from "../data/GameStageData";
 import { stageCompletion } from "../../components/core/logic/GameStateUtils";
-import { allDisplayScopes } from "../../components/core/logic/RenderDataUtils";
+import { allSceneScopes } from "../../components/core/logic/RenderDataUtils";
 import { isDefined } from "../../util/ObjectUtils";
 import { createBlankGameState, newGameSession, type GameState } from "./GameState";
 import type { GameStageAvailabilityState, GameStageState } from "./GameStageState";
 
 /** The version of the saved progress format; older or newer versions are ignored. */
-const STORAGE_VERSION = 1;
+const STORAGE_VERSION = 2;
 
 /** Prefix for a game's saved progress key in local storage. */
 const STORAGE_PREFIX = "footsteps:game-state:";
 
-/** A game's saved progress: which challenges are solved, what the player was looking at, and display states. */
+/** A game's saved progress: which challenges are solved, what the player was looking at, and scene states. */
 interface StoredGameProgress {
   /** The saved format's version. */
   version: number;
@@ -26,11 +26,11 @@ interface StoredGameProgress {
   current: {
     /** The stage being played, or null while an overview was showing. */
     stageId: GameStageId | null;
-    /** The overview display that was showing, if any. */
-    overviewDisplay: GameOverviewScenePurpose | null;
+    /** The overview scene that was showing, if any. */
+    overviewScene: GameOverviewScenePurpose | null;
   };
-  /** Each display's own state, by scope. Read as empty from progress saved before displays had state. */
-  displayStates: GameState["displayStates"];
+  /** Each scene's own state, by scope. Read as empty from progress saved before scenes had state. */
+  sceneStates: GameState["sceneStates"];
 }
 
 /** The local storage key for a game's progress. */
@@ -53,13 +53,13 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((item) => typeof item === "string");
 
-/** Whether a string names one of the overview display purposes. */
+/** Whether a string names one of the overview scene purposes. */
 const isOverviewPurpose = (value: string): value is GameOverviewScenePurpose =>
   value === "game-overview-title" || value === "game-overview-stages" || value === "game-overview-complete";
 
-/** Whether a string names an overview display the game defines. */
+/** Whether a string names an overview scene the game defines. */
 const isGameOverview = (value: string, gameData: GameData): value is GameOverviewScenePurpose =>
-  isOverviewPurpose(value) && gameData.scenes.some((display) => display.purpose === value);
+  isOverviewPurpose(value) && gameData.scenes.some((scene) => scene.purpose === value);
 
 /** Reads a saved current stage id, rejecting ids the game no longer has. */
 const parseStageId = (value: unknown, gameData: GameData): GameStageId | null | undefined => {
@@ -68,8 +68,8 @@ const parseStageId = (value: unknown, gameData: GameData): GameStageId | null | 
   return gameData.stages.some((stage) => stage.id === value) ? value : undefined;
 };
 
-/** Reads a saved overview display purpose, rejecting purposes the game no longer has. */
-const parseOverviewDisplay = (value: unknown, gameData: GameData): GameOverviewScenePurpose | null | undefined => {
+/** Reads a saved overview scene purpose, rejecting purposes the game no longer has. */
+const parseOverviewScene = (value: unknown, gameData: GameData): GameOverviewScenePurpose | null | undefined => {
   if (value === null) return null;
   if (typeof value !== "string" || !isGameOverview(value, gameData)) return undefined;
   return value;
@@ -80,11 +80,11 @@ const parseCurrent = (value: unknown, gameData: GameData): StoredGameProgress["c
   if (!isRecord(value)) return undefined;
 
   const stageId = parseStageId(value.stageId, gameData);
-  const overviewDisplay = parseOverviewDisplay(value.overviewDisplay, gameData);
-  if (stageId === undefined || overviewDisplay === undefined) return undefined;
-  if (stageId === null && overviewDisplay === null) return undefined;
+  const overviewScene = parseOverviewScene(value.overviewScene, gameData);
+  if (stageId === undefined || overviewScene === undefined) return undefined;
+  if (stageId === null && overviewScene === null) return undefined;
 
-  return { stageId, overviewDisplay };
+  return { stageId, overviewScene };
 };
 
 /** Reads and validates the solved challenge ids for every stage. */
@@ -102,10 +102,10 @@ const parseStages = (value: unknown, gameData: GameData): Record<GameStageId, Ga
   return stages;
 };
 
-/** Keeps the saved display states of displays the game still has; anything malformed is dropped. */
-const parseDisplayStates = (value: unknown, gameData: GameData): GameState["displayStates"] => {
+/** Keeps the saved scene states of scenes the game still has; anything malformed is dropped. */
+const parseSceneStates = (value: unknown, gameData: GameData): GameState["sceneStates"] => {
   if (!isRecord(value)) return {};
-  const scopes = allDisplayScopes(gameData);
+  const scopes = allSceneScopes(gameData);
   return Object.fromEntries(
     Object.entries(value).flatMap(([scope, state]) => (scopes.has(scope) && isRecord(state) ? [[scope, state]] : [])),
   );
@@ -134,7 +134,7 @@ const parseProgress = (raw: string, gameId: GameId, gameData: GameData): StoredG
     gameId,
     stages,
     current,
-    displayStates: parseDisplayStates(parsed.displayStates, gameData),
+    sceneStates: parseSceneStates(parsed.sceneStates, gameData),
   };
 };
 
@@ -164,13 +164,13 @@ const stateFromProgress = (progress: StoredGameProgress, gameData: GameData): Ga
     isDefined(storedStage) && storedStage.availability === "unlocked" && storedStage.completion !== "completed"
       ? storedStage.stage.id
       : null;
-  const overviewDisplay = progress.current.overviewDisplay ?? createBlankGameState(gameData).current.overviewDisplay;
+  const overviewScene = progress.current.overviewScene ?? createBlankGameState(gameData).current.overviewScene;
 
   return {
     gameData,
     stages,
-    current: { stageId: currentStageId, overviewDisplay },
-    displayStates: progress.displayStates,
+    current: { stageId: currentStageId, overviewScene },
+    sceneStates: progress.sceneStates,
     session: newGameSession(),
   };
 };
@@ -195,7 +195,7 @@ export const saveGameState = (gameId: GameId, gameState: GameState): void => {
     gameId,
     stages,
     current: { ...gameState.current },
-    displayStates: gameState.displayStates,
+    sceneStates: gameState.sceneStates,
   };
   try {
     storage.setItem(storageKey(gameId), JSON.stringify(progress));

@@ -8,9 +8,9 @@ import type {
   GameQuakeEffect,
 } from "../../../entities/data/scenes/GameEffectData";
 import { easingFunction } from "./EasingProbe";
-import { DISPLAY_FRAME_CLASS, centreOnScreen, displayDistance, displayRect, type ScreenPoint } from "./EffectTargets";
+import { DISPLAY_FRAME_CLASS, centreOnScreen, sceneDistance, sceneRect, type ScreenPoint } from "./EffectTargets";
 
-/** How far an item is shaken at some point in a quake, as a % of the display. */
+/** How far an item is shaken at some point in a quake, as a % of the scene. */
 export interface QuakeStep extends ScreenPoint {
   /** How far through the quake this is (0–1). */
   offset: number;
@@ -50,48 +50,48 @@ export const quakeSteps = ({ dx, dy, cycles, strength, random = Math.random }: Q
   return steps;
 };
 
-/** The size of an item and of the display it is in, each with its position. */
+/** The size of an item and of the scene it is in, each with its position. */
 type Bounds = Pick<DOMRect, "left" | "top" | "right" | "bottom" | "width" | "height">;
 
 /**
- * How much to enlarge an item while it shakes, so a full-size item doesn't show a gap at the display's edge.
- * @param dx how far it shakes horizontally, as a % of the display's width
- * @param dy how far it shakes vertically, as a % of the display's height
- * @returns 1 for an item that doesn't reach every edge of the display
+ * How much to enlarge an item while it shakes, so a full-size item doesn't show a gap at the scene's edge.
+ * @param dx how far it shakes horizontally, as a % of the scene's width
+ * @param dy how far it shakes vertically, as a % of the scene's height
+ * @returns 1 for an item that doesn't reach every edge of the scene
  */
-export const coverScale = (item: Bounds, display: Bounds, dx: number, dy: number): number => {
+export const coverScale = (item: Bounds, scene: Bounds, dx: number, dy: number): number => {
   const reachesEdges =
-    item.left <= display.left + 1 &&
-    item.top <= display.top + 1 &&
-    item.right >= display.right - 1 &&
-    item.bottom >= display.bottom - 1;
+    item.left <= scene.left + 1 &&
+    item.top <= scene.top + 1 &&
+    item.right >= scene.right - 1 &&
+    item.bottom >= scene.bottom - 1;
   if (!reachesEdges || item.width <= 0 || item.height <= 0) return 1;
-  const needX = (2 * (Math.abs(dx) / 100) * display.width) / item.width;
-  const needY = (2 * (Math.abs(dy) / 100) * display.height) / item.height;
+  const needX = (2 * (Math.abs(dx) / 100) * scene.width) / item.width;
+  const needY = (2 * (Math.abs(dy) / 100) * scene.height) / item.height;
   return 1 + Math.max(needX, needY);
 };
 
-/** How far to move an item to take it off the bottom of the display, as a % of its height. */
-export const fallDistance = (itemTop: number, display: Pick<Bounds, "bottom" | "height">): number =>
-  display.height > 0 ? ((display.bottom - itemTop) / display.height) * 100 : 100;
+/** How far to move an item to take it off the bottom of the scene, as a % of its height. */
+export const fallDistance = (itemTop: number, scene: Pick<Bounds, "bottom" | "height">): number =>
+  scene.height > 0 ? ((scene.bottom - itemTop) / scene.height) * 100 : 100;
 
 /** Where a position puts an element's centre on screen. */
 const positionOnScreen = (
   position: GameEffectPosition,
-  display: Pick<Bounds, "left" | "top" | "width" | "height">,
+  scene: Pick<Bounds, "left" | "top" | "width" | "height">,
   now: ScreenPoint,
   centreOf: (selector: string) => ScreenPoint | undefined,
 ): ScreenPoint => {
   const percent = (amount: { left: number; top: number }) => ({
-    x: (amount.left / 100) * display.width,
-    y: (amount.top / 100) * display.height,
+    x: (amount.left / 100) * scene.width,
+    y: (amount.top / 100) * scene.height,
   });
   if ("by" in position) {
     const { x, y } = percent(position.by);
     return { x: now.x + x, y: now.y + y };
   }
   const { x, y } = percent(position);
-  const from = "from" in position ? (centreOf(position.from) ?? now) : { x: display.left, y: display.top };
+  const from = "from" in position ? (centreOf(position.from) ?? now) : { x: scene.left, y: scene.top };
   return { x: from.x + x, y: from.y + y };
 };
 
@@ -101,24 +101,24 @@ interface MoveMeasures {
   visual: ScreenPoint;
   /** Its centre on screen with no move applied. */
   layout: ScreenPoint;
-  /** The display's bounds on screen. */
-  display: Pick<Bounds, "left" | "top" | "width" | "height">;
+  /** The scene's bounds on screen. */
+  scene: Pick<Bounds, "left" | "top" | "width" | "height">;
   /** The centre on screen of another element, if it is there. */
   centreOf: (selector: string) => ScreenPoint | undefined;
 }
 
 /**
- * Where a move begins and ends, as distances from where the element's template puts it, as a % of the display.
+ * Where a move begins and ends, as distances from where the element's template puts it, as a % of the scene.
  * @returns the start and end
  */
 export const moveOffsets = (
   start: GameEffectPosition | undefined,
   end: GameEffectPosition,
-  { visual, layout, display, centreOf }: MoveMeasures,
+  { visual, layout, scene, centreOf }: MoveMeasures,
 ): [ScreenPoint, ScreenPoint] => {
   const offset = (position: GameEffectPosition | undefined): ScreenPoint => {
-    const { x, y } = position === undefined ? visual : positionOnScreen(position, display, visual, centreOf);
-    return { x: ((x - layout.x) / display.width) * 100, y: ((y - layout.y) / display.height) * 100 };
+    const { x, y } = position === undefined ? visual : positionOnScreen(position, scene, visual, centreOf);
+    return { x: ((x - layout.x) / scene.width) * 100, y: ((y - layout.y) / scene.height) * 100 };
   };
   return [offset(start), offset(end)];
 };
@@ -186,9 +186,9 @@ const quakeMotion = ({ dx = 0, dy = 0, durationMs = 1000, cycleMs = 100, easing 
 /** A CSS property's name as a stylesheet writes it. */
 const cssName = (property: string): string => property.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 
-/** How much to enlarge an element while it shakes. A player's canvas fills the display, but the player doesn't. */
+/** How much to enlarge an element while it shakes. A player's canvas fills the scene, but the player doesn't. */
 const quakeScale = (element: Element, dx: number, dy: number): number =>
-  element.classList.contains("player") ? 1 : coverScale(element.getBoundingClientRect(), displayRect(element), dx, dy);
+  element.classList.contains("player") ? 1 : coverScale(element.getBoundingClientRect(), sceneRect(element), dx, dy);
 
 /** What effects need to know about the rule that started them. */
 export interface EffectRun {
@@ -196,7 +196,7 @@ export interface EffectRun {
   onEnd: (element: Element) => void;
   /** Whether players prefer reduced motion. */
   reducedMotion: boolean;
-  /** Looks for the element a position is measured from, in the display whose rule started the effect. */
+  /** Looks for the element a position is measured from, in the scene whose rule started the effect. */
   find: (selector: string) => Element | undefined;
 }
 
@@ -223,12 +223,12 @@ export interface EffectOn {
  * and add to any other effect's, so its template's positioning and other effects all still apply.
  *
  * Each element runs one of each effect: firing one again restarts it. An effect's animations go with its element, and a
- * display's template is rebuilt as it closes or resets, which is what ends them. So they aren't cancelled as a display
+ * scene's template is rebuilt as it closes or resets, which is what ends them. So they aren't cancelled as a scene
  * closes, as that would snap an item back into view during the scene's fade.
  */
 export class ItemEffects {
   private readonly running = new WeakMap<Element, Map<string, EffectAnimation>>();
-  /** How far each element is being shaken vertically, as a % of the display's height, while it is. */
+  /** How far each element is being shaken vertically, as a % of the scene's height, while it is. */
   private readonly shaking = new WeakMap<Element, number>();
 
   /** Shakes the elements. A dialog's frames always share one motion, to keep their layers lined up. */
@@ -245,7 +245,7 @@ export class ItemEffects {
       const scale = quakeScale(element, dx, dy);
       const keyframes = (sharesMotion ? shared : motion()).map(({ offset, x, y }) => ({
         offset,
-        translate: displayDistance(element, { x, y }),
+        translate: sceneDistance(element, { x, y }),
         ...(scale !== 1 && { scale: String(scale) }),
       }));
       this.shaking.set(element, Math.abs(dy));
@@ -278,16 +278,16 @@ export class ItemEffects {
     }
   }
 
-  /** Drops the elements off the bottom of the display. */
+  /** Drops the elements off the bottom of the scene. */
   fall(effect: GameItemFallEffect, elements: Element[], run: EffectRun): void {
     for (const element of elements) {
       this.cancel(element, "item-fall");
       // A shake may have it part way up as it is measured, which mustn't leave it short of the edge once that ends
       const shake = this.running.get(element)?.has("quake") === true ? (this.shaking.get(element) ?? 0) : 0;
-      const distance = fallDistance(element.getBoundingClientRect().top, displayRect(element)) + shake;
+      const distance = fallDistance(element.getBoundingClientRect().top, sceneRect(element)) + shake;
       const keyframes = [
-        { translate: displayDistance(element, { x: 0, y: 0 }) },
-        { translate: displayDistance(element, { x: 0, y: distance }) },
+        { translate: sceneDistance(element, { x: 0, y: 0 }) },
+        { translate: sceneDistance(element, { x: 0, y: distance }) },
       ];
       this.playToEnd({ element, name: "item-fall" }, keyframes, effect, run);
     }
@@ -302,9 +302,9 @@ export class ItemEffects {
     for (const element of elements) {
       const visual = centreOnScreen(element);
       this.cancel(element, "item-move");
-      const measures = { visual, layout: centreOnScreen(element), display: displayRect(element), centreOf };
+      const measures = { visual, layout: centreOnScreen(element), scene: sceneRect(element), centreOf };
       const keyframes = moveOffsets(effect.start, effect.end, measures).map((offset) => ({
-        translate: displayDistance(element, offset),
+        translate: sceneDistance(element, offset),
       }));
       this.playToEnd({ element, name: "item-move" }, keyframes, effect, run);
     }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveCameraMode } from "../src/components/core/logic/CameraModeUtils";
-import { getLayeredRenderData, type LayeredGameDisplayRenderData } from "../src/components/core/logic/RenderDataUtils";
+import { getLayeredRenderData, type LayeredGameSceneRenderData } from "../src/components/core/logic/RenderDataUtils";
 import type { GameSceneCameraData } from "../src/entities/data/scenes/GameSceneData";
 import type { GameData } from "../src/entities/data/GameData";
 import type { CameraModuleData } from "../src/entities/data/GameModuleData";
@@ -11,15 +11,15 @@ import { scroll } from "./data/GameBuilders";
 interface CameraSettings {
   /** The game's camera module, or none. */
   game?: CameraModuleData;
-  /** The overview display's settings, or none. */
+  /** The overview scene's settings, or none. */
   overview?: GameSceneCameraData;
-  /** The stage display's settings, or none. */
+  /** The stage scene's settings, or none. */
   stage?: GameSceneCameraData;
   /** One per challenge; `undefined` leaves that challenge with no settings. */
   challenges?: (GameSceneCameraData | undefined)[];
 }
 
-/** A one-stage game whose displays carry the given camera settings. */
+/** A one-stage game whose scenes carry the given camera settings. */
 const gameWithCamera = ({ game, overview, stage, challenges = [undefined] }: CameraSettings = {}): GameData => ({
   title: "Camera Game",
   description: "A game for camera tests.",
@@ -51,8 +51,8 @@ const onOverview = (settings: CameraSettings = {}) => {
 const inStage = (settings: CameraSettings = {}) => {
   const gameData = gameWithCamera(settings);
   const state = createBlankGameState(gameData);
-  const inStageState = { ...state, current: { stageId: "stage-1", overviewDisplay: null } };
-  const renderData: LayeredGameDisplayRenderData = getLayeredRenderData(inStageState, {}, "game");
+  const inStageState = { ...state, current: { stageId: "stage-1", overviewScene: null } };
+  const renderData: LayeredGameSceneRenderData = getLayeredRenderData(inStageState, {}, "game");
   return resolveCameraMode(gameData, renderData);
 };
 
@@ -69,11 +69,11 @@ describe("resolveCameraMode", () => {
     });
   });
 
-  it("is off, with no preview, when neither the game nor any display sets it", () => {
+  it("is off, with no preview, when neither the game nor any scene sets it", () => {
     expect(onOverview()).toEqual({ enabled: false, preview: false });
   });
 
-  it("takes the game's settings when no display sets them", () => {
+  it("takes the game's settings when no scene sets them", () => {
     expect(inStage({ game: { requirement: "enabled" } })).toEqual({ enabled: true, preview: true });
     expect(inStage({ game: { requirement: "enabled", preview: false } })).toEqual({ enabled: true, preview: false });
   });

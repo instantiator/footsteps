@@ -103,21 +103,21 @@ interface GameReferences {
   problems: ResourceProblem[];
 }
 
-/** A display to visit: one of the game's displays, or a reset display. */
-type VisitedDisplay = Pick<GameSceneBase, "component" | "resetScene">;
+/** A scene to visit: one of the game's scenes, or a reset scene. */
+type VisitedScene = Pick<GameSceneBase, "component" | "resetScene">;
 
-/** Visits every display in the game, and their reset displays, with its path relative to the game. */
-function eachDisplay(game: GameData, visit: (display: VisitedDisplay, path: string) => void): void {
-  const visitWithResets = (display: VisitedDisplay, path: string): void => {
-    visit(display, path);
-    if (display.resetScene) visitWithResets(display.resetScene, `${path}.resetScene`);
+/** Visits every scene in the game, and their reset scenes, with its path relative to the game. */
+function eachScene(game: GameData, visit: (scene: VisitedScene, path: string) => void): void {
+  const visitWithResets = (scene: VisitedScene, path: string): void => {
+    visit(scene, path);
+    if (scene.resetScene) visitWithResets(scene.resetScene, `${path}.resetScene`);
   };
-  game.scenes.forEach((display, index) => visitWithResets(display, `displays[${index}]`));
+  game.scenes.forEach((scene, index) => visitWithResets(scene, `scenes[${index}]`));
   game.stages.forEach((stage, stageIndex) => {
-    stage.scenes?.forEach((display, index) => visitWithResets(display, `stages[${stageIndex}].scenes[${index}]`));
+    stage.scenes?.forEach((scene, index) => visitWithResets(scene, `stages[${stageIndex}].scenes[${index}]`));
     stage.challenges.forEach((challenge, challengeIndex) => {
-      challenge.scenes.forEach((display, index) =>
-        visitWithResets(display, `stages[${stageIndex}].challenges[${challengeIndex}].scenes[${index}]`),
+      challenge.scenes.forEach((scene, index) =>
+        visitWithResets(scene, `stages[${stageIndex}].challenges[${challengeIndex}].scenes[${index}]`),
       );
     });
   });
@@ -151,9 +151,9 @@ function collectReferences(game: GameData): GameReferences {
     });
   }
 
-  eachDisplay(game, (display, displayPath) => {
-    const { component } = display;
-    const componentPath = `${displayPath}.component`;
+  eachScene(game, (scene, scenePath) => {
+    const { component } = scene;
+    const componentPath = `${scenePath}.component`;
 
     const addTemplate = (template: GameSceneTemplateSourceData | undefined, path: string) => {
       if (!isDefined(template) || template.sourceType === "embedded") return;

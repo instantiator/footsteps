@@ -12,7 +12,7 @@ import {
   type RuleEvent,
 } from "../src/components/core/logic/GameRuleUtils";
 import { compileGameRules } from "../src/components/core/logic/GameRuleCompile";
-import { startDisplayRuns } from "../src/components/core/logic/GameStateUtils";
+import { startSceneRuns } from "../src/components/core/logic/GameStateUtils";
 import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
 import type { GameData } from "../src/entities/data/GameData";
 import type { GameAction, GameRule } from "../src/entities/data/scenes/GameSceneData";
@@ -27,8 +27,8 @@ const gameWithRules = (overviewRules: GameRule[], challengeRules: GameRule[] = [
   return data;
 };
 
-const OVERVIEW = "displays[0] (game-overview-stages) › rules[0]";
-const CHALLENGE = "stages[0] (s1) › challenges[0] (c1) › displays[0] (challenge-in-progress) › rules[0]";
+const OVERVIEW = "scenes[0] (game-overview-stages) › rules[0]";
+const CHALLENGE = "stages[0] (s1) › challenges[0] (c1) › scenes[0] (challenge-in-progress) › rules[0]";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -75,7 +75,7 @@ describe("compileGameRules", () => {
     ).toThrow(`${OVERVIEW}.do[0]: delayMs can't be negative`);
   });
 
-  it("names the path into a challenge display", () => {
+  it("names the path into a challenge scene", () => {
     const rule: GameRule = { on: { start: true }, do: [{ answer: "+" }] };
     expect(() => compileGameRules(gameWithRules([], [rule]))).toThrow(`${CHALLENGE}.do[0].answer: `);
   });
@@ -84,10 +84,10 @@ describe("compileGameRules", () => {
     ["completeChallenge", { completeChallenge: true }],
     ["answer", { answer: '"x"' }],
     ["resetChallenge", { resetChallenge: true }],
-  ] satisfies [string, GameAction][])("rejects %s outside a challenge display", (name, action) => {
+  ] satisfies [string, GameAction][])("rejects %s outside a challenge scene", (name, action) => {
     const rule: GameRule = { on: { start: true }, do: [action] };
     expect(() => compileGameRules(gameWithRules([rule]))).toThrow(
-      `${OVERVIEW}.do[0]: ${name} can only be used on a challenge display`,
+      `${OVERVIEW}.do[0]: ${name} can only be used on a challenge scene`,
     );
   });
 
@@ -151,50 +151,50 @@ describe("applyShowResets", () => {
   const OVERVIEW_SCOPE = "overview:game-overview-stages";
   const CHALLENGE_SCOPE = "challenge:s1:c1:challenge-in-progress";
 
-  /** A game whose challenge display resets on show, with both displays holding state. */
+  /** A game whose challenge scene resets on show, with both scenes holding state. */
   const withStates = (current: GameState["current"]): GameState => {
     const data = gameWithRules([]);
     data.stages[0].challenges[0].scenes[0].component.resetStateOnShow = true;
     return {
       ...createBlankGameState(data),
       current,
-      displayStates: { [OVERVIEW_SCOPE]: { n: 1 }, [CHALLENGE_SCOPE]: { n: 2 } },
+      sceneStates: { [OVERVIEW_SCOPE]: { n: 1 }, [CHALLENGE_SCOPE]: { n: 2 } },
     };
   };
-  const overview = { stageId: null, overviewDisplay: "game-overview-stages" } as const;
-  const inStage = { stageId: "s1", overviewDisplay: "game-overview-stages" } as const;
+  const overview = { stageId: null, overviewScene: "game-overview-stages" } as const;
+  const inStage = { stageId: "s1", overviewScene: "game-overview-stages" } as const;
 
-  it("resets a flagged display when it becomes shown", () => {
-    expect(applyShowResets(withStates(overview), withStates(inStage)).displayStates).toEqual({
+  it("resets a flagged scene when it becomes shown", () => {
+    expect(applyShowResets(withStates(overview), withStates(inStage)).sceneStates).toEqual({
       [OVERVIEW_SCOPE]: { n: 1 },
     });
   });
 
-  it("keeps the state of a flagged display that was already shown", () => {
+  it("keeps the state of a flagged scene that was already shown", () => {
     const next = withStates(inStage);
     expect(applyShowResets(withStates(inStage), next)).toBe(next);
   });
 
-  it("starts a new run of a display as it shows and as it closes, and not while it stays shown", () => {
+  it("starts a new run of a scene as it shows and as it closes, and not while it stays shown", () => {
     const shown = applyShowResets(withStates(overview), withStates(inStage));
-    expect(shown.session.displayRuns).toEqual({ [CHALLENGE_SCOPE]: 1, [OVERVIEW_SCOPE]: 1 });
+    expect(shown.session.sceneRuns).toEqual({ [CHALLENGE_SCOPE]: 1, [OVERVIEW_SCOPE]: 1 });
     const left = applyShowResets(shown, { ...shown, current: overview });
     const back = applyShowResets(left, { ...left, current: inStage });
-    expect(back.session.displayRuns).toEqual({ [CHALLENGE_SCOPE]: 3, [OVERVIEW_SCOPE]: 3 });
+    expect(back.session.sceneRuns).toEqual({ [CHALLENGE_SCOPE]: 3, [OVERVIEW_SCOPE]: 3 });
     expect(applyShowResets(back, { ...back })).toEqual(back);
   });
 
   it("starts a run of what is shown when the game starts", () => {
-    expect(applyShowResets(undefined, withStates(overview)).session.displayRuns).toEqual({ [OVERVIEW_SCOPE]: 1 });
+    expect(applyShowResets(undefined, withStates(overview)).session.sceneRuns).toEqual({ [OVERVIEW_SCOPE]: 1 });
   });
 
-  it("resets a flagged display that is shown when the game starts", () => {
-    expect(applyShowResets(undefined, withStates(inStage)).displayStates).not.toHaveProperty(CHALLENGE_SCOPE);
+  it("resets a flagged scene that is shown when the game starts", () => {
+    expect(applyShowResets(undefined, withStates(inStage)).sceneStates).not.toHaveProperty(CHALLENGE_SCOPE);
   });
 
-  it("keeps the state of a display without the flag when it becomes shown", () => {
+  it("keeps the state of a scene without the flag when it becomes shown", () => {
     const next = withStates(overview);
-    expect(applyShowResets(withStates(inStage), next).displayStates).toEqual(next.displayStates);
+    expect(applyShowResets(withStates(inStage), next).sceneStates).toEqual(next.sceneStates);
   });
 });
 
@@ -202,7 +202,7 @@ describe("rule engine", () => {
   const SCOPE = "challenge:s1:c1:challenge-in-progress";
   const OVERVIEW_SCOPE = "overview:game-overview-stages";
 
-  /** A game in stage s1 (of s1, s2), whose c1 display has the given rules and initial state. */
+  /** A game in stage s1 (of s1, s2), whose c1 scene has the given rules and initial state. */
   const playing = (rules: GameRule[], initialState: Record<string, unknown> = {}) => {
     const data = game(
       ["game-overview-stages"],
@@ -215,7 +215,7 @@ describe("rule engine", () => {
   const env: RuleEnvironment = { gameId: "g", expressions: new Map() };
   const fireAll = (state: GameState, event: RuleEvent = NO_EVENT, scope = SCOPE) =>
     fireRules(env, state, scope, () => event);
-  const stateOf = (state: GameState) => state.displayStates[SCOPE];
+  const stateOf = (state: GameState) => state.sceneStates[SCOPE];
   const solved = (state: GameState, stageIndex = 0, challengeIndex = 0) =>
     state.stages[stageIndex].challengeStates[challengeIndex].succeeded;
 
@@ -253,7 +253,7 @@ describe("rule engine", () => {
         do: [{ set: { sum: "state.n + 1", from: "event.id" }, delayMs: 500 }],
       };
       const state = fireAll(playing([later], { n: 1 }), { id: "door", interaction: "click", player: 0 });
-      const changed = { ...state, displayStates: { [SCOPE]: { n: 10 } } };
+      const changed = { ...state, sceneStates: { [SCOPE]: { n: 10 } } };
       expect(stateOf(applyDelayedAction(env, changed, state.session.delayedActions[0]))).toEqual({
         n: 10,
         sum: 11,
@@ -264,26 +264,26 @@ describe("rule engine", () => {
     it("doesn't check the rule's if again", () => {
       const iffy: GameRule = { on: { start: true }, if: "state.go", do: [{ set: { done: "true" }, delayMs: 500 }] };
       const state = fireAll(playing([iffy], { go: true }));
-      const changed = { ...state, displayStates: { [SCOPE]: { go: false } } };
+      const changed = { ...state, sceneStates: { [SCOPE]: { go: false } } };
       expect(stateOf(applyDelayedAction(env, changed, state.session.delayedActions[0]))).toEqual({
         go: false,
         done: true,
       });
     });
 
-    it("does nothing once the display has closed", () => {
+    it("does nothing once the scene has closed", () => {
       const state = fired();
       const closed = { ...state, current: { ...state.current, stageId: null } };
       expect(runDelayed(closed)).toBe(closed);
     });
 
-    it("does nothing once the display has reset", () => {
+    it("does nothing once the scene has reset", () => {
       const state = fired();
-      const again = startDisplayRuns(state, [SCOPE]);
+      const again = startSceneRuns(state, [SCOPE]);
       expect(runDelayed(again)).toBe(again);
     });
 
-    it("does nothing once the display has closed and shown again, as that is a new run", () => {
+    it("does nothing once the scene has closed and shown again, as that is a new run", () => {
       const state = fired();
       const closed = applyShowResets(state, { ...state, current: { ...state.current, stageId: null } });
       const back = applyShowResets(closed, { ...closed, current: state.current });
@@ -298,18 +298,18 @@ describe("rule engine", () => {
     });
   });
 
-  describe("display runs", () => {
+  describe("scene runs", () => {
     const reset = (action: GameAction) => fireAll(playing([{ on: { start: true }, do: [action] }]));
 
     it("starts a new run on resetState", () => {
-      expect(reset({ resetState: true }).session.displayRuns).toEqual({ [SCOPE]: 1 });
+      expect(reset({ resetState: true }).session.sceneRuns).toEqual({ [SCOPE]: 1 });
     });
 
-    it("starts a new run of each of the challenge's displays on resetChallenge", () => {
-      expect(reset({ resetChallenge: true }).session.displayRuns).toEqual({ [SCOPE]: 1 });
+    it("starts a new run of each of the challenge's scenes on resetChallenge", () => {
+      expect(reset({ resetChallenge: true }).session.sceneRuns).toEqual({ [SCOPE]: 1 });
     });
 
-    it("includes a challenge's reset displays, and theirs", () => {
+    it("includes a challenge's reset scenes, and theirs", () => {
       const state = playing([{ on: { start: true }, do: [{ resetChallenge: true }] }]);
       const component = state.gameData.stages[0].challenges[0].scenes[0].component;
       const resetScene = { component, resetScene: { component } };
@@ -318,7 +318,7 @@ describe("rule engine", () => {
         ...state,
         session: { ...state.session, finishedResets: [`${SCOPE}/reset`, `${SCOPE}/reset/reset`] },
       };
-      expect(fireAll(shown).session.displayRuns).toEqual({
+      expect(fireAll(shown).session.sceneRuns).toEqual({
         [SCOPE]: 1,
         [`${SCOPE}/reset`]: 1,
         [`${SCOPE}/reset/reset`]: 1,
@@ -326,7 +326,7 @@ describe("rule engine", () => {
     });
 
     it("doesn't start one on a set", () => {
-      expect(reset({ set: { n: "1" } }).session.displayRuns).toEqual({});
+      expect(reset({ set: { n: "1" } }).session.sceneRuns).toEqual({});
     });
   });
 
@@ -344,7 +344,7 @@ describe("rule engine", () => {
         { id: 4, effect: { reward: { animation: "stars" }, delayMs: 500 }, scope: SCOPE, event: NO_EVENT },
       ]);
       expect(state.session.nextEffectId).toBe(5);
-      expect(state.displayStates).toEqual({});
+      expect(state.sceneStates).toEqual({});
     });
 
     it("sets every key from the state before the action", () => {
@@ -386,11 +386,11 @@ describe("rule engine", () => {
 
     it("resets state to initialState", () => {
       const state = { ...playing([{ on: { start: true }, do: [{ resetState: true }] }], { n: 0 }) };
-      const changed = { ...state, displayStates: { [SCOPE]: { n: 5 } } };
-      expect(fireAll(changed).displayStates).toEqual({});
+      const changed = { ...state, sceneStates: { [SCOPE]: { n: 5 } } };
+      expect(fireAll(changed).sceneStates).toEqual({});
     });
 
-    it("completes the display's challenge, once", () => {
+    it("completes the scene's challenge, once", () => {
       const state = fireAll(playing([{ on: { start: true }, do: [{ completeChallenge: true }] }]));
       expect(solved(state)).toBe(true);
       expect(fireAll(state)).toBe(state);
@@ -403,13 +403,13 @@ describe("rule engine", () => {
       expect(fireAll(wrong)).toBe(wrong);
     });
 
-    it("resets the display's challenge and its state", () => {
+    it("resets the scene's challenge and its state", () => {
       const rules: GameRule[] = [
         { on: { start: true }, do: [{ set: { n: "1" } }, { completeChallenge: true }, { resetChallenge: true }] },
       ];
       const state = fireAll(playing(rules));
       expect(solved(state)).toBe(false);
-      expect(state.displayStates).toEqual({});
+      expect(state.sceneStates).toEqual({});
     });
 
     it("enters an unlocked stage, and leaves a locked one alone", () => {
@@ -435,7 +435,7 @@ describe("rule engine", () => {
       expect(stateOf(fired)).toEqual({ log: "ac" });
     });
 
-    it("does nothing for a display that isn't shown", () => {
+    it("does nothing for a scene that isn't shown", () => {
       const state = playing([{ on: { start: true }, do: [{ set: { n: "1" } }] }]);
       expect(fireAll(state, NO_EVENT, OVERVIEW_SCOPE)).toBe(state);
       const hidden = { ...state, current: { ...state.current, stageId: null } };
@@ -448,7 +448,7 @@ describe("rule engine", () => {
       playing([{ on: { when: "state.n >= 2" }, do: [{ set: { fired: "state.fired + 1" } }] }], { n: 0, fired: 0 });
     const withN = (state: GameState, n: number) => ({
       ...state,
-      displayStates: { ...state.displayStates, [SCOPE]: { ...(stateOf(state) ?? { fired: 0 }), n } },
+      sceneStates: { ...state.sceneStates, [SCOPE]: { ...(stateOf(state) ?? { fired: 0 }), n } },
     });
 
     it("records a when rule seen for the first time without firing it, even if true", () => {
@@ -465,7 +465,7 @@ describe("rule engine", () => {
       ];
       const before = fireRules(
         env,
-        { ...playing(rules, { n: 5 }), displayStates: { [SCOPE]: { n: 1 } } },
+        { ...playing(rules, { n: 5 }), sceneStates: { [SCOPE]: { n: 1 } } },
         SCOPE,
         () => undefined,
       );
@@ -485,7 +485,7 @@ describe("rule engine", () => {
       expect(stateOf(state)).toMatchObject({ fired: 2 });
     });
 
-    it("forgets a hidden display's rules, so they record afresh when it is shown again", () => {
+    it("forgets a hidden scene's rules, so they record afresh when it is shown again", () => {
       const { edges } = runWhens(env, counting(), new Map());
       const hidden = { ...counting(), current: { ...counting().current, stageId: null } };
       const { edges: afterHide } = runWhens(env, hidden, edges);
@@ -500,7 +500,7 @@ describe("rule engine", () => {
         { on: { when: "state.step == 2" }, do: [{ set: { step: "3" } }] },
       ];
       const { edges } = runWhens(env, playing(rules, { step: 0 }), new Map());
-      const started = { ...playing(rules, { step: 0 }), displayStates: { [SCOPE]: { step: 1 } } };
+      const started = { ...playing(rules, { step: 0 }), sceneStates: { [SCOPE]: { step: 1 } } };
       expect(stateOf(runWhens(env, started, edges).state)).toEqual({ step: 3 });
     });
 
@@ -511,7 +511,7 @@ describe("rule engine", () => {
         { on: { when: "not state.x" }, do: [{ set: { x: "true", n: "state.n + 1" } }] },
       ];
       const { edges } = runWhens(env, playing(rules, { x: false, n: 0 }), new Map());
-      const kicked = { ...playing(rules), displayStates: { [SCOPE]: { x: true, n: 0 } } };
+      const kicked = { ...playing(rules), sceneStates: { [SCOPE]: { x: true, n: 0 } } };
 
       const looped = runWhens(env, kicked, edges);
       expect(error).toHaveBeenCalledWith(expect.stringContaining(`${SCOPE}#`));

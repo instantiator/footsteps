@@ -33,7 +33,7 @@ const fetchTemplateText = async (url: string): Promise<string> => {
   return response.text();
 };
 
-/** Loads display templates, fetching each URL once and sharing the result. */
+/** Loads scene templates, fetching each URL once and sharing the result. */
 export default function useContentCache() {
   const { source: repositorySource } = useContext(GameRepositoryContext);
   const { templates } = useContext(GameContentCacheContext);

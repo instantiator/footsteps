@@ -15,7 +15,7 @@
 <div class="tsd-comment tsd-typography"><p>Turns one player's segmentation frames into interaction events.</p>
 <p>Events are edge-triggered: an interaction fires when it begins, not on every frame it holds.
 The first frame only records what already holds, so a player who is already inside an element
-when the monitor starts (as a display fades in) must move into it again.
+when the monitor starts (as a scene fades in) must move into it again.
 The monitor also follows the player's feet for jumps (<a href="components_camera_JumpDetector.JumpDetector.html" class="tsd-kind-class">JumpDetector</a>). When they land, it fires <code>jump</code> for an
 element their feet were on both at take-off and at landing, <code>jump-from</code> for one they took off from, and
 <code>jump-onto</code> for one they landed on.</p>

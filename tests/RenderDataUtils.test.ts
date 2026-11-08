@@ -1,29 +1,29 @@
 import { describe, expect, it } from "vitest";
 import { completeChallenge } from "../src/components/core/logic/GameStateUtils";
 import {
-  calcChallengeDisplay,
-  calcChallengeDisplays,
-  calcOverviewDisplay,
-  calcStageDisplay,
-  getDisplayKey,
+  calcChallengeScene,
+  calcChallengeScenes,
+  calcOverviewScene,
+  calcStageScene,
+  getSceneKey,
   getLayeredRenderData,
   getRenderMode,
-  getShownDisplays,
+  getShownScenes,
 } from "../src/components/core/logic/RenderDataUtils";
-import { startDisplayRuns } from "../src/components/core/logic/GameStateUtils";
+import { startSceneRuns } from "../src/components/core/logic/GameStateUtils";
 import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
-import { challenge, display, game, stage } from "./data/GameBuilders";
+import { challenge, scene, game, stage } from "./data/GameBuilders";
 
 const resources = { logo: "https://example.com/logo.png" };
 
-/** Four single-display challenges in one chunked stage, plus a plain second stage. */
+/** Four single-scene challenges in one chunked stage, plus a plain second stage. */
 const chunkedGame = (chunking: number, withShared = true) =>
   game(
     ["game-overview-title", "game-overview-stages"],
     [
       stage("s1", [challenge("c1"), challenge("c2"), challenge("c3"), challenge("c4")], {
         challengeChunking: chunking,
-        scenes: withShared ? [display("shared")] : undefined,
+        scenes: withShared ? [scene("shared")] : undefined,
       }),
       stage("s2", [challenge("c5")]),
     ],
@@ -42,23 +42,23 @@ describe("getRenderMode", () => {
   });
 });
 
-describe("getDisplayKey", () => {
-  const keyOf = (state: GameState) => getDisplayKey(getLayeredRenderData(state, resources, "game"));
+describe("getSceneKey", () => {
+  const keyOf = (state: GameState) => getSceneKey(getLayeredRenderData(state, resources, "game"));
 
-  it("stays the same while a display's contents change", () => {
+  it("stays the same while a scene's contents change", () => {
     const state = inStage(createBlankGameState(chunkedGame(1)), "s1");
     expect(keyOf({ ...state, current: { ...state.current } })).toBe(keyOf(state));
   });
 
-  it("stays the same when a display resets, so a reset doesn't fade", () => {
+  it("stays the same when a scene resets, so a reset doesn't fade", () => {
     const state = inStage(createBlankGameState(chunkedGame(1)), "s1");
-    const [{ scope }] = getShownDisplays(state);
-    expect(keyOf(startDisplayRuns(state, [scope]))).toBe(keyOf(state));
+    const [{ scope }] = getShownScenes(state);
+    expect(keyOf(startSceneRuns(state, [scope]))).toBe(keyOf(state));
   });
 
   it("changes when the overview cuts to another overview", () => {
     const state = createBlankGameState(chunkedGame(1));
-    const stages: GameState = { ...state, current: { ...state.current, overviewDisplay: "game-overview-stages" } };
+    const stages: GameState = { ...state, current: { ...state.current, overviewScene: "game-overview-stages" } };
     expect(keyOf(stages)).not.toBe(keyOf(state));
   });
 
@@ -67,7 +67,7 @@ describe("getDisplayKey", () => {
     expect(keyOf(inStage(state, "s1"))).not.toBe(keyOf(state));
   });
 
-  it("changes when a challenge moves to another display purpose", () => {
+  it("changes when a challenge moves to another scene purpose", () => {
     const withCompleted = game(
       ["game-overview-title"],
       [stage("s1", [challenge("c1", ["challenge-in-progress", "challenge-completed"])])],
@@ -94,7 +94,7 @@ describe("getLayeredRenderData", () => {
       expect(layers.challengesRenderData).toBeUndefined();
     });
 
-    it("gives templates the display's own data, the resources and the decorated game state", () => {
+    it("gives templates the scene's own data, the resources and the decorated game state", () => {
       const data = layers.overviewRenderData!.templateData;
       expect(data.componentData).toEqual({ marker: "game-overview-title" });
       expect(data.resources).toBe(resources);
@@ -111,14 +111,14 @@ describe("getLayeredRenderData", () => {
   });
 
   describe("in stage mode", () => {
-    it("has the stage's shared display when it has one", () => {
+    it("has the stage's shared scene when it has one", () => {
       const layers = getLayeredRenderData(inStage(createBlankGameState(chunkedGame(1)), "s1"), resources, "game");
       expect(layers.stageRenderData?.purpose).toBe("shared");
       expect(layers.stageRenderData?.stageId).toBe("s1");
       expect(layers.stageRenderData?.templateData.componentData).toEqual({ marker: "shared" });
     });
 
-    it("has no stage layer when the stage has no shared display", () => {
+    it("has no stage layer when the stage has no shared scene", () => {
       const layers = getLayeredRenderData(
         inStage(createBlankGameState(chunkedGame(1, false)), "s1"),
         resources,
@@ -148,74 +148,74 @@ describe("getLayeredRenderData", () => {
       expect(datum.templateData.resources).toBe(resources);
     });
 
-    it("throws when an active challenge has no display", () => {
-      const noDisplays = game(["game-overview-title"], [stage("s1", [challenge("c1", [])])]);
-      const state = inStage(createBlankGameState(noDisplays), "s1");
+    it("throws when an active challenge has no scene", () => {
+      const noScenes = game(["game-overview-title"], [stage("s1", [challenge("c1", [])])]);
+      const state = inStage(createBlankGameState(noScenes), "s1");
       expect(() => getLayeredRenderData(state, resources, "game")).toThrow("c1");
     });
   });
 });
 
-describe("calcOverviewDisplay", () => {
+describe("calcOverviewScene", () => {
   const state = createBlankGameState(chunkedGame(1));
 
-  it("uses the current overview display", () => {
-    const current: GameState = { ...state, current: { ...state.current, overviewDisplay: "game-overview-stages" } };
-    expect(calcOverviewDisplay(current)?.purpose).toBe("game-overview-stages");
+  it("uses the current overview scene", () => {
+    const current: GameState = { ...state, current: { ...state.current, overviewScene: "game-overview-stages" } };
+    expect(calcOverviewScene(current)?.purpose).toBe("game-overview-stages");
   });
 
   it("falls back to the title, then the stages overview, when none is current", () => {
-    const none: GameState = { ...state, current: { ...state.current, overviewDisplay: null } };
-    expect(calcOverviewDisplay(none)?.purpose).toBe("game-overview-title");
+    const none: GameState = { ...state, current: { ...state.current, overviewScene: null } };
+    expect(calcOverviewScene(none)?.purpose).toBe("game-overview-title");
 
     const stagesOnly: GameState = {
       ...none,
       gameData: game(["game-overview-stages"], none.gameData.stages),
     };
-    expect(calcOverviewDisplay(stagesOnly)?.purpose).toBe("game-overview-stages");
+    expect(calcOverviewScene(stagesOnly)?.purpose).toBe("game-overview-stages");
   });
 });
 
-describe("calcStageDisplay", () => {
-  it("finds the stage's display by purpose", () => {
-    expect(calcStageDisplay(stage("s", [], { scenes: [display("shared")] }), "shared")?.purpose).toBe("shared");
+describe("calcStageScene", () => {
+  it("finds the stage's scene by purpose", () => {
+    expect(calcStageScene(stage("s", [], { scenes: [scene("shared")] }), "shared")?.purpose).toBe("shared");
   });
 
-  it("is undefined when the stage has no displays", () => {
-    expect(calcStageDisplay(stage("s", []), "shared")).toBeUndefined();
+  it("is undefined when the stage has no scenes", () => {
+    expect(calcStageScene(stage("s", []), "shared")).toBeUndefined();
   });
 });
 
-describe("calcChallengeDisplay", () => {
+describe("calcChallengeScene", () => {
   const stateOf = (purposes: Parameters<typeof challenge>[1]) =>
     createBlankGameState(game(["game-overview-title"], [stage("s", [challenge("c", purposes)])])).stages[0]
       .challengeStates[0];
 
   it("prefers the title, then in-progress, then completed", () => {
     expect(
-      calcChallengeDisplay(stateOf(["challenge-completed", "challenge-in-progress", "challenge-title"]))?.purpose,
+      calcChallengeScene(stateOf(["challenge-completed", "challenge-in-progress", "challenge-title"]))?.purpose,
     ).toBe("challenge-title");
-    expect(calcChallengeDisplay(stateOf(["challenge-completed", "challenge-in-progress"]))?.purpose).toBe(
+    expect(calcChallengeScene(stateOf(["challenge-completed", "challenge-in-progress"]))?.purpose).toBe(
       "challenge-in-progress",
     );
-    expect(calcChallengeDisplay(stateOf(["challenge-completed"]))?.purpose).toBe("challenge-completed");
+    expect(calcChallengeScene(stateOf(["challenge-completed"]))?.purpose).toBe("challenge-completed");
   });
 
-  it("is undefined for a challenge with no displays", () => {
-    expect(calcChallengeDisplay(stateOf([]))).toBeUndefined();
+  it("is undefined for a challenge with no scenes", () => {
+    expect(calcChallengeScene(stateOf([]))).toBeUndefined();
   });
 
-  it("shows the completed display once the challenge is succeeded", () => {
+  it("shows the completed scene once the challenge is succeeded", () => {
     const state = createBlankGameState(
       game(["game-overview-title"], [stage("s", [challenge("c", ["challenge-title", "challenge-completed"])])]),
     );
     const done = completeChallenge(state, "s", "c");
-    expect(calcChallengeDisplay(done.stages[0].challengeStates[0])?.purpose).toBe("challenge-completed");
+    expect(calcChallengeScene(done.stages[0].challengeStates[0])?.purpose).toBe("challenge-completed");
   });
 });
 
-describe("calcChallengeDisplays", () => {
-  it("maps each challenge state to its display, in order", () => {
+describe("calcChallengeScenes", () => {
+  it("maps each challenge state to its scene, in order", () => {
     const state = createBlankGameState(
       game(
         ["game-overview-title"],
@@ -228,21 +228,21 @@ describe("calcChallengeDisplays", () => {
         ],
       ),
     );
-    const displays = calcChallengeDisplays(state.stages[0].challengeStates);
-    expect(displays.map((d) => d?.purpose)).toEqual(["challenge-title", undefined, "challenge-completed"]);
+    const scenes = calcChallengeScenes(state.stages[0].challengeStates);
+    expect(scenes.map((d) => d?.purpose)).toEqual(["challenge-title", undefined, "challenge-completed"]);
   });
 });
 
-describe("display scopes and state", () => {
+describe("scene scopes and state", () => {
   const blank = () => createBlankGameState(chunkedGame(2));
 
   it("shows only the overview while no stage is open", () => {
-    expect(getShownDisplays(blank()).map((d) => d.scope)).toEqual(["overview:game-overview-title"]);
+    expect(getShownScenes(blank()).map((d) => d.scope)).toEqual(["overview:game-overview-title"]);
   });
 
-  it("shows the stage's shared display and its active challenges, with what they belong to", () => {
+  it("shows the stage's shared scene and its active challenges, with what they belong to", () => {
     expect(
-      getShownDisplays(inStage(blank(), "s1")).map(({ scope, stageId, challengeId }) => ({
+      getShownScenes(inStage(blank(), "s1")).map(({ scope, stageId, challengeId }) => ({
         scope,
         stageId,
         challengeId,
@@ -254,12 +254,12 @@ describe("display scopes and state", () => {
     ]);
   });
 
-  it("gives each display its scope, and its state, data and the game snapshot to render", () => {
+  it("gives each scene its scope, and its state, data and the game snapshot to render", () => {
     const data = chunkedGame(1);
     data.stages[0].challenges[0].scenes[0].component.initialState = { n: 0 };
     const state = {
       ...inStage(createBlankGameState(data), "s1"),
-      displayStates: { "stage:s1:shared": { open: true } },
+      sceneStates: { "stage:s1:shared": { open: true } },
     };
 
     const layers = getLayeredRenderData(state, resources, "game-id");

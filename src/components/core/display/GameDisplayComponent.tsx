@@ -1,7 +1,7 @@
 import { isDefined } from "../../../util/ObjectUtils";
 import type { GameAnswerFunction } from "../Game";
-import type { GameDisplayRenderData } from "../logic/RenderDataUtils";
-import type { DisplayDomEvent } from "../logic/TemplateUtils";
+import type { GameSceneRenderData } from "../logic/RenderDataUtils";
+import type { SceneDomEvent } from "../logic/TemplateUtils";
 import GameDisplayDialogComponent from "./GameDisplayDialogComponent";
 import GameDisplayScrollComponent from "./GameDisplayScrollComponent";
 import GameDisplayTemplateComponent from "./GameDisplayTemplateComponent";
@@ -12,24 +12,19 @@ export type LayerHint = "background" | "foreground";
 /** Props for {@link GameDisplayComponent}. */
 interface GameDisplayComponentProps {
   /** The display to render, with its template data and the challenge it belongs to. */
-  render: GameDisplayRenderData;
+  render: GameSceneRenderData;
   layerHint: LayerHint;
   /** Called when the player submits an answer in the display. */
   onAnswer?: GameAnswerFunction;
   /** Called with events inside the display's templates, for its rules. */
-  onDisplayEvent?: (event: DisplayDomEvent) => void;
+  onSceneEvent?: (event: SceneDomEvent) => void;
 }
 
 /**
  * Renders one half (the layer hint) of a display, using the template, dialog or scroll component to suit its type,
  * and the background or foreground source and styles to suit the hint.
  */
-export default function GameDisplayComponent({
-  render,
-  layerHint,
-  onAnswer,
-  onDisplayEvent,
-}: GameDisplayComponentProps) {
+export default function GameDisplayComponent({ render, layerHint, onAnswer, onSceneEvent }: GameDisplayComponentProps) {
   const component = render.component;
   const background = layerHint === "background";
   const common = {
@@ -39,7 +34,7 @@ export default function GameDisplayComponent({
     templateData: render.templateData,
     scope: render.scope,
     run: render.run,
-    onDisplayEvent,
+    onSceneEvent,
   };
   if (component.type === "template") return <GameDisplayTemplateComponent {...common} />;
 

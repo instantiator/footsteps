@@ -1,6 +1,6 @@
 /** What a player's static looks like now. */
 export interface StaticLook {
-  /** The size of each block, as a % of the display's width. */
+  /** The size of each block, as a % of the scene's width. */
   pixelSize: number;
   /** The proportion of blocks made transparent (0–1). */
   proportion: number;

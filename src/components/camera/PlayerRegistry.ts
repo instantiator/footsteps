@@ -1,6 +1,6 @@
 import { centreOf, MAX_MATCH_DISTANCE } from "../../vision/Tracking";
 import type { VisionFrame, VisionPerson } from "../../vision/VisionTypes";
-import type { DisplayScope } from "../../entities/state/GameState";
+import type { SceneScope } from "../../entities/state/GameState";
 import type { MaskSize } from "./CameraSupport";
 import type { PlayerStatic } from "./PlayerStatic";
 
@@ -14,7 +14,7 @@ export type PlayerState = "active" | "leaving" | "frozen" | "removed";
 export interface PlayerCounts {
   /** Players in shot and not removed, including any the model has lost for a moment, and those leaving or frozen. */
   active: number;
-  /** Players removed since their display last reset. */
+  /** Players removed since their scene last reset. */
   removed: number;
   /** Players frozen now. They also count as active. */
   frozen: number;
@@ -25,7 +25,7 @@ export const NO_PLAYERS: PlayerCounts = { active: 0, removed: 0, frozen: 0 };
 
 /** What a frame means, given what has happened to its players. Every person's id is their stable player id. */
 export interface PlayerFrames {
-  /** The players who can interact with the display. */
+  /** The players who can interact with the scene. */
   interactive: VisionFrame;
   /** The players to draw. Frozen and leaving ones are as they were last seen, and held, which keeps their depth. */
   drawn: VisionFrame;
@@ -44,8 +44,8 @@ interface Player {
   state: PlayerState;
   /** Their id in the tracker, or null if it has lost them: a note of where they were, that someone may inherit. */
   trackId: number | null;
-  /** The display whose rule set their state. */
-  setBy?: DisplayScope;
+  /** The scene whose rule set their state. */
+  setBy?: SceneScope;
   /** How they looked in the last frame, or when they stopped being active. */
   last: VisionPerson;
   /** Their static, while it runs. */
@@ -115,8 +115,8 @@ export class PlayerRegistry {
     return this.players.get(id)?.state;
   }
 
-  /** The display whose rule set a player's state, if one has. */
-  setByOf(id: number): DisplayScope | undefined {
+  /** The scene whose rule set a player's state, if one has. */
+  setByOf(id: number): SceneScope | undefined {
     return this.players.get(id)?.setBy;
   }
 
@@ -135,8 +135,8 @@ export class PlayerRegistry {
     return new Set(this.players.keys());
   }
 
-  /** Notes that a display's rule has done something to a player, so they return to normal as it ends. */
-  touch(id: number, scope: DisplayScope): void {
+  /** Notes that a scene's rule has done something to a player, so they return to normal as it ends. */
+  touch(id: number, scope: SceneScope): void {
     const player = this.players.get(id);
     if (player !== undefined && player.setBy === undefined) player.setBy = scope;
   }
@@ -153,12 +153,12 @@ export class PlayerRegistry {
   }
 
   /** Stops a player in place. */
-  freeze(id: number, scope: DisplayScope): void {
+  freeze(id: number, scope: SceneScope): void {
     this.change(id, "frozen", scope);
   }
 
-  /** Starts a player leaving the display. */
-  startLeaving(id: number, scope: DisplayScope): void {
+  /** Starts a player leaving the scene. */
+  startLeaving(id: number, scope: SceneScope): void {
     this.change(id, "leaving", scope);
   }
 
@@ -191,7 +191,7 @@ export class PlayerRegistry {
   }
 
   /** Changes a player's state, if they are known. */
-  private change(id: number, state: PlayerState, scope?: DisplayScope): void {
+  private change(id: number, state: PlayerState, scope?: SceneScope): void {
     const player = this.players.get(id);
     if (player === undefined) return;
     player.state = state;

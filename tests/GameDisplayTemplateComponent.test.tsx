@@ -3,7 +3,7 @@ import { http, HttpResponse } from "msw";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import GameDisplayTemplateComponent from "../src/components/core/display/GameDisplayTemplateComponent";
-import type { DisplayDomEvent } from "../src/components/core/logic/TemplateUtils";
+import type { SceneDomEvent } from "../src/components/core/logic/TemplateUtils";
 import type { GameSceneTemplateSourceData } from "../src/entities/data/scenes/GameSceneTemplateComponentData";
 import type { GameSource } from "../src/entities/GameSource";
 import GameContentCacheProvider from "../src/providers/GameContentCacheProvider";
@@ -291,13 +291,13 @@ describe("GameDisplayTemplateComponent", () => {
 
   describe("display events", () => {
     const renderEvents = async () => {
-      const onDisplayEvent = vi.fn<(event: DisplayDomEvent) => void>();
+      const onSceneEvent = vi.fn<(event: SceneDomEvent) => void>();
       const { container } = render(
         <GameDisplayTemplateComponent
           templateSource={embedded('<div id="door" role="button" tabindex="0"><span id="knob">o</span></div>')}
           templateData={{}}
           scope="overview:game-overview-stages"
-          onDisplayEvent={onDisplayEvent}
+          onSceneEvent={onSceneEvent}
         >
           <input aria-label="Answer" />
         </GameDisplayTemplateComponent>,
@@ -305,51 +305,51 @@ describe("GameDisplayTemplateComponent", () => {
       );
       await waitFor(() => expect(container.querySelector("#knob")).not.toBeNull());
       const root = container.querySelector('[data-display-scope="overview:game-overview-stages"]')!;
-      return { onDisplayEvent, root, knob: container.querySelector("#knob")!, door: container.querySelector("#door")! };
+      return { onSceneEvent, root, knob: container.querySelector("#knob")!, door: container.querySelector("#door")! };
     };
 
     it("passes on clicks, with the element and the container matching stops at", async () => {
-      const { onDisplayEvent, root, knob } = await renderEvents();
+      const { onSceneEvent, root, knob } = await renderEvents();
       fireEvent.click(knob);
-      expect(onDisplayEvent).toHaveBeenCalledExactlyOnceWith({ kind: "click", target: knob, root, name: undefined });
+      expect(onSceneEvent).toHaveBeenCalledExactlyOnceWith({ kind: "click", target: knob, root, name: undefined });
     });
 
     it("passes on animation and transition ends, with their names", async () => {
-      const { onDisplayEvent, door } = await renderEvents();
+      const { onSceneEvent, door } = await renderEvents();
       // jsdom has no AnimationEvent, so React listens for the prefixed name there (browsers send animationend)
       fireEvent(door, Object.assign(new Event("webkitAnimationEnd", { bubbles: true }), { animationName: "pop" }));
       fireEvent.transitionEnd(door, { propertyName: "left" });
-      expect(onDisplayEvent.mock.calls.map(([event]) => [event.kind, event.name])).toEqual([
+      expect(onSceneEvent.mock.calls.map(([event]) => [event.kind, event.name])).toEqual([
         ["animationEnd", "pop"],
         ["transitionEnd", "left"],
       ]);
     });
 
     it("passes on the mouse moving over and out of elements, with where it came from or went to", async () => {
-      const { onDisplayEvent, root, knob, door } = await renderEvents();
+      const { onSceneEvent, root, knob, door } = await renderEvents();
       fireEvent.mouseOver(knob, { relatedTarget: door });
       fireEvent.mouseOut(knob, { relatedTarget: null });
-      expect(onDisplayEvent.mock.calls.map(([event]) => event)).toEqual([
+      expect(onSceneEvent.mock.calls.map(([event]) => event)).toEqual([
         { kind: "mouseOver", target: knob, root, related: door },
         { kind: "mouseOut", target: knob, root, related: null },
       ]);
     });
 
     it("treats Enter and Space on a template button like a click on it", async () => {
-      const { onDisplayEvent, door } = await renderEvents();
+      const { onSceneEvent, door } = await renderEvents();
       fireEvent.keyDown(door, { key: "Enter" });
       fireEvent.keyDown(door, { key: " " });
-      expect(onDisplayEvent.mock.calls.map(([event]) => [event.kind, event.target])).toEqual([
+      expect(onSceneEvent.mock.calls.map(([event]) => [event.kind, event.target])).toEqual([
         ["click", door],
         ["click", door],
       ]);
     });
 
     it("ignores other keys, and leaves text inputs their own keys", async () => {
-      const { onDisplayEvent, door } = await renderEvents();
+      const { onSceneEvent, door } = await renderEvents();
       fireEvent.keyDown(door, { key: "a" });
       fireEvent.keyDown(screen.getByRole("textbox", { name: "Answer" }), { key: " " });
-      expect(onDisplayEvent).not.toHaveBeenCalled();
+      expect(onSceneEvent).not.toHaveBeenCalled();
     });
   });
 });

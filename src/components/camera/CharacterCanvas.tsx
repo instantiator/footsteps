@@ -94,7 +94,7 @@ const feetPositionsOf = (players: PlayerFrame[]): FeetPositions => {
 
 /**
  * Calls back once per new video frame where the browser supports it, so a 30fps camera isn't tracked twice per
- * frame on a 60–120Hz display; otherwise once per animation frame.
+ * frame on a 60–120Hz scene; otherwise once per animation frame.
  * @returns a function that cancels the pending callback
  */
 const onNextFrame = (video: HTMLVideoElement, callback: () => void): (() => void) => {

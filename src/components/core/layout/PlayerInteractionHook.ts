@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useRef, type RefObject } from "react";
-import type { DisplayScope } from "../../../entities/state/GameState";
+import type { SceneScope } from "../../../entities/state/GameState";
 import useAppConfig from "../../../providers/AppConfigHook";
 import { PlayerRegistryContext } from "../../../providers/PlayerRegistryContext";
 import {
@@ -17,12 +17,12 @@ import {
   type PlayerMonitorEvent,
 } from "../../camera/PlayerMonitor";
 import { centreOnScreen } from "../effects/EffectTargets";
-import { displayRoots } from "../logic/TemplateUtils";
+import { sceneRoots } from "../logic/TemplateUtils";
 
 /** A rule the camera can fire: which display it belongs to, and the elements and interactions it watches. */
 export interface CameraRuleTarget {
   /** The display the rule belongs to. */
-  scope: DisplayScope;
+  scope: SceneScope;
   /** Which run of the display this is. */
   run: number;
   /** The rule's position in the display's rules. */
@@ -44,7 +44,7 @@ export interface CameraRuleTarget {
 /** A camera interaction with an element a rule watches. */
 export interface CameraRuleEvent {
   /** The display the rule belongs to. */
-  scope: DisplayScope;
+  scope: SceneScope;
   /** The rule's position in the display's rules. */
   ruleIndex: number;
   /** The element the player interacted with; null for a jump anywhere. */
@@ -115,7 +115,7 @@ const frameTargets = (
       continue;
     }
     const selector = rule.selector;
-    for (const element of displayRoots(rule.scope).flatMap((root) => Array.from(root.querySelectorAll(selector)))) {
+    for (const element of sceneRoots(rule.scope).flatMap((root) => Array.from(root.querySelectorAll(selector)))) {
       const key = `${rule.scope}#${rule.ruleIndex}#${elementKey(element)}`;
       const isTopmostAt = (point: { x: number; y: number }) => {
         const { x, y } = screenPointForMaskPoint(point, canvasRect, mask, mirrored);
@@ -165,7 +165,7 @@ function useRearmOnReset(
   cameraRules: CameraRuleTarget[] | undefined,
   monitorsRef: RefObject<Map<number, PlayerMonitor>>,
 ) {
-  const runsRef = useRef(new Map<DisplayScope, number>());
+  const runsRef = useRef(new Map<SceneScope, number>());
   useEffect(() => {
     const runs = new Map((cameraRules ?? []).map(({ scope, run }) => [scope, run]));
     for (const [scope, run] of runs) {
