@@ -495,7 +495,8 @@
                 "balloons": "Balloons",
                 "lava": "The floor is lava",
                 "depth": "Walk around",
-                "effects": "Effects"
+                "effects": "Effects",
+                "stepping-stones": "Stepping stones"
               }
             },
             "initialState": { "position": 1, "lit": false },
@@ -523,6 +524,14 @@
               {
                 "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-effects", "threshold": 0.5 },
                 "do": [{ "enterStage": "effects" }]
+              },
+              {
+                "on": {
+                  "interact": ["click", "hand-enter"],
+                  "target": "#stage-link-stepping-stones",
+                  "threshold": 0.5
+                },
+                "do": [{ "enterStage": "stepping-stones" }]
               },
               {
                 "on": { "interact": ["click", "hand-enter"], "target": "#switch", "threshold": 0.5 },
@@ -847,6 +856,48 @@
                       "templateSource": "games/rules-demo/effects.hbs"
                     },
                     "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "stepping-stones",
+          "challenges": [
+            {
+              "id": "jump-the-lava",
+              "solution": { "answers": [] },
+              "scenes": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "avatar": { "mode": "mouse-feet" },
+                  "component": {
+                    "type": "template",
+                    "data": {
+                      "hint": "Your mouse is your feet. Drag from the start to the door to jump over the lava."
+                    },
+                    "initialState": { "done": false },
+                    "resetStateOnShow": true,
+                    "rules": [
+                      {
+                        "on": { "interact": ["foot-enter"], "target": ".lava" },
+                        "if": "not state.done",
+                        "do": [{ "resetChallenge": true }]
+                      },
+                      {
+                        "on": { "interact": ["jump-onto"], "target": "#door-base" },
+                        "if": "not state.done",
+                        "do": [
+                          { "set": { "done": "true" } },
+                          { "completeChallenge": true },
+                          { "sound": "fanfare" },
+                          { "reward": { "animation": "fireworks", "particleCount": 150 } }
+                        ]
+                      }
+                    ],
+                    "backgroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/lava.hbs" },
+                    "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
                   }
                 }
               ]

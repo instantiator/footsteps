@@ -37,8 +37,8 @@ const inline = (source: GameSceneTemplateSourceData | undefined): GameSceneTempl
     : source;
 
 /**
- * The committed rules demo, with its templates inlined and the camera itself off: jsdom has no camera, and the
- * rules the camera can fire don't depend on it.
+ * The committed rules demo, with its templates inlined and the camera itself off (mouse-feet stays): jsdom has no
+ * camera, and the rules the camera can fire don't depend on it.
  */
 const demo = (change: (game: GameData) => void): GameData => {
   const game: GameData = structuredClone((localRepository as GameRepository).games["rules-demo"]);
@@ -52,7 +52,7 @@ const demo = (change: (game: GameData) => void): GameData => {
       .filter((stage) => stage.id !== "effects")
       .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
   ].flatMap(withResets)) {
-    scene.avatar = { mode: "mouse" };
+    if (scene.avatar?.mode !== "mouse-feet") scene.avatar = { mode: "mouse" };
     if (scene.component.type !== "template") continue;
     scene.component.foregroundTemplate = inline(scene.component.foregroundTemplate);
     scene.component.backgroundTemplate = inline(scene.component.backgroundTemplate);
@@ -195,5 +195,90 @@ describe("rules demo, played by camera", () => {
   it("asks the camera not to count covered elements, as clicks don't", async () => {
     await start();
     expect(receivedLayout.at(-1)!.cameraRules!.every((rule) => !rule.includeCovered)).toBe(true);
+  });
+});
+
+describe("rules demo, played by mouse-feet", () => {
+  /** Where the stepping-stones elements sit on the screen, as jsdom has no layout. */
+  const BOXES: Record<string, [number, number, number, number]> = {
+    start: [0, 0, 50, 50],
+    "lava-2": [100, 0, 150, 50],
+    "door-base": [200, 0, 250, 50],
+  };
+
+  /** The element at a point, by the boxes. */
+  const elementAt = (x: number, y: number): Element | null => {
+    const hit = Object.entries(BOXES).find(([, [l, t, r, b]]) => x >= l && x < r && y >= t && y < b);
+    return hit ? document.getElementById(hit[0]) : null;
+  };
+
+  /** The pointer, on the game viewport. */
+  const pointer = {
+    move: (x: number, buttons = 0) => fireEvent.pointerMove($("#game-viewport")!, { clientX: x, clientY: 25, buttons }),
+    down: (x: number) => fireEvent.pointerDown($("#game-viewport")!, { clientX: x, clientY: 25, button: 0 }),
+    up: (x: number) => fireEvent.pointerUp($("#game-viewport")!, { clientX: x, clientY: 25, button: 0 }),
+  };
+
+  /** The stepping-stones challenge's run, which a reset moves on. */
+  const run = () => $("#door-base")?.closest("[data-scene-run]")?.getAttribute("data-scene-run");
+
+  beforeEach(() => {
+    Object.defineProperty(document, "elementFromPoint", { configurable: true, value: elementAt });
+  });
+  afterEach(() => Reflect.deleteProperty(document, "elementFromPoint"));
+
+  /** Opens the stepping-stones stage, lays out its elements, and arms the feet away from them. */
+  const openStage = async () => {
+    render(
+      <GameProviders repository={{ games: { "rules-demo": demo(() => {}) } }} gameId="rules-demo">
+        <Game />
+      </GameProviders>,
+    );
+    await waitFor(() => expect($("#demo-title")).not.toBeNull());
+    fireEvent.click($("#demo-title")!);
+    await waitFor(() => expect($("#stage-link-stepping-stones")).not.toBeNull());
+    fireEvent.click($("#stage-link-stepping-stones")!);
+    await waitFor(() => expect($("#door-base")).not.toBeNull());
+    await wait(3000); // the scene change, during which the feet wait
+    expect(receivedLayout.at(-1)!.avatar.mode).toBe("mouse-feet");
+    for (const [id, [left, top, right, bottom]] of Object.entries(BOXES)) {
+      vi.spyOn($(`#${id}`)!, "getBoundingClientRect").mockReturnValue(
+        DOMRect.fromRect({ x: left, y: top, width: right - left, height: bottom - top }),
+      );
+    }
+    pointer.move(300);
+  };
+
+  it("tells the player to drag to jump", async () => {
+    await openStage();
+    expect($("#lava-message")).toHaveTextContent("Drag from the start to the door");
+  });
+
+  it("resets the challenge when the feet step onto lava", async () => {
+    await openStage();
+    const before = run();
+    pointer.move(120);
+    await waitFor(() => expect(run()).not.toBe(before));
+  });
+
+  it("completes when the player drags from the start onto the door's base, jumping the lava", async () => {
+    await openStage();
+    pointer.move(10);
+    pointer.down(10);
+    pointer.move(120, 1);
+    pointer.move(210, 1);
+    pointer.up(210);
+    await waitFor(() => expect($("#stage-link-stepping-stones")).toHaveClass("completed"));
+  });
+
+  it("doesn't complete for a click on the door's base", async () => {
+    await openStage();
+    pointer.move(210);
+    pointer.down(210);
+    pointer.up(210);
+    fireEvent.click($("#door-base")!);
+    await wait(1000);
+    expect($("#door-base")).not.toBeNull();
+    expect($("#stage-link-stepping-stones")).not.toHaveClass("completed");
   });
 });

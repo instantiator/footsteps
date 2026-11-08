@@ -6,7 +6,8 @@ import type { GameRepository } from "../../src/entities/GameRepository";
 const GAME_ID = "rules-demo";
 
 /**
- * Serves the example game with the camera off on every scene, so it plays by mouse without the vision model,
+ * Serves the example game with the camera off on every scene (mouse-feet stays), so it plays by mouse without the
+ * vision model,
  * after the test's own changes. Motion is reduced so the game's scene changes are immediate: during a fade the
  * scene ignores clicks, and raw mouse clicks (unlike locator clicks) don't wait for it.
  */
@@ -22,7 +23,7 @@ const openDemo = async (page: Page, change: (game: GameData) => void = () => {})
         .filter((stage) => stage.id !== "effects")
         .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
     ]) {
-      scene.avatar = { mode: "mouse" };
+      if (scene.avatar?.mode !== "mouse-feet") scene.avatar = { mode: "mouse" };
     }
     change(game);
     await route.fulfill({ response, json: repository });
@@ -215,6 +216,19 @@ test.describe("rules demo", () => {
 
     await page.locator("#door-base").hover();
     await expect(page.locator("#stage-link-lava")).toHaveClass(/completed/);
+  });
+
+  test("jumps the lava in mouse-feet by dragging from the start onto the door", async ({ page }) => {
+    await openDemo(page);
+    await page.locator("#stage-link-stepping-stones").click();
+    await expect(page.locator("#lava-message")).toContainText("Drag from the start to the door");
+
+    await moveTo(page, "#start");
+    await page.mouse.down();
+    await moveTo(page, "#door-base");
+    await page.mouse.up();
+
+    await expect(page.locator("#stage-link-stepping-stones")).toHaveClass(/completed/);
   });
 
   test("asks for the start again when the game is reloaded", async ({ page }) => {
