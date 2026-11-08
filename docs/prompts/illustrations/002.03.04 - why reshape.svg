@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 420" font-family="sans-serif" font-size="13">
+  <rect width="1080" height="420" fill="#fff"/>
+  <text x="20" y="26" font-weight="bold">A small calibrated area</text>
+  <text x="380" y="26" font-weight="bold">One scale, fitted to the front bar's width</text>
+  <text x="740" y="26" font-weight="bold">Viewport reshaped to the crop</text>
+  <!-- camera image with a small area -->
+  <rect x="20" y="180" width="320" height="180" fill="#d9dee5"/>
+  <rect x="20" y="240" width="320" height="120" fill="#c4b59a"/>
+  <polygon points="116,306 244,306 212,225 148,225" fill="#2b7de9" fill-opacity="0.18" stroke="#2b7de9" stroke-width="2"/>
+  <rect x="116" y="180" width="128" height="126" fill="none" stroke="#c0392b" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="20" y="382">The crop is almost square.</text>
+  <!-- one scale: content overflows the top -->
+  <rect x="380" y="45" width="320" height="135" fill="none" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <polygon points="380,360 700,360 620,157.5 460,157.5" fill="#2b7de9" fill-opacity="0.08" stroke="#2b7de9" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <rect x="380" y="180" width="320" height="180" fill="none" stroke="#1f2d3d" stroke-width="2"/>
+  <clipPath id="s"><rect x="380" y="180" width="320" height="180"/></clipPath>
+  <g clip-path="url(#s)">
+    <rect x="380" y="180" width="320" height="180" fill="#c4b59a"/>
+    <polygon points="380,360 700,360 620,157.5 460,157.5" fill="#2b7de9" fill-opacity="0.18" stroke="#2b7de9" stroke-width="2"/>
+  </g>
+  <text x="392" y="70" fill="#c0392b">Off the top of the screen: the back of the</text>
+  <text x="392" y="88" fill="#c0392b">floor, and the heads of players near it.</text>
+  <text x="380" y="382">Fitting width alone pushes the back out of view.</text>
+  <!-- reshaped -->
+  <rect x="740" y="180" width="320" height="180" fill="#8a94a3"/>
+  <rect x="808.6" y="180" width="182.9" height="180" fill="#d9dee5"/>
+  <rect x="808.6" y="263" width="182.9" height="97" fill="#c4b59a"/>
+  <polygon points="808.6,360 991.5,360 945.8,244.3 854.3,244.3" fill="#2b7de9" fill-opacity="0.18" stroke="#2b7de9" stroke-width="2"/>
+  <text x="740" y="382">Everything fits; wide side bars take the slack.</text>
+  <text x="740" y="400">Displays laid out in cqw/cqh reflow to the new shape.</text>
+</svg>

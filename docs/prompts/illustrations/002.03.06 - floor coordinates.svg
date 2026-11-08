@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="sans-serif" font-size="13">
+  <rect width="880" height="560" fill="#fff"/>
+  <defs>
+    <pattern id="h" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="#c0392b" stroke-width="2"/></pattern>
+  </defs>
+  <!-- viewport -->
+  <rect x="40" y="40" width="800" height="435" fill="#d9dee5" stroke="#1f2d3d" stroke-width="2"/>
+  <text x="56" y="66">Beyond the floor: players' bodies show here, their feet don't</text>
+  <!-- unreachable corners -->
+  <polygon points="40,475 200,306 40,306" fill="url(#h)" fill-opacity="0.6"/>
+  <polygon points="840,475 680,306 840,306" fill="url(#h)" fill-opacity="0.6"/>
+  <text x="48" y="330" fill="#c0392b">unreachable</text>
+  <text x="757" y="330" fill="#c0392b">unreachable</text>
+  <!-- floor and its grid -->
+  <polygon points="40,475 840,475 680,306 200,306" fill="#c4b59a" stroke="#2b7de9" stroke-width="3"/>
+  <!-- thickness band around y = 60 -->
+  <polygon points="132.3,377.5 747.7,377.5 764.3,395 115.7,395" fill="#2b7de9" fill-opacity="0.3"/>
+  <g stroke="#2b7de9" stroke-width="1" stroke-opacity="0.6" fill="none">
+    <line x1="240" y1="475" x2="320" y2="306"/><line x1="440" y1="475" x2="440" y2="306"/><line x1="640" y1="475" x2="560" y2="306"/>
+    <line x1="173.3" y1="334.2" x2="706.7" y2="334.2"/><line x1="140" y1="369.4" x2="740" y2="369.4"/><line x1="97.1" y1="414.6" x2="782.9" y2="414.6"/>
+  </g>
+  <g fill="#1f2d3d">
+    <text x="372" y="300">data-floor-y = 0 (back)</text>
+    <text x="362" y="495">data-floor-y = 100 (front)</text>
+    <text x="34" y="495">data-floor-x = 0</text>
+    <text x="748" y="495">data-floor-x = 100</text>
+  </g>
+  <!-- tree at x 30, y 60, scaled 0.79 -->
+  <rect x="306" y="346" width="16" height="40.1" fill="#7a4e2d"/>
+  <polygon points="313.7,260.1 266.2,356 361.2,356" fill="#2e8b57"/>
+  <rect x="266.2" y="260.1" width="95" height="126" fill="none" stroke="#1f2d3d" stroke-dasharray="4 3"/>
+  <circle cx="313.7" cy="386.1" r="5" fill="#c0392b"/>
+  <!-- star at x 75, y 30, height 20 -->
+  <line x1="576.4" y1="340.6" x2="576.4" y2="231.5" stroke="#1f2d3d" stroke-dasharray="4 3"/>
+  <circle cx="576.4" cy="340.6" r="4" fill="#1f2d3d"/>
+  <polygon points="576.4,190.5 581.2,205 596.4,205 584.2,214 588.8,229 576.4,220 564,229 568.6,214 556.4,205 571.6,205" fill="#f1c40f" stroke="#b7950b"/>
+  <circle cx="576.4" cy="231.5" r="5" fill="#c0392b"/>
+  <!-- legend -->
+  <g fill="#1f2d3d">
+    <text x="40" y="520">Tree: data-floor-x="30" data-floor-y="60" data-floor-thickness="10". Anchored at its bottom centre (red dot),</text>
+    <text x="40" y="538">scaled to the floor's width there. Hand interactions only count from inside the blue band.</text>
+    <text x="560" y="160">Star: data-floor-x="75" data-floor-y="30"</text>
+    <text x="560" y="178">data-floor-height="20"</text>
+  </g>
+</svg>

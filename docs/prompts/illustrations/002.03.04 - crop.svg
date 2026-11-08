@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 280" font-family="sans-serif" font-size="13">
+  <rect width="740" height="280" fill="#fff"/>
+  <text x="20" y="26" font-weight="bold">Camera image</text>
+  <text x="400" y="26" font-weight="bold">Screen</text>
+  <!-- camera image -->
+  <rect x="20" y="40" width="320" height="180" fill="#d9dee5"/>
+  <rect x="20" y="120" width="320" height="100" fill="#c4b59a"/>
+  <polygon points="45.6,202 314.4,202 260,139 100,139" fill="#2b7de9" fill-opacity="0.18" stroke="#2b7de9" stroke-width="2"/>
+  <!-- cropped away -->
+  <g fill="#1f2d3d" fill-opacity="0.45">
+    <rect x="20" y="40" width="25.6" height="180"/><rect x="314.4" y="40" width="25.6" height="180"/>
+    <rect x="45.6" y="202" width="268.8" height="18"/>
+  </g>
+  <rect x="45.6" y="40" width="268.8" height="162" fill="none" stroke="#c0392b" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="20" y="242">Crop: the front bar's width, from the image top</text>
+  <text x="20" y="260">down to the front bar. Dark parts are dropped.</text>
+  <!-- arrow -->
+  <line x1="350" y1="130" x2="390" y2="130" stroke="#1f2d3d" stroke-width="2" marker-end="url(#a)"/>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f2d3d"/></marker></defs>
+  <!-- screen -->
+  <rect x="400" y="40" width="320" height="180" fill="#8a94a3"/>
+  <rect x="410.65" y="40" width="298.7" height="180" fill="#d9dee5"/>
+  <rect x="410.65" y="116" width="298.7" height="104" fill="#c4b59a"/>
+  <polygon points="410.65,220 709.35,220 648.9,150 471.1,150" fill="#2b7de9" fill-opacity="0.18" stroke="#2b7de9" stroke-width="2"/>
+  <text x="400" y="242">The viewport takes the crop's shape. The front</text>
+  <text x="400" y="260">bar spans its bottom edge; thin side bars remain.</text>
+</svg>
