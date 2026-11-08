@@ -12,7 +12,7 @@ import type { Point } from "../../vision/VisionTypes";
 
 /** The floor's four corners, in image fractions. */
 export interface Corners {
-  /** The far left corner, from the camera's point of view. */
+  /** The far corner on the left of the camera image, before any mirroring. */
   backLeft: Point;
   /** The far right corner. */
   backRight: Point;

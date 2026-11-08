@@ -1,4 +1,4 @@
-import type { GameSceneAvatarData, GameSceneBase } from "../../../entities/data/scenes/GameSceneData";
+import type { GameSceneBase } from "../../../entities/data/scenes/GameSceneData";
 import type { GameData } from "../../../entities/data/GameData";
 import { isDefined } from "../../../util/ObjectUtils";
 import { getCameraStream } from "../../camera/CameraSupport";
@@ -17,31 +17,38 @@ const PERMISSION_LABELS: Record<GamePermissionId, string> = {
 /** The human-readable name of a permission. */
 export const gamePermissionLabel = (id: GamePermissionId): string => PERMISSION_LABELS[id];
 
-/** A scene's avatar settings, then those of each reset scene nested in it. */
-const avatarSettingsOf = ({
-  avatar,
-  resetScene,
-}: Pick<GameSceneBase, "avatar" | "resetScene">): (GameSceneAvatarData | undefined)[] => [
-  avatar,
-  ...(resetScene ? avatarSettingsOf(resetScene) : []),
+/** A scene's own settings, which its reset scenes share. */
+type SceneSettings = Pick<GameSceneBase, "avatar" | "scene" | "resetScene">;
+
+/** A scene, then each reset scene nested in it. */
+const withResets = (scene: SceneSettings): SceneSettings[] => [
+  scene,
+  ...(scene.resetScene ? withResets(scene.resetScene) : []),
 ];
+
+/** Every scene in the game, with the reset scenes nested in them. */
+const allScenes = (gameData: GameData): SceneSettings[] =>
+  [
+    ...gameData.scenes,
+    ...gameData.stages.flatMap((stage) => stage.scenes ?? []),
+    ...gameData.stages.flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
+  ].flatMap(withResets);
 
 /**
  * The most the game asks of the camera, anywhere: `"required"` if any setting is `camera` with no fallback, else
  * `"enabled"` if any is `camera`, else `false`.
  */
 const gameCameraRequirement = (gameData: GameData): "required" | "enabled" | false => {
-  const scenes = [
-    ...gameData.scenes,
-    ...gameData.stages.flatMap((stage) => stage.scenes ?? []),
-    ...gameData.stages.flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
-  ];
-  const cameras = [gameData.modules?.avatar, ...scenes.flatMap(avatarSettingsOf)].filter(
+  const cameras = [gameData.modules?.avatar, ...allScenes(gameData).map(({ avatar }) => avatar)].filter(
     (settings) => settings?.mode === "camera",
   );
   if (cameras.some((settings) => !isDefined(settings?.fallback))) return "required";
   return cameras.length > 0 ? "enabled" : false;
 };
+
+/** Whether any of the game's scenes is laid out on the calibrated floor. */
+export const gameUsesFloor = (gameData: GameData): boolean =>
+  gameData.modules?.scene === "2.5D" || allScenes(gameData).some(({ scene }) => scene === "2.5D");
 
 /** The permissions a game can use, in the order to show them on its landing page. */
 export const usedGamePermissions = (gameData: GameData): GamePermissionId[] =>

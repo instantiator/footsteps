@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   checkGamePermission,
   gamePermissionLabel,
+  gameUsesFloor,
   requestGamePermission,
   requiredGamePermissions,
   usedGamePermissions,
@@ -201,5 +202,29 @@ describe("requestGamePermission", () => {
     getUserMedia(new Error("NotAllowedError"));
 
     await expect(requestGamePermission("camera")).resolves.toBe("unsupported");
+  });
+});
+
+describe("gameUsesFloor", () => {
+  it("is false for a game with only 2D scenes", () => {
+    expect(gameUsesFloor(smallGame)).toBe(false);
+    expect(gameUsesFloor({ ...smallGame, modules: { scene: "2D" } })).toBe(false);
+  });
+
+  it("finds 2.5D on the game's modules", () => {
+    expect(gameUsesFloor({ ...smallGame, modules: { scene: "2.5D" } })).toBe(true);
+  });
+
+  it("finds 2.5D on a stage scene", () => {
+    const [shared] = gameWithStageScene.stages[0].scenes ?? [];
+    const stages = [{ ...gameWithStageScene.stages[0], scenes: [{ ...shared, scene: "2.5D" as const }] }];
+    expect(gameUsesFloor({ ...gameWithStageScene, stages })).toBe(true);
+  });
+
+  it("finds 2.5D on a nested reset scene", () => {
+    const [shared] = gameWithStageScene.stages[0].scenes ?? [];
+    const reset = { component: shared.component, resetScene: { component: shared.component, scene: "2.5D" as const } };
+    const stages = [{ ...gameWithStageScene.stages[0], scenes: [{ ...shared, resetScene: reset }] }];
+    expect(gameUsesFloor({ ...gameWithStageScene, stages })).toBe(true);
   });
 });
