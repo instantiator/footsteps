@@ -2,19 +2,19 @@ import _ from "lodash";
 import { useReward } from "partycles";
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { GameOverviewDisplayPurpose } from "../../entities/data/displays/GameDisplayData";
+import type { GameOverviewScenePurpose } from "../../entities/data/scenes/GameSceneData";
 import type { GameChallengeId } from "../../entities/data/GameChallengeData";
 import type { GameRewardData } from "../../entities/data/GameData";
 import type { GameChallengeAnswerValidation } from "../../entities/data/GameChallengeSolution";
 import type { GameStageId } from "../../entities/data/GameStageData";
-import type { DisplayScope, GameState, QueuedEffect } from "../../entities/state/GameState";
+import type { SceneScope, GameState, QueuedEffect } from "../../entities/state/GameState";
 import useAppConfig from "../../providers/AppConfigHook";
 import { useGameData } from "../../providers/GameDataHook";
 import useGameMusic from "../../providers/GameMusicHook";
 import { useGameState } from "../../providers/GameStateHook";
 import { PlayerRegistryContext } from "../../providers/PlayerRegistryContext";
 import { isDefined } from "../../util/ObjectUtils";
-import GameDisplayComponent, { type LayerHint } from "./display/GameDisplayComponent";
+import GameSceneComponent, { type LayerHint } from "./scene/GameSceneComponent";
 import { centreOnScreen, playerWrappers, resolveTargets } from "./effects/EffectTargets";
 import type { PlayerEffects } from "./effects/PlayerEffects";
 import "./Game.css";
@@ -23,14 +23,14 @@ import GameLayersLayout, { type GameLayers } from "./layout/GameLayersLayout";
 import { resolveCameraMode } from "./logic/CameraModeUtils";
 import { leaveTitleScreen } from "./logic/GameClickUtils";
 import { findChallengeState } from "./logic/GameDataUtils";
-import type { DisplayDomEvent } from "./logic/TemplateUtils";
+import type { SceneDomEvent } from "./logic/TemplateUtils";
 import { completeChallenge, validateAnswer } from "./logic/GameStateUtils";
 import {
-  getDisplayKey,
+  getSceneKey,
   getLayeredRenderData,
-  getShownDisplays,
-  type GameDisplayRenderData,
-  type LayeredGameDisplayRenderData,
+  getShownScenes,
+  type GameSceneRenderData,
+  type LayeredGameSceneRenderData,
 } from "./logic/RenderDataUtils";
 import { playAudio } from "./sfx/AudioUtils";
 import RewardBurst from "./sfx/RewardBurst";
@@ -68,7 +68,7 @@ function useGameFeedback(reducedMotion: boolean) {
   // Previous values, to react only to changes; refs because nothing renders from them.
   // Progress starts from the loaded state, so continuing a saved game doesn't replay its rewards.
   const progressTracker = useRef(completedStageIds(gameState));
-  const overviewTracker = useRef<GameOverviewDisplayPurpose | null>(null);
+  const overviewTracker = useRef<GameOverviewScenePurpose | null>(null);
   const stageIdTracker = useRef<GameStageId | null>(null);
 
   useEffect(() => {
@@ -82,13 +82,13 @@ function useGameFeedback(reducedMotion: boolean) {
   }, [gameState, reward, rewardData, resources, sounds, reducedMotion]);
 
   useEffect(() => {
-    const overviewDisplay = gameState.current.overviewDisplay;
-    if (overviewDisplay === overviewTracker.current) return;
+    const overviewScene = gameState.current.overviewScene;
+    if (overviewScene === overviewTracker.current) return;
     const opening = resourceUrl(resources, sounds?.openingMusicResource);
     const closing = resourceUrl(resources, sounds?.closingMusicResource);
-    if (overviewDisplay === "game-overview-stages" && isDefined(opening)) playMusic(opening);
-    if (overviewDisplay === "game-overview-complete" && isDefined(closing)) playMusic(closing);
-    overviewTracker.current = overviewDisplay;
+    if (overviewScene === "game-overview-stages" && isDefined(opening)) playMusic(opening);
+    if (overviewScene === "game-overview-complete" && isDefined(closing)) playMusic(closing);
+    overviewTracker.current = overviewScene;
   }, [gameState, playMusic, resources, sounds]);
 
   useEffect(() => {
@@ -110,12 +110,12 @@ interface ShownReward {
 
 /**
  * The rewards a rule's reward action shows: one from each element it targets, or one from the middle of the game if it
- * has no target. So does one whose element has gone by now, as rewards outlive their display.
+ * has no target. So does one whose element has gone by now, as rewards outlive their scene.
  */
 const rewardsFor = (
   { id, effect, scope, event }: QueuedEffect,
   reward: GameRewardData,
-  { shownScopes, playerEffects }: { shownScopes: DisplayScope[]; playerEffects: PlayerEffects },
+  { shownScopes, playerEffects }: { shownScopes: SceneScope[]; playerEffects: PlayerEffects },
 ): ShownReward[] => {
   const selector = "reward" in effect ? effect.target : undefined;
   const choice = "reward" in effect ? effect.players : undefined;
@@ -125,7 +125,7 @@ const rewardsFor = (
       ? resolveTargets(scope, selector, shownScopes)
       : [];
   if (elements.length === 0) return [{ id, reward }];
-  // A player's canvas fills the display, so its centre would be the middle of the display, not the player
+  // A player's canvas fills the scene, so its centre would be the middle of the scene, not the player
   const centreOf = (element: Element) =>
     element.classList.contains("player") ? playerEffects.bodyCentre(element) : centreOnScreen(element);
   return elements.map((element, index) => ({ id: `${id}-${index}`, reward, at: centreOf(element) }));
@@ -159,7 +159,7 @@ function useRuleEffects(reducedMotion: boolean, playerEffects: PlayerEffects) {
         timersRef.current.delete(timer);
         if ("sound" in effect) void playAudio(resources[effect.sound]);
         else if (!reducedMotion) {
-          const shownScopes = getShownDisplays(stateRef.current).map((display) => display.scope);
+          const shownScopes = getShownScenes(stateRef.current).map((scene) => scene.scope);
           setShown((rewards) => [...rewards, ...rewardsFor(queued, effect.reward, { shownScopes, playerEffects })]);
         }
       }, effect.delayMs ?? 0);
@@ -203,37 +203,37 @@ function useTitleScreenKeys() {
   }, [gameState, setGameState]);
 }
 
-/** What the displays call when the player answers, or something happens in a template. */
-interface DisplayHandlers {
+/** What the scenes call when the player answers, or something happens in a template. */
+interface SceneHandlers {
   /** Submits an answer to a challenge. */
   onAnswer: GameAnswerFunction;
-  /** Responds to an event inside a display's template. */
-  onDisplayEvent: (scope: DisplayScope, event: DisplayDomEvent) => void;
+  /** Responds to an event inside a scene's template. */
+  onSceneEvent: (scope: SceneScope, event: SceneDomEvent) => void;
 }
 
-/** One display component per render datum, for the given layer. */
-const createDisplayComponents = (
-  renderData: (GameDisplayRenderData | undefined)[] | undefined,
+/** One scene component per render datum, for the given layer. */
+const createSceneComponents = (
+  renderData: (GameSceneRenderData | undefined)[] | undefined,
   layerHint: LayerHint,
-  handlers: DisplayHandlers,
+  handlers: SceneHandlers,
 ): ReactNode[] | undefined =>
   renderData
     ?.filter(isDefined)
     .map((renderDatum) => (
-      <GameDisplayComponent
-        key={`${renderDatum.stageId}-${renderDatum.challengeId}-display-component`}
+      <GameSceneComponent
+        key={`${renderDatum.stageId}-${renderDatum.challengeId}-scene-component`}
         render={renderDatum}
         layerHint={layerHint}
         onAnswer={handlers.onAnswer}
-        onDisplayEvent={(event) => handlers.onDisplayEvent(renderDatum.scope, event)}
+        onSceneEvent={(event) => handlers.onSceneEvent(renderDatum.scope, event)}
       />
     ));
 
 /** Background and foreground nodes for the overview, stage, and challenge layers. */
-const createLayers = (renderData: LayeredGameDisplayRenderData, handlers: DisplayHandlers): GameLayers => {
-  const layer = (data: (GameDisplayRenderData | undefined)[] | undefined) => ({
-    backgroundLayerNodes: createDisplayComponents(data, "background", handlers),
-    foregroundLayerNodes: createDisplayComponents(data, "foreground", handlers),
+const createLayers = (renderData: LayeredGameSceneRenderData, handlers: SceneHandlers): GameLayers => {
+  const layer = (data: (GameSceneRenderData | undefined)[] | undefined) => ({
+    backgroundLayerNodes: createSceneComponents(data, "background", handlers),
+    foregroundLayerNodes: createSceneComponents(data, "foreground", handlers),
   });
   return {
     overview: layer([renderData.overviewRenderData]),
@@ -243,7 +243,7 @@ const createLayers = (renderData: LayeredGameDisplayRenderData, handlers: Displa
 };
 
 /**
- * The callback function used when an answer is submitted (or tested) by a display component.
+ * The callback function used when an answer is submitted (or tested) by a scene component.
  * Accepts the answer, and if correct, updates the game state to complete the challenge.
  *
  * @returns true if the answer is correct (ie. the challenge is completed), or an array of validations.
@@ -285,12 +285,12 @@ export default function Game() {
 
   const onAnswer = useAnswerHandler();
   const renderData = useMemo(() => getLayeredRenderData(gameState, resources, gameId), [gameState, resources, gameId]);
-  const displayKey = useMemo(() => getDisplayKey(renderData), [renderData]);
-  const { onDisplayEvent, cameraRules, onPlayerInteraction, players, playerEffects } = useGameRules();
+  const sceneKey = useMemo(() => getSceneKey(renderData), [renderData]);
+  const { onSceneEvent, cameraRules, onPlayerInteraction, players, playerEffects } = useGameRules();
   const ruleRewards = useRuleEffects(reducedMotion, playerEffects);
   const layers = useMemo(
-    () => createLayers(renderData, { onAnswer, onDisplayEvent }),
-    [renderData, onAnswer, onDisplayEvent],
+    () => createLayers(renderData, { onAnswer, onSceneEvent }),
+    [renderData, onAnswer, onSceneEvent],
   );
   const camera = useMemo(() => resolveCameraMode(gameState.gameData, renderData), [gameState.gameData, renderData]);
 
@@ -319,7 +319,7 @@ export default function Game() {
         <GameLayersLayout
           debug={debug}
           gameLayers={layers}
-          displayKey={displayKey}
+          sceneKey={sceneKey}
           camera={camera}
           cameraRules={cameraRules}
           onPlayerInteraction={onPlayerInteraction}

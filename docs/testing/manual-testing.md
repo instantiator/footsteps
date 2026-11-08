@@ -16,7 +16,7 @@ this covers what only a person in front of a camera can confirm.
 ```
 
 Revert the module change when you have finished. The committed game leaves `modules.camera` off, but
-one of its displays turns the camera on, so the landing page still offers the camera, without requiring it.
+one of its scenes turns the camera on, so the landing page still offers the camera, without requiring it.
 
 ## Camera smoke test
 
@@ -49,16 +49,16 @@ Now add `?debug=true` to the URL and reload ([Configuration](../configuration.md
 ## Landing, progress, and keep-awake
 
 Turn camera mode off everywhere for this section: set `modules.camera.requirement` to `false` and set
-every display's `camera.requirement` to `false`. The committed game has one display that turns the camera
+every scene's `camera.requirement` to `false`. The committed game has one scene that turns the camera
 on, so changing only the module is not enough.
 
 - [ ] `/game/magic-trifle` shows no permissions panel, and New game is enabled.
 - [ ] Complete a challenge, return to `/game/magic-trifle`, and Continue appears.
 - [ ] Continue opens `/game/magic-trifle/play` at the saved stage.
 - [ ] New game clears the saved progress: after it, Continue is gone on the next landing visit.
-- [ ] Set a camera display's `requirement` to `"required"`, clear the site's camera permission, and visit
+- [ ] Set a camera scene's `requirement` to `"required"`, clear the site's camera permission, and visit
       `/game/magic-trifle/play` directly: it returns to the landing page, and New game is disabled until you grant
-      the camera. With `"enabled"`, it plays, and asks for the camera when the first camera display appears.
+      the camera. With `"enabled"`, it plays, and asks for the camera when the first camera scene appears.
 - [ ] While a game is open and incomplete, the device does not sleep or dim the screen. Completing
       the last stage releases the wake lock; check the browser console for wake-lock warnings if the
       device still sleeps.
@@ -85,28 +85,28 @@ dispatchEvent(new PopStateEvent("popstate"));
 - [ ] Opening a challenge and returning to the overview keeps the silhouette tracking, and no
       "disposed" or vision-model errors appear.
 
-## Per-display on, off, and preview
+## Per-scene on, off, and preview
 
-Camera mode is resolved display by display: any active challenge that enables it wins; otherwise an
-explicit challenge setting, then the stage's shared display, then the overview display, then the
+Camera mode is resolved scene by scene: any active challenge that enables it wins; otherwise an
+explicit challenge setting, then the stage's shared scene, then the overview scene, then the
 game's `modules.camera` setting applies.
 
-| Check                                               | How                                                                                                       | Expected                                              |
-| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| The title screen uses the game default              | Load the game                                                                                             | Camera as configured in `modules.camera`              |
-| A stage can turn the camera off                     | Add `"camera": { "requirement": false }` to `stages[].displays[0]` for `stage-1`                          | Entering stage 1 removes the preview and silhouette   |
-| Returning reacquires the camera                     | Close the challenge from the stage above                                                                  | Preview and silhouette return, with a fresh stream    |
-| The preview can hide while the camera keeps working | Set `"preview": false` on the same display                                                                | The preview container is hidden, the silhouette moves |
-| A challenge can override its stage                  | Add `"camera": { "requirement": "enabled" }` to one challenge display, and `false` to the stage's display | Entering that challenge turns the camera on           |
-| A challenge that says nothing inherits its stage    | Remove the challenge's `camera` setting and enable the stage's display                                    | Entering the challenge keeps the camera on            |
+| Check                                               | How                                                                                                   | Expected                                              |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| The title screen uses the game default              | Load the game                                                                                         | Camera as configured in `modules.camera`              |
+| A stage can turn the camera off                     | Add `"camera": { "requirement": false }` to `stages[].scenes[0]` for `stage-1`                        | Entering stage 1 removes the preview and silhouette   |
+| Returning reacquires the camera                     | Close the challenge from the stage above                                                              | Preview and silhouette return, with a fresh stream    |
+| The preview can hide while the camera keeps working | Set `"preview": false` on the same scene                                                              | The preview container is hidden, the silhouette moves |
+| A challenge can override its stage                  | Add `"camera": { "requirement": "enabled" }` to one challenge scene, and `false` to the stage's scene | Entering that challenge turns the camera on           |
+| A challenge that says nothing inherits its stage    | Remove the challenge's `camera` setting and enable the stage's scene                                  | Entering the challenge keeps the camera on            |
 
 The preview is hidden with CSS rather than unmounted: the `<video>` is the segmentation source, so
 the silhouette must keep working when the preview is off.
 
 ## Each camera interaction
 
-Interactions are declared by display rules (see [rules and state](../game-data.md#rules-and-state)). For example,
-to make stage 1 respond to a hand at half coverage, change the stage link's rule on the overview display:
+Interactions are declared by scene rules (see [rules and state](../game-data.md#rules-and-state)). For example,
+to make stage 1 respond to a hand at half coverage, change the stage link's rule on the overview scene:
 
 ```json
 {
@@ -161,7 +161,7 @@ Play the rules demo with `?debug=true`:
 
 ## The rules demo
 
-`rules-demo` exercises display rules and state, reset displays, sounds and rewards, and turns the camera on for its stages overview and all its stages.
+`rules-demo` exercises scene rules and state, reset scenes, sounds and rewards, and turns the camera on for its stages overview and all its stages.
 Play it once with the mouse and once with the camera (`?debug=true` shows where your hands and feet are found).
 
 - [ ] **Toggle:** click the yellow switch on the stages overview, then touch it with a hand. It slides between two
@@ -205,7 +205,7 @@ The rules demo's Effects stage has one thing to touch for each effect, and shows
 ## Without a working camera
 
 - [ ] Open another app that holds the camera (a video call), then New game or Continue into a camera
-      display: the game shows without the preview or silhouette, the console warns once that the camera
+      scene: the game shows without the preview or silhouette, the console warns once that the camera
       could not start, and clicking a stage link still enters the stage.
 - [ ] With the camera free again, reload: camera mode works as before.
 
@@ -231,16 +231,16 @@ scripts/run-browser-tests.sh
 
 What the suite proves:
 
-| Test                                                | Proves                                                                                                                                                                                                                                                               |
-| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Landing page starts the game at `/play`             | The landing page and route split work in a real browser                                                                                                                                                                                                              |
-| Shows the preview and runs the silhouette loop      | The fake camera reaches the preview, and segmentation draws frames                                                                                                                                                                                                   |
-| Debug changes the mask type                         | The loop survives the mask-type change with no model errors                                                                                                                                                                                                          |
-| Preview off keeps the camera running                | Hiding the preview does not stop segmentation                                                                                                                                                                                                                        |
-| Camera-off display stops, returning reacquires      | The track ends on the camera-off display, and a live stream returns                                                                                                                                                                                                  |
-| Switching the fake camera image changes the preview | The harness controls the image the app receives                                                                                                                                                                                                                      |
-| Effects (`effects.spec.ts`)                         | Item effects at two sizes, in a second column, through re-renders, resets and fades, with reduced motion; a fake camera for falling, spinning, freezing, static, rewards, and a removed player staying removed                                                       |
-| Rules demo (`rules.spec.ts`)                        | The toggle, bulb, balloons and lava play by mouse; the balloons count down and the lava asks for the start first, again after lava and a reload; display state is kept, and resets on show; the mouse passes through empty foreground but not through drawn elements |
+| Test                                                | Proves                                                                                                                                                                                                                                                             |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Landing page starts the game at `/play`             | The landing page and route split work in a real browser                                                                                                                                                                                                            |
+| Shows the preview and runs the silhouette loop      | The fake camera reaches the preview, and segmentation draws frames                                                                                                                                                                                                 |
+| Debug changes the mask type                         | The loop survives the mask-type change with no model errors                                                                                                                                                                                                        |
+| Preview off keeps the camera running                | Hiding the preview does not stop segmentation                                                                                                                                                                                                                      |
+| Camera-off scene stops, returning reacquires        | The track ends on the camera-off scene, and a live stream returns                                                                                                                                                                                                  |
+| Switching the fake camera image changes the preview | The harness controls the image the app receives                                                                                                                                                                                                                    |
+| Effects (`effects.spec.ts`)                         | Item effects at two sizes, in a second column, through re-renders, resets and fades, with reduced motion; a fake camera for falling, spinning, freezing, static, rewards, and a removed player staying removed                                                     |
+| Rules demo (`rules.spec.ts`)                        | The toggle, bulb, balloons and lava play by mouse; the balloons count down and the lava asks for the start first, again after lava and a reload; scene state is kept, and resets on show; the mouse passes through empty foreground but not through drawn elements |
 
 The suite does not prove that a physical camera works, that a real player's body is segmented
 accurately, or that the model download succeeds on every network. Cover those with the manual

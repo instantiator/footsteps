@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { GameOverviewDisplay } from "./displays/GameDisplayData";
+import type { GameOverviewScene } from "./scenes/GameSceneData";
 import type { CameraModuleData } from "./GameModuleData";
 import type { GameStageData } from "./GameStageData";
 
@@ -43,7 +43,7 @@ export interface GameRewardData {
   particleCount?: number;
 }
 
-/** A game's authored definition: its overview displays, stages, challenges, resources and settings. */
+/** A game's authored definition: its overview scenes, stages, challenges, resources and settings. */
 export interface GameData {
   /** Name of the game, shown to players when choosing a game. */
   title: string;
@@ -51,8 +51,8 @@ export interface GameData {
   description: string;
   /** Resource name (a key of `resources`) of the image shown behind the game's landing-page tile. */
   tileGraphic?: string;
-  /** Overview displays (title, stages, complete), shown when no stage is active. */
-  displays: GameOverviewDisplay[];
+  /** Overview scenes (title, stages, complete), shown when no stage is active. */
+  scenes: GameOverviewScene[];
   /** The stages of the game, in order. */
   stages: GameStageData[];
   /** Named media resources, referenced by `*Resource` keys and passed to templates as `resources`. */

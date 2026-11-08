@@ -25,8 +25,8 @@ export interface GameSnapshot {
   current: {
     /** The open stage, or null while an overview shows. */
     stageId: string | null;
-    /** The overview display showing when no stage is open. */
-    overviewDisplay: string | null;
+    /** The overview scene showing when no stage is open. */
+    overviewScene: string | null;
   };
   /** How many players there are; see `docs/player-tracking.md`. */
   players: PlayerCounts;

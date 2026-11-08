@@ -10,7 +10,7 @@
           "requirement": "enabled"
         }
       },
-      "displays": [
+      "scenes": [
         {
           "purpose": "game-overview-title",
           "component": {

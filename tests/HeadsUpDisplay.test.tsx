@@ -21,15 +21,15 @@ const Harness = ({ initial }: { initial: GameState }) => {
   );
 };
 
-/** The title screen, a stage open, or the stages overview, in a game that has a title display. */
+/** The title screen, a stage open, or the stages overview, in a game that has a title scene. */
 const titleState = createBlankGameState(simpleGameData);
 const stageState: GameState = {
   ...titleState,
-  current: { stageId: "stage-1", overviewDisplay: "game-overview-stages" },
+  current: { stageId: "stage-1", overviewScene: "game-overview-stages" },
 };
 const overviewState: GameState = {
   ...titleState,
-  current: { stageId: null, overviewDisplay: "game-overview-stages" },
+  current: { stageId: null, overviewScene: "game-overview-stages" },
 };
 
 const current = () => JSON.parse(screen.getByRole("status").textContent!);
@@ -83,13 +83,13 @@ describe("HeadsUpDisplay", () => {
   it("closes the open stage, leaving the overview showing", () => {
     render(<Harness initial={stageState} />);
     fireEvent.click(screen.getByRole("button", { name: "Close challenge" }));
-    expect(current()).toEqual({ stageId: null, overviewDisplay: "game-overview-stages" });
+    expect(current()).toEqual({ stageId: null, overviewScene: "game-overview-stages" });
   });
 
   it("returns to the title screen, closing any open stage", () => {
     render(<Harness initial={stageState} />);
     fireEvent.click(screen.getByRole("button", { name: "To title" }));
-    expect(current()).toEqual({ stageId: null, overviewDisplay: "game-overview-title" });
+    expect(current()).toEqual({ stageId: null, overviewScene: "game-overview-title" });
   });
 
   it("offers only the way back to the title from the stages overview", () => {
@@ -98,7 +98,7 @@ describe("HeadsUpDisplay", () => {
     expect(screen.queryByRole("button", { name: "Close challenge" })).toBeNull();
   });
 
-  it("does not offer 'To title' in a game with no title display", () => {
+  it("does not offer 'To title' in a game with no title scene", () => {
     render(<Harness initial={createBlankGameState(smallGame)} />);
     expect(screen.queryByRole("button", { name: "To title" })).toBeNull();
   });

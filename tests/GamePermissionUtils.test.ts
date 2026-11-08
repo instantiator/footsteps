@@ -35,14 +35,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-/** The small game with a shared display added to its first stage. */
-const gameWithStageDisplay: GameData = {
+/** The small game with a shared scene added to its first stage. */
+const gameWithStageScene: GameData = {
   ...smallGame,
   stages: smallGame.stages.map((stage, index) =>
     index === 0
       ? {
           ...stage,
-          displays: [
+          scenes: [
             {
               purpose: "shared",
               camera: { requirement: "required" },
@@ -72,25 +72,25 @@ describe("requiredGamePermissions", () => {
     expect(requiredGamePermissions(game)).toEqual([]);
   });
 
-  it("needs the camera when one display requires it and another only enables it", () => {
-    const [overview, ...others] = smallGame.displays;
+  it("needs the camera when one scene requires it and another only enables it", () => {
+    const [overview, ...others] = smallGame.scenes;
     const game: GameData = {
       ...smallGame,
       modules: { camera: { requirement: "enabled" } },
-      displays: [{ ...overview, camera: { requirement: "required" } }, ...others],
+      scenes: [{ ...overview, camera: { requirement: "required" } }, ...others],
     };
     expect(requiredGamePermissions(game)).toEqual(["camera"]);
   });
 
-  it("needs the camera when a nested reset display requires it", () => {
-    const component = smallGame.displays[0].component;
-    const [overview, ...others] = smallGame.displays;
+  it("needs the camera when a nested reset scene requires it", () => {
+    const component = smallGame.scenes[0].component;
+    const [overview, ...others] = smallGame.scenes;
     const game: GameData = {
       ...smallGame,
-      displays: [
+      scenes: [
         {
           ...overview,
-          resetDisplay: { component, resetDisplay: { component, camera: { requirement: "required" } } },
+          resetScene: { component, resetScene: { component, camera: { requirement: "required" } } },
         },
         ...others,
       ],
@@ -103,26 +103,26 @@ describe("requiredGamePermissions", () => {
     expect(requiredGamePermissions(game)).toEqual(["camera"]);
   });
 
-  it("needs the camera when an overview display requires it", () => {
+  it("needs the camera when an overview scene requires it", () => {
     const game: GameData = {
       ...smallGame,
-      displays: smallGame.displays.map((display) => ({ ...display, camera: { requirement: "required" } })),
+      scenes: smallGame.scenes.map((scene) => ({ ...scene, camera: { requirement: "required" } })),
     };
     expect(requiredGamePermissions(game)).toEqual(["camera"]);
   });
 
-  it("needs the camera when a stage display requires it", () => {
-    expect(requiredGamePermissions(gameWithStageDisplay)).toEqual(["camera"]);
+  it("needs the camera when a stage scene requires it", () => {
+    expect(requiredGamePermissions(gameWithStageScene)).toEqual(["camera"]);
   });
 
-  it("needs the camera when a challenge display requires it", () => {
+  it("needs the camera when a challenge scene requires it", () => {
     const game: GameData = {
       ...smallGame,
       stages: smallGame.stages.map((stage) => ({
         ...stage,
         challenges: stage.challenges.map((challenge) => ({
           ...challenge,
-          displays: challenge.displays.map((display) => ({ ...display, camera: { requirement: "required" } })),
+          scenes: challenge.scenes.map((scene) => ({ ...scene, camera: { requirement: "required" } })),
         })),
       })),
     };

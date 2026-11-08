@@ -1,4 +1,4 @@
-import type { GameInteraction, PointerInteraction } from "../../entities/data/displays/GameDisplayData";
+import type { GameInteraction, PointerInteraction } from "../../entities/data/scenes/GameSceneData";
 import { DEFAULT_APP_CONFIG } from "../../config/AppConfig";
 import { isDefined } from "../../util/ObjectUtils";
 import { BODY_PARTS, BodyPart } from "../../vision/BodyPart";
@@ -224,7 +224,7 @@ const bodyHeightOf = ({ feet, keyPoints, height }: PlayerFrame): number => {
  *
  * Events are edge-triggered: an interaction fires when it begins, not on every frame it holds.
  * The first frame only records what already holds, so a player who is already inside an element
- * when the monitor starts (as a display fades in) must move into it again.
+ * when the monitor starts (as a scene fades in) must move into it again.
  * The monitor also follows the player's feet for jumps ({@link JumpDetector}). When they land, it fires `jump` for an
  * element their feet were on both at take-off and at landing, `jump-from` for one they took off from, and
  * `jump-onto` for one they landed on.

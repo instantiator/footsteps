@@ -9,11 +9,11 @@ export const MODEL_TIMEOUT = 120_000;
 /** The only game in the repository, patched to switch camera mode on for a test. */
 const GAME_ID = "magic-trifle";
 
-/** How the camera behaves on the game's displays. */
+/** How the camera behaves on the game's scenes. */
 export interface CameraGameOptions {
   /** Whether the preview shows; defaults to true. */
   preview?: boolean;
-  /** A stage whose shared display turns the camera off. */
+  /** A stage whose shared scene turns the camera off. */
   cameraOffStage?: string;
   /** Appended to the game's URL, eg. "?debug=true". */
   query?: string;
@@ -33,9 +33,9 @@ const patchRepository = async (page: Page, options: CameraGameOptions): Promise<
 
     if (options.cameraOffStage) {
       const stage = game.stages.find(({ id }) => id === options.cameraOffStage);
-      const display = stage?.displays?.[0];
-      if (!display) throw new Error(`no display on stage ${options.cameraOffStage}`);
-      display.camera = { requirement: false };
+      const scene = stage?.scenes?.[0];
+      if (!scene) throw new Error(`no scene on stage ${options.cameraOffStage}`);
+      scene.camera = { requirement: false };
     }
 
     await route.fulfill({ response, json: repository });

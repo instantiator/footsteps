@@ -60,14 +60,14 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-/** The scope the test layers' overview display has, so camera rules can find its elements. */
+/** The scope the test layers' overview scene has, so camera rules can find its elements. */
 const SCOPE = "overview:game-overview-stages";
 
 const layers = {
   overview: {
     backgroundLayerNodes: undefined,
     foregroundLayerNodes: [
-      <div key="o" data-display-scope={SCOPE}>
+      <div key="o" data-scene-scope={SCOPE}>
         <span id="overview-thing" />
       </div>,
     ],
@@ -119,7 +119,7 @@ const handOnThing = (container: HTMLElement) => ({
 const stubRect = (element: Element, rect: DOMRect) => vi.spyOn(element, "getBoundingClientRect").mockReturnValue(rect);
 
 describe("GameLayersLayout", () => {
-  it("lets pointer events through the display layers, so displays handle their own", () => {
+  it("lets pointer events through the scene layers, so scenes handle their own", () => {
     const { container } = renderLayout();
     expect(container.querySelectorAll('[id$="ground-container"]').length).toBeGreaterThan(0);
     for (const layer of container.querySelectorAll('[id$="ground-container"], [id*="-grid"]')) {
@@ -146,7 +146,7 @@ describe("GameLayersLayout", () => {
     expect(container.querySelector("#character-camera-layer")).not.toBeNull();
   });
 
-  it("fits the game viewport to the camera's aspect ratio, so the whole display is in view", async () => {
+  it("fits the game viewport to the camera's aspect ratio, so the whole scene is in view", async () => {
     const { container, rerender } = renderLayout();
     const viewport = () => container.querySelector("#game-viewport");
     expect(viewport()).not.toBeNull();
@@ -201,7 +201,7 @@ describe("GameLayersLayout", () => {
     expect(received.camera[firstCameraAfterReEnable]?.stream).toBeUndefined();
   });
 
-  it("keeps the display layers hidden until the camera reports its aspect ratio", () => {
+  it("keeps the scene layers hidden until the camera reports its aspect ratio", () => {
     settings.reportAspect = false;
     const { container } = renderLayout({ camera: { enabled: true, preview: true } });
     expect(container.querySelector("#overview-foreground-container")).toBeNull();
@@ -210,7 +210,7 @@ describe("GameLayersLayout", () => {
 });
 
 describe("GameLayersLayout without a working camera", () => {
-  it("shows the display without the camera when it can't start", async () => {
+  it("shows the scene without the camera when it can't start", async () => {
     settings.fail = true;
     const { container } = renderLayout({ camera: { enabled: true, preview: true } });
 
@@ -219,41 +219,41 @@ describe("GameLayersLayout without a working camera", () => {
     expect(screen.queryByTestId("canvas")).toBeNull();
   });
 
-  it("moves on to a camera display, without the camera, when it can't start", () => {
+  it("moves on to a camera scene, without the camera, when it can't start", () => {
     setReducedMotion(true);
     settings.fail = true;
     const title = { overview: { backgroundLayerNodes: undefined, foregroundLayerNodes: [<span key="t">title</span>] } };
     const stages = {
       overview: { backgroundLayerNodes: undefined, foregroundLayerNodes: [<span key="s">stages</span>] },
     };
-    const { rerender } = renderLayout({ gameLayers: title, displayKey: "title" });
+    const { rerender } = renderLayout({ gameLayers: title, sceneKey: "title" });
 
-    rerender(layout({ camera: { enabled: true, preview: true }, gameLayers: stages, displayKey: "stages" }));
+    rerender(layout({ camera: { enabled: true, preview: true }, gameLayers: stages, sceneKey: "stages" }));
 
     expect(screen.getByText("stages")).toBeInTheDocument();
     expect(screen.queryByText("title")).toBeNull();
   });
 });
 
-describe("GameLayersLayout display transitions", () => {
-  /** A single overview layer, labelled so tests can tell displays apart. */
-  const display = (text: string) => ({
+describe("GameLayersLayout scene transitions", () => {
+  /** A single overview layer, labelled so tests can tell scenes apart. */
+  const sceneLayers = (text: string) => ({
     overview: { backgroundLayerNodes: undefined, foregroundLayerNodes: [<span key={text}>{text}</span>] },
   });
 
-  /** The scene wrapper that fades the display and camera layers together. */
+  /** The scene wrapper that fades the scene and camera layers together. */
   const sceneOf = (container: HTMLElement) => container.querySelector<HTMLElement>(".gameScene")!;
 
-  it("fades the old display out, swaps, and fades the new display in", async () => {
+  it("fades the old scene out, swaps, and fades the new scene in", async () => {
     setReducedMotion(false);
     vi.useFakeTimers();
-    const { container, rerender } = renderLayout({ gameLayers: display("old display"), displayKey: "old" });
+    const { container, rerender } = renderLayout({ gameLayers: sceneLayers("old scene"), sceneKey: "old" });
     const scene = () => sceneOf(container);
 
-    rerender(layout({ gameLayers: display("new display"), displayKey: "new" }));
+    rerender(layout({ gameLayers: sceneLayers("new scene"), sceneKey: "new" }));
 
-    expect(screen.getByText("old display")).toBeInTheDocument();
-    expect(screen.queryByText("new display")).toBeNull();
+    expect(screen.getByText("old scene")).toBeInTheDocument();
+    expect(screen.queryByText("new scene")).toBeNull();
     expect(scene()).toHaveStyle({ opacity: "0", pointerEvents: "none" });
     expect(scene()).toHaveAttribute("inert");
 
@@ -261,8 +261,8 @@ describe("GameLayersLayout display transitions", () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
 
-    expect(screen.queryByText("old display")).toBeNull();
-    expect(screen.getByText("new display")).toBeInTheDocument();
+    expect(screen.queryByText("old scene")).toBeNull();
+    expect(screen.getByText("new scene")).toBeInTheDocument();
     expect(scene()).toHaveStyle({ opacity: "1", pointerEvents: "none" });
 
     await act(async () => {
@@ -273,37 +273,37 @@ describe("GameLayersLayout display transitions", () => {
     expect(scene()).not.toHaveAttribute("inert");
   });
 
-  it("swaps displays immediately when reduced motion is preferred", () => {
+  it("swaps scenes immediately when reduced motion is preferred", () => {
     setReducedMotion(true);
-    const { rerender } = renderLayout({ gameLayers: display("old display"), displayKey: "old" });
+    const { rerender } = renderLayout({ gameLayers: sceneLayers("old scene"), sceneKey: "old" });
 
-    rerender(layout({ gameLayers: display("new display"), displayKey: "new" }));
+    rerender(layout({ gameLayers: sceneLayers("new scene"), sceneKey: "new" }));
 
-    expect(screen.getByText("new display")).toBeInTheDocument();
-    expect(screen.queryByText("old display")).toBeNull();
+    expect(screen.getByText("new scene")).toBeInTheDocument();
+    expect(screen.queryByText("old scene")).toBeNull();
   });
 
-  it("updates content in the same display without fading", () => {
+  it("updates content in the same scene without fading", () => {
     setReducedMotion(false);
-    const { container, rerender } = renderLayout({ gameLayers: display("before"), displayKey: "same" });
+    const { container, rerender } = renderLayout({ gameLayers: sceneLayers("before"), sceneKey: "same" });
 
-    rerender(layout({ gameLayers: display("after"), displayKey: "same" }));
+    rerender(layout({ gameLayers: sceneLayers("after"), sceneKey: "same" }));
 
     expect(screen.getByText("after")).toBeInTheDocument();
     expect(screen.queryByText("before")).toBeNull();
     expect(sceneOf(container)).toHaveStyle({ opacity: "1" });
   });
 
-  it("reshapes for the camera over two seconds, holding the old display until the fade", async () => {
+  it("reshapes for the camera over two seconds, holding the old scene until the fade", async () => {
     setReducedMotion(false);
     vi.useFakeTimers();
-    const { container, rerender } = renderLayout({ gameLayers: display("title"), displayKey: "title" });
+    const { container, rerender } = renderLayout({ gameLayers: sceneLayers("title"), sceneKey: "title" });
     const viewport = container.querySelector<HTMLElement>("#game-viewport")!;
     stubRect(viewport, new DOMRect(0, 0, 100, 100));
     stubRect(viewport.parentElement!, new DOMRect(0, 0, 100, 100));
 
     rerender(
-      layout({ camera: { enabled: true, preview: true }, gameLayers: display("overview"), displayKey: "overview" }),
+      layout({ camera: { enabled: true, preview: true }, gameLayers: sceneLayers("overview"), sceneKey: "overview" }),
     );
 
     expect(viewport).toHaveClass("gameViewportReshaping");
@@ -345,15 +345,17 @@ describe("GameLayersLayout display transitions", () => {
     vi.useFakeTimers();
     const { container, rerender } = renderLayout({
       camera: { enabled: true, preview: true },
-      gameLayers: display("overview"),
-      displayKey: "overview",
+      gameLayers: sceneLayers("overview"),
+      sceneKey: "overview",
     });
     const viewport = container.querySelector<HTMLElement>("#game-viewport")!;
     stubRect(viewport, new DOMRect(0, 0, 150, 100));
     stubRect(viewport.parentElement!, new DOMRect(0, 0, 100, 100));
     expect(viewport).toHaveStyle({ aspectRatio: "1.5" });
 
-    rerender(layout({ camera: { enabled: false, preview: false }, gameLayers: display("stage"), displayKey: "stage" }));
+    rerender(
+      layout({ camera: { enabled: false, preview: false }, gameLayers: sceneLayers("stage"), sceneKey: "stage" }),
+    );
 
     expect(viewport).toHaveClass("gameViewportReshaping");
     expect(viewport).toHaveStyle({ aspectRatio: "1" });
@@ -382,17 +384,17 @@ describe("GameLayersLayout display transitions", () => {
     expect(sceneOf(container)).not.toHaveAttribute("inert");
   });
 
-  it("keeps the old display until the camera reports its shape", async () => {
+  it("keeps the old scene until the camera reports its shape", async () => {
     setReducedMotion(false);
     vi.useFakeTimers();
     settings.reportAspect = false;
-    const { container, rerender } = renderLayout({ gameLayers: display("title"), displayKey: "title" });
+    const { container, rerender } = renderLayout({ gameLayers: sceneLayers("title"), sceneKey: "title" });
     const viewport = container.querySelector<HTMLElement>("#game-viewport")!;
     stubRect(viewport, new DOMRect(0, 0, 100, 100));
     stubRect(viewport.parentElement!, new DOMRect(0, 0, 100, 100));
 
     rerender(
-      layout({ camera: { enabled: true, preview: true }, gameLayers: display("overview"), displayKey: "overview" }),
+      layout({ camera: { enabled: true, preview: true }, gameLayers: sceneLayers("overview"), sceneKey: "overview" }),
     );
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3000);
@@ -415,16 +417,16 @@ describe("GameLayersLayout display transitions", () => {
     expect(viewport).not.toHaveClass("gameViewportReshaping");
   });
 
-  it("reshapes without fading when the display stays the same", async () => {
+  it("reshapes without fading when the scene stays the same", async () => {
     setReducedMotion(false);
     vi.useFakeTimers();
-    const { container, rerender } = renderLayout({ gameLayers: display("overview"), displayKey: "overview" });
+    const { container, rerender } = renderLayout({ gameLayers: sceneLayers("overview"), sceneKey: "overview" });
     const viewport = container.querySelector<HTMLElement>("#game-viewport")!;
     stubRect(viewport, new DOMRect(0, 0, 100, 100));
     stubRect(viewport.parentElement!, new DOMRect(0, 0, 100, 100));
 
     rerender(
-      layout({ camera: { enabled: true, preview: true }, gameLayers: display("overview"), displayKey: "overview" }),
+      layout({ camera: { enabled: true, preview: true }, gameLayers: sceneLayers("overview"), sceneKey: "overview" }),
     );
     expect(viewport).toHaveClass("gameViewportReshaping");
     expect(viewport.style.getPropertyValue("--reshape-from")).toBe("1 / 1");
@@ -445,11 +447,11 @@ describe("GameLayersLayout display transitions", () => {
 
   it("skips the reshape when reduced motion is preferred", async () => {
     setReducedMotion(true);
-    const { container, rerender } = renderLayout({ gameLayers: display("title"), displayKey: "title" });
+    const { container, rerender } = renderLayout({ gameLayers: sceneLayers("title"), sceneKey: "title" });
     const viewport = container.querySelector<HTMLElement>("#game-viewport")!;
 
     rerender(
-      layout({ camera: { enabled: true, preview: true }, gameLayers: display("overview"), displayKey: "overview" }),
+      layout({ camera: { enabled: true, preview: true }, gameLayers: sceneLayers("overview"), sceneKey: "overview" }),
     );
 
     expect(await screen.findByTestId("canvas")).toBeInTheDocument();
@@ -499,7 +501,7 @@ describe("GameLayersLayout camera interactions", () => {
     expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith(handOnThing(container));
   });
 
-  it("fires a near rule by how close the silhouette comes, as a % of the display's width", async () => {
+  it("fires a near rule by how close the silhouette comes, as a % of the scene's width", async () => {
     const onPlayerInteraction = vi.fn();
     const { container, canvas } = await renderWithCamera({
       cameraRules: [handRule({ interactions: ["near-enter"], within: 25, includeCovered: true })],
@@ -535,7 +537,7 @@ describe("GameLayersLayout camera interactions", () => {
     );
   });
 
-  it("makes a player already over an element move in again after its display resets, without an exit", async () => {
+  it("makes a player already over an element move in again after its scene resets, without an exit", async () => {
     const onPlayerInteraction = vi.fn();
     const rules = [handRule({ interactions: ["hand-enter", "hand-exit"] })];
     const { container, canvas, rerender } = await renderWithCamera({ cameraRules: rules, onPlayerInteraction });
@@ -656,7 +658,7 @@ describe("GameLayersLayout camera interactions", () => {
   });
 
   it("fires the exits of a player who has gone, but not when interactions pause", async () => {
-    setReducedMotion(false); // so a display change fades, pausing interactions
+    setReducedMotion(false); // so a scene change fades, pausing interactions
     const onPlayerInteraction = vi.fn();
     const inOut = handRule({ interactions: ["hand-enter", "hand-exit"] });
     const { container, canvas, rerender } = await renderWithCamera({ cameraRules: [inOut], onPlayerInteraction });
@@ -669,13 +671,13 @@ describe("GameLayersLayout camera interactions", () => {
     sendPlayers([], 1100);
     expect(onPlayerInteraction).toHaveBeenLastCalledWith(exited);
 
-    // In again, then the display changes: interactions pause, and the hand hasn't left anything
+    // In again, then the scene changes: interactions pause, and the hand hasn't left anything
     sendPlayers([playerWithHandAt(0, 7)], 1200);
     sendPlayers([playerWithHandAt(6, 1)], 1300);
     onPlayerInteraction.mockClear();
     const camera = { enabled: true, preview: true };
     vi.useFakeTimers();
-    rerender(layout({ camera, cameraRules: [inOut], onPlayerInteraction, displayKey: "next" }));
+    rerender(layout({ camera, cameraRules: [inOut], onPlayerInteraction, sceneKey: "next" }));
     sendPlayers([], 1400);
     expect(onPlayerInteraction).not.toHaveBeenCalled();
   });
@@ -714,16 +716,16 @@ describe("GameLayersLayout camera interactions", () => {
     expect(onPlayerInteraction).toHaveBeenCalledOnce();
   });
 
-  it("ignores camera interactions while a display change is fading", async () => {
+  it("ignores camera interactions while a scene change is fading", async () => {
     setReducedMotion(false);
     const onPlayerInteraction = vi.fn();
-    const props = { cameraRules: [handRule()], onPlayerInteraction, displayKey: "old" };
+    const props = { cameraRules: [handRule()], onPlayerInteraction, sceneKey: "old" };
     const { container, canvas, rerender } = await renderWithCamera(props);
     stubRect(canvas, new DOMRect(0, 0, 100, 100));
     stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 50, 50));
 
     vi.useFakeTimers();
-    rerender(layout({ camera: { enabled: true, preview: true }, ...props, displayKey: "new" }));
+    rerender(layout({ camera: { enabled: true, preview: true }, ...props, sceneKey: "new" }));
 
     sendPlayers([playerWithHandAt(6, 1)], 1000);
     expect(onPlayerInteraction).not.toHaveBeenCalled();
@@ -753,12 +755,12 @@ describe("GameLayersLayout camera rules", () => {
     Reflect.deleteProperty(document, "elementFromPoint");
   });
 
-  /** Balloons, two with no id, in the overview display, and a cover over them. */
+  /** Balloons, two with no id, in the overview scene, and a cover over them. */
   const balloons = (count = 2) => ({
     overview: {
       backgroundLayerNodes: undefined,
       foregroundLayerNodes: [
-        <div key="o" data-display-scope={SCOPE}>
+        <div key="o" data-scene-scope={SCOPE}>
           {Array.from({ length: count }, (_, i) => (
             <span key={i} className="balloon" data-n={i} />
           ))}
@@ -857,7 +859,7 @@ describe("GameLayersLayout camera rules", () => {
     expect(onPlayerInteraction).toHaveBeenCalledOnce();
   });
 
-  it("only looks in the rule's own display", async () => {
+  it("only looks in the rule's own scene", async () => {
     const { onPlayerInteraction } = await renderRules([
       balloonRule({ includeCovered: true, scope: "stage:s1:shared" }),
     ]);

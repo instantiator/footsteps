@@ -7,7 +7,7 @@ import { GameStateContext } from "./GameStateContext";
 
 /**
  * Holds the player's progress, starting from saved progress when there is any, and saves each change.
- * Every change also resets the state of displays that it shows, if they ask for that.
+ * Every change also resets the state of scenes that it shows, if they ask for that.
  */
 export default function GameStateProvider({ children }: { children: ReactNode }) {
   const { gameId, gameData } = useGameData();

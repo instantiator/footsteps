@@ -7,7 +7,7 @@ import CharacterCamera from "../../camera/CharacterCamera";
 import CharacterCanvas from "../../camera/CharacterCanvas";
 import type { PlayerFrame } from "../../camera/PlayerMonitor";
 import HeadsUpDisplay from "../HeadsUpDisplay";
-import type { LayerHint } from "../display/GameDisplayComponent";
+import type { LayerHint } from "../scene/GameSceneComponent";
 import GameChallengeGrid from "./GameChallengeGrid";
 
 /**
@@ -47,7 +47,7 @@ export interface LayerNodeProps {
   mirror?: boolean;
   /** Whether debug aids (colour key, coloured mask) are shown. */
   debug?: boolean;
-  /** The display components to render in the layer, one per grid column. */
+  /** The scene components to render in the layer, one per grid column. */
   nodes?: ReactNode[];
   /** Whether the game uses the camera. */
   cameraEnabled?: boolean;
@@ -58,13 +58,13 @@ export interface LayerNodeProps {
 }
 
 /**
- * A background or foreground layer of the overview, stage or challenges: its display components in a
- * {@link GameChallengeGrid}. The layer lets pointer events through; each display handles its own.
+ * A background or foreground layer of the overview, stage or challenges: its scene components in a
+ * {@link GameChallengeGrid}. The layer lets pointer events through; each scene handles its own.
  */
 export const GameLayerWrapper = ({ nodes, style, zIndex, layer, layerHint }: LayerNodeProps) => (
   <div
     id={`${layer!}-${layerHint!}-container`}
-    className={`outerStyle noClicks display-${layerHint!}`}
+    className={`outerStyle noClicks scene-${layerHint!}`}
     style={{ ...style, zIndex: zIndex }}
   >
     {isDefined(nodes) && (

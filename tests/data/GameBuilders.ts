@@ -1,28 +1,28 @@
 import type { GameChallengeData } from "../../src/entities/data/GameChallengeData";
 import type { GameData } from "../../src/entities/data/GameData";
 import type { GameStageData } from "../../src/entities/data/GameStageData";
-import type { GameChallengeDisplayPurpose, GameDisplayPurpose } from "../../src/entities/data/displays/GameDisplayData";
+import type { GameChallengeScenePurpose, GameScenePurpose } from "../../src/entities/data/scenes/GameSceneData";
 
-/** A minimal scroll component; `marker` is passed through as its `data`, to tell displays apart. */
+/** A minimal scroll component; `marker` is passed through as its `data`, to tell scenes apart. */
 export const scroll = (marker: string = "") => ({
   type: "scroll" as const,
   contents: [],
   data: { marker },
 });
 
-/** A display of the given purpose, in the shape every display level shares. */
-export const display = <P extends GameDisplayPurpose>(purpose: P, marker?: string) => ({
+/** A scene of the given purpose, in the shape every scene level shares. */
+export const scene = <P extends GameScenePurpose>(purpose: P, marker?: string) => ({
   purpose,
   component: scroll(marker ?? purpose),
 });
 
-/** A challenge answered by "ANSWER", with the given display purposes. */
+/** A challenge answered by "ANSWER", with the given scene purposes. */
 export const challenge = (
   id: string,
-  purposes: GameChallengeDisplayPurpose[] = ["challenge-in-progress"],
+  purposes: GameChallengeScenePurpose[] = ["challenge-in-progress"],
 ): GameChallengeData => ({
   id,
-  displays: purposes.map((p) => display(p)),
+  scenes: purposes.map((p) => scene(p)),
   solution: { answers: ["ANSWER"] },
 });
 
@@ -33,7 +33,7 @@ export const stage = (
   extra: Partial<GameStageData> = {},
 ): GameStageData => ({ id, challenges, ...extra });
 
-/** A game with the given overview display purposes and stages. */
+/** A game with the given overview scene purposes and stages. */
 export const game = (
   overviews: ("game-overview-title" | "game-overview-stages" | "game-overview-complete")[],
   stages: GameStageData[],
@@ -41,7 +41,7 @@ export const game = (
 ): GameData => ({
   title: "Test Game",
   description: "A game for tests.",
-  displays: overviews.map((p) => display(p)),
+  scenes: overviews.map((p) => scene(p)),
   stages,
   config,
   gameContainerStyle: {},

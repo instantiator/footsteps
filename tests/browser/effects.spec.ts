@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { GameData } from "../../src/entities/data/GameData";
-import type { GameRule } from "../../src/entities/data/displays/GameDisplayData";
+import type { GameRule } from "../../src/entities/data/scenes/GameSceneData";
 import type { GameRepository } from "../../src/entities/GameRepository";
 import { MODEL_TIMEOUT } from "./fixtures/cameraGame";
 import { installFakeCamera } from "./fixtures/fakeCamera";
@@ -28,19 +28,19 @@ const openWith = async (page: Page, rules: GameRule[], change: (game: GameData) 
     const response = await route.fetch();
     const repository = (await response.json()) as GameRepository;
     const game = repository.games["rules-demo"];
-    for (const display of [
-      ...game.displays,
+    for (const scene of [
+      ...game.scenes,
       // The effects stage acts on players, so it can't load without the camera
       ...game.stages
         .filter((stage) => stage.id !== "effects")
-        .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.displays)),
+        .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
     ]) {
-      display.camera = { requirement: false };
+      scene.camera = { requirement: false };
     }
     const stage = game.stages.find(({ id }) => id === "balloons")!;
-    const [display] = stage.challenges[0].displays;
-    delete display.resetDisplay;
-    display.component = {
+    const [scene] = stage.challenges[0].scenes;
+    delete scene.resetScene;
+    scene.component = {
       type: "template",
       data: {},
       initialState: { n: 0 },
@@ -56,22 +56,22 @@ const openWith = async (page: Page, rules: GameRule[], change: (game: GameData) 
   await expect(page.locator("#bridge")).toBeVisible();
 };
 
-/** Where an element's centre is, as a % of the display's width and height. */
+/** Where an element's centre is, as a % of the scene's width and height. */
 const centreOf = (page: Page, selector: string) =>
   page.locator(selector).evaluate((element) => {
-    const display = document.querySelector("#game-viewport")!.getBoundingClientRect();
+    const scene = document.querySelector("#game-viewport")!.getBoundingClientRect();
     const { left, top, width, height } = element.getBoundingClientRect();
     return {
-      left: ((left + width / 2 - display.left) / display.width) * 100,
-      top: ((top + height / 2 - display.top) / display.height) * 100,
+      left: ((left + width / 2 - scene.left) / scene.width) * 100,
+      top: ((top + height / 2 - scene.top) / scene.height) * 100,
     };
   });
 
-/** Whether an element's top is below the display. */
+/** Whether an element's top is below the scene. */
 const isOffScreen = (page: Page, selector: string) =>
   page.locator(selector).evaluate((element) => {
-    const display = document.querySelector("#game-viewport")!.getBoundingClientRect();
-    return element.getBoundingClientRect().top >= display.bottom - 1;
+    const scene = document.querySelector("#game-viewport")!.getBoundingClientRect();
+    return element.getBoundingClientRect().top >= scene.bottom - 1;
   });
 
 /** Waits for an element's animations to finish. */
@@ -82,7 +82,7 @@ const settled = (page: Page, selector: string) =>
 
 const expectNear = (actual: number, expected: number) => expect(Math.abs(actual - expected)).toBeLessThan(0.5);
 
-test("a fall ends off the display, and stays there", async ({ page }) => {
+test("a fall ends off the scene, and stays there", async ({ page }) => {
   await openWith(page, [onGo([{ effect: "item-fall", target: "#bridge", durationMs: 100 }])]);
   await page.locator("#go").click();
   await settled(page, "#bridge");
@@ -91,7 +91,7 @@ test("a fall ends off the display, and stays there", async ({ page }) => {
   expect(await isOffScreen(page, "#bridge")).toBe(true);
 });
 
-test("a move places an element's centre, at any size of display", async ({ page }) => {
+test("a move places an element's centre, at any size of scene", async ({ page }) => {
   const end = { left: 50, top: 20 };
   await openWith(page, [onGo([{ effect: "item-move", target: "#bridge", durationMs: 100, end }])]);
   await page.locator("#go").click();
@@ -106,20 +106,20 @@ test("a move places an element's centre, at any size of display", async ({ page 
   expectNear(small.top, 20);
 });
 
-test("a move in a second column still places its centre by the whole display", async ({ page }) => {
+test("a move in a second column still places its centre by the whole scene", async ({ page }) => {
   const end = { left: 75, top: 20 };
   await openWith(page, [], (game) => {
     const stage = game.stages.find(({ id }) => id === "balloons")!;
     const [first] = stage.challenges;
-    const [display] = first.displays;
+    const [scene] = first.scenes;
     const second = {
       ...first,
       id: "second",
-      displays: [
+      scenes: [
         {
-          ...display,
+          ...scene,
           component: {
-            ...display.component,
+            ...scene.component,
             foregroundTemplate: {
               sourceType: "embedded" as const,
               content:
@@ -233,7 +233,7 @@ test("an effect after a reset in the same rule moves the rebuilt element", async
   await expect.poll(() => isOffScreen(page, "#bridge")).toBe(true);
 });
 
-test("a fallen item doesn't snap back into view while its display fades away", async ({ page }) => {
+test("a fallen item doesn't snap back into view while its scene fades away", async ({ page }) => {
   await openWith(page, [onGo([{ effect: "item-fall", target: "#bridge", durationMs: 50 }])]);
   await page.locator("#go").click();
   await settled(page, "#bridge");
@@ -248,7 +248,7 @@ test("a fallen item doesn't snap back into view while its display fades away", a
   expect(stillOff).toBe(true);
 });
 
-test("an effect from a start rule waits for its display to reach the screen", async ({ page }) => {
+test("an effect from a start rule waits for its scene to reach the screen", async ({ page }) => {
   await openWith(page, [
     {
       on: { start: true },
@@ -258,7 +258,7 @@ test("an effect from a start rule waits for its display to reach the screen", as
   await expect.poll(async () => (await centreOf(page, "#bridge")).left).toBeCloseTo(50, 0);
 });
 
-test("a delayed effect waits, and is dropped if the display resets first", async ({ page }) => {
+test("a delayed effect waits, and is dropped if the scene resets first", async ({ page }) => {
   await openWith(page, [
     onGo([{ effect: "item-fall", target: "#bridge", durationMs: 50, delayMs: 300 }]),
     onAgain([{ resetState: true }]),
@@ -282,8 +282,8 @@ test("a quake moves each item and ends, leaving it where it was", async ({ page 
 
 test("a quake enlarges a full-size item so no gap shows", async ({ page }) => {
   await openWith(page, [onGo([{ effect: "quake", target: "#sky", dx: 2, durationMs: 300 }])], (game) => {
-    const [display] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].displays;
-    display.component.foregroundTemplate = {
+    const [scene] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].scenes;
+    scene.component.foregroundTemplate = {
       sourceType: "embedded",
       content: `<div id="sky" style="position: absolute; inset: 0"></div>${ITEMS}`,
     };
@@ -352,8 +352,8 @@ test("an effect's end fires a rule once per element, with its id", async ({ page
       { on: { effectEnd: "item-fall", target: "#platform" }, do: [{ set: { last: "event.id" } }] },
     ],
     (game) => {
-      const [display] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].displays;
-      display.component.foregroundTemplate = {
+      const [scene] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].scenes;
+      scene.component.foregroundTemplate = {
         sourceType: "embedded",
         content: `${ITEMS}<p id="last">{{state.last}}</p>`,
       };
@@ -364,7 +364,7 @@ test("an effect's end fires a rule once per element, with its id", async ({ page
   await expect(page.locator("#last")).toHaveText("platform");
 });
 
-test("an effect's end doesn't fire after it was stopped or its display reset", async ({ page }) => {
+test("an effect's end doesn't fire after it was stopped or its scene reset", async ({ page }) => {
   await openWith(page, [
     onGo([{ effect: "item-fall", target: "#bridge", durationMs: 200 }]),
     onAgain([{ effect: "stop", target: "#bridge" }]),
@@ -459,9 +459,9 @@ test.describe("on players, with a fake camera", () => {
     await page.context().grantPermissions(["camera"]);
     await installFakeCamera(page, peoplePhotoUrls());
     await openWith(page, rules, (game) => {
-      const [display] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].displays;
-      display.camera = { requirement: "enabled" };
-      display.component.foregroundTemplate = { sourceType: "embedded", content: `${ITEMS}${PLAYERS}` };
+      const [scene] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].scenes;
+      scene.camera = { requirement: "enabled" };
+      scene.component.foregroundTemplate = { sourceType: "embedded", content: `${ITEMS}${PLAYERS}` };
     });
     await page.evaluate(() => window.__fakeCamera.setImage("photo:jumping-side-on"));
     await expect(page.locator(".player-1")).toHaveCount(1, { timeout: MODEL_TIMEOUT });
@@ -476,7 +476,7 @@ test.describe("on players, with a fake camera", () => {
       return data.reduce((sum, value) => (sum + value) % 1_000_003, 0);
     });
 
-  test("a fall removes them, resets the display when nobody is left, and brings them back", async ({ page }) => {
+  test("a fall removes them, resets the scene when nobody is left, and brings them back", async ({ page }) => {
     await openWithPlayer(page, [
       onGo([{ effect: "player-fall", players: "all", durationMs: 200 }]),
       { on: { when: "game.players.active == 0 and game.players.removed > 0", forMs: 300 }, do: [{ resetState: true }] },
@@ -518,7 +518,7 @@ test.describe("on players, with a fake camera", () => {
     await expect.poll(() => imageOf(page), { timeout: 5000 }).not.toBe(frozen);
   });
 
-  test("a spin away takes them off the display, and a restore brings them back", async ({ page }) => {
+  test("a spin away takes them off the scene, and a restore brings them back", async ({ page }) => {
     await openWithPlayer(page, [
       onGo([{ effect: "player-spin-away", players: "all", durationMs: 200, zoom: 2, opacity: 0 }]),
       onAgain([{ effect: "player-restore", players: "all", durationMs: 100 }]),
@@ -586,7 +586,7 @@ test.describe("on players, with a fake camera", () => {
     const burst = page.locator('[id^="reward-burst-"]');
     await expect(burst).toHaveCount(1);
     const left = await burst.evaluate((element) => Number.parseFloat((element as HTMLElement).style.left));
-    // The photo's person isn't in the middle of the display, unlike the centre of their canvas
+    // The photo's person isn't in the middle of the scene, unlike the centre of their canvas
     expect(left).not.toBeCloseTo(body.left + body.width / 2, -1);
   });
 });

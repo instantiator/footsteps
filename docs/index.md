@@ -5,11 +5,11 @@ Published as HTML at <https://instantiator.dev/footsteps/docs/>, with the API re
 - [Developer overview](dev-overview.md): running locally, schemas, and validating game data.
 - [Playing a game](game-play.md): routes, the landing page, permissions, saved progress, and keep-awake.
 - [Deployment](deployment.md): deployment details.
-- [Game data](game-data.md): how a game's data, displays, resources, and templates fit together.
+- [Game data](game-data.md): how a game's data, scenes, resources, and templates fit together.
 - [Game repository data](game-repository-data.md): the repository file that holds games, and where it's loaded from.
 - [Special effects](special-effects.md): effects, animations and rewards, and the coordinate system for positions and distances.
 - [Player tracking](player-tracking.md): how players are followed and numbered, what can happen to them, and how they are restored.
-- [How filtrex works](filtrex.md): the expression language used by display rules, and why it is safe.
+- [How filtrex works](filtrex.md): the expression language used by scene rules, and why it is safe.
 - [Configuration](configuration.md): app settings, the `.env` files, and URL query parameters.
 - [Camera mode](camera-mode.md): what camera mode is, and how the camera view is layered into the game.
 - [Manual testing](testing/manual-testing.md): camera checks with a real webcam, and how to run the browser suite.

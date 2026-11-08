@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import GameAudioComponent from "../src/components/core/display/GameAudioComponent";
-import type { GameDisplayMediaData } from "../src/entities/data/displays/GameDisplayMediaData";
+import GameAudioComponent from "../src/components/core/scene/GameAudioComponent";
+import type { GameSceneMediaData } from "../src/entities/data/scenes/GameSceneMediaData";
 import { GameDataProvider } from "../src/providers/GameDataProvider";
 import GameRepositoryProvider from "../src/providers/GameRepositoryProvider";
 import { GameMusicContext, type CurrentMusicContext } from "../src/providers/GameMusicContext";
@@ -10,7 +10,7 @@ import { getBaseURL } from "../src/util/ObjectUtils";
 import { SMALL_GAME_ID, smallRepository } from "./data/SmallGame";
 import { stubMediaPlayback } from "./helpers/media";
 
-const media: GameDisplayMediaData = {
+const media: GameSceneMediaData = {
   type: "audio",
   resource: "sound",
   stillImageResource: "still-image",

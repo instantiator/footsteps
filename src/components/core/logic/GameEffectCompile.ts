@@ -6,13 +6,13 @@ import {
   type GameInteractTrigger,
   type GameRewardAction,
   type GameRule,
-} from "../../../entities/data/displays/GameDisplayData";
+} from "../../../entities/data/scenes/GameSceneData";
 import {
   GAME_EFFECT_NAMES,
   type GameEffect,
   type GameEffectPosition,
   type GameHighlightStep,
-} from "../../../entities/data/displays/GameEffectData";
+} from "../../../entities/data/scenes/GameEffectData";
 import { isDefined } from "../../../util/ObjectUtils";
 import { triggerInteractions } from "./GameRuleUtils";
 
@@ -51,6 +51,8 @@ export const checkSelector = (selector: string, where: string): void => {
 /** Whether a selector parses; see {@link checkSelector}. */
 const selectorProblem = (selector: string | undefined, name: string): Problem => {
   if (!isDefined(selector)) return undefined;
+  const oldLayer = /\.display-(foreground|background)\b/.exec(selector);
+  if (isDefined(oldLayer)) return `${name}: "${oldLayer[0]}" is now ".scene-${oldLayer[1]}"`;
   try {
     checkSelector(selector, name);
     return undefined;
@@ -89,7 +91,7 @@ const highlightProblem = ({ sequence, target }: Extract<GameEffect, { effect: "h
   if (!Array.isArray(sequence) || sequence.length === 0) return "highlight needs a sequence";
   const drawsAround = sequence.some((step) => isDefined(step.shadow) || isDefined(step.outline));
   if (targetsPlayers(target) && drawsAround) {
-    return "shadow and outline would draw around the whole display, not the player; use filter: drop-shadow() instead";
+    return "shadow and outline would draw around the whole scene, not the player; use filter: drop-shadow() instead";
   }
   return firstProblem(...sequence.map(stepProblem));
 };
@@ -191,18 +193,18 @@ const needsPlayer = (action: GameAction): string | undefined => {
   return namesPlayer ? name : undefined;
 };
 
-/** Why an action can't be used on a display where the camera can never be on, or undefined if it can. */
+/** Why an action can't be used on a scene where the camera can never be on, or undefined if it can. */
 export const needsPlayerProblem = (action: GameAction): Problem => {
   const name = needsPlayer(action);
-  return isDefined(name) ? `${name} needs a player, but this display doesn't have the camera enabled` : undefined;
+  return isDefined(name) ? `${name} needs a player, but this scene doesn't have the camera enabled` : undefined;
 };
 
-/** Why a rule can't fire on a display where the camera can never be on, or undefined if it can. */
+/** Why a rule can't fire on a scene where the camera can never be on, or undefined if it can. */
 export const cameraOnlyRuleProblem = ({ on }: GameRule): Problem => {
   if (!("interact" in on)) return undefined;
   const pointer: readonly string[] = POINTER_INTERACTIONS;
   if (triggerInteractions(on).some((interaction) => pointer.includes(interaction))) return undefined;
-  return "nothing can fire this rule, as its interactions all need the camera, and this display doesn't have it enabled";
+  return "nothing can fire this rule, as its interactions all need the camera, and this scene doesn't have it enabled";
 };
 
 /**

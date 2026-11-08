@@ -1,5 +1,5 @@
 import type { GameChallengeSolution } from "./GameChallengeSolution";
-import type { GameChallengeDisplay } from "./displays/GameDisplayData";
+import type { GameChallengeScene } from "./scenes/GameSceneData";
 
 /** Unique identifier for a challenge within a stage. */
 export type GameChallengeId = string;
@@ -9,8 +9,8 @@ export interface GameChallengeData {
   /** Unique id for this challenge, used when submitting and checking answers. */
   id: GameChallengeId;
 
-  /** Displays for this challenge, chosen by purpose: title, in progress, and completed. */
-  displays: GameChallengeDisplay[];
+  /** Scenes for this challenge, chosen by purpose: title, in progress, and completed. */
+  scenes: GameChallengeScene[];
 
   /** How the player's answer is checked for this challenge. */
   solution: GameChallengeSolution;

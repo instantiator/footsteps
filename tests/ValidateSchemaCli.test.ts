@@ -33,6 +33,12 @@ describe("validate-schema CLI", () => {
     expect(result.stderr).toContain("must have required property 'stages'");
   });
 
+  it("fails data that uses an old key, naming its new key", () => {
+    const result = validate({ games: { old: { displays: [] } } });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('games.old: "displays" is now "scenes"');
+  });
+
   it("explains its usage when a file is missing", () => {
     const result = spawnSync(process.execPath, [CLI, SCHEMA], { encoding: "utf8" });
     expect(result.status).toBe(2);

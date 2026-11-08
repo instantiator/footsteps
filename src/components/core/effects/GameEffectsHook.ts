@@ -1,19 +1,19 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from "react";
-import type { GameEffect } from "../../../entities/data/displays/GameEffectData";
-import type { DisplayScope, GameState, QueuedVisualEffect } from "../../../entities/state/GameState";
+import type { GameEffect } from "../../../entities/data/scenes/GameEffectData";
+import type { SceneScope, GameState, QueuedVisualEffect } from "../../../entities/state/GameState";
 import { useQueueDrain } from "../QueueDrainHook";
 import { targetsPlayers } from "../logic/GameEffectCompile";
 import type { fireRules, RuleEvent } from "../logic/GameRuleUtils";
-import { displayRun } from "../logic/GameStateUtils";
-import { getDisplaySlots, getShownDisplays } from "../logic/RenderDataUtils";
-import { displayRoots } from "../logic/TemplateUtils";
+import { sceneRun } from "../logic/GameStateUtils";
+import { getSceneSlots, getShownScenes } from "../logic/RenderDataUtils";
+import { sceneRoots } from "../logic/TemplateUtils";
 import { resolveTargets, warnIfTrappingDepth } from "./EffectTargets";
 import { ItemEffects, type EffectRun } from "./ItemEffects";
 import { PlayerEffects } from "./PlayerEffects";
 import type { PlayerRegistry } from "../../camera/PlayerRegistry";
 import useAppConfig from "../../../providers/AppConfigHook";
 
-/** How long an effect waits for its display's elements to appear, before saying they haven't. */
+/** How long an effect waits for its scene's elements to appear, before saying they haven't. */
 const TARGET_WAIT_MS = 5000;
 
 /** What effects need from the game's rules. */
@@ -22,8 +22,8 @@ interface GameEffectsContext {
   stateRef: RefObject<GameState>;
   /** Changes the game state. */
   setGameState: Dispatch<SetStateAction<GameState>>;
-  /** Fires rules of a display. */
-  fire: (scope: DisplayScope, pick: Parameters<typeof fireRules>[3]) => void;
+  /** Fires rules of a scene. */
+  fire: (scope: SceneScope, pick: Parameters<typeof fireRules>[3]) => void;
   /** What has happened to each player. */
   players: PlayerRegistry;
 }
@@ -31,9 +31,9 @@ interface GameEffectsContext {
 /** The effect's target, for those that have one. */
 const targetOf = (effect: GameEffect): string | undefined => ("target" in effect ? effect.target : undefined);
 
-/** Whether a run of a display has reached the screen. The game's state moves on before the scene does. */
+/** Whether a run of a scene has reached the screen. The game's state moves on before the scene does. */
 const isOnScreen = (scope: string, run: number): boolean =>
-  displayRoots(scope).some((root) => root.querySelector(`:scope > .templateBody[data-display-run="${run}"]`) !== null);
+  sceneRoots(scope).some((root) => root.querySelector(`:scope > .templateBody[data-scene-run="${run}"]`) !== null);
 
 /** Starts an effect on its elements. */
 const runEffect = (effects: ItemEffects, effect: GameEffect, elements: Element[], run: EffectRun): void => {
@@ -58,26 +58,26 @@ const endPick =
 const isOnPlayers = (effect: GameEffect): boolean =>
   effect.effect.startsWith("player-") || (effect.effect === "stop" && effect.players !== undefined);
 
-/** A display and which run of it is showing, by its place on screen: reset displays share their parent's. */
-type ShownRuns = Map<DisplayScope, { scope: DisplayScope; run: number }>;
+/** A scene and which run of it is showing, by its place on screen: reset scenes share their parent's. */
+type ShownRuns = Map<SceneScope, { scope: SceneScope; run: number }>;
 
-/** The scope of the display a reset display shows for. */
-const parentScope = (scope: DisplayScope): DisplayScope => scope.replace(/(\/reset)+$/, "");
+/** The scope of the scene a reset scene shows for. */
+const parentScope = (scope: SceneScope): SceneScope => scope.replace(/(\/reset)+$/, "");
 
 /** What's showing now, by place on screen. */
 const shownRuns = (state: GameState): ShownRuns =>
-  new Map(getShownDisplays(state).map(({ scope }) => [parentScope(scope), { scope, run: displayRun(state, scope) }]));
+  new Map(getShownScenes(state).map(({ scope }) => [parentScope(scope), { scope, run: sceneRun(state, scope) }]));
 
-/** What the change from one set of shown displays to the next means for players. */
-export interface DisplayEnds {
-  /** Whether the game has moved to another display, which restores everyone. */
+/** What the change from one set of shown scenes to the next means for players. */
+export interface SceneEnds {
+  /** Whether the game has moved to another scene, which restores everyone. */
   moved: boolean;
-  /** Otherwise, which displays have reset, by their place on screen. */
-  reset: DisplayScope[];
+  /** Otherwise, which scenes have reset, by their place on screen. */
+  reset: SceneScope[];
 }
 
-/** Works out what the change from one set of shown displays to the next means for players. */
-export const displayEnds = (before: ShownRuns, after: ShownRuns): DisplayEnds => {
+/** Works out what the change from one set of shown scenes to the next means for players. */
+export const sceneEnds = (before: ShownRuns, after: ShownRuns): SceneEnds => {
   const moved = before.size !== after.size || Array.from(after.keys()).some((place) => !before.has(place));
   if (moved) return { moved, reset: [] };
   const reset = Array.from(after.entries())
@@ -86,16 +86,16 @@ export const displayEnds = (before: ShownRuns, after: ShownRuns): DisplayEnds =>
   return { moved, reset };
 };
 
-/** Ends what has happened to players as their display ends; see {@link displayEnds}. */
-function useDisplayEnds(gameState: GameState, players: PlayerRegistry, playerEffects: PlayerEffects) {
+/** Ends what has happened to players as their scene ends; see {@link sceneEnds}. */
+function useSceneEnds(gameState: GameState, players: PlayerRegistry, playerEffects: PlayerEffects) {
   const shownRef = useRef<ShownRuns>(new Map());
   const key = shownRunsKeyOf(gameState);
   useEffect(() => {
     const after = shownRuns(gameState);
-    const { moved, reset } = displayEnds(shownRef.current, after);
-    const hadDisplays = shownRef.current.size > 0;
+    const { moved, reset } = sceneEnds(shownRef.current, after);
+    const hadScenes = shownRef.current.size > 0;
     shownRef.current = after;
-    if (!hadDisplays) return;
+    if (!hadScenes) return;
     for (const id of players.knownIds()) {
       if (moved) playerEffects.end(id, false);
       else {
@@ -108,18 +108,18 @@ function useDisplayEnds(gameState: GameState, players: PlayerRegistry, playerEff
   }, [key, players, playerEffects]);
 }
 
-/** Whether a display keeps its removed players as it resets. */
-const keepsRemoved = (state: GameState, place: DisplayScope): boolean =>
-  getDisplaySlots(state).find(({ scope }) => scope === place)?.display.component.keepRemovedPlayers === true;
+/** Whether a scene keeps its removed players as it resets. */
+const keepsRemoved = (state: GameState, place: SceneScope): boolean =>
+  getSceneSlots(state).find(({ scope }) => scope === place)?.scene.component.keepRemovedPlayers === true;
 
 /** Identifies what is showing and which run of it. */
 const shownRunsKeyOf = (state: GameState): string =>
-  getShownDisplays(state)
-    .map(({ scope }) => `${scope}#${displayRun(state, scope)}`)
+  getShownScenes(state)
+    .map(({ scope }) => `${scope}#${sceneRun(state, scope)}`)
     .join("\n");
 
-/** Notes the players an effect's elements include, so it ends with their display, as their wrappers aren't rebuilt. */
-const noteAffectedPlayers = (elements: Element[], scope: DisplayScope, players: PlayerRegistry): void => {
+/** Notes the players an effect's elements include, so it ends with their scene, as their wrappers aren't rebuilt. */
+const noteAffectedPlayers = (elements: Element[], scope: SceneScope, players: PlayerRegistry): void => {
   for (const element of elements) {
     const number = element instanceof HTMLElement ? Number(element.dataset.player) : NaN;
     const id = Number.isNaN(number) ? undefined : players.idOf(number);
@@ -137,8 +137,8 @@ type ElementEffectStart = Pick<QueuedVisualEffect, "scope" | "run" | "effect" | 
   };
 
 /**
- * Starts an effect on the elements it targets, once its display's new elements have reached the screen, as the game's
- * state moves on before the scene does. It gives up if its display moves on first.
+ * Starts an effect on the elements it targets, once its scene's new elements have reached the screen, as the game's
+ * state moves on before the scene does. It gives up if its scene moves on first.
  */
 const startOnElements = (
   { scope, run, effect, where, effects, players, onEnd, reducedMotion }: ElementEffectStart,
@@ -149,8 +149,8 @@ const startOnElements = (
   const deadline = performance.now() + TARGET_WAIT_MS;
   const attempt = () => {
     const state = stateRef.current;
-    if (displayRun(state, scope) !== run) return;
-    const shownScopes = getShownDisplays(state).map((display) => display.scope);
+    if (sceneRun(state, scope) !== run) return;
+    const shownScopes = getShownScenes(state).map((scene) => scene.scope);
     const elements = resolveTargets(scope, selector, shownScopes);
     const ready =
       targetsPlayers(selector) || (isOnScreen(scope, run) && (selector === undefined || elements.length > 0));
@@ -165,7 +165,7 @@ const startOnElements = (
         attempt();
       });
       framesRef.current.add(frame);
-    } else console.warn(`${where}.target: "${selector}" matches nothing in the display`);
+    } else console.warn(`${where}.target: "${selector}" matches nothing in the scene`);
   };
   attempt();
 };
@@ -183,9 +183,9 @@ export function useGameEffects(gameState: GameState, { stateRef, setGameState, f
   const start = useCallback(
     ({ scope, run, effect, event, where }: QueuedVisualEffect) => {
       const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      // An effect ended by its display closing or resetting doesn't count as finishing
+      // An effect ended by its scene closing or resetting doesn't count as finishing
       const onEnd = (element: Element) => {
-        if (displayRun(stateRef.current, scope) === run) fire(scope, endPick(effect.effect, element, event));
+        if (sceneRun(stateRef.current, scope) === run) fire(scope, endPick(effect.effect, element, event));
       };
       if (isOnPlayers(effect)) {
         if (visionSmoothing) {
@@ -211,7 +211,7 @@ export function useGameEffects(gameState: GameState, { stateRef, setGameState, f
     [],
   );
   useQueueDrain(gameState.session.visualEffects, start, withoutUpTo, setGameState);
-  useDisplayEnds(gameState, players, playerEffects);
+  useSceneEnds(gameState, players, playerEffects);
 
   useEffect(() => {
     const frames = framesRef.current;

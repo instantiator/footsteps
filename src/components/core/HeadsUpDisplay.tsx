@@ -45,15 +45,15 @@ export default function HeadsUpDisplay() {
   const showCloseChallengeButton = getRenderMode(gameState) === "stage";
   /** Offered when the game has a title screen and it is not showing. */
   const showTitleReturnButton =
-    gameState.current.overviewDisplay !== "game-overview-title" &&
-    gameState.gameData.displays.some((d) => d.purpose === "game-overview-title");
+    gameState.current.overviewScene !== "game-overview-title" &&
+    gameState.gameData.scenes.some((d) => d.purpose === "game-overview-title");
 
   const returnToTitle = () => {
     setGameState({
       ...gameState,
       current: {
         ...gameState.current,
-        overviewDisplay: "game-overview-title",
+        overviewScene: "game-overview-title",
         stageId: null,
       },
     });

@@ -2,26 +2,26 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import localRepository from "../public/game-repository.json";
 import { compileGameRules } from "../src/components/core/logic/GameRuleCompile";
 import type { GameData } from "../src/entities/data/GameData";
-import type { GameDisplayCameraData, GameRule } from "../src/entities/data/displays/GameDisplayData";
-import type { GameEffect } from "../src/entities/data/displays/GameEffectData";
+import type { GameSceneCameraData, GameRule } from "../src/entities/data/scenes/GameSceneData";
+import type { GameEffect } from "../src/entities/data/scenes/GameEffectData";
 import type { GameRepository } from "../src/entities/GameRepository";
 import { challenge, game, stage } from "./data/GameBuilders";
 
-const ON_CAMERA: GameDisplayCameraData = { requirement: "enabled" };
-const CHALLENGE_DISPLAY = "stages[0] (lava) › challenges[0] (floor) › displays[0] (challenge-in-progress)";
-const RULE = `${CHALLENGE_DISPLAY} › rules[0]`;
+const ON_CAMERA: GameSceneCameraData = { requirement: "enabled" };
+const CHALLENGE_SCENE = "stages[0] (lava) › challenges[0] (floor) › scenes[0] (challenge-in-progress)";
+const RULE = `${CHALLENGE_SCENE} › rules[0]`;
 
-/** A game whose only challenge display has the given rules, with the camera on unless the test says otherwise. */
-const gameWith = (rules: GameRule[], camera: GameDisplayCameraData | undefined = ON_CAMERA): GameData => {
+/** A game whose only challenge scene has the given rules, with the camera on unless the test says otherwise. */
+const gameWith = (rules: GameRule[], camera: GameSceneCameraData | undefined = ON_CAMERA): GameData => {
   const data = game(["game-overview-stages"], [stage("lava", [challenge("floor")])]);
-  const [display] = data.stages[0].challenges[0].displays;
-  display.component.rules = rules;
-  display.camera = camera;
+  const [scene] = data.stages[0].challenges[0].scenes;
+  scene.component.rules = rules;
+  scene.camera = camera;
   return data;
 };
 
 /** Compiling a game whose challenge has one rule, firing on a click and doing this. */
-const compilingEffect = (effect: GameEffect, camera?: GameDisplayCameraData) => () =>
+const compilingEffect = (effect: GameEffect, camera?: GameSceneCameraData) => () =>
   compileGameRules(gameWith([{ on: { interact: ["click"], target: "#a" }, do: [effect] }], camera));
 
 /** Compiling a game whose challenge has one rule with this trigger. */
@@ -159,9 +159,9 @@ describe("triggers when the game loads", () => {
 describe("the camera when the game loads", () => {
   const fall: GameEffect = { effect: "player-fall" };
 
-  it("names the rule and display of a player effect where the camera is off", () => {
+  it("names the rule and scene of a player effect where the camera is off", () => {
     expect(compilingEffect(fall, { requirement: false })).toThrow(
-      `${RULE}.do[0]: player-fall needs a player, but this display doesn't have the camera enabled`,
+      `${RULE}.do[0]: player-fall needs a player, but this scene doesn't have the camera enabled`,
     );
   });
 
@@ -170,7 +170,7 @@ describe("the camera when the game loads", () => {
     ["set nowhere", {}, true],
     ["enabled", { requirement: "enabled" }, false],
     ["required", { requirement: "required" }, false],
-  ] satisfies [string, GameDisplayCameraData, boolean][])("with the display's camera %s", (_, camera, rejected) => {
+  ] satisfies [string, GameSceneCameraData, boolean][])("with the scene's camera %s", (_, camera, rejected) => {
     const compiling = compilingEffect(fall, camera);
     if (rejected) expect(compiling).toThrow("needs a player");
     else expect(compiling).not.toThrow();
@@ -208,7 +208,7 @@ describe("the camera when the game loads", () => {
   describe("by inheritance", () => {
     const compiled = (change: (data: GameData) => void) => () => {
       const data = gameWith([{ on: { start: true }, do: [fall] }]);
-      delete data.stages[0].challenges[0].displays[0].camera;
+      delete data.stages[0].challenges[0].scenes[0].camera;
       change(data);
       return compileGameRules(data);
     };
@@ -228,45 +228,43 @@ describe("the camera when the game loads", () => {
     it("follows an overview, as it renders behind a stage", () => {
       expect(
         compiled((data) => {
-          data.displays[0].camera = ON_CAMERA;
+          data.scenes[0].camera = ON_CAMERA;
         }),
       ).not.toThrow();
     });
 
-    it("follows the stage's shared display over the overview", () => {
+    it("follows the stage's shared scene over the overview", () => {
       expect(
         compiled((data) => {
-          data.displays[0].camera = ON_CAMERA;
-          data.stages[0].displays = [
-            { purpose: "shared", camera: { requirement: false }, component: data.displays[0].component },
+          data.scenes[0].camera = ON_CAMERA;
+          data.stages[0].scenes = [
+            { purpose: "shared", camera: { requirement: false }, component: data.scenes[0].component },
           ];
         }),
       ).toThrow("needs a player");
     });
 
-    it("lets a display's own setting win", () => {
+    it("lets a scene's own setting win", () => {
       expect(
         compiled((data) => {
           data.modules = { camera: ON_CAMERA };
-          data.stages[0].challenges[0].displays[0].camera = { requirement: false };
+          data.stages[0].challenges[0].scenes[0].camera = { requirement: false };
         }),
       ).toThrow("needs a player");
     });
 
-    it("uses a reset display's setting over its parent's, and its parent's when it has none", () => {
-      const withReset = (reset: GameDisplayCameraData | undefined, parent: GameDisplayCameraData) => () => {
+    it("uses a reset scene's setting over its parent's, and its parent's when it has none", () => {
+      const withReset = (reset: GameSceneCameraData | undefined, parent: GameSceneCameraData) => () => {
         const data = gameWith([], parent);
-        const [display] = data.stages[0].challenges[0].displays;
-        display.resetDisplay = {
+        const [scene] = data.stages[0].challenges[0].scenes;
+        scene.resetScene = {
           camera: reset,
-          component: { ...display.component, rules: [{ on: { start: true }, do: [fall] }] },
+          component: { ...scene.component, rules: [{ on: { start: true }, do: [fall] }] },
         };
         return compileGameRules(data);
       };
       expect(withReset({ requirement: "enabled" }, { requirement: false })).not.toThrow();
-      expect(withReset({ requirement: false }, ON_CAMERA)).toThrow(
-        `${CHALLENGE_DISPLAY} › resetDisplay › rules[0].do[0]`,
-      );
+      expect(withReset({ requirement: false }, ON_CAMERA)).toThrow(`${CHALLENGE_SCENE} › resetScene › rules[0].do[0]`);
       expect(withReset(undefined, ON_CAMERA)).not.toThrow();
     });
 
@@ -276,7 +274,7 @@ describe("the camera when the game loads", () => {
         data.stages[0].challengeChunking = challengeChunking;
         data.stages[0].challenges.push({
           ...challenge("other"),
-          displays: [{ ...challenge("other").displays[0], camera: ON_CAMERA }],
+          scenes: [{ ...challenge("other").scenes[0], camera: ON_CAMERA }],
         });
         return compileGameRules(data);
       };
@@ -284,14 +282,14 @@ describe("the camera when the game loads", () => {
       expect(sideBySide(1)).toThrow("needs a player");
     });
 
-    it("counts a challenge turning the camera on for its stage's shared display", () => {
+    it("counts a challenge turning the camera on for its stage's shared scene", () => {
       expect(
         compiled((data) => {
-          const shared = { ...data.displays[0].component, rules: [{ on: { start: true as const }, do: [fall] }] };
-          data.stages[0].displays = [{ purpose: "shared", component: shared }];
-          const [display] = data.stages[0].challenges[0].displays;
-          display.component = { ...display.component, rules: [] };
-          display.camera = ON_CAMERA;
+          const shared = { ...data.scenes[0].component, rules: [{ on: { start: true as const }, do: [fall] }] };
+          data.stages[0].scenes = [{ purpose: "shared", component: shared }];
+          const [scene] = data.stages[0].challenges[0].scenes;
+          scene.component = { ...scene.component, rules: [] };
+          scene.camera = ON_CAMERA;
         }),
       ).not.toThrow();
     });
@@ -301,5 +299,11 @@ describe("the camera when the game loads", () => {
     for (const data of Object.values((localRepository as GameRepository).games)) {
       expect(() => compileGameRules(data)).not.toThrow();
     }
+  });
+
+  it("rejects an old layer class as a target, naming the new one", () => {
+    expect(compilingEffect({ effect: "quake", target: ".display-foreground" })).toThrow(
+      `${RULE}.do[0]: target: ".display-foreground" is now ".scene-foreground"`,
+    );
   });
 });

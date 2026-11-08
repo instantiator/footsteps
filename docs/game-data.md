@@ -16,35 +16,37 @@ GameData
 ├── reward?                            { animation, particleCount? }: celebration on stage completion
 ├── credits?                           [{ text, url? }]: credits for third-party media (see Credits)
 ├── stylesheets?                       resource names of CSS files to load (see Stylesheets)
-├── displays: GameOverviewDisplay[]    the screens shown when no stage is open
+├── scenes: GameOverviewScene[]    the screens shown when no stage is open
 └── stages: GameStageData[]
     ├── id
-    ├── displays?: GameStageDisplay[]  a "shared" display behind the stage's challenges
+    ├── scenes?: GameStageScene[]  a "shared" scene behind the stage's challenges
     ├── challengeChunking?             how many challenges show at once (default 1)
     └── challenges: GameChallengeData[]
         ├── id
-        ├── displays: GameChallengeDisplay[]
+        ├── scenes: GameChallengeScene[]
         └── solution: GameChallengeSolution
             └── answers, ignoreCase, trimWhitespace, ignoreWhitespace
 ```
 
 - **`config.sequential`** (default `true`) unlocks only the first stage at the start. Each completed challenge then unlocks the first stage that isn't complete. With `false`, every stage starts unlocked.
-- **`config.autoAdvanceStages`** decides what happens when a stage is complete. With `true`, the game goes straight to the next incomplete stage. Otherwise it returns to the `game-overview-stages` display if it has one, and goes straight on if it doesn't.
+- **`config.autoAdvanceStages`** decides what happens when a stage is complete. With `true`, the game goes straight to the next incomplete stage. Otherwise it returns to the `game-overview-stages` scene if it has one, and goes straight on if it doesn't.
 - **`solution`**: an answer matches if it equals any of the `answers` after the optional case and whitespace normalisation. All three normalisations default to `true`.
 
-## Displays
+## Scenes
 
-Every display has a `purpose`, which says when it shows, and a `component`, which says how it renders (`src/entities/data/displays/`).
+Scenes were once called displays. Game data that still uses `displays` or `resetDisplay` fails validation and loading, naming the new key.
 
-| Level     | Purposes                                                                | Chosen by                                                                                                 |
-| --------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Game      | `game-overview-title`, `game-overview-stages`, `game-overview-complete` | `gameState.current.overviewDisplay`. The game starts on the title if it has one, otherwise on the stages. |
-| Stage     | `shared`                                                                | Shown whenever that stage is open                                                                         |
-| Challenge | `challenge-title`, `challenge-in-progress`, `challenge-completed`       | Unsolved: the first it has of title, in-progress, completed. Solved: of completed, in-progress, title.    |
+Every scene has a `purpose`, which says when it shows, and a `component`, which says how it renders (`src/entities/data/scenes/`).
 
-The selection code is `calcOverviewDisplay`, `calcStageDisplay` and `calcChallengeDisplay` in `src/components/core/logic/RenderDataUtils.ts`. Once every stage is complete, the overview switches to `game-overview-complete`, or falls back to the title, and then to the stages.
+| Level     | Purposes                                                                | Chosen by                                                                                               |
+| --------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Game      | `game-overview-title`, `game-overview-stages`, `game-overview-complete` | `gameState.current.overviewScene`. The game starts on the title if it has one, otherwise on the stages. |
+| Stage     | `shared`                                                                | Shown whenever that stage is open                                                                       |
+| Challenge | `challenge-title`, `challenge-in-progress`, `challenge-completed`       | Unsolved: the first it has of title, in-progress, completed. Solved: of completed, in-progress, title.  |
 
-Any display's component can have **state** and **rules**, which respond to clicks, the camera, animations,
+The selection code is `calcOverviewScene`, `calcStageScene` and `calcChallengeScene` in `src/components/core/logic/RenderDataUtils.ts`. Once every stage is complete, the overview switches to `game-overview-complete`, or falls back to the title, and then to the stages.
+
+Any scene's component can have **state** and **rules**, which respond to clicks, the camera, animations,
 timers and changes in the game: see [Rules and state](#rules-and-state). A click on the title screen that no rule
 takes moves on to the stages overview. Clicks remain the keyboard-accessible route; for keyboard access, see
 [clickable elements in templates](dev-overview.md#clickable-elements-in-templates).
@@ -65,16 +67,16 @@ is on, and the game can't start until the camera permission is granted), or `fal
 Elements in a challenge's foreground can have a `data-depth`, so that players pass in front of and behind them: see
 [player depth](camera-mode.md#player-depth).
 
-`preview` defaults to `true`. Any display can override either setting with
+`preview` defaults to `true`. Any scene can override either setting with
 `"camera": { "requirement": false }` or `{ "preview": false }`; an unset field inherits from broader
-displays.
+scenes.
 
 Camera mode and its preview resolve separately, most specific first:
 
 1. Any active challenge that turns it on wins.
 2. Otherwise, any active challenge that turns it off wins.
-3. Otherwise, the open stage's `shared` display.
-4. Otherwise, the overview display.
+3. Otherwise, the open stage's `shared` scene.
+4. Otherwise, the overview scene.
 5. Otherwise, the game's `modules.camera`.
 6. Otherwise, the default: camera off, preview on.
 
@@ -107,24 +109,24 @@ templates only render the state, and no game script ever runs. The `rules-demo` 
 
 #### State
 
-- A display starts from its `initialState` (or `{}`), and templates, styles and rules see it as `state`.
-- State is kept for the life of the game, and saved with its progress, so it survives the display being hidden
+- A scene starts from its `initialState` (or `{}`), and templates, styles and rules see it as `state`.
+- State is kept for the life of the game, and saved with its progress, so it survives the scene being hidden
   and shown again, and a reload.
-- With `resetStateOnShow: true`, it returns to `initialState` each time the display is shown.
-- Resetting a challenge (the `resetChallenge` action) resets the state of that challenge's displays. A New game
+- With `resetStateOnShow: true`, it returns to `initialState` each time the scene is shown.
+- Resetting a challenge (the `resetChallenge` action) resets the state of that challenge's scenes. A New game
   from the landing page clears everything.
-- A reset also rebuilds the display's templates, restarts its timers and fires its `start` rules again: see
-  [ending with the display](special-effects.md#ending-with-the-display).
-- Each display has its own state. Displays can't share state yet.
+- A reset also rebuilds the scene's templates, restarts its timers and fires its `start` rules again: see
+  [ending with the scene](special-effects.md#ending-with-the-scene).
+- Each scene has its own state. Scenes can't share state yet.
 
-#### Reset displays
+#### Reset scenes
 
-A display can have a `resetDisplay`, shown in its place until one of the reset display's rules runs
+A scene can have a `resetScene`, shown in its place until one of the reset scene's rules runs
 `{ "finishReset": true }`. Use it to get players ready, eg. "return to the start" before a lava floor appears, or
-a countdown before balloons fall. Until then, the display's own rules, timers and `start` wait.
+a countdown before balloons fall. Until then, the scene's own rules, timers and `start` wait.
 
 ```json
-"resetDisplay": {
+"resetScene": {
   "showOn": "every-show",
   "component": {
     "type": "template",
@@ -138,20 +140,20 @@ a countdown before balloons fall. Until then, the display's own rules, timers an
 }
 ```
 
-- `showOn` is `first-show` (the default: once, until the reset display is finished) or `every-show` (each time
-  the display is shown).
-- `resetChallenge` shows the challenge's reset displays again, and so does reloading the game: whether a reset
-  display is finished is never saved.
-- A reset display's state starts from its `initialState` each time it is shown.
-- It inherits the display's camera settings, and may override them with its own `camera`.
-- A reset display can have a reset display of its own, shown first.
-- Revealing the display fades, like any display change. Camera interactions pause during the fade, so a player
-  already standing on something doesn't trigger it on the revealed display.
+- `showOn` is `first-show` (the default: once, until the reset scene is finished) or `every-show` (each time
+  the scene is shown).
+- `resetChallenge` shows the challenge's reset scenes again, and so does reloading the game: whether a reset
+  scene is finished is never saved.
+- A reset scene's state starts from its `initialState` each time it is shown.
+- It inherits the scene's camera settings, and may override them with its own `camera`.
+- A reset scene can have a reset scene of its own, shown first.
+- Revealing the scene fades, like any scene change. Camera interactions pause during the fade, so a player
+  already standing on something doesn't trigger it on the revealed scene.
 
 #### Rules
 
 A rule has a trigger (`on`), an optional condition (`if`, an expression), and actions (`do`), applied in order.
-Rules on displays that aren't showing do nothing. An overview display counts as showing only while no stage is
+Rules on scenes that aren't showing do nothing. An overview scene counts as showing only while no stage is
 open.
 
 | Trigger                                                      | Fires                                                                                                                                                                                         |
@@ -161,44 +163,44 @@ open.
 | `{ "animationEnd": "<name>", "target": "<selector>" }`       | When a CSS animation with that name ends on a matching element                                                                                                                                |
 | `{ "transitionEnd": "<property>", "target": "<selector>" }`  | When a CSS transition of that property ends on a matching element                                                                                                                             |
 | `{ "when": "<expression>", "forMs"?: <ms> }`                 | When the expression turns from false to true, after any change; with `forMs`, once it has stayed true that long                                                                               |
-| `{ "every": <ms or expression> }`                            | Repeatedly while the display shows; an expression is worked out again each time                                                                                                               |
-| `{ "after": <ms or expression> }`                            | Once, that long after the display is shown                                                                                                                                                    |
-| `{ "start": true }`                                          | When the display is shown                                                                                                                                                                     |
+| `{ "every": <ms or expression> }`                            | Repeatedly while the scene shows; an expression is worked out again each time                                                                                                                 |
+| `{ "after": <ms or expression> }`                            | Once, that long after the scene is shown                                                                                                                                                      |
+| `{ "start": true }`                                          | When the scene is shown                                                                                                                                                                       |
 
 | Action                                                                   | Does                                                                                                                                                                                     |
 | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `{ "set": { "key": "<expr>" }`                                           | Sets state keys to expressions' values, all worked out from the state before the action                                                                                                  |
-| `{ "resetState": true }`                                                 | Returns the display's state to `initialState`                                                                                                                                            |
-| `{ "completeChallenge": true }`                                          | Solves this display's challenge, as a correct answer does (challenge displays only)                                                                                                      |
-| `{ "answer": "<expression>" }`                                           | Submits the expression's value as an answer to this display's challenge (challenge displays only)                                                                                        |
-| `{ "resetChallenge": true }`                                             | Makes this display's challenge unsolved again, and resets its displays' state (challenge displays only)                                                                                  |
+| `{ "resetState": true }`                                                 | Returns the scene's state to `initialState`                                                                                                                                              |
+| `{ "completeChallenge": true }`                                          | Solves this scene's challenge, as a correct answer does (challenge scenes only)                                                                                                          |
+| `{ "answer": "<expression>" }`                                           | Submits the expression's value as an answer to this scene's challenge (challenge scenes only)                                                                                            |
+| `{ "resetChallenge": true }`                                             | Makes this scene's challenge unsolved again, and resets its scenes' state (challenge scenes only)                                                                                        |
 | `{ "enterStage": "<stage id>" }`                                         | Opens a stage, unless it is locked or completed                                                                                                                                          |
-| `{ "finishReset": true }`                                                | Reveals the display this reset display stands in for (reset displays only)                                                                                                               |
+| `{ "finishReset": true }`                                                | Reveals the scene this reset scene stands in for (reset scenes only)                                                                                                                     |
 | `{ "sound": "<resource>" }`                                              | Plays a sound resource                                                                                                                                                                   |
 | `{ "reward": { "animation", "particleCount"? }, "target"?, "players"? }` | Shows a [partycles](https://www.npmjs.com/package/partycles) celebration, like the stage [reward](#reward), from the middle of the game or [what it targets](special-effects.md#rewards) |
 | `{ "effect": "<effect>", … }`                                            | Runs a [special effect](special-effects.md) on elements or players                                                                                                                       |
 
 Every action can have a [`delayMs`](special-effects.md#delay).
 
-- Selectors are any CSS selector (`#door`, `.lava`, `.door:not(.open)`), matched inside the display's own
+- Selectors are any CSS selector (`#door`, `.lava`, `.door:not(.open)`), matched inside the scene's own
   templates. A click fires the rules whose selector matches the clicked element or its nearest matching ancestor.
-- `when` doesn't fire for an expression that is already true when the display is shown: it records it, and fires
+- `when` doesn't fire for an expression that is already true when the scene is shown: it records it, and fires
   the next time it turns true. Use `start` with an `if` for "when shown, if…".
 - A `set` can make a `when` fire, which can `set` again. A chain of more than 10 rounds is logged, naming the
   rules, and stopped.
 - `every` waits at least 50 ms between firings.
 - `sound` and `reward` don't hold anything up: the rule's other actions apply at once, and sounds and rewards from
-  the same rule start together (or after their own `delayMs`), carrying on even if their display closes or resets. Each plays once. Sounds play at full volume. With reduced
+  the same rule start together (or after their own `delayMs`), carrying on even if their scene closes or resets. Each plays once. Sounds play at full volume. With reduced
   motion, rewards aren't shown but sounds still play. A reload drops effects still waiting to play.
 - `holdMs` and `forMs` restart from zero if the player moves away, or the expression turns false, before the time
   is up. `holdMs` works only with `-enter` interactions.
 - Everything is checked when the game loads: an expression that doesn't parse, an invalid selector, a negative
-  duration, a challenge action outside a challenge display, `enterStage` to a stage the game doesn't have, a `start`
-  rule that resets its own display, a mistake in an [effect](special-effects.md), or a rule only the camera could fire
-  on a display where the camera can never be on, stops the game loading, with a message naming the display and rule. A selector that matches nothing in the display is
+  duration, a challenge action outside a challenge scene, `enterStage` to a stage the game doesn't have, a `start`
+  rule that resets its own scene, a mistake in an [effect](special-effects.md), or a rule only the camera could fire
+  on a scene where the camera can never be on, stops the game loading, with a message naming the scene and rule. A selector that matches nothing in the scene is
   a console warning. So does a `holdMs` on an interaction that isn't an `-enter`, `finishReset` outside a reset
-  display, a `sound` naming a resource the game doesn't have, or an old interaction name (eg. `hand`, now
-  `hand-enter`).
+  scene, a `sound` naming a resource the game doesn't have, or an old name: an interaction (eg. `hand`, now
+  `hand-enter`), or a layer class (`.display-foreground`, now `.scene-foreground`).
 
 #### Expressions
 
@@ -208,7 +210,7 @@ They see:
 
 | Name    | What it is                                                                                                                            |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `state` | This display's state                                                                                                                  |
+| `state` | This scene's state                                                                                                                    |
 | `data`  | The component's `data`, as authored                                                                                                   |
 | `game`  | The game's progress: `id`, `title`, `config`, `stages` (each with `id`, `availability`, `completion` and `challenges`), and `current` |
 | `event` | For element triggers: the matched element's `id` (empty if it has none) and the `interaction`                                         |
@@ -244,12 +246,12 @@ is described under [how interactions work](camera-mode.md#how-interactions-work)
 [jumps](camera-mode.md#jumps). Jump interactions fire as the player lands.
 
 `near-enter` and `near-exit` need `within`: how close counts as near, from the centre of the element to the closest
-part of the player's silhouette, as a % of the display's width. So it is a circle on screen whatever the display's
+part of the player's silhouette, as a % of the scene's width. So it is a circle on screen whatever the scene's
 shape, and it works from behind, where key points may not be found. It follows `visionStableFrames`, and a player
-already in range when a display appears must leave and come back. `holdMs` works with `near-enter`, and `threshold` and
+already in range when a scene appears must leave and come back. `holdMs` works with `near-enter`, and `threshold` and
 `includeCovered` don't apply. There's no mouse equivalent, though a rule can use `mouse-enter` as well.
 
-A rule whose interactions all need the camera is an error on a display where the camera can never be on. A display set
+A rule whose interactions all need the camera is an error on a scene where the camera can never be on. A scene set
 to `"enabled"` can have them, for when there is a camera.
 
 #### What can be clicked or touched
@@ -262,16 +264,16 @@ elements `pointer-events: none` so they don't cover what's beneath them.
 #### Elements that animate or keep state
 
 Templates are patched in place when state changes, rather than replaced, so CSS transitions and animations carry
-on, until the display [resets](special-effects.md#ending-with-the-display). An element is matched to its previous self by `id`, so give an `id` to anything that animates or that the
+on, until the scene [resets](special-effects.md#ending-with-the-scene). An element is matched to its previous self by `id`, so give an `id` to anything that animates or that the
 camera tracks. Changing an element's `id` (eg. `balloon-{{state.balloonIndex}}`) makes a new element, which restarts its
 animations: a simple way to spawn a replacement.
 
 ### Layers
 
-The screen is a stack of layers, and each display renders into two of them: background and foreground. From back to front:
+The screen is a stack of layers, and each scene renders into two of them: background and foreground. From back to front:
 
 1. overview
-2. the open stage's `shared` display
+2. the open stage's `shared` scene
 3. the active challenges' backgrounds
 4. the camera silhouette
 5. the challenges' foregrounds
@@ -283,7 +285,7 @@ The active challenges are the first chunk of `challengeChunking` challenges that
 
 Both component types carry `data`, a free-form object that templates see as `data` (and `componentData`), optional [state and rules](#rules-and-state), and a background and a foreground, each with:
 
-- `backgroundTemplate` / `foregroundTemplate`: a `GameDisplayTemplateSourceData` (see [Templating](#templating))
+- `backgroundTemplate` / `foregroundTemplate`: a `GameSceneTemplateSourceData` (see [Templating](#templating))
 - `backgroundStyle` / `foregroundStyle`: CSS for the layer's container.
 - `backgroundTemplateStyle` / `foregroundTemplateStyle`: CSS for the rendered template.
 
@@ -293,13 +295,13 @@ The **`template`** type renders those templates and nothing more. The **`dialog`
 
 - `text`
 - `showInput` and `label`: an answer box that checks the challenge's solution as the player types
-- `media`: a `GameDisplayMediaData` audio clip, with optional `stillImageResource` and `motionImageResource` images that play and stop it
+- `media`: a `GameSceneMediaData` audio clip, with optional `stillImageResource` and `motionImageResource` images that play and stop it
 
 Without its own templates, a dialog or scroll shows the page text one paragraph per line. The text scrolls if it doesn't fit, and the page's audio, answer box and page arrows stay in view below it.
 
 A **`dialog`** draws its pages on the game's own image:
 
-- `imageResource`: the resource name of the background image. The image is scaled up or down to the largest size that fits the display, keeping its shape. The dialog works this out from the image itself, so it needs no size information. Without an image, the dialog fills its display.
+- `imageResource`: the resource name of the background image. The image is scaled up or down to the largest size that fits the scene, keeping its shape. The dialog works this out from the image itself, so it needs no size information. Without an image, the dialog fills its scene.
 - `imageMargins`: `{ top?, right?, bottom?, left? }`, how far the text sits in from each edge of the image, as CSS percentages of the image's height (`top`, `bottom`) or width (`left`, `right`). Use them to keep text off transparent or decorative edges. Each defaults to no margin.
 
 ```json
@@ -368,7 +370,7 @@ Handlebars differs from Mustache in two ways that matter here:
 
 Game repositories may be remote, so the rendered HTML is sanitised with [DOMPurify](https://github.com/cure53/DOMPurify): scripts, event-handler attributes such as `onclick`, `javascript:` URLs and `<form>` elements are removed.
 
-A `GameDisplayTemplateSourceData` gives the template's `sourceType` and its `templateSource` or `content`:
+A `GameSceneTemplateSourceData` gives the template's `sourceType` and its `templateSource` or `content`:
 
 | `sourceType` | Template comes from                                             |
 | ------------ | --------------------------------------------------------------- |
@@ -383,16 +385,16 @@ A `GameDisplayTemplateSourceData` gives the template's `sourceType` and its `tem
 
 Every template, and every Handlebars value in a style, is rendered with `GameTemplateData` (`src/components/core/logic/RenderDataUtils.ts`):
 
-| Field            | What it holds                                                                                                                                               |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `gameState`      | The whole `GameState` (`gameData`, `stages`, and `current.stageId` / `current.overviewDisplay`), decorated by `decorateGameState` for templates. See below. |
-| `componentData`  | This display's `component.data`, as authored                                                                                                                |
-| `data`           | The same `component.data`, by the name rules' expressions use                                                                                               |
-| `state`          | This display's [state](#state)                                                                                                                              |
-| `game`           | The game's progress, as rules' [expressions](#expressions) see it                                                                                           |
-| `resources`      | Resource name → resolved URL                                                                                                                                |
-| `challenge`      | The challenge's `GameChallengeData`. Challenge displays only, otherwise undefined.                                                                          |
-| `challengeState` | Its `GameChallengeState` (`succeeded`, …). Challenge displays only.                                                                                         |
+| Field            | What it holds                                                                                                                                             |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `gameState`      | The whole `GameState` (`gameData`, `stages`, and `current.stageId` / `current.overviewScene`), decorated by `decorateGameState` for templates. See below. |
+| `componentData`  | This scene's `component.data`, as authored                                                                                                                |
+| `data`           | The same `component.data`, by the name rules' expressions use                                                                                             |
+| `state`          | This scene's [state](#state)                                                                                                                              |
+| `game`           | The game's progress, as rules' [expressions](#expressions) see it                                                                                         |
+| `resources`      | Resource name → resolved URL                                                                                                                              |
+| `challenge`      | The challenge's `GameChallengeData`. Challenge scenes only, otherwise undefined.                                                                          |
+| `challengeState` | Its `GameChallengeState` (`succeeded`, …). Challenge scenes only.                                                                                         |
 
 `decorateGameState` (`src/components/core/logic/TemplateUtils.ts`) adds `gameState.totalStages`, and to each entry of `gameState.stages`, alongside `stage`, `availability` and `completion`:
 

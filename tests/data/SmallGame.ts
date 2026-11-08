@@ -18,7 +18,7 @@ export const smallGame: GameData = {
     "motion-image": { type: "local", target: "games/magic-trifle/tape-motion.gif" },
     sound: { type: "local", target: "games/magic-trifle/bells.mp3" },
   },
-  displays: [
+  scenes: [
     {
       purpose: "game-overview-stages",
       component: {
@@ -42,7 +42,7 @@ export const smallGame: GameData = {
       {
         id: `${stageId}-challenge`,
         solution: { answers: [index === 0 ? "custard" : "trifle"] },
-        displays: [
+        scenes: [
           {
             purpose: "challenge-in-progress",
             component: {

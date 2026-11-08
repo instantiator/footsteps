@@ -92,7 +92,7 @@ describe("GameStateUtils", () => {
           expect(simpleGameState_s2_c1.stages[0].completion).toBe("completed");
         });
 
-        describe("with no stage overview display", () => {
+        describe("with no stage overview scene", () => {
           it("advances to stage 2", () => {
             expect(simpleGameState_s2_c1.current.stageId).toBe("stage-2");
           });
@@ -119,28 +119,28 @@ describe("GameStateUtils", () => {
           expect(simpleGameState_finished.current.stageId).toBe(null);
         });
 
-        it("with a title display but no finale, returns to the title once the game is complete", () => {
-          expect(simpleGameState_finished.current.overviewDisplay).toBe("game-overview-title");
+        it("with a title scene but no finale, returns to the title once the game is complete", () => {
+          expect(simpleGameState_finished.current.overviewScene).toBe("game-overview-title");
         });
 
-        it("with neither a title nor a finale display, shows the stages overview once the game is complete", () => {
-          const stagesOnly = { ...simpleGameState.gameData.displays[0], purpose: "game-overview-stages" as const };
+        it("with neither a title nor a finale scene, shows the stages overview once the game is complete", () => {
+          const stagesOnly = { ...simpleGameState.gameData.scenes[0], purpose: "game-overview-stages" as const };
           const withoutTitle: GameState = {
             ...simpleGameState_s3_c1,
-            gameData: { ...simpleGameState.gameData, displays: [stagesOnly] },
+            gameData: { ...simpleGameState.gameData, scenes: [stagesOnly] },
           };
           const finished = completeChallenge(withoutTitle, "stage-3", "stage-3-challenge-1");
-          expect(finished.current.overviewDisplay).toBe("game-overview-stages");
+          expect(finished.current.overviewScene).toBe("game-overview-stages");
         });
 
-        it("shows the finale display once the game is complete, when the game has one", () => {
-          const finale = { ...simpleGameState.gameData.displays[0], purpose: "game-overview-complete" as const };
+        it("shows the finale scene once the game is complete, when the game has one", () => {
+          const finale = { ...simpleGameState.gameData.scenes[0], purpose: "game-overview-complete" as const };
           const withFinale: GameState = {
             ...simpleGameState_s3_c1,
-            gameData: { ...simpleGameState.gameData, displays: [...simpleGameState.gameData.displays, finale] },
+            gameData: { ...simpleGameState.gameData, scenes: [...simpleGameState.gameData.scenes, finale] },
           };
           const finished = completeChallenge(withFinale, "stage-3", "stage-3-challenge-1");
-          expect(finished.current.overviewDisplay).toBe("game-overview-complete");
+          expect(finished.current.overviewScene).toBe("game-overview-complete");
         });
       });
 
@@ -256,7 +256,7 @@ describe("completeChallenge progression", () => {
     ] as const)("with overviews %j shows %s", (overviews, expected) => {
       const state = finish([...overviews]);
       expect(state.stages.every((s) => s.completion === "completed")).toBe(true);
-      expect(state.current.overviewDisplay).toBe(expected);
+      expect(state.current.overviewScene).toBe(expected);
     });
   });
 
@@ -329,7 +329,7 @@ describe("getRecommendedStageId edge cases", () => {
 describe("resetChallenge", () => {
   const scope = (challengeId: string) => `challenge:stage-2:${challengeId}:challenge-in-progress`;
 
-  it("unsolves the challenge, recomputes its stage, and clears only its displays' states", () => {
+  it("unsolves the challenge, recomputes its stage, and clears only its scenes' states", () => {
     const solved = completeChallenge(
       completeChallenge(
         completeChallenge(simpleGameState, "stage-1", "stage-1-challenge-1"),
@@ -341,7 +341,7 @@ describe("resetChallenge", () => {
     );
     const state = {
       ...solved,
-      displayStates: { [scope("stage-2-challenge-1")]: { n: 1 }, [scope("stage-2-challenge-2")]: { n: 2 } },
+      sceneStates: { [scope("stage-2-challenge-1")]: { n: 1 }, [scope("stage-2-challenge-2")]: { n: 2 } },
     };
 
     const reset = resetChallenge(state, "stage-2", "stage-2-challenge-1");
@@ -350,7 +350,7 @@ describe("resetChallenge", () => {
     expect(stage.challengeStates.map((c) => c.succeeded)).toEqual([false, true]);
     expect(stage.completion).toBe("partial");
     expect(stage.availability).toBe("unlocked");
-    expect(reset.displayStates).toEqual({ [scope("stage-2-challenge-2")]: { n: 2 } });
+    expect(reset.sceneStates).toEqual({ [scope("stage-2-challenge-2")]: { n: 2 } });
     expect(reset.current).toEqual(state.current);
   });
 

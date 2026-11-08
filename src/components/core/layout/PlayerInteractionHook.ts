@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useRef, type RefObject } from "react";
-import type { DisplayScope } from "../../../entities/state/GameState";
+import type { SceneScope } from "../../../entities/state/GameState";
 import useAppConfig from "../../../providers/AppConfigHook";
 import { PlayerRegistryContext } from "../../../providers/PlayerRegistryContext";
 import {
@@ -17,17 +17,17 @@ import {
   type PlayerMonitorEvent,
 } from "../../camera/PlayerMonitor";
 import { centreOnScreen } from "../effects/EffectTargets";
-import { displayRoots } from "../logic/TemplateUtils";
+import { sceneRoots } from "../logic/TemplateUtils";
 
-/** A rule the camera can fire: which display it belongs to, and the elements and interactions it watches. */
+/** A rule the camera can fire: which scene it belongs to, and the elements and interactions it watches. */
 export interface CameraRuleTarget {
-  /** The display the rule belongs to. */
-  scope: DisplayScope;
-  /** Which run of the display this is. */
+  /** The scene the rule belongs to. */
+  scope: SceneScope;
+  /** Which run of the scene this is. */
   run: number;
-  /** The rule's position in the display's rules. */
+  /** The rule's position in the scene's rules. */
   ruleIndex: number;
-  /** CSS selector for the elements, run inside the display's templates every frame; none for a jump anywhere. */
+  /** CSS selector for the elements, run inside the scene's templates every frame; none for a jump anywhere. */
   selector: string | undefined;
   /** The camera interactions that fire the rule. */
   interactions: CameraInteraction[];
@@ -37,15 +37,15 @@ export interface CameraRuleTarget {
   includeCovered: boolean;
   /** How long, in milliseconds, a body part must stay over the element before it enters. */
   holdMs: number;
-  /** For being near: how close counts, as a % of the display's width. */
+  /** For being near: how close counts, as a % of the scene's width. */
   within?: number;
 }
 
 /** A camera interaction with an element a rule watches. */
 export interface CameraRuleEvent {
-  /** The display the rule belongs to. */
-  scope: DisplayScope;
-  /** The rule's position in the display's rules. */
+  /** The scene the rule belongs to. */
+  scope: SceneScope;
+  /** The rule's position in the scene's rules. */
   ruleIndex: number;
   /** The element the player interacted with; null for a jump anywhere. */
   element: Element | null;
@@ -87,15 +87,15 @@ const nearTarget = (
   { mask, mirrored }: { mask: PlayerFrame; mirrored: boolean },
 ): MonitorTarget["near"] => {
   const canvasRect = canvas.getBoundingClientRect();
-  const displayWidth = canvas.closest(".gameViewport")?.getBoundingClientRect().width ?? canvasRect.width;
+  const sceneWidth = canvas.closest(".gameViewport")?.getBoundingClientRect().width ?? canvasRect.width;
   return {
     centre: maskPointForScreenPoint(centreOnScreen(element), canvasRect, mask, mirrored),
-    within: ((within / 100) * displayWidth * mask.width) / canvasRect.width,
+    within: ((within / 100) * sceneWidth * mask.width) / canvasRect.width,
   };
 };
 
 /**
- * The elements the camera rules watch, found by their selectors in the displays shown now, as mask-space targets.
+ * The elements the camera rules watch, found by their selectors in the scenes shown now, as mask-space targets.
  * Elements can come, go and move between frames.
  */
 const frameTargets = (
@@ -115,7 +115,7 @@ const frameTargets = (
       continue;
     }
     const selector = rule.selector;
-    for (const element of displayRoots(rule.scope).flatMap((root) => Array.from(root.querySelectorAll(selector)))) {
+    for (const element of sceneRoots(rule.scope).flatMap((root) => Array.from(root.querySelectorAll(selector)))) {
       const key = `${rule.scope}#${rule.ruleIndex}#${elementKey(element)}`;
       const isTopmostAt = (point: { x: number; y: number }) => {
         const { x, y } = screenPointForMaskPoint(point, canvasRect, mask, mirrored);
@@ -160,12 +160,12 @@ const updateMonitors = (
   }
 };
 
-/** Rearms the monitors for a display that has reset: whoever is already over its elements must move into them again. */
+/** Rearms the monitors for a scene that has reset: whoever is already over its elements must move into them again. */
 function useRearmOnReset(
   cameraRules: CameraRuleTarget[] | undefined,
   monitorsRef: RefObject<Map<number, PlayerMonitor>>,
 ) {
-  const runsRef = useRef(new Map<DisplayScope, number>());
+  const runsRef = useRef(new Map<SceneScope, number>());
   useEffect(() => {
     const runs = new Map((cameraRules ?? []).map(({ scope, run }) => [scope, run]));
     for (const [scope, run] of runs) {
@@ -191,7 +191,7 @@ interface PlayerInteractions {
  * The returned frame handler never changes: the character canvas restarts segmentation whenever its
  * callbacks change, so the latest targets and event handler are read from refs instead.
  *
- * @param cameraRules the rules the camera can fire, for the displays shown now
+ * @param cameraRules the rules the camera can fire, for the scenes shown now
  * @param onPlayerInteraction called for each interaction that begins
  * @param enabled whether interactions are running; switching it off clears the monitors
  * @param mirrored whether the character canvas shows the mask flipped; fixed for the hook's lifetime
@@ -227,7 +227,7 @@ export function usePlayerInteractions(
     jumpRef.current = jumpSettingsOf(config);
   }, [stableFrames, config]);
 
-  // Interactions pause during display changes; fresh monitors afterwards ignore whatever already holds
+  // Interactions pause during scene changes; fresh monitors afterwards ignore whatever already holds
   useEffect(() => {
     enabledRef.current = enabled;
     if (!enabled) monitorsRef.current.clear();

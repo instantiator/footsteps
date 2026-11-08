@@ -28,15 +28,15 @@ import useSceneTransition, { type SceneTransition } from "./useSceneTransition";
 
 /** Props for {@link GameLayersLayout}. */
 interface GameLayersLayoutProps {
-  /** The nodes to show in each display layer. */
+  /** The nodes to show in each scene layer. */
   gameLayers?: GameLayers;
-  /** Identifies the display these layers belong to, so a cut to another display can fade. */
-  displayKey?: string;
-  /** The game's camera settings, already resolved for the displays currently shown. */
+  /** Identifies the scene these layers belong to, so a cut to another scene can fade. */
+  sceneKey?: string;
+  /** The game's camera settings, already resolved for the scenes currently shown. */
   camera: ResolvedCameraMode;
   /** Shows the debug overlay and the camera's colour key. */
   debug?: boolean;
-  /** The rules the camera can fire, for the displays shown now. */
+  /** The rules the camera can fire, for the scenes shown now. */
   cameraRules?: CameraRuleTarget[];
   /** Called when a player interacts with an element a camera rule watches. */
   onPlayerInteraction?: (event: CameraRuleEvent) => void;
@@ -44,23 +44,23 @@ interface GameLayersLayoutProps {
 
 /** The nodes for the background and foreground of the overview, the stage, and its challenges. */
 export interface GameLayers {
-  /** The overview display, when no stage is open. */
+  /** The overview scene, when no stage is open. */
   overview?: {
-    /** The background half of the display. */
+    /** The background half of the scene. */
     backgroundLayerNodes: ReactNode[] | undefined;
     /** The foreground half; only the challenges' foreground sits above the camera character. */
     foregroundLayerNodes: ReactNode[] | undefined;
   };
-  /** The open stage's shared display. */
+  /** The open stage's shared scene. */
   stage?: {
-    /** The background half of the display. */
+    /** The background half of the scene. */
     backgroundLayerNodes: ReactNode[] | undefined;
     /** The foreground half; only the challenges' foreground sits above the camera character. */
     foregroundLayerNodes: ReactNode[] | undefined;
   };
-  /** The active challenges' displays, one node per challenge. */
+  /** The active challenges' scenes, one node per challenge. */
   challenges?: {
-    /** The background half of the display. */
+    /** The background half of the scene. */
     backgroundLayerNodes: ReactNode[] | undefined;
     /** The foreground half; only the challenges' foreground sits above the camera character. */
     foregroundLayerNodes: ReactNode[] | undefined;
@@ -76,13 +76,13 @@ const aspectRatioOf = (element: Element | null | undefined): number | undefined 
   return rect && rect.width > 0 && rect.height > 0 ? rect.width / rect.height : undefined;
 };
 
-/** Props for the groups of display layers. */
-interface DisplayLayersProps {
+/** Props for the groups of scene layers. */
+interface SceneLayersProps {
   layers: GameLayers;
 }
 
 /** The overview, stage, and challenge background layers, which sit beneath the camera character. */
-function LowerDisplayLayers({ layers: { overview, stage, challenges } }: DisplayLayersProps) {
+function LowerSceneLayers({ layers: { overview, stage, challenges } }: SceneLayersProps) {
   return (
     <>
       <GameLayerWrapper zIndex={1} nodes={[overview?.backgroundLayerNodes]} layer="overview" layerHint="background" />
@@ -115,7 +115,7 @@ function useCameraMedia(cameraEnabled: boolean) {
 
 /** Props for the scene wrapper and the layers it fades together. */
 interface SceneProps {
-  /** The display layers to show, and whether they are mid-change. */
+  /** The scene layers to show, and whether they are mid-change. */
   scene: SceneTransition<GameLayers>;
   /** The camera whose video must be mounted, including one waiting to become visible. */
   cameraToMount: ResolvedCameraMode | undefined;
@@ -181,7 +181,7 @@ function DepthStack({
   );
 }
 
-/** The display and camera layers, grouped so a display change can fade them together. */
+/** The scene and camera layers, grouped so a scene change can fade them together. */
 function Scene({
   scene,
   cameraToMount,
@@ -205,7 +205,7 @@ function Scene({
       inert={scene.transitioning}
       aria-busy={scene.transitioning}
     >
-      {show && <LowerDisplayLayers layers={scene.layers} />}
+      {show && <LowerSceneLayers layers={scene.layers} />}
       {show && (
         <DepthStack
           scene={scene}
@@ -272,10 +272,10 @@ const viewportStyle = (scene: SceneTransition<GameLayers>): CSSProperties => {
   return style;
 };
 
-/** Stacks the game's display layers, the optional camera character, debug overlay, and HUD. */
+/** Stacks the game's scene layers, the optional camera character, debug overlay, and HUD. */
 export default function GameLayersLayout({
   gameLayers = {},
-  displayKey = "default",
+  sceneKey = "default",
   camera: requestedCamera,
   debug,
   cameraRules,
@@ -290,7 +290,7 @@ export default function GameLayersLayout({
   const { camera, onCameraError } = useCameraFallback(requestedCamera);
   const scene = useSceneTransition({
     layers: gameLayers,
-    displayKey,
+    sceneKey,
     camera,
     cameraAspectRatio,
     reducedMotion,

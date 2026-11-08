@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from "react";
-import type { DelayedAction, DisplayScope, GameState } from "../../entities/state/GameState";
+import type { DelayedAction, SceneScope, GameState } from "../../entities/state/GameState";
 import { isDefined } from "../../util/ObjectUtils";
 import { useQueueDrain } from "./QueueDrainHook";
 import {
@@ -11,17 +11,17 @@ import {
   type WhenEdges,
   whenKey,
 } from "./logic/GameRuleUtils";
-import { getShownDisplays } from "./logic/RenderDataUtils";
+import { getShownScenes } from "./logic/RenderDataUtils";
 
-/** Fires chosen rules of one display. */
-type FireRules = (scope: DisplayScope, pick: Parameters<typeof fireRules>[3]) => void;
+/** Fires chosen rules of one scene. */
+type FireRules = (scope: SceneScope, pick: Parameters<typeof fireRules>[3]) => void;
 
 /** Waits for `when` rules with `forMs`, by {@link whenKey}. */
 type HeldWhens = Map<string, ReturnType<typeof setTimeout>>;
 
 /**
  * Starts a wait for each shown `when` rule with `forMs` that has just turned true, and cancels those whose rule has
- * turned false or whose display is no longer shown. A wait that runs its course fires its rule.
+ * turned false or whose scene is no longer shown. A wait that runs its course fires its rule.
  * @param edges each rule's value before the change, and each shown rule's value now
  */
 const followHeldWhens = (
@@ -35,7 +35,7 @@ const followHeldWhens = (
     clearTimeout(timer);
     waits.delete(key);
   }
-  for (const { scope, component } of getShownDisplays(state)) {
+  for (const { scope, component } of getShownScenes(state)) {
     (component.rules ?? []).forEach(({ on }, ruleIndex) => {
       const key = whenKey(state, scope, ruleIndex);
       if (!("when" in on) || !isDefined(on.forMs) || waits.has(key)) return;
@@ -85,8 +85,8 @@ const withoutDelayedUpTo = (state: GameState, id: number): GameState => ({
 });
 
 /**
- * Runs the actions rules have delayed, each once, after its `delayMs`. One whose display has closed or reset by then
- * does nothing, so a timer that outlives its display is harmless.
+ * Runs the actions rules have delayed, each once, after its `delayMs`. One whose scene has closed or reset by then
+ * does nothing, so a timer that outlives its scene is harmless.
  */
 export function useDelayedActions(
   env: RuleEnvironment,

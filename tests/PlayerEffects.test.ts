@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PlayerRegistry } from "../src/components/camera/PlayerRegistry";
-import { displayEnds } from "../src/components/core/effects/GameEffectsHook";
+import { sceneEnds } from "../src/components/core/effects/GameEffectsHook";
 import { ItemEffects } from "../src/components/core/effects/ItemEffects";
 import {
   PlayerEffects,
@@ -9,31 +9,31 @@ import {
   type PlayerEffectRun,
 } from "../src/components/core/effects/PlayerEffects";
 import { NO_EVENT } from "../src/components/core/logic/GameRuleUtils";
-import type { GameEffect } from "../src/entities/data/displays/GameEffectData";
+import type { GameEffect } from "../src/entities/data/scenes/GameEffectData";
 import { noKeyPoints, type VisionFrame, type VisionPerson } from "../src/vision/VisionTypes";
 
 const WIDTH = 100;
 const HEIGHT = 100;
 
 describe("offscreenDistance", () => {
-  const display = { width: 1000, height: 500 };
+  const scene = { width: 1000, height: 500 };
 
   it("goes straight up to the top edge, plus its reach", () => {
-    expect(offscreenDistance({ x: 500, y: 200 }, 50, 0, display)).toBeCloseTo(250);
+    expect(offscreenDistance({ x: 500, y: 200 }, 50, 0, scene)).toBeCloseTo(250);
   });
 
   it("goes right and left to those edges", () => {
-    expect(offscreenDistance({ x: 500, y: 250 }, 50, 90, display)).toBeCloseTo(550);
-    expect(offscreenDistance({ x: 100, y: 250 }, 50, -90, display)).toBeCloseTo(150);
+    expect(offscreenDistance({ x: 500, y: 250 }, 50, 90, scene)).toBeCloseTo(550);
+    expect(offscreenDistance({ x: 100, y: 250 }, 50, -90, scene)).toBeCloseTo(150);
   });
 
   it("goes further on a diagonal, as it nears an edge more slowly", () => {
-    expect(offscreenDistance({ x: 500, y: 250 }, 0, 60, display)).toBeCloseTo(500);
+    expect(offscreenDistance({ x: 500, y: 250 }, 0, 60, scene)).toBeCloseTo(500);
   });
 
   it("allows for a larger reach, as a zoomed player must have fully left", () => {
-    const small = offscreenDistance({ x: 500, y: 250 }, 50, 0, display);
-    const large = offscreenDistance({ x: 500, y: 250 }, 500, 0, display);
+    const small = offscreenDistance({ x: 500, y: 250 }, 50, 0, scene);
+    const large = offscreenDistance({ x: 500, y: 250 }, 500, 0, scene);
     expect(large - small).toBeCloseTo(450);
   });
 });
@@ -51,30 +51,30 @@ describe("silhouetteTop", () => {
   });
 });
 
-describe("displayEnds", () => {
+describe("sceneEnds", () => {
   const shown = (...entries: [string, string, number][]) =>
     new Map(entries.map(([place, scope, run]) => [place, { scope, run }]));
 
   it("sees nothing while what shows stays the same", () => {
     const now = shown(["a", "a", 1]);
-    expect(displayEnds(now, shown(["a", "a", 1]))).toEqual({ moved: false, reset: [] });
+    expect(sceneEnds(now, shown(["a", "a", 1]))).toEqual({ moved: false, reset: [] });
   });
 
-  it("sees a move when a display is replaced", () => {
-    expect(displayEnds(shown(["a", "a", 1]), shown(["b", "b", 1])).moved).toBe(true);
-    expect(displayEnds(shown(["a", "a", 1]), shown(["a", "a", 1], ["b", "b", 1])).moved).toBe(true);
+  it("sees a move when a scene is replaced", () => {
+    expect(sceneEnds(shown(["a", "a", 1]), shown(["b", "b", 1])).moved).toBe(true);
+    expect(sceneEnds(shown(["a", "a", 1]), shown(["a", "a", 1], ["b", "b", 1])).moved).toBe(true);
   });
 
-  it("sees a reset when a display starts a new run", () => {
-    expect(displayEnds(shown(["a", "a", 1], ["b", "b", 1]), shown(["a", "a", 2], ["b", "b", 1]))).toEqual({
+  it("sees a reset when a scene starts a new run", () => {
+    expect(sceneEnds(shown(["a", "a", 1], ["b", "b", 1]), shown(["a", "a", 2], ["b", "b", 1]))).toEqual({
       moved: false,
       reset: ["a"],
     });
   });
 
-  it("sees a reset, not a move, when a display and its reset display take turns", () => {
-    expect(displayEnds(shown(["a", "a", 1]), shown(["a", "a/reset", 1]))).toEqual({ moved: false, reset: ["a"] });
-    expect(displayEnds(shown(["a", "a/reset", 1]), shown(["a", "a", 2]))).toEqual({ moved: false, reset: ["a"] });
+  it("sees a reset, not a move, when a scene and its reset scene take turns", () => {
+    expect(sceneEnds(shown(["a", "a", 1]), shown(["a", "a/reset", 1]))).toEqual({ moved: false, reset: ["a"] });
+    expect(sceneEnds(shown(["a", "a/reset", 1]), shown(["a", "a", 2]))).toEqual({ moved: false, reset: ["a"] });
   });
 });
 
@@ -107,7 +107,7 @@ describe("PlayerEffects", () => {
   };
   const frame = (...people: VisionPerson[]): VisionFrame => ({ width: WIDTH, height: HEIGHT, timestamp: 0, people });
 
-  /** Players in a registry, each with a wrapper on the page, in a display 1000 by 1000. */
+  /** Players in a registry, each with a wrapper on the page, in a scene 1000 by 1000. */
   const withPlayers = (count: number, mirrored = false) => {
     const players = new PlayerRegistry();
     const people = Array.from({ length: count }, (_, index) => body(index + 10));
@@ -176,7 +176,7 @@ describe("PlayerEffects", () => {
   });
 
   describe("player-fall", () => {
-    it("moves their wrapper by enough to take the top of them off the display", () => {
+    it("moves their wrapper by enough to take the top of them off the scene", () => {
       const { effects } = withPlayers(1);
       effects.play(fall, run());
       expect(keyframesOf(0)).toEqual([{ translate: "0 0" }, { translate: "0 60%" }]);
@@ -354,7 +354,7 @@ describe("PlayerEffects", () => {
     });
   });
 
-  describe("as their display ends", () => {
+  describe("as their scene ends", () => {
     it("restores them, however they were", () => {
       const { players, ids, effects } = withPlayers(1);
       effects.play(fall, run());
@@ -464,7 +464,7 @@ describe("PlayerEffects", () => {
       expect(look(players, ids[0])?.still).toBe(true);
     });
 
-    it("clears at once on a restore, and as their display ends, without saying it ended", () => {
+    it("clears at once on a restore, and as their scene ends, without saying it ended", () => {
       const { players, ids, effects } = withPlayers(1);
       const onEnd = vi.fn();
       effects.play({ effect: "player-static", durationMs: 1000 }, run({ onEnd }));
@@ -474,10 +474,10 @@ describe("PlayerEffects", () => {
       expect(onEnd).not.toHaveBeenCalled();
     });
 
-    it("notes the display that started it, so it ends with that display", () => {
+    it("notes the scene that started it, so it ends with that scene", () => {
       const { players, ids, effects } = withPlayers(1);
-      effects.play({ effect: "player-static" }, run({ scope: "display-a" }));
-      expect(players.setByOf(ids[0])).toBe("display-a");
+      effects.play({ effect: "player-static" }, run({ scope: "scene-a" }));
+      expect(players.setByOf(ids[0])).toBe("scene-a");
     });
   });
 

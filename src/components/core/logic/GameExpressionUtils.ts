@@ -2,9 +2,9 @@ import { compileExpression } from "filtrex";
 
 /** What a game expression can see. */
 export interface ExpressionContext {
-  /** The display's own state. */
+  /** The scene's own state. */
   state: Record<string, unknown>;
-  /** The display component's `data`, as authored. */
+  /** The scene component's `data`, as authored. */
   data: Record<string, unknown>;
   /** A read-only view of the game's progress. */
   game: unknown;
@@ -42,7 +42,7 @@ const dottedProp = (name: string, _get: unknown, object: unknown): unknown =>
 /**
  * Compiles a game expression with filtrex: a sandboxed language with no access to globals,
  * functions beyond its built-ins, or prototypes.
- * @param where names the expression in error messages, eg. the display and rule it belongs to
+ * @param where names the expression in error messages, eg. the scene and rule it belongs to
  * @throws if the expression doesn't parse, naming `where`
  */
 export const compileGameExpression = (source: string, where: string): GameExpression => {

@@ -3,14 +3,14 @@ import type { GameStageData } from "../../../entities/data/GameStageData";
 import {
   GAME_INTERACTIONS,
   type GameAction,
-  type GameDisplayBase,
-  type GameDisplayCameraData,
+  type GameSceneBase,
+  type GameSceneCameraData,
   type GameFeedbackAction,
   type GameInteractTrigger,
   type GameRule,
   type GameTrigger,
   type GameWhenTrigger,
-} from "../../../entities/data/displays/GameDisplayData";
+} from "../../../entities/data/scenes/GameSceneData";
 import { isDefined } from "../../../util/ObjectUtils";
 import { compileGameExpression, type GameExpression } from "./GameExpressionUtils";
 import {
@@ -24,45 +24,46 @@ import {
 } from "./GameEffectCompile";
 import { declaredValue } from "./CameraModeUtils";
 import { isEntering, triggerInteractions, type GameExpressions } from "./GameRuleUtils";
+import { renamedKeyProblems } from "./RenamedKeys";
 
-/** Actions that act on the display's own challenge, so only make sense on challenge displays. */
+/** Actions that act on the scene's own challenge, so only make sense on challenge scenes. */
 const CHALLENGE_ACTIONS = ["completeChallenge", "answer", "resetChallenge"] as const;
 
-/** A display to check, with a readable path to it for error messages. */
-interface DisplayToCompile {
-  display: Pick<GameDisplayBase, "component" | "camera" | "resetDisplay">;
+/** A scene to check, with a readable path to it for error messages. */
+interface SceneToCompile {
+  scene: Pick<GameSceneBase, "component" | "camera" | "resetScene">;
   path: string;
   isChallenge: boolean;
-  /** Whether it is a reset display, where `finishReset` can be used. */
+  /** Whether it is a reset scene, where `finishReset` can be used. */
   isReset: boolean;
   /** Whether the camera could ever be on while it shows. */
   cameraCanBeOn: boolean;
 }
 
-/** What a display inherits its camera from, when it doesn't say: a broader display's setting, or the game's. */
+/** What a scene inherits its camera from, when it doesn't say: a broader scene's setting, or the game's. */
 type CameraInheritance = {
-  /** Whether a broader display or the game turns the camera on; undefined if none says. */
+  /** Whether a broader scene or the game turns the camera on; undefined if none says. */
   inherited: boolean | undefined;
-  /** Whether a display shown alongside it turns the camera on, which turns it on for all of them. */
+  /** Whether a scene shown alongside it turns the camera on, which turns it on for all of them. */
   alongside: boolean;
 };
 
-/** Whether the camera could ever be on for a display, by the inheritance in `CameraModeUtils.ts`. */
-const canCameraBeOn = (camera: GameDisplayCameraData | undefined, { inherited, alongside }: CameraInheritance) =>
+/** Whether the camera could ever be on for a scene, by the inheritance in `CameraModeUtils.ts`. */
+const canCameraBeOn = (camera: GameSceneCameraData | undefined, { inherited, alongside }: CameraInheritance) =>
   alongside || (declaredValue("enabled", camera) ?? inherited) === true;
 
-/** A display, followed by its reset display, and theirs, each using its own camera setting over its parent's. */
-const withResets = (target: DisplayToCompile, camera: CameraInheritance): DisplayToCompile[] => {
-  const reset = target.display.resetDisplay;
+/** A scene, followed by its reset scene, and theirs, each using its own camera setting over its parent's. */
+const withResets = (target: SceneToCompile, camera: CameraInheritance): SceneToCompile[] => {
+  const reset = target.scene.resetScene;
   if (!isDefined(reset)) return [target];
-  const merged = { ...target.display.camera, ...reset.camera };
+  const merged = { ...target.scene.camera, ...reset.camera };
   return [
     target,
     ...withResets(
       {
         ...target,
-        display: { ...reset, camera: merged },
-        path: `${target.path} › resetDisplay`,
+        scene: { ...reset, camera: merged },
+        path: `${target.path} › resetScene`,
         isReset: true,
         cameraCanBeOn: canCameraBeOn(merged, camera),
       },
@@ -71,40 +72,37 @@ const withResets = (target: DisplayToCompile, camera: CameraInheritance): Displa
   ];
 };
 
-/** The value several displays' camera settings give together: on if any is on, otherwise off if any is off. */
-const anyDeclared = (displays: Pick<GameDisplayBase, "camera">[]): boolean | undefined => {
-  const values = displays.map(({ camera }) => declaredValue("enabled", camera)).filter(isDefined);
+/** The value several scenes' camera settings give together: on if any is on, otherwise off if any is off. */
+const anyDeclared = (scenes: Pick<GameSceneBase, "camera">[]): boolean | undefined => {
+  const values = scenes.map(({ camera }) => declaredValue("enabled", camera)).filter(isDefined);
   return values.length === 0 ? undefined : values.includes(true);
 };
 
-/** A display's place in the game, with what it inherits. */
-type DisplayPlace = Pick<DisplayToCompile, "path" | "isChallenge"> & CameraInheritance;
+/** A scene's place in the game, with what it inherits. */
+type ScenePlace = Pick<SceneToCompile, "path" | "isChallenge"> & CameraInheritance;
 
-/** A display to check, and its reset displays, at their place in the game. */
-const compilable = (display: DisplayToCompile["display"], { path, isChallenge, ...camera }: DisplayPlace) =>
-  withResets(
-    { display, path, isChallenge, isReset: false, cameraCanBeOn: canCameraBeOn(display.camera, camera) },
-    camera,
-  );
+/** A scene to check, and its reset scenes, at their place in the game. */
+const compilable = (scene: SceneToCompile["scene"], { path, isChallenge, ...camera }: ScenePlace) =>
+  withResets({ scene, path, isChallenge, isReset: false, cameraCanBeOn: canCameraBeOn(scene.camera, camera) }, camera);
 
-/** A stage's displays to check, with what they inherit. */
-const stageDisplays = (stage: GameStageData, s: number, fromOverview: boolean | undefined): DisplayToCompile[] => {
+/** A stage's scenes to check, with what they inherit. */
+const stageScenes = (stage: GameStageData, s: number, fromOverview: boolean | undefined): SceneToCompile[] => {
   const stagePath = `stages[${s}] (${stage.id})`;
-  const challengesOn = stage.challenges.map((challenge) => anyDeclared(challenge.displays) === true);
-  const inherited = anyDeclared(stage.displays ?? []) ?? fromOverview;
+  const challengesOn = stage.challenges.map((challenge) => anyDeclared(challenge.scenes) === true);
+  const inherited = anyDeclared(stage.scenes ?? []) ?? fromOverview;
   return [
-    ...(stage.displays ?? []).flatMap((display, d) =>
-      compilable(display, {
-        path: `${stagePath} › displays[${d}] (${display.purpose})`,
+    ...(stage.scenes ?? []).flatMap((scene, d) =>
+      compilable(scene, {
+        path: `${stagePath} › scenes[${d}] (${scene.purpose})`,
         isChallenge: false,
         inherited: fromOverview,
         alongside: challengesOn.includes(true),
       }),
     ),
     ...stage.challenges.flatMap((challenge, c) =>
-      challenge.displays.flatMap((display, d) =>
-        compilable(display, {
-          path: `${stagePath} › challenges[${c}] (${challenge.id}) › displays[${d}] (${display.purpose})`,
+      challenge.scenes.flatMap((scene, d) =>
+        compilable(scene, {
+          path: `${stagePath} › challenges[${c}] (${challenge.id}) › scenes[${d}] (${scene.purpose})`,
           isChallenge: true,
           inherited,
           // ponytail: any other challenge counts if the stage shows several at once, even in another chunk
@@ -115,20 +113,20 @@ const stageDisplays = (stage: GameStageData, s: number, fromOverview: boolean | 
   ];
 };
 
-/** Every display in the game, overview, stage and challenge, and their reset displays, with its path. */
-const allDisplays = (gameData: GameData): DisplayToCompile[] => {
+/** Every scene in the game, overview, stage and challenge, and their reset scenes, with its path. */
+const allScenes = (gameData: GameData): SceneToCompile[] => {
   const fromGame = declaredValue("enabled", gameData.modules?.camera);
-  const fromOverview = anyDeclared(gameData.displays) ?? fromGame;
+  const fromOverview = anyDeclared(gameData.scenes) ?? fromGame;
   return [
-    ...gameData.displays.flatMap((display, d) =>
-      compilable(display, {
-        path: `displays[${d}] (${display.purpose})`,
+    ...gameData.scenes.flatMap((scene, d) =>
+      compilable(scene, {
+        path: `scenes[${d}] (${scene.purpose})`,
         isChallenge: false,
         inherited: fromGame,
         alongside: false,
       }),
     ),
-    ...gameData.stages.flatMap((stage, s) => stageDisplays(stage, s, fromOverview)),
+    ...gameData.stages.flatMap((stage, s) => stageScenes(stage, s, fromOverview)),
   ];
 };
 
@@ -197,11 +195,11 @@ const feedbackProblem = (feedback: GameFeedbackAction, gameData: GameData): stri
     : `there is no resource "${feedback.sound}" to play`;
 };
 
-/** Why an action can't be used on this display, or undefined if it can. */
-const actionProblem = (action: GameAction, target: DisplayToCompile, gameData: GameData): string | undefined => {
+/** Why an action can't be used on this scene, or undefined if it can. */
+const actionProblem = (action: GameAction, target: SceneToCompile, gameData: GameData): string | undefined => {
   const challengeAction = CHALLENGE_ACTIONS.find((name) => name in action);
-  if (challengeAction && !target.isChallenge) return `${challengeAction} can only be used on a challenge display`;
-  if ("finishReset" in action && !target.isReset) return "finishReset can only be used on a reset display";
+  if (challengeAction && !target.isChallenge) return `${challengeAction} can only be used on a challenge scene`;
+  if ("finishReset" in action && !target.isReset) return "finishReset can only be used on a reset scene";
   if ("enterStage" in action && !gameData.stages.some((stage) => stage.id === action.enterStage)) {
     return `there is no stage "${action.enterStage}"`;
   }
@@ -209,11 +207,11 @@ const actionProblem = (action: GameAction, target: DisplayToCompile, gameData: G
   return "effect" in action ? effectProblem(action) : undefined;
 };
 
-/** The expressions an action needs, checking it is allowed on this display. */
+/** The expressions an action needs, checking it is allowed on this scene. */
 const actionSources = (
   action: GameAction,
   where: string,
-  target: DisplayToCompile,
+  target: SceneToCompile,
   gameData: GameData,
 ): [string, string][] => {
   const problem =
@@ -227,23 +225,18 @@ const actionSources = (
 };
 
 /**
- * Checks that a `start` rule doesn't reset its display: a reset starts the display again, so it would never stop.
+ * Checks that a `start` rule doesn't reset its scene: a reset starts the scene again, so it would never stop.
  * @throws naming `where` if it does
  */
 const checkStartRule = ({ on, do: actions }: GameRule, where: string): void => {
   const a = actions.findIndex((action) => "resetState" in action || "resetChallenge" in action);
   if ("start" in on && a >= 0) {
-    throw new Error(`${where}.do[${a}]: a start rule can't reset its own display, as it would start again and again`);
+    throw new Error(`${where}.do[${a}]: a start rule can't reset its own scene, as it would start again and again`);
   }
 };
 
 /** Every expression source in a rule, with where it is, checking selectors and actions on the way. */
-const ruleSources = (
-  rule: GameRule,
-  where: string,
-  target: DisplayToCompile,
-  gameData: GameData,
-): [string, string][] => {
+const ruleSources = (rule: GameRule, where: string, target: SceneToCompile, gameData: GameData): [string, string][] => {
   const sources: [string, string][] = [
     ...triggerSources(rule.on, `${where}.on`),
     ...(rule.if === undefined ? [] : [[rule.if, `${where}.if`] satisfies [string, string]]),
@@ -257,15 +250,17 @@ const ruleSources = (
 
 /**
  * Compiles and checks every rule in a game, so a mistake is reported when the game loads, naming the
- * display and rule it is in.
+ * scene and rule it is in.
  * @returns the compiled expressions, by source text
  * @throws on the first expression that doesn't parse, invalid selector, negative duration, challenge action
- * outside a challenge display, or `enterStage` to a stage the game doesn't have
+ * outside a challenge scene, or `enterStage` to a stage the game doesn't have
  */
 export const compileGameRules = (gameData: GameData): GameExpressions => {
+  const [renamed] = renamedKeyProblems(gameData);
+  if (isDefined(renamed)) throw new Error(renamed);
   const expressions = new Map<string, GameExpression>();
-  for (const target of allDisplays(gameData)) {
-    (target.display.component.rules ?? []).forEach((rule, r) => {
+  for (const target of allScenes(gameData)) {
+    (target.scene.component.rules ?? []).forEach((rule, r) => {
       for (const [source, where] of ruleSources(rule, `${target.path} › rules[${r}]`, target, gameData)) {
         if (!expressions.has(source)) expressions.set(source, compileGameExpression(source, where));
       }

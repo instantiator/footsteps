@@ -10,7 +10,7 @@
 }
 
 /*
- * Only what a template draws, and a display's own controls, take pointer events, so a click (or the camera)
+ * Only what a template draws, and a scene's own controls, take pointer events, so a click (or the camera)
  * reaches whatever is drawn beneath empty space. :where() keeps this at zero specificity, so an author's
  * pointer-events: none on a decorative element wins.
  */
@@ -99,7 +99,7 @@
   right: 0;
 }
 
-/* The display and camera layers, faded together when the game cuts to another display */
+/* The scene and camera layers, faded together when the game cuts to another scene */
 .gameScene {
   position: absolute;
   inset: 0;

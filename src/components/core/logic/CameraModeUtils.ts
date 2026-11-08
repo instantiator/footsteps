@@ -1,9 +1,9 @@
-import type { GameDisplayCameraData } from "../../../entities/data/displays/GameDisplayData";
+import type { GameSceneCameraData } from "../../../entities/data/scenes/GameSceneData";
 import type { GameData } from "../../../entities/data/GameData";
 import { isDefined } from "../../../util/ObjectUtils";
-import type { LayeredGameDisplayRenderData } from "./RenderDataUtils";
+import type { LayeredGameSceneRenderData } from "./RenderDataUtils";
 
-/** Whether camera mode and its preview are on for the displays currently shown. */
+/** Whether camera mode and its preview are on for the scenes currently shown. */
 export interface ResolvedCameraMode {
   /** Whether camera mode is on. */
   enabled: boolean;
@@ -17,23 +17,20 @@ type CameraModeField = keyof ResolvedCameraMode;
 /** The value a setting takes when nothing sets it. */
 const CAMERA_MODE_DEFAULTS: ResolvedCameraMode = { enabled: false, preview: true };
 
-/** What a display or the game's module declares for a setting, if anything. */
-export const declaredValue = (
-  field: CameraModeField,
-  source: GameDisplayCameraData | undefined,
-): boolean | undefined => {
+/** What a scene or the game's module declares for a setting, if anything. */
+export const declaredValue = (field: CameraModeField, source: GameSceneCameraData | undefined): boolean | undefined => {
   if (field === "preview") return source?.preview;
   return isDefined(source?.requirement) ? source.requirement !== false : undefined;
 };
 
-/** The active challenges' values for one field, in display order. */
-const challengeValues = (field: CameraModeField, renderData: LayeredGameDisplayRenderData): boolean[] =>
+/** The active challenges' values for one field, in scene order. */
+const challengeValues = (field: CameraModeField, renderData: LayeredGameSceneRenderData): boolean[] =>
   (renderData.challengesRenderData ?? []).map((challenge) => declaredValue(field, challenge.camera)).filter(isDefined);
 
 /** The first value the given sources declare for the field, if any. */
 const firstDeclared = (
   field: CameraModeField,
-  ...sources: (GameDisplayCameraData | undefined)[]
+  ...sources: (GameSceneCameraData | undefined)[]
 ): boolean | undefined => {
   for (const source of sources) {
     const value = declaredValue(field, source);
@@ -47,15 +44,15 @@ const firstDeclared = (
  *
  * 1. Any active challenge setting it to `true` wins.
  * 2. Otherwise, any active challenge setting it to `false` wins.
- * 3. Otherwise, the stage display's value.
- * 4. Otherwise, the overview display's value.
+ * 3. Otherwise, the stage scene's value.
+ * 4. Otherwise, the overview scene's value.
  * 5. Otherwise, the game's camera module.
  * 6. Otherwise, the default.
  */
 const resolveCameraField = (
   field: CameraModeField,
   gameData: GameData,
-  renderData: LayeredGameDisplayRenderData,
+  renderData: LayeredGameSceneRenderData,
 ): boolean => {
   const values = challengeValues(field, renderData);
   if (values.includes(true)) return true;
@@ -77,7 +74,7 @@ const resolveCameraField = (
  *
  * NB. The preview is always off while camera mode is off.
  */
-export const resolveCameraMode = (gameData: GameData, renderData: LayeredGameDisplayRenderData): ResolvedCameraMode => {
+export const resolveCameraMode = (gameData: GameData, renderData: LayeredGameSceneRenderData): ResolvedCameraMode => {
   const enabled = resolveCameraField("enabled", gameData, renderData);
   return {
     enabled,

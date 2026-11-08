@@ -8,17 +8,17 @@ What happens to players is covered by the player effects below, and how players 
 
 The game uses one system for positions and distances.
 
-| Measure                                 | Unit                                          | CSS equivalent |
-| --------------------------------------- | --------------------------------------------- | -------------- |
-| Horizontal position or distance         | % of the whole display's width, from the left | `cqw`          |
-| Vertical position or distance           | % of the whole display's height, from the top | `cqh`          |
-| A distance with no direction, or a size | % of the whole display's width                | `cqw`          |
+| Measure                                 | Unit                                        | CSS equivalent |
+| --------------------------------------- | ------------------------------------------- | -------------- |
+| Horizontal position or distance         | % of the whole scene's width, from the left | `cqw`          |
+| Vertical position or distance           | % of the whole scene's height, from the top | `cqh`          |
+| A distance with no direction, or a size | % of the whole scene's width                | `cqw`          |
 
 **A position places the centre of the element.** CSS `left` and `top` place its corner, so `"end": { "left": 50, "top": 20 }` and `left: 50cqw; top: 20cqh` put an element in different places.
 
 Positions mean the same at any scale, in any column of a stage's challenges, and whether or not the camera is mirrored, as mirroring only flips the players' canvases.
 
-Use `cqw` and `cqh` to position items in template CSS too. `%` only matches in a template that fills the display, and with challenges side by side the parent is one column. Give highlight styles such as `shadow` in `cqw`, so they scale with the display. Other author-supplied lengths work in any CSS unit, but the same applies: `backgroundStyle`, `foregroundStyle`, `backgroundTemplateStyle`, `foregroundTemplateStyle`, `gameContainerStyle`, and `initialState` or `set` values used as positions in a template.
+Use `cqw` and `cqh` to position items in template CSS too. `%` only matches in a template that fills the scene, and with challenges side by side the parent is one column. Give highlight styles such as `shadow` in `cqw`, so they scale with the scene. Other author-supplied lengths work in any CSS unit, but the same applies: `backgroundStyle`, `foregroundStyle`, `backgroundTemplateStyle`, `foregroundTemplateStyle`, `gameContainerStyle`, and `initialState` or `set` values used as positions in a template.
 
 These measure something else, so they differ:
 
@@ -52,13 +52,13 @@ These apply to every effect:
 - **Reduced motion:** for players who prefer reduced motion, nothing moves. `quake` doesn't play. `item-fall`, `item-move`, `player-fall` and `player-spin-away` jump straight to their end. `player-static` shows, but doesn't flicker. Game state changes as it would otherwise, and `effectEnd` still fires, so these players can still finish the game.
 - **Not saved:** effects and player states last for the session, like rewards. Reloading shows items where their templates put them.
 
-### Ending with the display
+### Ending with the scene
 
-Every effect and animation ends when its display closes or resets, except sounds and rewards: those playing or waiting on a `delayMs` carry on, as rules usually play them in the same step that closes the display. Items return to where the template puts them, and delays still waiting are cancelled.
+Every effect and animation ends when its scene closes or resets, except sounds and rewards: those playing or waiting on a `delayMs` carry on, as rules usually play them in the same step that closes the scene. Items return to where the template puts them, and delays still waiting are cancelled.
 
-A display resets when `resetState` or `resetChallenge` runs, a reset display shows, or a display with `resetStateOnShow` shows again. It then starts afresh: its template is rebuilt, so its CSS animations restart; its `every` and `after` timers restart; its `start` rules fire again; and its `when` rules begin again. A player already over one of its elements must move away and back. A `start` rule can't itself reset the display, which is an error when the game loads, as it would never stop. A display that resets itself more than 10 times in a second by some other route is logged and stopped.
+A scene resets when `resetState` or `resetChallenge` runs, a reset scene shows, or a scene with `resetStateOnShow` shows again. It then starts afresh: its template is rebuilt, so its CSS animations restart; its `every` and `after` timers restart; its `start` rules fire again; and its `when` rules begin again. A player already over one of its elements must move away and back. A `start` rule can't itself reset the scene, which is an error when the game loads, as it would never stop. A scene that resets itself more than 10 times in a second by some other route is logged and stopped.
 
-A fallen item stays off-screen during the scene's fade as its display closes, rather than snapping back into view: it goes when the display does.
+A fallen item stays off-screen during the scene's fade as its scene closes, rather than snapping back into view: it goes when the scene does.
 
 ## Duration
 
@@ -73,7 +73,7 @@ A fallen item stays off-screen during the scene's fade as its display closes, ra
 | `player-freeze`, `player-unfreeze`                     | Doesn't apply  | They have no duration, and apply at once     |
 | `player-invisible`, `player-visible`, `player-restore` | Error on load  | They are one-way changes                     |
 
-An indefinite effect ends with `stop`, or when its display closes or resets.
+An indefinite effect ends with `stop`, or when its scene closes or resets.
 
 ## Delay
 
@@ -93,40 +93,40 @@ Every action takes an optional `delayMs`.
 - A rule's `if` is checked when it fires, and not again after the delay.
 - Later actions don't wait for a delayed one: each counts from when the rule fired.
 - A delayed action's expressions are worked out when it runs, from the state at that time, using the `event` from when the rule fired.
-- A delayed action is cancelled if its display closes or resets first, so a late `completeChallenge` or `set` can't change a display that has moved on. Sounds and rewards are the exception, as above.
+- A delayed action is cancelled if its scene closes or resets first, so a late `completeChallenge` or `set` can't change a scene that has moved on. Sounds and rewards are the exception, as above.
 - `delayMs` is a number, not an expression.
 
 ## Targets
 
-A `target` looks inside the display whose rule fired, so two challenges side by side can use the same ids. It can also use these classes, which are outside any display:
+A `target` looks inside the scene whose rule fired, so two challenges side by side can use the same ids. It can also use these classes, which are outside any scene:
 
-| Class                         | Elements                                                                                                                                    |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `.player`                     | Every player.                                                                                                                               |
-| `.player-N` (eg. `.player-1`) | One player. See [player numbers](player-tracking.md#player-numbers). `N` is read as the effect starts, and it stays with that player.       |
-| `.display-foreground`         | The display foreground containers: `#overview-foreground-container`, `#stage-foreground-container`, and `#challenges-foreground-container`. |
-| `.display-background`         | The display background containers, named the same way.                                                                                      |
+| Class                         | Elements                                                                                                                                  |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `.player`                     | Every player.                                                                                                                             |
+| `.player-N` (eg. `.player-1`) | One player. See [player numbers](player-tracking.md#player-numbers). `N` is read as the effect starts, and it stays with that player.     |
+| `.scene-foreground`           | The scene foreground containers: `#overview-foreground-container`, `#stage-foreground-container`, and `#challenges-foreground-container`. |
+| `.scene-background`           | The scene background containers, named the same way.                                                                                      |
 
-- **Items move, not layers.** An effect on `.display-foreground` or `.display-background`, or with no `target`, applies to each top-level item (`.templateBody > *`), never to a container. Moving a container would make it a stacking context, so items inside it could no longer sit between players.
+- **Items move, not layers.** An effect on `.scene-foreground` or `.scene-background`, or with no `target`, applies to each top-level item (`.templateBody > *`), never to a container. Moving a container would make it a stacking context, so items inside it could no longer sit between players.
 - **Wrappers around depth items.** A top-level item holding `data-depth` items gives its children instead, recursively, for the same reason. A `target` that names one directly logs a warning, and those items can't sort among players during the effect.
 - **Dialogs and scrolls** give their whole frame, keeping the image, text and controls together. A dialog's layers always share one motion, even with `consistentMotion: false`.
-- **Missing elements:** a `target` matching nothing logs a warning. Effects wait up to 5 s for their display's elements to reach the screen first, as a display's state changes before its fade is over.
+- **Missing elements:** a `target` matching nothing logs a warning. Effects wait up to 5 s for their scene's elements to reach the screen first, as a scene's state changes before its fade is over.
 - **Give items an `id`.** An effect stays on its element through template re-renders, but an element without an `id` may be replaced by one.
 
 An effect on an element can't be applied to everything a player's canvas does:
 
-| Effect                                 | On `.player` or `.player-N` | Why                                                                                                                                 |
-| -------------------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `reward`                               | Allowed                     | The burst uses the centre of their body.                                                                                            |
-| `quake`                                | Allowed                     | The silhouette moves away from where interactions measure it, but only briefly.                                                     |
-| `highlight` with `filter`              | Allowed                     | `brightness()` and `drop-shadow()` follow the silhouette. It redraws a display-sized filter each camera frame, so use it sparingly. |
-| `highlight` with `shadow` or `outline` | Error on load               | These draw around the canvas's rectangle, which is the whole display. Use `filter: drop-shadow()`.                                  |
-| `item-fall`                            | Error on load               | The silhouette would leave while the player stays active. Use `player-fall`.                                                        |
-| `item-move`                            | Error on load               | The silhouette would move away from where the player is really interacting.                                                         |
+| Effect                                 | On `.player` or `.player-N` | Why                                                                                                                               |
+| -------------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `reward`                               | Allowed                     | The burst uses the centre of their body.                                                                                          |
+| `quake`                                | Allowed                     | The silhouette moves away from where interactions measure it, but only briefly.                                                   |
+| `highlight` with `filter`              | Allowed                     | `brightness()` and `drop-shadow()` follow the silhouette. It redraws a scene-sized filter each camera frame, so use it sparingly. |
+| `highlight` with `shadow` or `outline` | Error on load               | These draw around the canvas's rectangle, which is the whole scene. Use `filter: drop-shadow()`.                                  |
+| `item-fall`                            | Error on load               | The silhouette would leave while the player stays active. Use `player-fall`.                                                      |
+| `item-move`                            | Error on load               | The silhouette would move away from where the player is really interacting.                                                       |
 
 ## Item effects
 
-These all default `target` to every item in the shown displays, which is rarely what you want for `item-fall` and `item-move`.
+These all default `target` to every item in the shown scenes, which is rarely what you want for `item-fall` and `item-move`.
 
 ### Quake
 
@@ -148,14 +148,14 @@ Any jump shakes the whole scene, with each item moving differently:
 
 | Property           | Type                     | Default | Meaning                                                                                                                           |
 | ------------------ | ------------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `dx`               | number                   | `0`     | How far to shake horizontally, as a % of the display's width.                                                                     |
-| `dy`               | number                   | `0`     | How far to shake vertically, as a % of the display's height.                                                                      |
+| `dx`               | number                   | `0`     | How far to shake horizontally, as a % of the scene's width.                                                                       |
+| `dy`               | number                   | `0`     | How far to shake vertically, as a % of the scene's height.                                                                        |
 | `consistentMotion` | boolean                  | `true`  | Whether all items shake with the same motion. If `false`, each item's motion is random.                                           |
 | `durationMs`       | `number \| "indefinite"` | `1000`  | How long the shake lasts.                                                                                                         |
 | `cycleMs`          | number                   | `100`   | The time for one shake there and back.                                                                                            |
 | `easing`           | CSS easing function      | none    | How the strength fades, to nothing by the end. Without one, the full `dx` and `dy` apply throughout. Ignored when `"indefinite"`. |
 
-An item reaching every edge of the display is enlarged just enough while it shakes that no gap shows at the edge.
+An item reaching every edge of the scene is enlarged just enough while it shakes that no gap shows at the edge.
 
 ### Item fall
 
@@ -166,13 +166,13 @@ An item reaching every edge of the display is enlarged just enough while it shak
 }
 ```
 
-| Property     | Type                     | Default  | Meaning                                                                                                    |
-| ------------ | ------------------------ | -------- | ---------------------------------------------------------------------------------------------------------- |
-| `durationMs` | `number \| "indefinite"` | `1000`   | Time until the element has left the display. If `"indefinite"`, it falls again from the start, repeatedly. |
-| `cycleMs`    | number                   | `1000`   | The length of one fall, when `"indefinite"`.                                                               |
-| `easing`     | CSS easing function      | `linear` | How the fall speeds up.                                                                                    |
+| Property     | Type                     | Default  | Meaning                                                                                                  |
+| ------------ | ------------------------ | -------- | -------------------------------------------------------------------------------------------------------- |
+| `durationMs` | `number \| "indefinite"` | `1000`   | Time until the element has left the scene. If `"indefinite"`, it falls again from the start, repeatedly. |
+| `cycleMs`    | number                   | `1000`   | The length of one fall, when `"indefinite"`.                                                             |
+| `easing`     | CSS easing function      | `linear` | How the fall speeds up.                                                                                  |
 
-The element stays off-screen until its display resets. Off-screen, it can't be interacted with, as interactions measure where elements appear.
+The element stays off-screen until its scene resets. Off-screen, it can't be interacted with, as interactions measure where elements appear.
 
 ### Item move
 
@@ -183,7 +183,7 @@ The element stays off-screen until its display resets. Off-screen, it can't be i
 | Property     | Type                     | Default                  | Meaning                                                                           |
 | ------------ | ------------------------ | ------------------------ | --------------------------------------------------------------------------------- |
 | `start`      | position                 | where the element is now | Where the move begins.                                                            |
-| `end`        | position                 | required                 | Where the move ends. The element stays there until its display resets.            |
+| `end`        | position                 | required                 | Where the move ends. The element stays there until its scene resets.              |
 | `durationMs` | `number \| "indefinite"` | `1000`                   | How long the move takes. If `"indefinite"`, it jumps back to `start` and repeats. |
 | `cycleMs`    | number                   | `1000`                   | The length of one move, when `"indefinite"`.                                      |
 | `easing`     | CSS easing function      | `linear`                 | How the move speeds up and slows down.                                            |
@@ -192,7 +192,7 @@ A position is one of:
 
 | Form                                             | Meaning                                                     |
 | ------------------------------------------------ | ----------------------------------------------------------- |
-| `{ "left": 50, "top": 20 }`                      | A place in the display.                                     |
+| `{ "left": 50, "top": 20 }`                      | A place in the scene.                                       |
 | `{ "by": { "left": 0, "top": -10 } }`            | An amount from where the element is when the effect starts. |
 | `{ "from": "#selector", "left": 0, "top": -10 }` | An amount from the centre of another element.               |
 
@@ -279,18 +279,18 @@ Fires when an effect finishes, so a game can follow one thing with another witho
 | `target`    | CSS selector     | any element | Only fire for these elements. Item effects only. |
 
 - **How often:** once per element or player, as `animationEnd` does. `event.id` is the element's id, and `event.player` the player's number.
-- **Where:** it fires rules in the display whose rule started the effect.
-- **When it doesn't fire:** if the effect was ended early by `stop`, or by its display closing or resetting. An `"indefinite"` effect has no end.
+- **Where:** it fires rules in the scene whose rule started the effect.
+- **When it doesn't fire:** if the effect was ended early by `stop`, or by its scene closing or resetting. An `"indefinite"` effect has no end.
 - **Reduced motion:** it still fires, as the effect has jumped to its end.
 - **Player effects:** `game.players.removed` has already changed by the time `player-fall` and `player-spin-away` fire this. `player-freeze` and `player-unfreeze` fire it at once.
 
 ## Player effects
 
-These use `players` rather than `target`, as a rule usually means "whoever did this": see [choosing players](player-tracking.md#choosing-players). They need the camera, and `visionSmoothing` on. With a camera refused or failed in play, they do nothing and the game plays on. On a display where the camera can never be on, they are an error on load:
+These use `players` rather than `target`, as a rule usually means "whoever did this": see [choosing players](player-tracking.md#choosing-players). They need the camera, and `visionSmoothing` on. With a camera refused or failed in play, they do nothing and the game plays on. On a scene where the camera can never be on, they are an error on load:
 
 ```text
-stages[0] (lava) › challenges[0] (floor) › displays[0] (challenge-in-progress) › rules[2].do[0]:
-player-fall needs a player, but this display doesn't have the camera enabled
+stages[0] (lava) › challenges[0] (floor) › scenes[0] (challenge-in-progress) › rules[2].do[0]:
+player-fall needs a player, but this scene doesn't have the camera enabled
 ```
 
 ### Falling
@@ -381,7 +381,7 @@ Makes the player seem partly transparent, like a detuned TV.
 | ------------ | ------------------------ | -------------- | ---------------------------------------------------------------------------------------------------------- |
 | `players`    | `"triggering"`, `"all"`  | `"triggering"` | Who it applies to.                                                                                         |
 | `durationMs` | `number \| "indefinite"` | `"indefinite"` | How long it lasts, including easing in and out. If `"indefinite"`, it holds until stopped, then eases out. |
-| `pixelSize`  | number                   | `0.5`          | The size of each block of static, as a % of the display's width.                                           |
+| `pixelSize`  | number                   | `0.5`          | The size of each block of static, as a % of the scene's width.                                             |
 | `proportion` | number, 0–1              | `0.5`          | The target proportion of the player's pixels made transparent.                                             |
 | `easeMs`     | number                   | `500`          | How long it takes to reach `proportion`, and to fade away again.                                           |
 | `easing`     | CSS easing function      | `linear`       | How the proportion changes while easing.                                                                   |
@@ -416,10 +416,10 @@ A `reward` action shows a [partycles](https://www.npmjs.com/package/partycles) c
 | `players` | `"triggering"`, `"all"`         | none              | Each burst starts from the centre of a player's body, instead of `target`. |
 | `delayMs` | number                          | `0`               | How long to wait first.                                                    |
 
-A burst on `.player-N` starts from the centre of the player's body too, as the centre of their canvas would be the middle of the display. If the element has gone by the time a delayed reward plays, it starts from the middle of the game.
+A burst on `.player-N` starts from the centre of the player's body too, as the centre of their canvas would be the middle of the scene. If the element has gone by the time a delayed reward plays, it starts from the middle of the game.
 
 A game's `reward` is separate, and plays as a stage completes.
 
 ## Template CSS animations
 
-A template can animate its own elements with CSS, in the game's [stylesheets](game-data.md#stylesheets). These restart when their display resets, and end when it closes. Use the [`animationEnd` and `transitionEnd` triggers](game-data.md#rules) to follow them, as those don't fire for effects, which use the Web Animations API.
+A template can animate its own elements with CSS, in the game's [stylesheets](game-data.md#stylesheets). These restart when their scene resets, and end when it closes. Use the [`animationEnd` and `transitionEnd` triggers](game-data.md#rules) to follow them, as those don't fire for effects, which use the Web Animations API.

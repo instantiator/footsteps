@@ -6,7 +6,7 @@ A game repository is a JSON file holding one or more games. Its type is `GameRep
 {
   "$schema": "./schemas/game-repository-schema.json",
   "games": {
-    "magic-trifle": { "title": "Nanny's Magic Trifle", "displays": [], "stages": [], "gameContainerStyle": {} }
+    "magic-trifle": { "title": "Nanny's Magic Trifle", "scenes": [], "stages": [], "gameContainerStyle": {} }
   }
 }
 ```

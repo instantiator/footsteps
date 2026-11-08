@@ -6,8 +6,8 @@ import type {
   GamePlayerRestoreEffect,
   GamePlayerSpinAwayEffect,
   GamePlayerStaticEffect,
-} from "../../../entities/data/displays/GameEffectData";
-import type { DisplayScope } from "../../../entities/state/GameState";
+} from "../../../entities/data/scenes/GameEffectData";
+import type { SceneScope } from "../../../entities/state/GameState";
 import { centreOf } from "../../../vision/Tracking";
 import type { PlayerRegistry } from "../../camera/PlayerRegistry";
 import { PlayerStatic } from "../../camera/PlayerStatic";
@@ -39,8 +39,8 @@ export const silhouetteTop = (mask: Uint8Array, width: number, height: number): 
 };
 
 /**
- * How far a player must travel in a direction to be fully off the display, centre first.
- * @param centre where their body's centre is, with the display's top left at 0, 0
+ * How far a player must travel in a direction to be fully off the scene, centre first.
+ * @param centre where their body's centre is, with the scene's top left at 0, 0
  * @param radius the furthest any of them reaches from it, as they arrive, allowing for zoom and rotation
  * @param degrees 0 is straight up, 90 is right, and -90 is left
  */
@@ -78,8 +78,8 @@ const chosenIds = (
 
 /** What a player effect needs to know about the rule that started it. */
 export interface PlayerEffectRun extends EffectRun {
-  /** The display whose rule started it. */
-  scope: DisplayScope;
+  /** The scene whose rule started it. */
+  scope: SceneScope;
   /** The event its rule fired with. */
   event: RuleEvent;
   /** Where the action is in the game's rules, for error messages. */
@@ -106,7 +106,7 @@ export class PlayerEffects {
   }
 
   /**
-   * Ends what has happened to a player, as their display has ended. If they are to stay removed, one on the way goes
+   * Ends what has happened to a player, as their scene has ended. If they are to stay removed, one on the way goes
    * straight to removed; one already there stays.
    */
   end(id: number, keepRemoved: boolean): void {
@@ -209,7 +209,7 @@ export class PlayerEffects {
     else this.players.finishLeaving(id);
   }
 
-  /** Drops a player off the display. */
+  /** Drops a player off the scene. */
   private fall(wrapper: HTMLElement, id: number, effect: GamePlayerFallEffect, run: EffectRun): void {
     const person = this.players.lastOf(id);
     const { width, height } = this.players.frameSize();
@@ -219,7 +219,7 @@ export class PlayerEffects {
     this.effects.playToEnd({ element: wrapper, name: effect.effect }, keyframes, effect, this.leaving(id, run));
   }
 
-  /** Knocks a player off the display, turning about the centre of their body. */
+  /** Knocks a player off the scene, turning about the centre of their body. */
   private spin(wrapper: HTMLElement, id: number, effect: GamePlayerSpinAwayEffect, run: EffectRun): void {
     const { angle, zoom = 1, opacity = 1, rotations = 2, easing = "ease-out", durationMs = 1000 } = effect;
     const { min, max } = angle ?? { min: -60, max: 60 };

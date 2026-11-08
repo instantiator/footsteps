@@ -1,4 +1,4 @@
-import type { GameDisplayTemplateSourceData } from "../../../entities/data/displays/GameDisplayTemplateComponentData";
+import type { GameSceneTemplateSourceData } from "../../../entities/data/scenes/GameSceneTemplateComponentData";
 import type { GameStageState } from "../../../entities/state/GameStageState";
 import type { GameState } from "../../../entities/state/GameState";
 
@@ -14,7 +14,7 @@ export type DecoratedGameState = Omit<GameState, "stages"> & {
 export type DecoratedStageState = GameStageState & {
   /** Zero-based position in the game's stages. */
   index: number;
-  /** One-based position, for display to players. */
+  /** One-based position, for scene to players. */
   oneIndex: number;
   /** The stage is completed. */
   showCompleted: boolean;
@@ -42,7 +42,7 @@ export const decorateGameState = (gameState: GameState): DecoratedGameState => (
  * A readable, stable id for a template's container: its source type and location, or the
  * given fallback (a React useId(), so it matches between the prerendered HTML and the browser).
  */
-export const summariseTemplateSource = (source: GameDisplayTemplateSourceData | undefined, fallbackId: string) =>
+export const summariseTemplateSource = (source: GameSceneTemplateSourceData | undefined, fallbackId: string) =>
   `${source?.sourceType ?? "undefined"}:${source?.templateSource ?? `uid:${fallbackId}`}`;
 
 /** Splits text into its trimmed, non-empty lines. */
@@ -56,13 +56,13 @@ export const parseLines = (text: string | undefined): string[] => {
     .filter((line) => line.length > 0);
 };
 
-/** Something that happened inside a display's template that rules can respond to. */
-export interface DisplayDomEvent {
+/** Something that happened inside a scene's template that rules can respond to. */
+export interface SceneDomEvent {
   /** A click (or key activation), the mouse moving over or out of an element, or the end of a CSS animation or transition. */
   kind: "click" | "mouseOver" | "mouseOut" | "animationEnd" | "transitionEnd";
   /** The element the event happened on. */
   target: Element;
-  /** The display's template container, where matching stops. */
+  /** The scene's template container, where matching stops. */
   root: Element;
   /** The animation's name, or the transitioned property. */
   name?: string;
@@ -72,15 +72,15 @@ export interface DisplayDomEvent {
 
 /**
  * The element matching a selector that the event happened in: the target itself or its nearest matching ancestor,
- * inside the display's container (never the container itself).
+ * inside the scene's container (never the container itself).
  */
-export const matchTarget = ({ target, root }: Pick<DisplayDomEvent, "target" | "root">, selector: string) => {
+export const matchTarget = ({ target, root }: Pick<SceneDomEvent, "target" | "root">, selector: string) => {
   const element = target.closest(selector);
   return element !== null && element !== root && root.contains(element) ? element : undefined;
 };
 
-/** The template containers of a display (its background and foreground), by its scope. */
-export const displayRoots = (scope: string): Element[] =>
-  Array.from(document.querySelectorAll("[data-display-scope]")).filter(
-    (element) => element instanceof HTMLElement && element.dataset.displayScope === scope,
+/** The template containers of a scene (its background and foreground), by its scope. */
+export const sceneRoots = (scope: string): Element[] =>
+  Array.from(document.querySelectorAll("[data-scene-scope]")).filter(
+    (element) => element instanceof HTMLElement && element.dataset.sceneScope === scope,
   );

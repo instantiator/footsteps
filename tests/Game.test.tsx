@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameData } from "../src/entities/data/GameData";
-import type { GameAction } from "../src/entities/data/displays/GameDisplayData";
+import type { GameAction } from "../src/entities/data/scenes/GameSceneData";
 import { useGameState } from "../src/providers/GameStateHook";
 import Game from "../src/components/core/Game";
 import type GameLayersLayout from "../src/components/core/layout/GameLayersLayout";
@@ -75,7 +75,7 @@ const enterStage = async (n: 1 | 2) => {
 const answer = (text: string) => fireEvent.change(screen.getByRole("textbox"), { target: { value: text } });
 
 describe("Game", () => {
-  it("shows the stages overview first, when the game has no title display", async () => {
+  it("shows the stages overview first, when the game has no title scene", async () => {
     renderGame();
     expect(await screen.findByText("Small Game")).toBeInTheDocument();
     expect(screen.getByText("Stage 1")).toBeInTheDocument();
@@ -90,12 +90,12 @@ describe("Game", () => {
     expect(screen.getByRole("button", { name: "Close challenge" })).toBeInTheDocument();
   });
 
-  it("gives the layout a new display key when the display changes", async () => {
+  it("gives the layout a new scene key when the scene changes", async () => {
     renderGame();
     await screen.findByText("Small Game");
-    const overviewKey = receivedLayout.at(-1)!.displayKey;
+    const overviewKey = receivedLayout.at(-1)!.sceneKey;
     await enterStage(1);
-    expect(receivedLayout.at(-1)!.displayKey).not.toBe(overviewKey);
+    expect(receivedLayout.at(-1)!.sceneKey).not.toBe(overviewKey);
   });
 
   it("does not enter a locked stage", async () => {
@@ -136,22 +136,22 @@ describe("Game camera interactions", () => {
   /** A variant of the small game whose first stage opens on a hand wave instead of a click. */
   const handGame: GameData = {
     ...smallGame,
-    displays: smallGame.displays.map((display) =>
-      display.purpose === "game-overview-stages"
+    scenes: smallGame.scenes.map((scene) =>
+      scene.purpose === "game-overview-stages"
         ? {
-            ...display,
+            ...scene,
             component: {
-              ...display.component,
+              ...scene.component,
               rules: [
                 {
                   on: { interact: ["hand-enter", "mouse-enter"], target: "#stage-link-stage-1" },
                   do: [{ enterStage: "stage-1" }],
                 },
-                ...(display.component.rules ?? []).slice(1),
+                ...(scene.component.rules ?? []).slice(1),
               ],
             },
           }
-        : display,
+        : scene,
     ),
   };
 
@@ -320,9 +320,9 @@ describe("Game sounds and reward", () => {
   describe("from rules", () => {
     /** The small game with audio, whose stages overview plays the given effects as it starts. */
     const withEffects = (effects: GameAction[]): GameData => {
-      const [overview, ...others] = withAudio.displays;
+      const [overview, ...others] = withAudio.scenes;
       const rules = [...(overview.component.rules ?? []), { on: { start: true as const }, do: effects }];
-      return { ...withAudio, displays: [{ ...overview, component: { ...overview.component, rules } }, ...others] };
+      return { ...withAudio, scenes: [{ ...overview, component: { ...overview.component, rules } }, ...others] };
     };
 
     /** How many effects are waiting in the queue. */
@@ -358,10 +358,10 @@ describe("Game sounds and reward", () => {
     });
 
     describe("with a target", () => {
-      /** A template that gives the targeted elements, on the display whose rule asks for the reward. */
+      /** A template that gives the targeted elements, on the scene whose rule asks for the reward. */
       const renderTargeted = (target: string) => {
         const data = withEffects([{ reward: { animation: "stars" }, target, delayMs: 50 }]);
-        data.displays[0].component.foregroundTemplate = {
+        data.scenes[0].component.foregroundTemplate = {
           sourceType: "embedded",
           content: '<div class="spot" id="spot-1"></div><div class="spot" id="spot-2"></div>',
         };
@@ -411,7 +411,7 @@ describe("Game sounds and reward", () => {
       await vi.waitFor(() => expect(opened()).toHaveLength(1));
     });
 
-    it("still plays a delayed sound after its display has closed", async () => {
+    it("still plays a delayed sound after its scene has closed", async () => {
       renderEffects([{ sound: "opened", delayMs: 100 }, { enterStage: "stage-1" }]);
       await screen.findByText("Stage 1");
       await vi.waitFor(() => expect(opened()).toHaveLength(1));

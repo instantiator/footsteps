@@ -96,7 +96,7 @@ complexity, and the part we most wanted is missing on a Mac.
 | Drivers and software        | The open-source `libfreenect` driver, plus a small program we'd write. Model 1414 is also expected to need its USB and power adapter (from memory).                      |
 
 This needs code outside the browser, so it has its own prompt:
-[002.03.00](../prompts/002.03.00.prompt%20-%20kinect%20depth%20bridge.md).
+[998.00.00](../prompts/998.00.00.prompt%20-%20kinect%20depth%20bridge.md).
 
 > Skeleton tracking came from Microsoft's Kinect SDK (Windows only) or NITE, which Apple's purchase of PrimeSense took
 > off the market. On a Mac, `libfreenect` gives only depth and colour frames.

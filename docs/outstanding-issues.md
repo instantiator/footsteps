@@ -16,9 +16,9 @@ aislop 0.19 reports `knip/skipped` because Knip isn't installed; the notice is a
 
 ## No captions for game audio
 
-`GameDisplayMediaData` has no field for captions, so `GameAudioComponent` can't render a `<track>`. The jsx-a11y `media-has-caption` finding is disabled with that reason. The camera preview's `<video>` is exempt for good: it's a silent live feed of the player.
+`GameSceneMediaData` has no field for captions, so `GameAudioComponent` can't render a `<track>`. The jsx-a11y `media-has-caption` finding is disabled with that reason. The camera preview's `<video>` is exempt for good: it's a silent live feed of the player.
 
-**Act when:** a game ships audio containing speech. Add an optional `captionsResource` (WebVTT) to `GameDisplayMediaData` and render it as a `<track kind="captions">`.
+**Act when:** a game ships audio containing speech. Add an optional `captionsResource` (WebVTT) to `GameSceneMediaData` and render it as a `<track kind="captions">`.
 
 ## Camera mode is not proven on a physical camera
 
@@ -60,7 +60,7 @@ about 9 frames in 10, compare the other models, then consider the options that A
 
 Overview and stage foregrounds always stay behind the player, because they must stay beneath challenge backgrounds.
 
-**Act when:** a game needs a player to pass behind something on an overview or a stage's shared display. Sort those
+**Act when:** a game needs a player to pass behind something on an overview or a stage's shared scene. Sort those
 layers with the players while no challenge is showing.
 
 ## The landing page may miss a new default camera
@@ -166,16 +166,16 @@ A delayed `"triggering"` effect looks up the player's number when it runs, so if
 
 ## A challenge's sibling counts for the camera check, across chunks
 
-The load check that a display's camera can be on counts another challenge in the same stage as turning it on if the stage shows several at once, even if they fall in different chunks, so aren't shown together. It can miss a mistake, but never rejects a working game.
+The load check that a scene's camera can be on counts another challenge in the same stage as turning it on if the stage shows several at once, even if they fall in different chunks, so aren't shown together. It can miss a mistake, but never rejects a working game.
 
 **Act when:** a game hits this and is confused by a player effect silently doing nothing. Then work out which challenges share a chunk.
 
-## Displays can't share state
+## Scenes can't share state
 
-Each display has its own state. A stage's shared display and its challenges can't share a value, such as a score
+Each scene has its own state. A stage's shared scene and its challenges can't share a value, such as a score
 that carries from one challenge to the next.
 
-**Act when:** a game needs one value across displays. Then add a shared scope (eg. per stage) to `displayStates`,
+**Act when:** a game needs one value across scenes. Then add a shared scope (eg. per stage) to `sceneStates`,
 and a way for expressions to read and `set` it.
 
 ## Covering is sampled at one point per body part
@@ -189,21 +189,21 @@ Then sample a small grid across the overlap, and count the fraction on top again
 
 ## Every rule's state change saves the progress
 
-Display state lives in `GameState`, so each `set` re-renders the game and writes saved progress to local storage.
+Scene state lives in `GameState`, so each `set` re-renders the game and writes saved progress to local storage.
 That is fine at the rate rules fire (clicks, animation ends, timers of a second or so), but not for state that
 changes many times a second.
 
 **Act when:** a game uses `every` faster than about 200 ms, or a profile shows rule updates causing dropped frames.
-Then debounce `saveGameState` in `GameStateProvider`, or move display state into its own store with per-display
+Then debounce `saveGameState` in `GameStateProvider`, or move scene state into its own store with per-scene
 subscriptions (the option set aside in [ADR 0006](ADRs/0006-display-rules-and-state.md)).
 
 ## The unmatched-selector check waits a fixed time
 
-`useGameRules` warns about a rule selector that matches nothing in its display 2 seconds after the display is shown,
+`useGameRules` warns about a rule selector that matches nothing in its scene 2 seconds after the scene is shown,
 because templates load asynchronously.
 
 **Act when:** the warning appears for a selector that does match (a slow template load), or a game needs the
-warning sooner. Then have `GameDisplayTemplateComponent` report when it has rendered, and check then.
+warning sooner. Then have `GameSceneTemplateComponent` report when it has rendered, and check then.
 
 ## No strict script-src Content-Security-Policy
 
@@ -275,7 +275,7 @@ that maps old stage and challenge ids to new ones, or store stable ids separatel
 ## No error boundary for game data that fails to render
 
 `src/root.tsx` has no `ErrorBoundary`, so game data that throws while rendering (for example a
-challenge with no display) shows React Router's default error page. The validator catches most such
+challenge with no scene) shows React Router's default error page. The validator catches most such
 data before it ships.
 
 **Act when:** the app is released to players, or game repositories come from authors whose data
@@ -316,5 +316,5 @@ volume setting for a game, a sound, or the player.
 `sound` and `reward` actions don't hold anything up, and nothing fires when they finish. A game can only line
 rules up with an effect by its `delayMs` and a matching `after` or `every`.
 
-**Act when:** a game needs to act when a sound or animation ends (eg. reveal a display after a fanfare). Then add
+**Act when:** a game needs to act when a sound or animation ends (eg. reveal a scene after a fanfare). Then add
 an `effectEnd` trigger, naming the effect, fired by `useRuleEffects` in `Game.tsx`.

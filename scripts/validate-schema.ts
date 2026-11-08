@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { Ajv, type AnySchema } from "ajv";
+import { renamedKeyProblems } from "../src/components/core/logic/RenamedKeys.ts";
 
 /**
  * Validates a JSON file against a JSON schema, listing every error.
@@ -22,9 +23,16 @@ async function main(): Promise<number> {
   const schema = await readJson(schemaFile);
   if (!isSchema(schema)) throw new Error(`${schemaFile} is not a JSON schema`);
 
+  const data = await readJson(dataFile);
+  const renamed = renamedKeyProblems(data);
+  if (renamed.length > 0) {
+    console.error(`${dataFile} uses old names:\n${renamed.join("\n")}`);
+    return 1;
+  }
+
   const ajv = new Ajv({ allErrors: true });
   const validate = ajv.compile(schema);
-  if (validate(await readJson(dataFile))) {
+  if (validate(data)) {
     console.log(`${dataFile} valid`);
     return 0;
   }

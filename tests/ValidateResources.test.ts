@@ -7,7 +7,7 @@ import {
   type UrlRequest,
 } from "../scripts/resource-checks.ts";
 import type { GameData, GameResourceDefinitions } from "../src/entities/data/GameData";
-import type { GameDisplayComponentData, GameOverviewDisplay } from "../src/entities/data/displays/GameDisplayData";
+import type { GameSceneComponentData, GameOverviewScene } from "../src/entities/data/scenes/GameSceneData";
 import type { GameRepository } from "../src/entities/GameRepository";
 
 const SITE_ROOT = "/site";
@@ -37,25 +37,25 @@ const optionsWith = (files: string[] = [], request: UrlRequest = OK, skipUrls = 
   };
 };
 
-/** A game with no displays or stages unless the test supplies them. */
+/** A game with no scenes or stages unless the test supplies them. */
 const gameWith = (data: Partial<GameData>): GameData => ({
   title: "Test game",
   description: "A game for tests.",
-  displays: [],
+  scenes: [],
   stages: [],
   gameContainerStyle: {},
   ...data,
 });
 
-/** An overview display wrapping a component. */
-const displayWith = (component: GameDisplayComponentData): GameOverviewDisplay => ({
+/** An overview scene wrapping a component. */
+const sceneWith = (component: GameSceneComponentData): GameOverviewScene => ({
   purpose: "game-overview-title",
   component,
 });
 
-/** A template display with the given foreground template source. */
-const templateDisplay = (foreground: GameDisplayComponentData["foregroundTemplate"]): GameOverviewDisplay =>
-  displayWith({ type: "template", data: {}, foregroundTemplate: foreground });
+/** A template scene with the given foreground template source. */
+const templateScene = (foreground: GameSceneComponentData["foregroundTemplate"]): GameOverviewScene =>
+  sceneWith({ type: "template", data: {}, foregroundTemplate: foreground });
 
 describe("resolveTargetOnDisk", () => {
   it("resolves local targets against the site root and relative ones against the repository root", () => {
@@ -88,7 +88,7 @@ describe("checkGame", () => {
         local: { type: "local", target: "games/local.png" },
         relative: { type: "relative", target: "games/relative.png" },
       },
-      displays: [templateDisplay({ sourceType: "relative", templateSource: "views/overview.hbs" })],
+      scenes: [templateScene({ sourceType: "relative", templateSource: "views/overview.hbs" })],
     });
 
     const result = await checkGame(
@@ -124,17 +124,17 @@ describe("checkGame", () => {
 
   it("ignores embedded templates and reports a template source that is missing", async () => {
     const embedded = gameWith({
-      displays: [templateDisplay({ sourceType: "embedded", content: "<p>hello</p>" })],
+      scenes: [templateScene({ sourceType: "embedded", content: "<p>hello</p>" })],
     });
     expect((await checkGame(embedded, optionsWith())).checked.files).toBe(0);
 
-    const noSource = gameWith({ displays: [templateDisplay({ sourceType: "local" })] });
+    const noSource = gameWith({ scenes: [templateScene({ sourceType: "local" })] });
     expect((await checkGame(noSource, optionsWith())).problems).toEqual([
-      { path: "displays[0].component.foregroundTemplate.templateSource", message: "templateSource is missing" },
+      { path: "scenes[0].component.foregroundTemplate.templateSource", message: "templateSource is missing" },
     ]);
   });
 
-  it("checks displays inside stages and challenges", async () => {
+  it("checks scenes inside stages and challenges", async () => {
     const game = gameWith({
       stages: [
         {
@@ -143,7 +143,7 @@ describe("checkGame", () => {
             {
               id: "challenge-1",
               solution: { answers: ["custard"] },
-              displays: [
+              scenes: [
                 {
                   purpose: "challenge-in-progress",
                   component: {
@@ -249,8 +249,8 @@ describe("resource names", () => {
       stylesheets: ["known"],
       tileGraphic: "known",
       sounds: { openingMusicResource: "known" },
-      displays: [
-        displayWith({
+      scenes: [
+        sceneWith({
           type: "dialog",
           data: {},
           imageResource: "known",
@@ -280,8 +280,8 @@ describe("resource names", () => {
       stylesheets: ["known", "missing-sheet"],
       tileGraphic: "missing-tile",
       sounds: { openingMusicResource: "missing-music" },
-      displays: [
-        displayWith({
+      scenes: [
+        sceneWith({
           type: "dialog",
           data: {},
           imageResource: "missing-image",
@@ -303,9 +303,9 @@ describe("resource names", () => {
 
     expect(result.problems.map((problem) => problem.path).sort()).toEqual(
       [
-        "displays[0].component.contents[0].media.resource",
-        "displays[0].component.contents[0].media.stillImageResource",
-        "displays[0].component.imageResource",
+        "scenes[0].component.contents[0].media.resource",
+        "scenes[0].component.contents[0].media.stillImageResource",
+        "scenes[0].component.imageResource",
         "sounds.openingMusicResource",
         "stylesheets[1]",
         "tileGraphic",

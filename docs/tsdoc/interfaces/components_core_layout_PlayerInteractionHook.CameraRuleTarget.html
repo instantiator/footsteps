@@ -12,7 +12,7 @@
 <li><a href="" aria-current="page">CameraRuleTarget</a></li></ul>
 <h1>Interface CameraRuleTarget</h1></div>
 <section class="tsd-panel tsd-comment">
-<div class="tsd-comment tsd-typography"><p>A rule the camera can fire: which display it belongs to, and the elements and interactions it watches.</p>
+<div class="tsd-comment tsd-typography"><p>A rule the camera can fire: which scene it belongs to, and the elements and interactions it watches.</p>
 </div></section>
 <div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">CameraRuleTarget</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#holdms">holdMs</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#includecovered">includeCovered</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#interactions">interactions</a><span class="tsd-signature-symbol">:</span> <a href="../types/components_camera_PlayerMonitor.CameraInteraction.html" class="tsd-signature-type tsd-kind-type-alias">CameraInteraction</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#ruleindex">ruleIndex</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#run">run</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#scope">scope</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#selector">selector</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#threshold">threshold</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#within">within</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
@@ -61,28 +61,28 @@
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="ruleindex"><span>rule<wbr/>Index</span><a href="#ruleindex" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">ruleIndex</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
-<div class="tsd-comment tsd-typography"><p>The rule's position in the display's rules.</p>
+<div class="tsd-comment tsd-typography"><p>The rule's position in the scene's rules.</p>
 </div><aside class="tsd-sources">
 <ul>
 <li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/layout/PlayerInteractionHook.ts#L29">components/core/layout/PlayerInteractionHook.ts:29</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="run"><span>run</span><a href="#run" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">run</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
-<div class="tsd-comment tsd-typography"><p>Which run of the display this is.</p>
+<div class="tsd-comment tsd-typography"><p>Which run of the scene this is.</p>
 </div><aside class="tsd-sources">
 <ul>
 <li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/layout/PlayerInteractionHook.ts#L27">components/core/layout/PlayerInteractionHook.ts:27</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="scope"><span>scope</span><a href="#scope" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">scope</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
-<div class="tsd-comment tsd-typography"><p>The display the rule belongs to.</p>
+<div class="tsd-comment tsd-typography"><p>The scene the rule belongs to.</p>
 </div><aside class="tsd-sources">
 <ul>
 <li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/layout/PlayerInteractionHook.ts#L25">components/core/layout/PlayerInteractionHook.ts:25</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="selector"><span>selector</span><a href="#selector" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">selector</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></div>
-<div class="tsd-comment tsd-typography"><p>CSS selector for the elements, run inside the display's templates every frame; none for a jump anywhere.</p>
+<div class="tsd-comment tsd-typography"><p>CSS selector for the elements, run inside the scene's templates every frame; none for a jump anywhere.</p>
 </div><aside class="tsd-sources">
 <ul>
 <li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/layout/PlayerInteractionHook.ts#L31">components/core/layout/PlayerInteractionHook.ts:31</a></li></ul></aside></section>
@@ -96,7 +96,7 @@
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="within"><code class="tsd-tag">Optional</code><span>within</span><a href="#within" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">within</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div>
-<div class="tsd-comment tsd-typography"><p>For being near: how close counts, as a % of the display's width.</p>
+<div class="tsd-comment tsd-typography"><p>For being near: how close counts, as a % of the scene's width.</p>
 </div><aside class="tsd-sources">
 <ul>
 <li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/layout/PlayerInteractionHook.ts#L41">components/core/layout/PlayerInteractionHook.ts:41</a></li></ul></aside></section></section></details></div>

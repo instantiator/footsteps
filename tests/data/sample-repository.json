@@ -8,7 +8,7 @@
         "sequential": true,
         "autoAdvanceStages": false
       },
-      "displays": [
+      "scenes": [
         {
           "purpose": "game-overview-title",
           "component": {
@@ -31,7 +31,7 @@
           "challenges": [
             {
               "id": "stage-1-challenge-1",
-              "displays": [
+              "scenes": [
                 {
                   "purpose": "challenge-in-progress",
                   "component": {
@@ -57,7 +57,7 @@
           "challenges": [
             {
               "id": "stage-2-challenge-1",
-              "displays": [
+              "scenes": [
                 {
                   "purpose": "challenge-in-progress",
                   "component": {
@@ -78,7 +78,7 @@
             },
             {
               "id": "stage-2-challenge-2",
-              "displays": [
+              "scenes": [
                 {
                   "purpose": "challenge-in-progress",
                   "component": {
@@ -104,7 +104,7 @@
           "challenges": [
             {
               "id": "stage-3-challenge-1",
-              "displays": [
+              "scenes": [
                 {
                   "purpose": "challenge-in-progress",
                   "component": {

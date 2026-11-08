@@ -11,17 +11,17 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 
 ## Layout
 
-| Path                         | What it is                                                                    |
-| ---------------------------- | ----------------------------------------------------------------------------- |
-| `react-router.config.ts`     | Static build settings: no server, the routes to prerender, the base path      |
-| `src/root.tsx`               | The HTML document every page renders into (head tags, security policy)        |
-| `src/routes.ts`              | Route config: `/`, `/game/:id`, `/game/:id/play`, `/game/:id/json`            |
-| `src/pages/`, `src/Home.tsx` | Route modules (one page each)                                                 |
-| `src/components/`            | Game engine UI: layers, displays, camera, and the game logic in `core/logic/` |
-| `src/config/`                | App config; see [Configuration](configuration.md)                             |
-| `src/vision/`                | Vision models behind one interface, body-part queries, tracking, the worker   |
-| `src/providers/`             | React contexts: repository, game data, game state, music, app config          |
-| `tests/`                     | Vitest unit and component tests                                               |
+| Path                         | What it is                                                                  |
+| ---------------------------- | --------------------------------------------------------------------------- |
+| `react-router.config.ts`     | Static build settings: no server, the routes to prerender, the base path    |
+| `src/root.tsx`               | The HTML document every page renders into (head tags, security policy)      |
+| `src/routes.ts`              | Route config: `/`, `/game/:id`, `/game/:id/play`, `/game/:id/json`          |
+| `src/pages/`, `src/Home.tsx` | Route modules (one page each)                                               |
+| `src/components/`            | Game engine UI: layers, scenes, camera, and the game logic in `core/logic/` |
+| `src/config/`                | App config; see [Configuration](configuration.md)                           |
+| `src/vision/`                | Vision models behind one interface, body-part queries, tracking, the worker |
+| `src/providers/`             | React contexts: repository, game data, game state, music, app config        |
+| `tests/`                     | Vitest unit and component tests                                             |
 
 ## Invocations
 
@@ -61,7 +61,7 @@ Use `npm run docs:dev` for the Markdown pages locally, and `npm run docs:api` to
 
 `tests/browser/` runs the real camera pipeline in Chromium against a fake webcam, covering the
 landing page and route split, the silhouette loop, debug changes, preview visibility, camera-off
-displays, image switching, and the game view easing into the camera's shape before its display fades
+scenes, image switching, and the game view easing into the camera's shape before its scene fades
 in. It is local only: it downloads the vision model, and needs the GPU to track fast enough, so it is not
 part of the pre-push gate or CI. An opt-in benchmark compares models on photos of people; see
 [camera mode](camera-mode.md#testing).
@@ -97,11 +97,11 @@ Every game in the local repository, `public/game-repository.json`, is prerendere
 
 ### Clickable elements in templates
 
-Any display's template makes elements interactive through the display's [rules](game-data.md#rules-and-state):
+Any scene's template makes elements interactive through the scene's [rules](game-data.md#rules-and-state):
 a rule names the elements with a CSS selector, and the interactions it accepts (click, hand, foot, head, body,
 any, jump, jump-from, jump-onto; see [camera mode](camera-mode.md#how-interactions-work) for what the camera detects). For keyboard
 players, also mark each element a player can currently use with `role="button"`, `tabindex="0"`, and a label
-(`alt` on an image, or `aria-label`): the display then treats Enter or Space on it as a click. On the title
+(`alt` on an image, or `aria-label`): the scene then treats Enter or Space on it as a click. On the title
 screen, Enter or Space anywhere moves on, as a click does. See `public/games/magic-trifle/overview/foreground.hbs`.
 
 ### How rules run
@@ -111,10 +111,10 @@ loads ([filtrex](filtrex.md)), and `GameDataProvider` reports `rules-error` if o
 
 ```mermaid
 flowchart LR
-  click["Click, key, animationend, transitionend<br/>(GameDisplayTemplateComponent)"] --> hook
+  click["Click, key, animationend, transitionend<br/>(GameSceneTemplateComponent)"] --> hook
   camera["Camera frame<br/>(usePlayerInteractions: selectors, elementFromPoint)"] --> hook
-  timers["start, every, after<br/>(per shown display)"] --> hook
-  hook["useGameRules<br/>(GameRulesHook.ts)"] -->|"setGameState(prev => fireRules(...))"| state["GameState<br/>(displayStates)"]
+  timers["start, every, after<br/>(per shown scene)"] --> hook
+  hook["useGameRules<br/>(GameRulesHook.ts)"] -->|"setGameState(prev => fireRules(...))"| state["GameState<br/>(sceneStates)"]
   state -->|"after each change"| whens["runWhens"]
   whens --> state
   state -->|"applyShowResets, save"| provider["GameStateProvider"]
@@ -122,17 +122,17 @@ flowchart LR
 
 - The engine (`fireRules`, `runWhens`, `applyShowResets`) is pure: each change is a function of the latest
   `GameState`, so no rule receives `setGameState`, and events between renders compose.
-- Display state lives in `GameState.displayStates`, keyed by display scope (`overview:<purpose>`,
+- Scene state lives in `GameState.sceneStates`, keyed by scene scope (`overview:<purpose>`,
   `stage:<id>:shared`, `challenge:<stage>:<challenge>:<purpose>`), and is saved with the progress.
-- `GameDisplayTemplateComponent` patches its HTML in place with idiomorph, after DOMPurify, so elements keep
-  their transitions. Its container carries `data-display-scope`, which the camera uses to find a display's elements.
+- `GameSceneTemplateComponent` patches its HTML in place with idiomorph, after DOMPurify, so elements keep
+  their transitions. Its container carries `data-scene-scope`, which the camera uses to find a scene's elements.
 - See [ADR 0006](ADRs/0006-display-rules-and-state.md) for why it is built this way.
 
 ### Validate data
 
 Both scripts check a data file against its JSON schema, then check that everything it names can load:
 
-- every `resources` target and display template source: `local` paths under the site root (`public/`), `relative` paths beside the repository, and `url`s with an HTTP request (10 second timeout);
+- every `resources` target and scene template source: `local` paths under the site root (`public/`), `relative` paths beside the repository, and `url`s with an HTTP request (10 second timeout);
 - every resource name used by `sounds`, `stylesheets`, a dialog's `imageResource` and page `media` is defined in `resources`.
 
 Problems are printed with the field's JSON path and the resolved file or URL, and the script exits non-zero. Add `--skip-urls` to check local files only, for offline use.

@@ -55,7 +55,7 @@
         "end-magic-motion": { "type": "local", "target": "games/magic-trifle/magic-explosion-2.webp" },
         "piano-keyboard-key": { "type": "local", "target": "games/magic-trifle/piano-keyboard-key.png" }
       },
-      "displays": [
+      "scenes": [
         {
           "purpose": "game-overview-title",
           "component": {
@@ -164,7 +164,7 @@
       "stages": [
         {
           "id": "stage-1",
-          "displays": [
+          "scenes": [
             {
               "purpose": "shared",
               "camera": { "requirement": false },
@@ -193,7 +193,7 @@
           "challenges": [
             {
               "id": "stage-1-challenge-1",
-              "displays": [
+              "scenes": [
                 {
                   "purpose": "challenge-in-progress",
                   "camera": { "requirement": false },
@@ -224,7 +224,7 @@
           "challenges": [
             {
               "id": "stage-2-challenge-1",
-              "displays": [
+              "scenes": [
                 {
                   "purpose": "challenge-in-progress",
                   "camera": { "requirement": false },
@@ -259,7 +259,7 @@
           "challenges": [
             {
               "id": "stage-3-challenge-1",
-              "displays": [
+              "scenes": [
                 {
                   "purpose": "challenge-in-progress",
                   "camera": { "requirement": false },
@@ -285,7 +285,7 @@
             },
             {
               "id": "stage-3-challenge-2",
-              "displays": [
+              "scenes": [
                 {
                   "purpose": "challenge-in-progress",
                   "camera": { "requirement": false },
@@ -316,7 +316,7 @@
           "challenges": [
             {
               "id": "stage-4-challenge-1",
-              "displays": [
+              "scenes": [
                 {
                   "purpose": "challenge-in-progress",
                   "camera": { "requirement": false },
@@ -351,7 +351,7 @@
           "challenges": [
             {
               "id": "stage-5-challenge-1",
-              "displays": [
+              "scenes": [
                 {
                   "purpose": "challenge-in-progress",
                   "camera": { "requirement": false },
@@ -382,7 +382,7 @@
           "challenges": [
             {
               "id": "stage-6-challenge-1",
-              "displays": [
+              "scenes": [
                 {
                   "purpose": "challenge-in-progress",
                   "camera": { "requirement": false },
@@ -413,7 +413,7 @@
           "challenges": [
             {
               "id": "stage-7-challenge-1",
-              "displays": [
+              "scenes": [
                 {
                   "purpose": "challenge-in-progress",
                   "camera": { "requirement": false },
@@ -463,7 +463,7 @@
     "rules-demo": {
       "id": "rules-demo",
       "title": "Rules demo",
-      "description": "Pop balloons and cross a floor of lava: a demonstration of display rules and state, by mouse or camera.",
+      "description": "Pop balloons and cross a floor of lava: a demonstration of scene rules and state, by mouse or camera.",
       "modules": { "camera": { "requirement": false } },
       "config": { "sequential": false, "autoAdvanceStages": false },
       "stylesheets": ["demo-css"],
@@ -474,7 +474,7 @@
         "pop": { "type": "local", "target": "games/rules-demo/pop.wav" },
         "fanfare": { "type": "local", "target": "games/rules-demo/fanfare.wav" }
       },
-      "displays": [
+      "scenes": [
         {
           "purpose": "game-overview-title",
           "component": {
@@ -540,7 +540,7 @@
             {
               "id": "pop-balloons",
               "solution": { "answers": [] },
-              "displays": [
+              "scenes": [
                 {
                   "purpose": "challenge-in-progress",
                   "camera": { "requirement": "enabled" },
@@ -587,7 +587,7 @@
                     },
                     "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
                   },
-                  "resetDisplay": {
+                  "resetScene": {
                     "showOn": "every-show",
                     "component": {
                       "type": "template",
@@ -619,7 +619,7 @@
             {
               "id": "cross-the-floor",
               "solution": { "answers": [] },
-              "displays": [
+              "scenes": [
                 {
                   "purpose": "challenge-in-progress",
                   "camera": { "requirement": "enabled" },
@@ -648,7 +648,7 @@
                     "backgroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/lava.hbs" },
                     "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
                   },
-                  "resetDisplay": {
+                  "resetScene": {
                     "component": {
                       "type": "template",
                       "data": {},
@@ -687,7 +687,7 @@
             {
               "id": "walk-around",
               "solution": { "answers": [] },
-              "displays": [
+              "scenes": [
                 {
                   "purpose": "challenge-in-progress",
                   "camera": { "requirement": "enabled" },
@@ -714,7 +714,7 @@
             {
               "id": "try-effects",
               "solution": { "answers": [] },
-              "displays": [
+              "scenes": [
                 {
                   "purpose": "challenge-in-progress",
                   "camera": { "requirement": "enabled", "preview": false },
