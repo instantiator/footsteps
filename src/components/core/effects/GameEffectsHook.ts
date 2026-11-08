@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from "react";
-import type { GameEffect } from "../../../entities/data/displays/GameEffectData";
+import type { GameEffect } from "../../../entities/data/scenes/GameEffectData";
 import type { DisplayScope, GameState, QueuedVisualEffect } from "../../../entities/state/GameState";
 import { useQueueDrain } from "../QueueDrainHook";
 import { targetsPlayers } from "../logic/GameEffectCompile";

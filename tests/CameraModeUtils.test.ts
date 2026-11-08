@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveCameraMode } from "../src/components/core/logic/CameraModeUtils";
 import { getLayeredRenderData, type LayeredGameDisplayRenderData } from "../src/components/core/logic/RenderDataUtils";
-import type { GameDisplayCameraData } from "../src/entities/data/displays/GameDisplayData";
+import type { GameSceneCameraData } from "../src/entities/data/scenes/GameSceneData";
 import type { GameData } from "../src/entities/data/GameData";
 import type { CameraModuleData } from "../src/entities/data/GameModuleData";
 import { createBlankGameState } from "../src/entities/state/GameState";
@@ -12,11 +12,11 @@ interface CameraSettings {
   /** The game's camera module, or none. */
   game?: CameraModuleData;
   /** The overview display's settings, or none. */
-  overview?: GameDisplayCameraData;
+  overview?: GameSceneCameraData;
   /** The stage display's settings, or none. */
-  stage?: GameDisplayCameraData;
+  stage?: GameSceneCameraData;
   /** One per challenge; `undefined` leaves that challenge with no settings. */
-  challenges?: (GameDisplayCameraData | undefined)[];
+  challenges?: (GameSceneCameraData | undefined)[];
 }
 
 /** A one-stage game whose displays carry the given camera settings. */
@@ -25,16 +25,16 @@ const gameWithCamera = ({ game, overview, stage, challenges = [undefined] }: Cam
   description: "A game for camera tests.",
   gameContainerStyle: {},
   ...(game && { modules: { camera: game } }),
-  displays: [{ purpose: "game-overview-stages", component: scroll(), camera: overview }],
+  scenes: [{ purpose: "game-overview-stages", component: scroll(), camera: overview }],
   stages: [
     {
       id: "stage-1",
-      displays: [{ purpose: "shared", component: scroll(), camera: stage }],
+      scenes: [{ purpose: "shared", component: scroll(), camera: stage }],
       challengeChunking: challenges.length,
       challenges: challenges.map((camera, index) => ({
         id: `challenge-${index}`,
         solution: { answers: ["answer"] },
-        displays: [{ purpose: "challenge-in-progress", component: scroll(), camera }],
+        scenes: [{ purpose: "challenge-in-progress", component: scroll(), camera }],
       })),
     },
   ],

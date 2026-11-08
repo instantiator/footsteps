@@ -1,4 +1,4 @@
-import type { GameInteraction, PointerInteraction } from "../../entities/data/displays/GameDisplayData";
+import type { GameInteraction, PointerInteraction } from "../../entities/data/scenes/GameSceneData";
 import { DEFAULT_APP_CONFIG } from "../../config/AppConfig";
 import { isDefined } from "../../util/ObjectUtils";
 import { BODY_PARTS, BodyPart } from "../../vision/BodyPart";

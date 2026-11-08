@@ -1,4 +1,4 @@
-import type { GameDisplayTemplateSourceData } from "../../../entities/data/displays/GameDisplayTemplateComponentData";
+import type { GameSceneTemplateSourceData } from "../../../entities/data/scenes/GameSceneTemplateComponentData";
 import type { GameStageState } from "../../../entities/state/GameStageState";
 import type { GameState } from "../../../entities/state/GameState";
 
@@ -42,7 +42,7 @@ export const decorateGameState = (gameState: GameState): DecoratedGameState => (
  * A readable, stable id for a template's container: its source type and location, or the
  * given fallback (a React useId(), so it matches between the prerendered HTML and the browser).
  */
-export const summariseTemplateSource = (source: GameDisplayTemplateSourceData | undefined, fallbackId: string) =>
+export const summariseTemplateSource = (source: GameSceneTemplateSourceData | undefined, fallbackId: string) =>
   `${source?.sourceType ?? "undefined"}:${source?.templateSource ?? `uid:${fallbackId}`}`;
 
 /** Splits text into its trimmed, non-empty lines. */

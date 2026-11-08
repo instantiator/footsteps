@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import GameDisplayDialogComponent from "../src/components/core/display/GameDisplayDialogComponent";
-import type { GameDisplayDialogMargins } from "../src/entities/data/displays/GameDisplayDialogComponentData";
+import type { GameSceneDialogMargins } from "../src/entities/data/scenes/GameSceneDialogComponentData";
 import { SMALL_GAME_ID, smallRepository } from "./data/SmallGame";
 import GameProviders from "./helpers/GameProviders";
 
@@ -25,7 +25,7 @@ afterEach(() => {
 
 const renderDialog = (
   layerHint: "foreground" | "background",
-  props: { image?: string; margins?: GameDisplayDialogMargins } = {},
+  props: { image?: string; margins?: GameSceneDialogMargins } = {},
 ) =>
   render(
     <GameProviders repository={smallRepository} gameId={SMALL_GAME_ID}>

@@ -70,10 +70,10 @@
             "description": "Something a rule does."
         },
         "GameAfterTrigger": {
-            "description": "Once, some time after the display is shown.",
+            "description": "Once, some time after the scene is shown.",
             "properties": {
                 "after": {
-                    "description": "Milliseconds after the display is shown: a number, or an expression.",
+                    "description": "Milliseconds after the scene is shown: a number, or an expression.",
                     "type": [
                         "string",
                         "number"
@@ -86,7 +86,7 @@
             "type": "object"
         },
         "GameAnimationEndTrigger": {
-            "description": "A CSS animation ending on an element of the display.",
+            "description": "A CSS animation ending on an element of the scene.",
             "properties": {
                 "animationEnd": {
                     "description": "The animation's name, as in `@keyframes`.",
@@ -104,7 +104,7 @@
             "type": "object"
         },
         "GameAnswerAction": {
-            "description": "Submits an answer to this display's challenge, checked as a typed answer is. Challenge displays only.",
+            "description": "Submits an answer to this scene's challenge, checked as a typed answer is. Challenge scenes only.",
             "properties": {
                 "answer": {
                     "description": "Expression giving the answer.",
@@ -124,16 +124,16 @@
         "GameChallengeData": {
             "description": "Describes an individual challenge in the game",
             "properties": {
-                "displays": {
-                    "description": "Displays for this challenge, chosen by purpose: title, in progress, and completed.",
-                    "items": {
-                        "$ref": "#/definitions/GameChallengeDisplay"
-                    },
-                    "type": "array"
-                },
                 "id": {
                     "description": "Unique id for this challenge, used when submitting and checking answers.",
                     "type": "string"
+                },
+                "scenes": {
+                    "description": "Scenes for this challenge, chosen by purpose: title, in progress, and completed.",
+                    "items": {
+                        "$ref": "#/definitions/GameChallengeScene"
+                    },
+                    "type": "array"
                 },
                 "solution": {
                     "$ref": "#/definitions/GameChallengeSolution",
@@ -141,30 +141,30 @@
                 }
             },
             "required": [
-                "displays",
                 "id",
+                "scenes",
                 "solution"
             ],
             "type": "object"
         },
-        "GameChallengeDisplay": {
-            "description": "A display for one stage of a challenge's lifecycle.",
+        "GameChallengeScene": {
+            "description": "A scene for one stage of a challenge's lifecycle.",
             "properties": {
                 "camera": {
-                    "$ref": "#/definitions/GameDisplayCameraData",
-                    "description": "Camera mode settings for this display, falling back to broader displays."
+                    "$ref": "#/definitions/GameSceneCameraData",
+                    "description": "Camera mode settings for this scene, falling back to broader scenes."
                 },
                 "component": {
-                    "$ref": "#/definitions/GameDisplayComponentData",
-                    "description": "How this display is rendered."
+                    "$ref": "#/definitions/GameSceneComponentData",
+                    "description": "How this scene is rendered."
                 },
                 "purpose": {
-                    "$ref": "#/definitions/GameChallengeDisplayPurpose",
-                    "description": "When this display is shown."
+                    "$ref": "#/definitions/GameChallengeScenePurpose",
+                    "description": "When this scene is shown."
                 },
-                "resetDisplay": {
-                    "$ref": "#/definitions/GameResetDisplay",
-                    "description": "Shown in this display's place first, to help the player get ready for it, until one of its rules finishes it."
+                "resetScene": {
+                    "$ref": "#/definitions/GameResetScene",
+                    "description": "Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it."
                 }
             },
             "required": [
@@ -173,8 +173,8 @@
             ],
             "type": "object"
         },
-        "GameChallengeDisplayPurpose": {
-            "description": "What a challenge display is for: its title, while in progress, or once completed.",
+        "GameChallengeScenePurpose": {
+            "description": "What a challenge scene is for: its title, while in progress, or once completed.",
             "enum": [
                 "challenge-completed",
                 "challenge-in-progress",
@@ -211,7 +211,7 @@
             "type": "object"
         },
         "GameCompleteChallengeAction": {
-            "description": "Marks this display's challenge as solved. Challenge displays only.",
+            "description": "Marks this scene's challenge as solved. Challenge scenes only.",
             "properties": {
                 "completeChallenge": {
                     "const": true,
@@ -226,344 +226,6 @@
             },
             "required": [
                 "completeChallenge"
-            ],
-            "type": "object"
-        },
-        "GameDisplayCameraData": {
-            "description": "Camera mode settings for one display; unset fields fall back to broader displays.",
-            "properties": {
-                "preview": {
-                    "description": "Whether the webcam preview shows while this display shows.",
-                    "type": "boolean"
-                },
-                "requirement": {
-                    "description": "Whether camera mode is on while this display shows, and how much the game depends on it: `\"enabled\"` lets the\nplayer start the game without granting the camera, while `\"required\"` doesn't.",
-                    "enum": [
-                        "enabled",
-                        false,
-                        "required"
-                    ]
-                }
-            },
-            "type": "object"
-        },
-        "GameDisplayComponentData": {
-            "anyOf": [
-                {
-                    "$ref": "#/definitions/GameDisplayTemplateComponentData"
-                },
-                {
-                    "$ref": "#/definitions/GameDisplayDialogComponentData"
-                },
-                {
-                    "$ref": "#/definitions/GameDisplayScrollComponentData"
-                }
-            ],
-            "description": "The rendering definition of a display, discriminated by `type`."
-        },
-        "GameDisplayDialogComponentData": {
-            "description": "A paged display on a background image of the game's choosing, scaled to fit, with the text kept inside its margins.",
-            "properties": {
-                "backgroundStyle": {
-                    "$ref": "#/definitions/React.CSSProperties",
-                    "description": "CSS for the background layer's container."
-                },
-                "backgroundTemplate": {
-                    "$ref": "#/definitions/GameDisplayTemplateSourceData",
-                    "description": "Template for the background layer, drawn behind the game's other content."
-                },
-                "backgroundTemplateStyle": {
-                    "$ref": "#/definitions/React.CSSProperties",
-                    "description": "CSS for the element wrapping the rendered background template."
-                },
-                "contents": {
-                    "description": "The pages, shown one at a time in order.",
-                    "items": {
-                        "$ref": "#/definitions/GameDisplayPageData"
-                    },
-                    "type": "array"
-                },
-                "data": {
-                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
-                    "description": "Extra values for this display, passed through to its templates as `data` (and `componentData`)."
-                },
-                "foregroundStyle": {
-                    "$ref": "#/definitions/React.CSSProperties",
-                    "description": "CSS for the foreground layer's container: the column the pages are shown in."
-                },
-                "foregroundTemplate": {
-                    "$ref": "#/definitions/GameDisplayTemplateSourceData",
-                    "description": "Template for each page in the foreground layer, drawn in front of the game's other content."
-                },
-                "foregroundTemplateStyle": {
-                    "$ref": "#/definitions/React.CSSProperties",
-                    "description": "CSS for the element wrapping the rendered foreground template."
-                },
-                "imageMargins": {
-                    "$ref": "#/definitions/GameDisplayDialogMargins",
-                    "description": "Where the text sits on the image. Defaults to no margin."
-                },
-                "imageResource": {
-                    "description": "Resource name of the background image. Without one, the dialog fills its display.",
-                    "type": "string"
-                },
-                "initialState": {
-                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
-                    "description": "The display's state when it is first shown, and after a reset. Templates and rules see it as `state`."
-                },
-                "keepRemovedPlayers": {
-                    "description": "Whether players stay removed when this display resets. Moving to another display restores them anyway. Defaults to false.",
-                    "type": "boolean"
-                },
-                "resetStateOnShow": {
-                    "description": "Whether state returns to `initialState` each time the display is shown. Defaults to false.",
-                    "type": "boolean"
-                },
-                "rules": {
-                    "description": "What happens in response to events, in order.",
-                    "items": {
-                        "$ref": "#/definitions/GameRule"
-                    },
-                    "type": "array"
-                },
-                "type": {
-                    "const": "dialog",
-                    "description": "Which kind of component this is.",
-                    "type": "string"
-                }
-            },
-            "required": [
-                "contents",
-                "data",
-                "type"
-            ],
-            "type": "object"
-        },
-        "GameDisplayDialogMargins": {
-            "description": "Space to leave between each edge of a dialog's image and its text, as CSS percentages of the image's\nheight (top, bottom) or width (left, right), e.g. `\"12%\"`. Use it to keep text off transparent or decorative edges.",
-            "properties": {
-                "bottom": {
-                    "description": "From the image's bottom edge, as a percentage of its height.",
-                    "type": "string"
-                },
-                "left": {
-                    "description": "From the image's left edge, as a percentage of its width.",
-                    "type": "string"
-                },
-                "right": {
-                    "description": "From the image's right edge, as a percentage of its width.",
-                    "type": "string"
-                },
-                "top": {
-                    "description": "From the image's top edge, as a percentage of its height.",
-                    "type": "string"
-                }
-            },
-            "type": "object"
-        },
-        "GameDisplayMediaData": {
-            "description": "Media played with a display. Resources are names defined in the game's `resources`.",
-            "properties": {
-                "audioDescription": {
-                    "description": "Accessible description of the audio, for screen readers. Default: \"audio\".",
-                    "type": "string"
-                },
-                "motionImageResource": {
-                    "description": "Resource name of an image shown while the audio is playing.",
-                    "type": "string"
-                },
-                "resource": {
-                    "description": "Resource name of the audio file.",
-                    "type": "string"
-                },
-                "stillImageResource": {
-                    "description": "Resource name of an image shown while the audio is not playing.",
-                    "type": "string"
-                },
-                "type": {
-                    "const": "audio",
-                    "description": "The kind of media: only audio is supported.",
-                    "type": "string"
-                }
-            },
-            "required": [
-                "resource",
-                "type"
-            ],
-            "type": "object"
-        },
-        "GameDisplayPageData": {
-            "description": "One page of a paged display.",
-            "properties": {
-                "label": {
-                    "description": "Label for the answer input. Used only when `showInput` is true.",
-                    "type": "string"
-                },
-                "media": {
-                    "$ref": "#/definitions/GameDisplayMediaData",
-                    "description": "Audio to play on this page."
-                },
-                "showInput": {
-                    "description": "If true, shows an answer input on this page.",
-                    "type": "boolean"
-                },
-                "text": {
-                    "description": "The text of the page.",
-                    "type": "string"
-                }
-            },
-            "type": "object"
-        },
-        "GameDisplayScrollComponentData": {
-            "description": "A dialog on the app's old-paper image: see {@link GameDisplayPagedComponentBase} for its fields.",
-            "properties": {
-                "backgroundStyle": {
-                    "$ref": "#/definitions/React.CSSProperties",
-                    "description": "CSS for the background layer's container."
-                },
-                "backgroundTemplate": {
-                    "$ref": "#/definitions/GameDisplayTemplateSourceData",
-                    "description": "Template for the background layer, drawn behind the game's other content."
-                },
-                "backgroundTemplateStyle": {
-                    "$ref": "#/definitions/React.CSSProperties",
-                    "description": "CSS for the element wrapping the rendered background template."
-                },
-                "contents": {
-                    "description": "The pages, shown one at a time in order.",
-                    "items": {
-                        "$ref": "#/definitions/GameDisplayPageData"
-                    },
-                    "type": "array"
-                },
-                "data": {
-                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
-                    "description": "Extra values for this display, passed through to its templates as `data` (and `componentData`)."
-                },
-                "foregroundStyle": {
-                    "$ref": "#/definitions/React.CSSProperties",
-                    "description": "CSS for the foreground layer's container: the column the pages are shown in."
-                },
-                "foregroundTemplate": {
-                    "$ref": "#/definitions/GameDisplayTemplateSourceData",
-                    "description": "Template for each page in the foreground layer, drawn in front of the game's other content."
-                },
-                "foregroundTemplateStyle": {
-                    "$ref": "#/definitions/React.CSSProperties",
-                    "description": "CSS for the element wrapping the rendered foreground template."
-                },
-                "initialState": {
-                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
-                    "description": "The display's state when it is first shown, and after a reset. Templates and rules see it as `state`."
-                },
-                "keepRemovedPlayers": {
-                    "description": "Whether players stay removed when this display resets. Moving to another display restores them anyway. Defaults to false.",
-                    "type": "boolean"
-                },
-                "resetStateOnShow": {
-                    "description": "Whether state returns to `initialState` each time the display is shown. Defaults to false.",
-                    "type": "boolean"
-                },
-                "rules": {
-                    "description": "What happens in response to events, in order.",
-                    "items": {
-                        "$ref": "#/definitions/GameRule"
-                    },
-                    "type": "array"
-                },
-                "type": {
-                    "const": "scroll",
-                    "description": "Which kind of component this is.",
-                    "type": "string"
-                }
-            },
-            "required": [
-                "contents",
-                "data",
-                "type"
-            ],
-            "type": "object"
-        },
-        "GameDisplayTemplateComponentData": {
-            "description": "A display built from Handlebars templates, drawn as a background layer and a foreground layer.",
-            "properties": {
-                "backgroundStyle": {
-                    "$ref": "#/definitions/React.CSSProperties",
-                    "description": "CSS for the background layer's container."
-                },
-                "backgroundTemplate": {
-                    "$ref": "#/definitions/GameDisplayTemplateSourceData",
-                    "description": "Template for the background layer, drawn behind the game's other content."
-                },
-                "backgroundTemplateStyle": {
-                    "$ref": "#/definitions/React.CSSProperties",
-                    "description": "CSS for the element wrapping the rendered background template."
-                },
-                "data": {
-                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
-                    "description": "Extra values for this display, passed through to its templates as `data` (and `componentData`)."
-                },
-                "foregroundStyle": {
-                    "$ref": "#/definitions/React.CSSProperties",
-                    "description": "CSS for the foreground layer's container."
-                },
-                "foregroundTemplate": {
-                    "$ref": "#/definitions/GameDisplayTemplateSourceData",
-                    "description": "Template for the foreground layer, drawn in front of the game's other content."
-                },
-                "foregroundTemplateStyle": {
-                    "$ref": "#/definitions/React.CSSProperties",
-                    "description": "CSS for the element wrapping the rendered foreground template."
-                },
-                "initialState": {
-                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
-                    "description": "The display's state when it is first shown, and after a reset. Templates and rules see it as `state`."
-                },
-                "keepRemovedPlayers": {
-                    "description": "Whether players stay removed when this display resets. Moving to another display restores them anyway. Defaults to false.",
-                    "type": "boolean"
-                },
-                "resetStateOnShow": {
-                    "description": "Whether state returns to `initialState` each time the display is shown. Defaults to false.",
-                    "type": "boolean"
-                },
-                "rules": {
-                    "description": "What happens in response to events, in order.",
-                    "items": {
-                        "$ref": "#/definitions/GameRule"
-                    },
-                    "type": "array"
-                },
-                "type": {
-                    "const": "template",
-                    "description": "Which kind of component this is.",
-                    "type": "string"
-                }
-            },
-            "required": [
-                "data",
-                "type"
-            ],
-            "type": "object"
-        },
-        "GameDisplayTemplateSourceData": {
-            "description": "Says where to find a template's text.",
-            "properties": {
-                "content": {
-                    "description": "The template text itself. Used only when `sourceType` is `embedded`.",
-                    "type": "string"
-                },
-                "sourceType": {
-                    "$ref": "#/definitions/TemplateSourceType",
-                    "description": "How `templateSource` is resolved, or `embedded` to use `content`."
-                },
-                "templateSource": {
-                    "description": "Path or URL of the template, interpreted according to `sourceType`. Unused for `embedded`.",
-                    "type": "string"
-                }
-            },
-            "required": [
-                "sourceType"
             ],
             "type": "object"
         },
@@ -586,7 +248,7 @@
             "type": "object"
         },
         "GameEffectEndTrigger": {
-            "description": "An effect finishing. Not when ended early by `stop`, or by its display closing or resetting.",
+            "description": "An effect finishing. Not when ended early by `stop`, or by its scene closing or resetting.",
             "properties": {
                 "effectEnd": {
                     "description": "The effect's name, eg. `item-fall`.",
@@ -605,7 +267,7 @@
         "GameEffectPosition": {
             "anyOf": [
                 {
-                    "$ref": "#/definitions/GamePositionInDisplay"
+                    "$ref": "#/definitions/GamePositionInScene"
                 },
                 {
                     "$ref": "#/definitions/GamePositionByAmount"
@@ -635,7 +297,7 @@
             "type": "object"
         },
         "GameEveryTrigger": {
-            "description": "Repeatedly, while the display is shown.",
+            "description": "Repeatedly, while the scene is shown.",
             "properties": {
                 "every": {
                     "description": "Milliseconds between firings: a number, or an expression re-evaluated each time.",
@@ -651,7 +313,7 @@
             "type": "object"
         },
         "GameFinishResetAction": {
-            "description": "Finishes this reset display, revealing the display it is shown for. Reset displays only.",
+            "description": "Finishes this reset scene, revealing the scene it is shown for. Reset scenes only.",
             "properties": {
                 "delayMs": {
                     "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
@@ -702,7 +364,7 @@
                     "type": "array"
                 },
                 "target": {
-                    "description": "CSS selector for the elements. Defaults to every item in the shown displays.",
+                    "description": "CSS selector for the elements. Defaults to every item in the shown scenes.",
                     "type": "string"
                 }
             },
@@ -740,7 +402,7 @@
             "type": "object"
         },
         "GameInteractTrigger": {
-            "description": "A player (or a click) interacting with an element of the display.",
+            "description": "A player (or a click) interacting with an element of the scene.",
             "properties": {
                 "holdMs": {
                     "description": "Entering interactions only (`mouse-enter` and the camera's `-enter`s): fire once the player has stayed over the\nelement this many milliseconds, rather than as they arrive.",
@@ -816,7 +478,7 @@
                     "type": "number"
                 },
                 "within": {
-                    "description": "`near-enter` and `near-exit` only, which need it: how close counts as near. The distance from the centre of the\nelement to the closest part of the player's silhouette, as a % of the display's width.",
+                    "description": "`near-enter` and `near-exit` only, which need it: how close counts as near. The distance from the centre of the\nelement to the closest part of the player's silhouette, as a % of the scene's width.",
                     "minimum": 0,
                     "type": "number"
                 }
@@ -827,7 +489,7 @@
             "type": "object"
         },
         "GameItemFallEffect": {
-            "description": "Drops elements off the bottom of the display, where they stay until it resets.",
+            "description": "Drops elements off the bottom of the scene, where they stay until it resets.",
             "properties": {
                 "cycleMs": {
                     "description": "The length of one loop, when `durationMs` is `\"indefinite\"`.",
@@ -861,7 +523,7 @@
                     "type": "string"
                 },
                 "target": {
-                    "description": "CSS selector for the elements. Defaults to every item in the shown displays.",
+                    "description": "CSS selector for the elements. Defaults to every item in the shown scenes.",
                     "type": "string"
                 }
             },
@@ -871,7 +533,7 @@
             "type": "object"
         },
         "GameItemMoveEffect": {
-            "description": "Moves elements, where they stay until their display resets.",
+            "description": "Moves elements, where they stay until their scene resets.",
             "properties": {
                 "cycleMs": {
                     "description": "The length of one loop, when `durationMs` is `\"indefinite\"`.",
@@ -911,7 +573,7 @@
                 "start": {
                     "anyOf": [
                         {
-                            "$ref": "#/definitions/GamePositionInDisplay"
+                            "$ref": "#/definitions/GamePositionInScene"
                         },
                         {
                             "$ref": "#/definitions/GamePositionByAmount"
@@ -923,7 +585,7 @@
                     "description": "Where the move begins. Defaults to where the element is now."
                 },
                 "target": {
-                    "description": "CSS selector for the elements. Defaults to every item in the shown displays.",
+                    "description": "CSS selector for the elements. Defaults to every item in the shown scenes.",
                     "type": "string"
                 }
             },
@@ -933,24 +595,24 @@
             ],
             "type": "object"
         },
-        "GameOverviewDisplay": {
-            "description": "A display shown when no stage is active.",
+        "GameOverviewScene": {
+            "description": "A scene shown when no stage is active.",
             "properties": {
                 "camera": {
-                    "$ref": "#/definitions/GameDisplayCameraData",
-                    "description": "Camera mode settings for this display, falling back to broader displays."
+                    "$ref": "#/definitions/GameSceneCameraData",
+                    "description": "Camera mode settings for this scene, falling back to broader scenes."
                 },
                 "component": {
-                    "$ref": "#/definitions/GameDisplayComponentData",
-                    "description": "How this display is rendered."
+                    "$ref": "#/definitions/GameSceneComponentData",
+                    "description": "How this scene is rendered."
                 },
                 "purpose": {
-                    "$ref": "#/definitions/GameOverviewDisplayPurpose",
-                    "description": "When this display is shown."
+                    "$ref": "#/definitions/GameOverviewScenePurpose",
+                    "description": "When this scene is shown."
                 },
-                "resetDisplay": {
-                    "$ref": "#/definitions/GameResetDisplay",
-                    "description": "Shown in this display's place first, to help the player get ready for it, until one of its rules finishes it."
+                "resetScene": {
+                    "$ref": "#/definitions/GameResetScene",
+                    "description": "Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it."
                 }
             },
             "required": [
@@ -959,8 +621,8 @@
             ],
             "type": "object"
         },
-        "GameOverviewDisplayPurpose": {
-            "description": "What an overview display is for: the title screen, the stage selection, or the game-complete screen.",
+        "GameOverviewScenePurpose": {
+            "description": "What an overview scene is for: the title screen, the stage selection, or the game-complete screen.",
             "enum": [
                 "game-overview-complete",
                 "game-overview-stages",
@@ -969,7 +631,7 @@
             "type": "string"
         },
         "GamePlayerFallEffect": {
-            "description": "Drops players off the display. They are removed once they have gone.",
+            "description": "Drops players off the scene. They are removed once they have gone.",
             "properties": {
                 "delayMs": {
                     "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
@@ -1124,7 +786,7 @@
             "type": "object"
         },
         "GamePlayerSpinAwayEffect": {
-            "description": "Knocks players off the display, turning as they go. They are removed once they have gone.",
+            "description": "Knocks players off the scene, turning as they go. They are removed once they have gone.",
             "properties": {
                 "angle": {
                     "$ref": "#/definitions/GameEffectAngle",
@@ -1219,7 +881,7 @@
                     "type": "string"
                 },
                 "pixelSize": {
-                    "description": "The size of each block of static, as a % of the display's width, above 0. Defaults to 0.5.",
+                    "description": "The size of each block of static, as a % of the scene's width, above 0. Defaults to 0.5.",
                     "type": "number"
                 },
                 "players": {
@@ -1273,8 +935,8 @@
             "description": "An amount from where the element is when the effect starts.",
             "properties": {
                 "by": {
-                    "$ref": "#/definitions/GamePositionInDisplay",
-                    "description": "The amount, as % of the display's width and height."
+                    "$ref": "#/definitions/GamePositionInScene",
+                    "description": "The amount, as % of the scene's width and height."
                 }
             },
             "required": [
@@ -1290,11 +952,11 @@
                     "type": "string"
                 },
                 "left": {
-                    "description": "% of the display's width, from the left.",
+                    "description": "% of the scene's width, from the left.",
                     "type": "number"
                 },
                 "top": {
-                    "description": "% of the display's height, from the top.",
+                    "description": "% of the scene's height, from the top.",
                     "type": "number"
                 }
             },
@@ -1305,15 +967,15 @@
             ],
             "type": "object"
         },
-        "GamePositionInDisplay": {
-            "description": "A place in the display: the element's centre, as % of the display's width and height.",
+        "GamePositionInScene": {
+            "description": "A place in the scene: the element's centre, as % of the scene's width and height.",
             "properties": {
                 "left": {
-                    "description": "% of the display's width, from the left.",
+                    "description": "% of the scene's width, from the left.",
                     "type": "number"
                 },
                 "top": {
-                    "description": "% of the display's height, from the top.",
+                    "description": "% of the scene's height, from the top.",
                     "type": "number"
                 }
             },
@@ -1353,11 +1015,11 @@
                     "description": "How long it runs."
                 },
                 "dx": {
-                    "description": "How far to shake horizontally, as a % of the display's width. Defaults to 0.",
+                    "description": "How far to shake horizontally, as a % of the scene's width. Defaults to 0.",
                     "type": "number"
                 },
                 "dy": {
-                    "description": "How far to shake vertically, as a % of the display's height. Defaults to 0.",
+                    "description": "How far to shake vertically, as a % of the scene's height. Defaults to 0.",
                     "type": "number"
                 },
                 "easing": {
@@ -1370,7 +1032,7 @@
                     "type": "string"
                 },
                 "target": {
-                    "description": "CSS selector for the elements. Defaults to every item in the shown displays.",
+                    "description": "CSS selector for the elements. Defaults to every item in the shown scenes.",
                     "type": "string"
                 }
             },
@@ -1380,7 +1042,7 @@
             "type": "object"
         },
         "GameResetChallengeAction": {
-            "description": "Clears this display's challenge, and the state of its displays. Challenge displays only.",
+            "description": "Clears this scene's challenge, and the state of its scenes. Challenge scenes only.",
             "properties": {
                 "delayMs": {
                     "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
@@ -1398,23 +1060,23 @@
             ],
             "type": "object"
         },
-        "GameResetDisplay": {
-            "description": "A display that helps the player get ready for its parent display, eg. \"Return to the start\".",
+        "GameResetScene": {
+            "description": "A scene that helps the player get ready for its parent scene, eg. \"Return to the start\".",
             "properties": {
                 "camera": {
-                    "$ref": "#/definitions/GameDisplayCameraData",
+                    "$ref": "#/definitions/GameSceneCameraData",
                     "description": "Camera mode settings while it shows, over its parent's."
                 },
                 "component": {
-                    "$ref": "#/definitions/GameDisplayComponentData",
-                    "description": "How this display is rendered, and the rules that finish it (`finishReset`)."
+                    "$ref": "#/definitions/GameSceneComponentData",
+                    "description": "How this scene is rendered, and the rules that finish it (`finishReset`)."
                 },
-                "resetDisplay": {
-                    "$ref": "#/definitions/GameResetDisplay",
-                    "description": "A reset display for this reset display, shown before it."
+                "resetScene": {
+                    "$ref": "#/definitions/GameResetScene",
+                    "description": "A reset scene for this reset scene, shown before it."
                 },
                 "showOn": {
-                    "description": "When it shows: before its parent is first shown since the game loaded (the default), or before every showing.\nIt always shows again when its parent's challenge is reset. A nested reset display shows with this one.",
+                    "description": "When it shows: before its parent is first shown since the game loaded (the default), or before every showing.\nIt always shows again when its parent's challenge is reset. A nested reset scene shows with this one.",
                     "enum": [
                         "every-show",
                         "first-show"
@@ -1428,7 +1090,7 @@
             "type": "object"
         },
         "GameResetStateAction": {
-            "description": "Returns the display's state to `initialState`.",
+            "description": "Returns the scene's state to `initialState`.",
             "properties": {
                 "delayMs": {
                     "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
@@ -1544,6 +1206,344 @@
             ],
             "type": "object"
         },
+        "GameSceneCameraData": {
+            "description": "Camera mode settings for one scene; unset fields fall back to broader scenes.",
+            "properties": {
+                "preview": {
+                    "description": "Whether the webcam preview shows while this scene shows.",
+                    "type": "boolean"
+                },
+                "requirement": {
+                    "description": "Whether camera mode is on while this scene shows, and how much the game depends on it: `\"enabled\"` lets the\nplayer start the game without granting the camera, while `\"required\"` doesn't.",
+                    "enum": [
+                        "enabled",
+                        false,
+                        "required"
+                    ]
+                }
+            },
+            "type": "object"
+        },
+        "GameSceneComponentData": {
+            "anyOf": [
+                {
+                    "$ref": "#/definitions/GameSceneTemplateComponentData"
+                },
+                {
+                    "$ref": "#/definitions/GameSceneDialogComponentData"
+                },
+                {
+                    "$ref": "#/definitions/GameSceneScrollComponentData"
+                }
+            ],
+            "description": "The rendering definition of a scene, discriminated by `type`."
+        },
+        "GameSceneDialogComponentData": {
+            "description": "A paged scene on a background image of the game's choosing, scaled to fit, with the text kept inside its margins.",
+            "properties": {
+                "backgroundStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the background layer's container."
+                },
+                "backgroundTemplate": {
+                    "$ref": "#/definitions/GameSceneTemplateSourceData",
+                    "description": "Template for the background layer, drawn behind the game's other content."
+                },
+                "backgroundTemplateStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the element wrapping the rendered background template."
+                },
+                "contents": {
+                    "description": "The pages, shown one at a time in order.",
+                    "items": {
+                        "$ref": "#/definitions/GameScenePageData"
+                    },
+                    "type": "array"
+                },
+                "data": {
+                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
+                    "description": "Extra values for this scene, passed through to its templates as `data` (and `componentData`)."
+                },
+                "foregroundStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the foreground layer's container: the column the pages are shown in."
+                },
+                "foregroundTemplate": {
+                    "$ref": "#/definitions/GameSceneTemplateSourceData",
+                    "description": "Template for each page in the foreground layer, drawn in front of the game's other content."
+                },
+                "foregroundTemplateStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the element wrapping the rendered foreground template."
+                },
+                "imageMargins": {
+                    "$ref": "#/definitions/GameSceneDialogMargins",
+                    "description": "Where the text sits on the image. Defaults to no margin."
+                },
+                "imageResource": {
+                    "description": "Resource name of the background image. Without one, the dialog fills its scene.",
+                    "type": "string"
+                },
+                "initialState": {
+                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
+                    "description": "The scene's state when it is first shown, and after a reset. Templates and rules see it as `state`."
+                },
+                "keepRemovedPlayers": {
+                    "description": "Whether players stay removed when this scene resets. Moving to another scene restores them anyway. Defaults to false.",
+                    "type": "boolean"
+                },
+                "resetStateOnShow": {
+                    "description": "Whether state returns to `initialState` each time the scene is shown. Defaults to false.",
+                    "type": "boolean"
+                },
+                "rules": {
+                    "description": "What happens in response to events, in order.",
+                    "items": {
+                        "$ref": "#/definitions/GameRule"
+                    },
+                    "type": "array"
+                },
+                "type": {
+                    "const": "dialog",
+                    "description": "Which kind of component this is.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "contents",
+                "data",
+                "type"
+            ],
+            "type": "object"
+        },
+        "GameSceneDialogMargins": {
+            "description": "Space to leave between each edge of a dialog's image and its text, as CSS percentages of the image's\nheight (top, bottom) or width (left, right), e.g. `\"12%\"`. Use it to keep text off transparent or decorative edges.",
+            "properties": {
+                "bottom": {
+                    "description": "From the image's bottom edge, as a percentage of its height.",
+                    "type": "string"
+                },
+                "left": {
+                    "description": "From the image's left edge, as a percentage of its width.",
+                    "type": "string"
+                },
+                "right": {
+                    "description": "From the image's right edge, as a percentage of its width.",
+                    "type": "string"
+                },
+                "top": {
+                    "description": "From the image's top edge, as a percentage of its height.",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "GameSceneMediaData": {
+            "description": "Media played with a scene. Resources are names defined in the game's `resources`.",
+            "properties": {
+                "audioDescription": {
+                    "description": "Accessible description of the audio, for screen readers. Default: \"audio\".",
+                    "type": "string"
+                },
+                "motionImageResource": {
+                    "description": "Resource name of an image shown while the audio is playing.",
+                    "type": "string"
+                },
+                "resource": {
+                    "description": "Resource name of the audio file.",
+                    "type": "string"
+                },
+                "stillImageResource": {
+                    "description": "Resource name of an image shown while the audio is not playing.",
+                    "type": "string"
+                },
+                "type": {
+                    "const": "audio",
+                    "description": "The kind of media: only audio is supported.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "resource",
+                "type"
+            ],
+            "type": "object"
+        },
+        "GameScenePageData": {
+            "description": "One page of a paged scene.",
+            "properties": {
+                "label": {
+                    "description": "Label for the answer input. Used only when `showInput` is true.",
+                    "type": "string"
+                },
+                "media": {
+                    "$ref": "#/definitions/GameSceneMediaData",
+                    "description": "Audio to play on this page."
+                },
+                "showInput": {
+                    "description": "If true, shows an answer input on this page.",
+                    "type": "boolean"
+                },
+                "text": {
+                    "description": "The text of the page.",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
+        "GameSceneScrollComponentData": {
+            "description": "A dialog on the app's old-paper image: see {@link GameScenePagedComponentBase} for its fields.",
+            "properties": {
+                "backgroundStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the background layer's container."
+                },
+                "backgroundTemplate": {
+                    "$ref": "#/definitions/GameSceneTemplateSourceData",
+                    "description": "Template for the background layer, drawn behind the game's other content."
+                },
+                "backgroundTemplateStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the element wrapping the rendered background template."
+                },
+                "contents": {
+                    "description": "The pages, shown one at a time in order.",
+                    "items": {
+                        "$ref": "#/definitions/GameScenePageData"
+                    },
+                    "type": "array"
+                },
+                "data": {
+                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
+                    "description": "Extra values for this scene, passed through to its templates as `data` (and `componentData`)."
+                },
+                "foregroundStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the foreground layer's container: the column the pages are shown in."
+                },
+                "foregroundTemplate": {
+                    "$ref": "#/definitions/GameSceneTemplateSourceData",
+                    "description": "Template for each page in the foreground layer, drawn in front of the game's other content."
+                },
+                "foregroundTemplateStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the element wrapping the rendered foreground template."
+                },
+                "initialState": {
+                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
+                    "description": "The scene's state when it is first shown, and after a reset. Templates and rules see it as `state`."
+                },
+                "keepRemovedPlayers": {
+                    "description": "Whether players stay removed when this scene resets. Moving to another scene restores them anyway. Defaults to false.",
+                    "type": "boolean"
+                },
+                "resetStateOnShow": {
+                    "description": "Whether state returns to `initialState` each time the scene is shown. Defaults to false.",
+                    "type": "boolean"
+                },
+                "rules": {
+                    "description": "What happens in response to events, in order.",
+                    "items": {
+                        "$ref": "#/definitions/GameRule"
+                    },
+                    "type": "array"
+                },
+                "type": {
+                    "const": "scroll",
+                    "description": "Which kind of component this is.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "contents",
+                "data",
+                "type"
+            ],
+            "type": "object"
+        },
+        "GameSceneTemplateComponentData": {
+            "description": "A scene built from Handlebars templates, drawn as a background layer and a foreground layer.",
+            "properties": {
+                "backgroundStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the background layer's container."
+                },
+                "backgroundTemplate": {
+                    "$ref": "#/definitions/GameSceneTemplateSourceData",
+                    "description": "Template for the background layer, drawn behind the game's other content."
+                },
+                "backgroundTemplateStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the element wrapping the rendered background template."
+                },
+                "data": {
+                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
+                    "description": "Extra values for this scene, passed through to its templates as `data` (and `componentData`)."
+                },
+                "foregroundStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the foreground layer's container."
+                },
+                "foregroundTemplate": {
+                    "$ref": "#/definitions/GameSceneTemplateSourceData",
+                    "description": "Template for the foreground layer, drawn in front of the game's other content."
+                },
+                "foregroundTemplateStyle": {
+                    "$ref": "#/definitions/React.CSSProperties",
+                    "description": "CSS for the element wrapping the rendered foreground template."
+                },
+                "initialState": {
+                    "$ref": "#/definitions/Record%3Cstring%2Cunknown%3E",
+                    "description": "The scene's state when it is first shown, and after a reset. Templates and rules see it as `state`."
+                },
+                "keepRemovedPlayers": {
+                    "description": "Whether players stay removed when this scene resets. Moving to another scene restores them anyway. Defaults to false.",
+                    "type": "boolean"
+                },
+                "resetStateOnShow": {
+                    "description": "Whether state returns to `initialState` each time the scene is shown. Defaults to false.",
+                    "type": "boolean"
+                },
+                "rules": {
+                    "description": "What happens in response to events, in order.",
+                    "items": {
+                        "$ref": "#/definitions/GameRule"
+                    },
+                    "type": "array"
+                },
+                "type": {
+                    "const": "template",
+                    "description": "Which kind of component this is.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "data",
+                "type"
+            ],
+            "type": "object"
+        },
+        "GameSceneTemplateSourceData": {
+            "description": "Says where to find a template's text.",
+            "properties": {
+                "content": {
+                    "description": "The template text itself. Used only when `sourceType` is `embedded`.",
+                    "type": "string"
+                },
+                "sourceType": {
+                    "$ref": "#/definitions/TemplateSourceType",
+                    "description": "How `templateSource` is resolved, or `embedded` to use `content`."
+                },
+                "templateSource": {
+                    "description": "Path or URL of the template, interpreted according to `sourceType`. Unused for `embedded`.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "sourceType"
+            ],
+            "type": "object"
+        },
         "GameSetAction": {
             "description": "Sets state keys to the values of expressions, all evaluated against the state before the action.",
             "properties": {
@@ -1581,7 +1581,7 @@
             "type": "object"
         },
         "GameStageData": {
-            "description": "Describes a game stage - including its displays, and the challenges it contains.\nA stage may contain more than one challenge, and may group its challenges together.",
+            "description": "Describes a game stage - including its scenes, and the challenges it contains.\nA stage may contain more than one challenge, and may group its challenges together.",
             "properties": {
                 "challengeChunking": {
                     "description": "How many challenges to show together at once in the stage layout. Default: 1.",
@@ -1594,16 +1594,16 @@
                     },
                     "type": "array"
                 },
-                "displays": {
-                    "description": "Displays shown behind this stage's challenges (purpose `shared`). Optional.",
+                "id": {
+                    "description": "Unique id for this stage, referenced by `enterStage` actions in scene rules.",
+                    "type": "string"
+                },
+                "scenes": {
+                    "description": "Scenes shown behind this stage's challenges (purpose `shared`). Optional.",
                     "items": {
-                        "$ref": "#/definitions/GameStageDisplay"
+                        "$ref": "#/definitions/GameStageScene"
                     },
                     "type": "array"
-                },
-                "id": {
-                    "description": "Unique id for this stage, referenced by `enterStage` actions in display rules.",
-                    "type": "string"
                 }
             },
             "required": [
@@ -1612,25 +1612,25 @@
             ],
             "type": "object"
         },
-        "GameStageDisplay": {
-            "description": "A display shared by all challenges in a stage.",
+        "GameStageScene": {
+            "description": "A scene shared by all challenges in a stage.",
             "properties": {
                 "camera": {
-                    "$ref": "#/definitions/GameDisplayCameraData",
-                    "description": "Camera mode settings for this display, falling back to broader displays."
+                    "$ref": "#/definitions/GameSceneCameraData",
+                    "description": "Camera mode settings for this scene, falling back to broader scenes."
                 },
                 "component": {
-                    "$ref": "#/definitions/GameDisplayComponentData",
-                    "description": "How this display is rendered."
+                    "$ref": "#/definitions/GameSceneComponentData",
+                    "description": "How this scene is rendered."
                 },
                 "purpose": {
                     "const": "shared",
-                    "description": "When this display is shown.",
+                    "description": "When this scene is shown.",
                     "type": "string"
                 },
-                "resetDisplay": {
-                    "$ref": "#/definitions/GameResetDisplay",
-                    "description": "Shown in this display's place first, to help the player get ready for it, until one of its rules finishes it."
+                "resetScene": {
+                    "$ref": "#/definitions/GameResetScene",
+                    "description": "Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it."
                 }
             },
             "required": [
@@ -1640,7 +1640,7 @@
             "type": "object"
         },
         "GameStartTrigger": {
-            "description": "When the display is shown.",
+            "description": "When the scene is shown.",
             "properties": {
                 "start": {
                     "const": true,
@@ -1654,7 +1654,7 @@
             "type": "object"
         },
         "GameStopEffect": {
-            "description": "Ends effects before their display does. An item returns to where its template puts it.",
+            "description": "Ends effects before their scene does. An item returns to where its template puts it.",
             "properties": {
                 "delayMs": {
                     "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
@@ -1679,7 +1679,7 @@
                     "type": "string"
                 },
                 "target": {
-                    "description": "CSS selector for the elements. Defaults to every item in the shown displays.",
+                    "description": "CSS selector for the elements. Defaults to every item in the shown scenes.",
                     "type": "string"
                 }
             },
@@ -1689,7 +1689,7 @@
             "type": "object"
         },
         "GameTransitionEndTrigger": {
-            "description": "A CSS transition ending on an element of the display.",
+            "description": "A CSS transition ending on an element of the scene.",
             "properties": {
                 "target": {
                     "description": "CSS selector for the elements.",
@@ -1739,7 +1739,7 @@
             "description": "An expression turning from false to true, or staying true for a while after that.",
             "properties": {
                 "forMs": {
-                    "description": "Fires once the expression has stayed true this many milliseconds after changing to true, rather than straight\naway. Turning false, or the display being hidden, starts it again.",
+                    "description": "Fires once the expression has stayed true this many milliseconds after changing to true, rather than straight\naway. Turning false, or the scene being hidden, starts it again.",
                     "minimum": 0,
                     "type": "number"
                 },
@@ -1802,7 +1802,7 @@
             "type": "string"
         }
     },
-    "description": "A game's authored definition: its overview displays, stages, challenges, resources and settings.",
+    "description": "A game's authored definition: its overview scenes, stages, challenges, resources and settings.",
     "properties": {
         "config": {
             "description": "Game-wide behaviour settings.",
@@ -1846,13 +1846,6 @@
             "description": "One-line description, shown on the game's tile on the landing page.",
             "type": "string"
         },
-        "displays": {
-            "description": "Overview displays (title, stages, complete), shown when no stage is active.",
-            "items": {
-                "$ref": "#/definitions/GameOverviewDisplay"
-            },
-            "type": "array"
-        },
         "gameContainerStyle": {
             "$ref": "#/definitions/React.CSSProperties",
             "description": "CSS applied to the element containing the whole game, e.g. fonts, colours and sizing."
@@ -1861,7 +1854,7 @@
             "description": "Optional modules to switch on for this game.",
             "properties": {
                 "camera": {
-                    "$ref": "#/definitions/GameDisplayCameraData",
+                    "$ref": "#/definitions/GameSceneCameraData",
                     "description": "Layers the player's camera view into the game."
                 }
             },
@@ -1874,6 +1867,13 @@
         "reward": {
             "$ref": "#/definitions/GameRewardData",
             "description": "The celebration shown when a stage is completed. Unset means none."
+        },
+        "scenes": {
+            "description": "Overview scenes (title, stages, complete), shown when no stage is active.",
+            "items": {
+                "$ref": "#/definitions/GameOverviewScene"
+            },
+            "type": "array"
         },
         "sounds": {
             "description": "Music and sound effects, as resource names (keys of `resources`). Any left unset is silent.",
@@ -1922,8 +1922,8 @@
     },
     "required": [
         "description",
-        "displays",
         "gameContainerStyle",
+        "scenes",
         "stages",
         "title"
     ],

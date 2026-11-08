@@ -2,8 +2,8 @@ import { NO_PLAYERS, type PlayerCounts } from "../../components/camera/PlayerReg
 import { GameOverviewPurposeSequence } from "../../components/core/logic/GameClickUtils";
 import { isDefined } from "../../util/ObjectUtils";
 import type { RuleEvent } from "../../components/core/logic/GameRuleUtils";
-import type { GameAction, GameFeedbackAction, GameOverviewDisplayPurpose } from "../data/displays/GameDisplayData";
-import type { GameEffect } from "../data/displays/GameEffectData";
+import type { GameAction, GameFeedbackAction, GameOverviewScenePurpose } from "../data/scenes/GameSceneData";
+import type { GameEffect } from "../data/scenes/GameEffectData";
 import type { GameData } from "../data/GameData";
 import type { GameStageId } from "../data/GameStageData";
 import type { GameStageState } from "./GameStageState";
@@ -101,7 +101,7 @@ export interface GameState {
     /** The stage being played, or null while an overview is showing. */
     stageId: GameStageId | null;
     /** The overview display showing when no stage is active. */
-    overviewDisplay: GameOverviewDisplayPurpose | null;
+    overviewDisplay: GameOverviewScenePurpose | null;
   };
   /** Each display's own state, by scope. A display with no entry uses its component's `initialState`. */
   displayStates: Record<DisplayScope, Record<string, unknown>>;
@@ -125,9 +125,7 @@ export function createBlankGameState(game: GameData): GameState {
     })),
   }));
 
-  const overviewDisplay = GameOverviewPurposeSequence.find((purpose) =>
-    game.displays.some((d) => purpose === d.purpose),
-  );
+  const overviewDisplay = GameOverviewPurposeSequence.find((purpose) => game.scenes.some((d) => purpose === d.purpose));
   if (!isDefined(overviewDisplay)) {
     throw new Error(`No initial overview display found, from: ${GameOverviewPurposeSequence.join(", ")}`);
   }

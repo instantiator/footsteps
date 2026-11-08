@@ -2,7 +2,7 @@ import _ from "lodash";
 import { useReward } from "partycles";
 import { useMediaQuery } from "@uidotdev/usehooks";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { GameOverviewDisplayPurpose } from "../../entities/data/displays/GameDisplayData";
+import type { GameOverviewScenePurpose } from "../../entities/data/scenes/GameSceneData";
 import type { GameChallengeId } from "../../entities/data/GameChallengeData";
 import type { GameRewardData } from "../../entities/data/GameData";
 import type { GameChallengeAnswerValidation } from "../../entities/data/GameChallengeSolution";
@@ -68,7 +68,7 @@ function useGameFeedback(reducedMotion: boolean) {
   // Previous values, to react only to changes; refs because nothing renders from them.
   // Progress starts from the loaded state, so continuing a saved game doesn't replay its rewards.
   const progressTracker = useRef(completedStageIds(gameState));
-  const overviewTracker = useRef<GameOverviewDisplayPurpose | null>(null);
+  const overviewTracker = useRef<GameOverviewScenePurpose | null>(null);
   const stageIdTracker = useRef<GameStageId | null>(null);
 
   useEffect(() => {

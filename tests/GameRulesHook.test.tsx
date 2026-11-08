@@ -5,7 +5,7 @@ import { useGameRules } from "../src/components/core/GameRulesHook";
 import { completeChallenge, startDisplayRuns } from "../src/components/core/logic/GameStateUtils";
 import type { DisplayDomEvent } from "../src/components/core/logic/TemplateUtils";
 import type { GameData } from "../src/entities/data/GameData";
-import type { GameDisplayComponentBase, GameRule } from "../src/entities/data/displays/GameDisplayData";
+import type { GameSceneComponentBase, GameRule } from "../src/entities/data/scenes/GameSceneData";
 import { useGameState } from "../src/providers/GameStateHook";
 import { challenge, game, stage } from "./data/GameBuilders";
 import GameProviders from "./helpers/GameProviders";
@@ -17,16 +17,16 @@ const SHARED = "stage:s1:shared";
 const C1 = "challenge:s1:c1:challenge-in-progress";
 
 /** A game with a title, a stages overview, and stage s1 (a shared display and challenges c1, c2, one at a time). */
-const rulesGame = (components: Record<string, Partial<GameDisplayComponentBase>> = {}): GameData => {
+const rulesGame = (components: Record<string, Partial<GameSceneComponentBase>> = {}): GameData => {
   const data = game(
     ["game-overview-title", "game-overview-stages"],
-    [stage("s1", [challenge("c1"), challenge("c2")], { displays: [{ purpose: "shared", component: scrollWith() }] })],
+    [stage("s1", [challenge("c1"), challenge("c2")], { scenes: [{ purpose: "shared", component: scrollWith() }] })],
   );
-  const componentFor: Record<string, GameDisplayComponentBase> = {
-    [TITLE]: data.displays[0].component,
-    [STAGES]: data.displays[1].component,
-    [SHARED]: data.stages[0].displays![0].component,
-    [C1]: data.stages[0].challenges[0].displays[0].component,
+  const componentFor: Record<string, GameSceneComponentBase> = {
+    [TITLE]: data.scenes[0].component,
+    [STAGES]: data.scenes[1].component,
+    [SHARED]: data.stages[0].scenes![0].component,
+    [C1]: data.stages[0].challenges[0].scenes[0].component,
   };
   for (const [scope, extra] of Object.entries(components)) Object.assign(componentFor[scope], extra);
   data.modules = { camera: { requirement: "enabled" } };
@@ -291,7 +291,7 @@ describe("useGameRules", () => {
   describe("reset displays", () => {
     it("run their own rules first, and start their parent's when they finish", () => {
       const data = rulesGame({ [STAGES]: { rules: [count()], initialState: { n: 0 } } });
-      data.displays[1].resetDisplay = {
+      data.scenes[1].resetScene = {
         component: { ...scrollWith(), rules: [{ on: { after: 1000 }, do: [{ finishReset: true }] }] },
       };
       const rules = renderRules(data);

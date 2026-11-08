@@ -2,10 +2,10 @@ import ArrowCircleLeftTwoToneIcon from "@mui/icons-material/ArrowCircleLeftTwoTo
 import ArrowCircleRightTwoToneIcon from "@mui/icons-material/ArrowCircleRightTwoTone";
 import { useState, type CSSProperties } from "react";
 import type {
-  GameDisplayDialogMargins,
-  GameDisplayPageData,
-} from "../../../entities/data/displays/GameDisplayDialogComponentData";
-import type { GameDisplayTemplateSourceData } from "../../../entities/data/displays/GameDisplayTemplateComponentData";
+  GameSceneDialogMargins,
+  GameScenePageData,
+} from "../../../entities/data/scenes/GameSceneDialogComponentData";
+import type { GameSceneTemplateSourceData } from "../../../entities/data/scenes/GameSceneTemplateComponentData";
 import type { GameChallengeId } from "../../../entities/data/GameChallengeData";
 import type { GameStageId } from "../../../entities/data/GameStageData";
 import { isDefined } from "../../../util/ObjectUtils";
@@ -25,9 +25,9 @@ export interface GameDisplayDialogComponentProps {
   /** URL of the background image. Without one, the dialog fills its display. */
   image?: string;
   /** Where the text sits on the image. */
-  margins?: GameDisplayDialogMargins;
+  margins?: GameSceneDialogMargins;
   /** Overrides the default template, which shows the page's text one paragraph per line. */
-  templateSource?: GameDisplayTemplateSourceData;
+  templateSource?: GameSceneTemplateSourceData;
   /** Style for the layer's container: the image (background) or the text column (foreground). */
   containerStyle?: CSSProperties;
   /** Style for the rendered template. */
@@ -35,7 +35,7 @@ export interface GameDisplayDialogComponentProps {
   /** Extra template data, which takes precedence over the page's `text` and `lines`. */
   templateData?: GameTemplateData;
   /** The pages of text, with their optional audio and answer input. */
-  contents: GameDisplayPageData[];
+  contents: GameScenePageData[];
   /** Whether to render the image (background) or the text and controls (foreground). */
   layerHint: LayerHint;
   /** Stage of the challenge that answers are submitted to. */
@@ -53,7 +53,7 @@ export interface GameDisplayDialogComponentProps {
 }
 
 /** The default template: the text, line by line, in the foreground; nothing (the image) behind it. */
-const defaultTemplate = (layerHint: LayerHint): GameDisplayTemplateSourceData => ({
+const defaultTemplate = (layerHint: LayerHint): GameSceneTemplateSourceData => ({
   sourceType: "embedded",
   content: layerHint === "foreground" ? "{{#lines}}<p>{{.}}</p>{{/lines}}" : "<!-- dialog -->",
 });
@@ -82,7 +82,7 @@ const textColumnStyle = ({
   right = "0",
   bottom = "0",
   left = "0",
-}: GameDisplayDialogMargins = {}): CSSProperties => ({
+}: GameSceneDialogMargins = {}): CSSProperties => ({
   position: "absolute",
   top,
   right,
@@ -103,7 +103,7 @@ const SCROLLING_TEXT_STYLE: CSSProperties = { flex: "1 1 auto", minHeight: 0, wi
 const layerStyle = (
   layerHint: LayerHint,
   image: string | undefined,
-  margins: GameDisplayDialogMargins | undefined,
+  margins: GameSceneDialogMargins | undefined,
   containerStyle: CSSProperties | undefined,
 ): CSSProperties => ({
   ...(layerHint === "foreground" && textColumnStyle(margins)),
@@ -151,7 +151,7 @@ export function PageNavigation({ onRetreat, onAdvance }: { onRetreat?: () => voi
 /** Props for {@link PageControls}. */
 interface PageControlsProps {
   /** The current page, if there is one. */
-  content: GameDisplayPageData | undefined;
+  content: GameScenePageData | undefined;
   /** What the page's answer input needs to submit answers. */
   input: Pick<GameTextInputComponentProps, "stageId" | "challengeId" | "solved" | "setSolved" | "onAnswer">;
   /** Goes back a page; undefined on the first page. */
@@ -197,7 +197,7 @@ export default function GameDisplayDialogComponent({
   const [solved, setSolved] = useState<boolean>(false);
   const [contentIndex, setContentIndex] = useState<number>(0);
   const ratio = useImageAspectRatio(image);
-  const content: GameDisplayPageData | undefined = contents[contentIndex];
+  const content: GameScenePageData | undefined = contents[contentIndex];
 
   return (
     <div className={DIALOG_CONTAINER_CLASS} style={OUTER_STYLE}>

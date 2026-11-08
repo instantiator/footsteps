@@ -16,11 +16,11 @@ const openDemo = async (page: Page, change: (game: GameData) => void = () => {})
     const repository = (await response.json()) as GameRepository;
     const game = repository.games[GAME_ID];
     for (const display of [
-      ...game.displays,
+      ...game.scenes,
       // The effects stage acts on players, so it can't load without the camera
       ...game.stages
         .filter((stage) => stage.id !== "effects")
-        .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.displays)),
+        .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
     ]) {
       display.camera = { requirement: false };
     }
@@ -35,7 +35,7 @@ const openDemo = async (page: Page, change: (game: GameData) => void = () => {})
 
 /** The challenge display of a stage. */
 const challengeOf = (game: GameData, stageId: string) =>
-  game.stages.find((stage) => stage.id === stageId)!.challenges[0].displays[0].component;
+  game.stages.find((stage) => stage.id === stageId)!.challenges[0].scenes[0].component;
 
 /** Clicks the middle of an element wherever it is now, as a moving element is never stable enough to wait for. */
 /** Moves the mouse to the middle of an element, whatever is drawn over it. */

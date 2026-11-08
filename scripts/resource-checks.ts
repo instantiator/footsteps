@@ -1,7 +1,7 @@
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import type { GameData } from "../src/entities/data/GameData";
-import type { GameDisplayBase } from "../src/entities/data/displays/GameDisplayData";
-import type { GameDisplayTemplateSourceData } from "../src/entities/data/displays/GameDisplayTemplateComponentData";
+import type { GameSceneBase } from "../src/entities/data/scenes/GameSceneData";
+import type { GameSceneTemplateSourceData } from "../src/entities/data/scenes/GameSceneTemplateComponentData";
 import type { GameRepository } from "../src/entities/GameRepository";
 
 /** True unless the value is undefined or null. */
@@ -104,20 +104,20 @@ interface GameReferences {
 }
 
 /** A display to visit: one of the game's displays, or a reset display. */
-type VisitedDisplay = Pick<GameDisplayBase, "component" | "resetDisplay">;
+type VisitedDisplay = Pick<GameSceneBase, "component" | "resetScene">;
 
 /** Visits every display in the game, and their reset displays, with its path relative to the game. */
 function eachDisplay(game: GameData, visit: (display: VisitedDisplay, path: string) => void): void {
   const visitWithResets = (display: VisitedDisplay, path: string): void => {
     visit(display, path);
-    if (display.resetDisplay) visitWithResets(display.resetDisplay, `${path}.resetDisplay`);
+    if (display.resetScene) visitWithResets(display.resetScene, `${path}.resetScene`);
   };
-  game.displays.forEach((display, index) => visitWithResets(display, `displays[${index}]`));
+  game.scenes.forEach((display, index) => visitWithResets(display, `displays[${index}]`));
   game.stages.forEach((stage, stageIndex) => {
-    stage.displays?.forEach((display, index) => visitWithResets(display, `stages[${stageIndex}].displays[${index}]`));
+    stage.scenes?.forEach((display, index) => visitWithResets(display, `stages[${stageIndex}].scenes[${index}]`));
     stage.challenges.forEach((challenge, challengeIndex) => {
-      challenge.displays.forEach((display, index) =>
-        visitWithResets(display, `stages[${stageIndex}].challenges[${challengeIndex}].displays[${index}]`),
+      challenge.scenes.forEach((display, index) =>
+        visitWithResets(display, `stages[${stageIndex}].challenges[${challengeIndex}].scenes[${index}]`),
       );
     });
   });
@@ -155,7 +155,7 @@ function collectReferences(game: GameData): GameReferences {
     const { component } = display;
     const componentPath = `${displayPath}.component`;
 
-    const addTemplate = (template: GameDisplayTemplateSourceData | undefined, path: string) => {
+    const addTemplate = (template: GameSceneTemplateSourceData | undefined, path: string) => {
       if (!isDefined(template) || template.sourceType === "embedded") return;
       if (!hasContent(template.templateSource)) {
         problems.push({ path: `${path}.templateSource`, message: "templateSource is missing" });

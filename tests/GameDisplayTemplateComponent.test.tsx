@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import GameDisplayTemplateComponent from "../src/components/core/display/GameDisplayTemplateComponent";
 import type { DisplayDomEvent } from "../src/components/core/logic/TemplateUtils";
-import type { GameDisplayTemplateSourceData } from "../src/entities/data/displays/GameDisplayTemplateComponentData";
+import type { GameSceneTemplateSourceData } from "../src/entities/data/scenes/GameSceneTemplateComponentData";
 import type { GameSource } from "../src/entities/GameSource";
 import GameContentCacheProvider from "../src/providers/GameContentCacheProvider";
 import { GameRepositoryContext } from "../src/providers/GameRepositoryContext";
@@ -21,7 +21,7 @@ const Wrapper = ({ children }: { children: ReactNode }) => (
   </GameRepositoryContext.Provider>
 );
 
-const embedded = (content: string): GameDisplayTemplateSourceData => ({ sourceType: "embedded", content });
+const embedded = (content: string): GameSceneTemplateSourceData => ({ sourceType: "embedded", content });
 
 describe("GameDisplayTemplateComponent", () => {
   it("renders an embedded template with the template data", async () => {
@@ -238,7 +238,7 @@ describe("GameDisplayTemplateComponent", () => {
         return HttpResponse.text("<p>shared</p>");
       }),
     );
-    const source: GameDisplayTemplateSourceData = {
+    const source: GameSceneTemplateSourceData = {
       sourceType: "url",
       templateSource: new URL("shared.hbs", getBaseURL()).toString(),
     };

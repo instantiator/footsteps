@@ -1,6 +1,6 @@
 import _ from "lodash";
 import type { GameId } from "../../../entities/data/GameData";
-import type { GameEffect } from "../../../entities/data/displays/GameEffectData";
+import type { GameEffect } from "../../../entities/data/scenes/GameEffectData";
 import type {
   GameAction,
   GameFeedbackAction,
@@ -9,7 +9,7 @@ import type {
   GameInteractTrigger,
   PointerInteraction,
   GameTrigger,
-} from "../../../entities/data/displays/GameDisplayData";
+} from "../../../entities/data/scenes/GameSceneData";
 import { toGameSnapshot } from "../../../entities/state/GameSnapshot";
 import type { DelayedAction, DisplayScope, GameState } from "../../../entities/state/GameState";
 import { enterStage } from "./GameClickUtils";
@@ -42,7 +42,7 @@ export const isEntering = (interaction: GameInteraction): boolean => interaction
 const showEveryShowResets = (previous: GameState | undefined, next: GameState): GameState => {
   const wasSlot = new Set(isDefined(previous) ? getDisplaySlots(previous).map((slot) => slot.scope) : []);
   const showAgain = getDisplaySlots(next)
-    .filter(({ scope, display }) => display.resetDisplay?.showOn === "every-show" && !wasSlot.has(scope))
+    .filter(({ scope, display }) => display.resetScene?.showOn === "every-show" && !wasSlot.has(scope))
     .map(({ scope }) => scope);
   return showAgain.length > 0 ? forgetFinishedResets(next, showAgain) : next;
 };

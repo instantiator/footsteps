@@ -1,7 +1,7 @@
 import type { GameChallengeData } from "../../src/entities/data/GameChallengeData";
 import type { GameData } from "../../src/entities/data/GameData";
 import type { GameStageData } from "../../src/entities/data/GameStageData";
-import type { GameChallengeDisplayPurpose, GameDisplayPurpose } from "../../src/entities/data/displays/GameDisplayData";
+import type { GameChallengeScenePurpose, GameScenePurpose } from "../../src/entities/data/scenes/GameSceneData";
 
 /** A minimal scroll component; `marker` is passed through as its `data`, to tell displays apart. */
 export const scroll = (marker: string = "") => ({
@@ -11,7 +11,7 @@ export const scroll = (marker: string = "") => ({
 });
 
 /** A display of the given purpose, in the shape every display level shares. */
-export const display = <P extends GameDisplayPurpose>(purpose: P, marker?: string) => ({
+export const display = <P extends GameScenePurpose>(purpose: P, marker?: string) => ({
   purpose,
   component: scroll(marker ?? purpose),
 });
@@ -19,10 +19,10 @@ export const display = <P extends GameDisplayPurpose>(purpose: P, marker?: strin
 /** A challenge answered by "ANSWER", with the given display purposes. */
 export const challenge = (
   id: string,
-  purposes: GameChallengeDisplayPurpose[] = ["challenge-in-progress"],
+  purposes: GameChallengeScenePurpose[] = ["challenge-in-progress"],
 ): GameChallengeData => ({
   id,
-  displays: purposes.map((p) => display(p)),
+  scenes: purposes.map((p) => display(p)),
   solution: { answers: ["ANSWER"] },
 });
 
@@ -41,7 +41,7 @@ export const game = (
 ): GameData => ({
   title: "Test Game",
   description: "A game for tests.",
-  displays: overviews.map((p) => display(p)),
+  scenes: overviews.map((p) => display(p)),
   stages,
   config,
   gameContainerStyle: {},

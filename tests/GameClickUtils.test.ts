@@ -1,20 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { enterStage, leaveTitleScreen } from "../src/components/core/logic/GameClickUtils";
-import type { GameOverviewDisplay } from "../src/entities/data/displays/GameDisplayData";
+import type { GameOverviewScene } from "../src/entities/data/scenes/GameSceneData";
 import type { GameStageState } from "../src/entities/state/GameStageState";
 import type { GameState } from "../src/entities/state/GameState";
 import { simpleGameState } from "./data/SampleGameState";
 
-const titleDisplay = simpleGameState.gameData.displays[0];
+const titleDisplay = simpleGameState.gameData.scenes[0];
 
-const stagesDisplay: GameOverviewDisplay = {
+const stagesDisplay: GameOverviewScene = {
   ...titleDisplay,
   purpose: "game-overview-stages",
 };
 
 const onStagesOverview: GameState = {
   ...simpleGameState,
-  gameData: { ...simpleGameState.gameData, displays: [titleDisplay, stagesDisplay] },
+  gameData: { ...simpleGameState.gameData, scenes: [titleDisplay, stagesDisplay] },
   current: { stageId: null, overviewDisplay: "game-overview-stages" },
 };
 

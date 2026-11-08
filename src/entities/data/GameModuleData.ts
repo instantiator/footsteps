@@ -1,4 +1,4 @@
-import type { GameDisplayCameraData } from "./displays/GameDisplayData";
+import type { GameSceneCameraData } from "./scenes/GameSceneData";
 
 /** Settings for the camera module, which layers the player's camera view into the game. */
-export type CameraModuleData = GameDisplayCameraData;
+export type CameraModuleData = GameSceneCameraData;

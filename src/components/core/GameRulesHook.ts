@@ -28,7 +28,7 @@ import {
   DEFAULT_INTERACTION_THRESHOLD,
   POINTER_INTERACTIONS,
   type GameTrigger,
-} from "../../entities/data/displays/GameDisplayData";
+} from "../../entities/data/scenes/GameSceneData";
 
 /** Whether an interaction comes from a mouse or pointer, so the camera ignores it. */
 const isPointerInteraction = (interaction: string): boolean =>

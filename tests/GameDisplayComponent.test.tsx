@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import GameDisplayComponent from "../src/components/core/display/GameDisplayComponent";
-import type { GameDisplayComponentData } from "../src/entities/data/displays/GameDisplayData";
+import type { GameSceneComponentData } from "../src/entities/data/scenes/GameSceneData";
 import type { GameDisplayRenderData } from "../src/components/core/logic/RenderDataUtils";
 import { toGameSnapshot } from "../src/entities/state/GameSnapshot";
 import { decorateGameState } from "../src/components/core/logic/TemplateUtils";
@@ -10,7 +10,7 @@ import { simpleGameState } from "./data/SampleGameState";
 import GameProviders from "./helpers/GameProviders";
 
 const renderDisplay = (
-  component: GameDisplayComponentData,
+  component: GameSceneComponentData,
   layerHint: "foreground" | "background",
   resources: Record<string, string> = {},
 ) => {
@@ -40,7 +40,7 @@ const renderDisplay = (
   );
 };
 
-const templateComponent: GameDisplayComponentData = {
+const templateComponent: GameSceneComponentData = {
   type: "template",
   data: {},
   backgroundTemplate: { sourceType: "embedded", content: "<p>sky</p>" },
@@ -53,7 +53,7 @@ const templateComponent: GameDisplayComponentData = {
 
 describe("GameDisplayComponent", () => {
   it("renders a dialog on the game's image resource, with its pages in the foreground", async () => {
-    const dialog: GameDisplayComponentData = {
+    const dialog: GameSceneComponentData = {
       type: "dialog",
       data: {},
       imageResource: "parchment",

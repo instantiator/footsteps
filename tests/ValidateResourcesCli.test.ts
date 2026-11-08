@@ -40,7 +40,7 @@ const writeFixture = (path: string, contents: unknown): void => {
 const gameWith = (data: Partial<GameData>): GameData => ({
   title: "Test game",
   description: "A game for tests.",
-  displays: [],
+  scenes: [],
   stages: [],
   gameContainerStyle: {},
   ...data,

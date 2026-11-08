@@ -1,7 +1,7 @@
-import type { GameDisplayTemplateSourceData } from "../entities/data/displays/GameDisplayTemplateComponentData";
+import type { GameSceneTemplateSourceData } from "../entities/data/scenes/GameSceneTemplateComponentData";
 
 /** Fallback template shown when a display has no template of its own. */
-export const NO_TEMPLATE: GameDisplayTemplateSourceData = {
+export const NO_TEMPLATE: GameSceneTemplateSourceData = {
   sourceType: "embedded",
   content: "<h1>No template found</h1>",
 };

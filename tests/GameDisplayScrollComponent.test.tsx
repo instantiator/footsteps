@@ -1,11 +1,11 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import GameDisplayScrollComponent from "../src/components/core/display/GameDisplayScrollComponent";
-import type { GameDisplayScrollComponentData } from "../src/entities/data/displays/GameDisplayScrollComponentData";
+import type { GameSceneScrollComponentData } from "../src/entities/data/scenes/GameSceneScrollComponentData";
 import { SMALL_GAME_ID, smallRepository } from "./data/SmallGame";
 import GameProviders from "./helpers/GameProviders";
 
-const scroll: GameDisplayScrollComponentData = {
+const scroll: GameSceneScrollComponentData = {
   type: "scroll",
   data: {},
   contents: [

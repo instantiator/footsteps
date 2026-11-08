@@ -7,7 +7,7 @@ import {
   type UrlRequest,
 } from "../scripts/resource-checks.ts";
 import type { GameData, GameResourceDefinitions } from "../src/entities/data/GameData";
-import type { GameDisplayComponentData, GameOverviewDisplay } from "../src/entities/data/displays/GameDisplayData";
+import type { GameSceneComponentData, GameOverviewScene } from "../src/entities/data/scenes/GameSceneData";
 import type { GameRepository } from "../src/entities/GameRepository";
 
 const SITE_ROOT = "/site";
@@ -41,20 +41,20 @@ const optionsWith = (files: string[] = [], request: UrlRequest = OK, skipUrls = 
 const gameWith = (data: Partial<GameData>): GameData => ({
   title: "Test game",
   description: "A game for tests.",
-  displays: [],
+  scenes: [],
   stages: [],
   gameContainerStyle: {},
   ...data,
 });
 
 /** An overview display wrapping a component. */
-const displayWith = (component: GameDisplayComponentData): GameOverviewDisplay => ({
+const displayWith = (component: GameSceneComponentData): GameOverviewScene => ({
   purpose: "game-overview-title",
   component,
 });
 
 /** A template display with the given foreground template source. */
-const templateDisplay = (foreground: GameDisplayComponentData["foregroundTemplate"]): GameOverviewDisplay =>
+const templateDisplay = (foreground: GameSceneComponentData["foregroundTemplate"]): GameOverviewScene =>
   displayWith({ type: "template", data: {}, foregroundTemplate: foreground });
 
 describe("resolveTargetOnDisk", () => {
@@ -88,7 +88,7 @@ describe("checkGame", () => {
         local: { type: "local", target: "games/local.png" },
         relative: { type: "relative", target: "games/relative.png" },
       },
-      displays: [templateDisplay({ sourceType: "relative", templateSource: "views/overview.hbs" })],
+      scenes: [templateDisplay({ sourceType: "relative", templateSource: "views/overview.hbs" })],
     });
 
     const result = await checkGame(
@@ -124,11 +124,11 @@ describe("checkGame", () => {
 
   it("ignores embedded templates and reports a template source that is missing", async () => {
     const embedded = gameWith({
-      displays: [templateDisplay({ sourceType: "embedded", content: "<p>hello</p>" })],
+      scenes: [templateDisplay({ sourceType: "embedded", content: "<p>hello</p>" })],
     });
     expect((await checkGame(embedded, optionsWith())).checked.files).toBe(0);
 
-    const noSource = gameWith({ displays: [templateDisplay({ sourceType: "local" })] });
+    const noSource = gameWith({ scenes: [templateDisplay({ sourceType: "local" })] });
     expect((await checkGame(noSource, optionsWith())).problems).toEqual([
       { path: "displays[0].component.foregroundTemplate.templateSource", message: "templateSource is missing" },
     ]);
@@ -143,7 +143,7 @@ describe("checkGame", () => {
             {
               id: "challenge-1",
               solution: { answers: ["custard"] },
-              displays: [
+              scenes: [
                 {
                   purpose: "challenge-in-progress",
                   component: {
@@ -249,7 +249,7 @@ describe("resource names", () => {
       stylesheets: ["known"],
       tileGraphic: "known",
       sounds: { openingMusicResource: "known" },
-      displays: [
+      scenes: [
         displayWith({
           type: "dialog",
           data: {},
@@ -280,7 +280,7 @@ describe("resource names", () => {
       stylesheets: ["known", "missing-sheet"],
       tileGraphic: "missing-tile",
       sounds: { openingMusicResource: "missing-music" },
-      displays: [
+      scenes: [
         displayWith({
           type: "dialog",
           data: {},

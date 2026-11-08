@@ -1,4 +1,4 @@
-import type { GameDisplayBase, GameDisplayCameraData } from "../../../entities/data/displays/GameDisplayData";
+import type { GameSceneBase, GameSceneCameraData } from "../../../entities/data/scenes/GameSceneData";
 import type { GameData } from "../../../entities/data/GameData";
 import { getCameraStream } from "../../camera/CameraSupport";
 
@@ -19,20 +19,20 @@ export const gamePermissionLabel = (id: GamePermissionId): string => PERMISSION_
 /** A display's camera settings, then those of each reset display nested in it. */
 const cameraSettingsOf = ({
   camera,
-  resetDisplay,
-}: Pick<GameDisplayBase, "camera" | "resetDisplay">): (GameDisplayCameraData | undefined)[] => [
+  resetScene,
+}: Pick<GameSceneBase, "camera" | "resetScene">): (GameSceneCameraData | undefined)[] => [
   camera,
-  ...(resetDisplay ? cameraSettingsOf(resetDisplay) : []),
+  ...(resetScene ? cameraSettingsOf(resetScene) : []),
 ];
 
 /** The most the game asks of the camera, anywhere: `"required"`, else `"enabled"`, else `false`. */
-const gameCameraRequirement = (gameData: GameData): NonNullable<GameDisplayCameraData["requirement"]> => {
-  const displays = [
-    ...gameData.displays,
-    ...gameData.stages.flatMap((stage) => stage.displays ?? []),
-    ...gameData.stages.flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.displays)),
+const gameCameraRequirement = (gameData: GameData): NonNullable<GameSceneCameraData["requirement"]> => {
+  const scenes = [
+    ...gameData.scenes,
+    ...gameData.stages.flatMap((stage) => stage.scenes ?? []),
+    ...gameData.stages.flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
   ];
-  const requirements = [gameData.modules?.camera, ...displays.flatMap(cameraSettingsOf)].map(
+  const requirements = [gameData.modules?.camera, ...scenes.flatMap(cameraSettingsOf)].map(
     (settings) => settings?.requirement,
   );
   if (requirements.includes("required")) return "required";

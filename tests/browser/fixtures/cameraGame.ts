@@ -33,7 +33,7 @@ const patchRepository = async (page: Page, options: CameraGameOptions): Promise<
 
     if (options.cameraOffStage) {
       const stage = game.stages.find(({ id }) => id === options.cameraOffStage);
-      const display = stage?.displays?.[0];
+      const display = stage?.scenes?.[0];
       if (!display) throw new Error(`no display on stage ${options.cameraOffStage}`);
       display.camera = { requirement: false };
     }

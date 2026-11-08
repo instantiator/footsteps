@@ -6,13 +6,13 @@ import {
   type GameInteractTrigger,
   type GameRewardAction,
   type GameRule,
-} from "../../../entities/data/displays/GameDisplayData";
+} from "../../../entities/data/scenes/GameSceneData";
 import {
   GAME_EFFECT_NAMES,
   type GameEffect,
   type GameEffectPosition,
   type GameHighlightStep,
-} from "../../../entities/data/displays/GameEffectData";
+} from "../../../entities/data/scenes/GameEffectData";
 import { isDefined } from "../../../util/ObjectUtils";
 import { triggerInteractions } from "./GameRuleUtils";
 

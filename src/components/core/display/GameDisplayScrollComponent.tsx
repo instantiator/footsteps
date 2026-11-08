@@ -1,10 +1,10 @@
 import type { CSSProperties } from "react";
 import oldPaperImage from "../../../assets/resources/old-paper.png";
-import type { GameDisplayDialogMargins } from "../../../entities/data/displays/GameDisplayDialogComponentData";
+import type { GameSceneDialogMargins } from "../../../entities/data/scenes/GameSceneDialogComponentData";
 import GameDisplayDialogComponent, { type GameDisplayDialogComponentProps } from "./GameDisplayDialogComponent";
 
 /** Where the text sits on the old paper, clear of its torn edges and curled top. */
-const SCROLL_MARGINS: GameDisplayDialogMargins = { top: "20%", right: "12%", bottom: "10%", left: "12%" };
+const SCROLL_MARGINS: GameSceneDialogMargins = { top: "20%", right: "12%", bottom: "10%", left: "12%" };
 
 /** Fades the scrolling text out at its top and bottom. */
 const SCROLL_FADE_MASK = "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)";

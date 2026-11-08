@@ -3,7 +3,7 @@ import { applyShowResets, fireRules, NO_EVENT, type RuleEnvironment } from "../s
 import { compileGameRules } from "../src/components/core/logic/GameRuleCompile";
 import { getDisplayKey, getLayeredRenderData, getShownDisplays } from "../src/components/core/logic/RenderDataUtils";
 import type { GameData } from "../src/entities/data/GameData";
-import type { GameResetDisplay, GameRule, GameTrigger } from "../src/entities/data/displays/GameDisplayData";
+import type { GameResetScene, GameRule, GameTrigger } from "../src/entities/data/scenes/GameSceneData";
 import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
 import { clearGameState, loadGameState, saveGameState } from "../src/entities/state/GameStateStorage";
 import { challenge, game, scroll, stage } from "./data/GameBuilders";
@@ -23,17 +23,17 @@ const start = (state: GameState, scope: string): GameState =>
   fireRules(ENV, state, scope, (trigger: GameTrigger) => ("start" in trigger ? NO_EVENT : undefined));
 
 /** A reset display with the given marker, which finishes when it starts. */
-const resetDisplay = (marker: string, extra: Partial<GameResetDisplay> = {}): GameResetDisplay => ({
+const resetScene = (marker: string, extra: Partial<GameResetScene> = {}): GameResetScene => ({
   component: { ...scroll(marker), rules: [FINISH] },
   ...extra,
 });
 
 /** A game whose one challenge has a reset display, and the given rules. */
-const gameWithReset = (reset: GameResetDisplay, challengeRules: GameRule[] = []): GameData => {
+const gameWithReset = (reset: GameResetScene, challengeRules: GameRule[] = []): GameData => {
   const data = game(["game-overview-stages"], [stage("s1", [challenge("c1")])]);
-  const display = data.stages[0].challenges[0].displays[0];
+  const display = data.stages[0].challenges[0].scenes[0];
   display.component.rules = challengeRules;
-  display.resetDisplay = reset;
+  display.resetScene = reset;
   return data;
 };
 
@@ -50,7 +50,7 @@ describe("reset displays", () => {
   afterEach(() => clearGameState("reset-test"));
 
   it("show in their parent's place, as part of its challenge, until a rule finishes them", () => {
-    const state = playing(gameWithReset(resetDisplay("get-ready")));
+    const state = playing(gameWithReset(resetScene("get-ready")));
 
     expect(getShownDisplays(state)).toEqual([
       expect.objectContaining({ scope: RESET, stageId: "s1", challengeId: "c1", isReset: true }),
@@ -66,14 +66,14 @@ describe("reset displays", () => {
 
   it("keep their parent's rules from running until they finish", () => {
     const started: GameRule = { on: { start: true }, do: [{ set: { started: "true" } }] };
-    const state = playing(gameWithReset(resetDisplay("get-ready"), [started]));
+    const state = playing(gameWithReset(resetScene("get-ready"), [started]));
 
     expect(start(state, CHALLENGE)).toBe(state);
     expect(start(start(state, RESET), CHALLENGE).displayStates[CHALLENGE]).toEqual({ started: true });
   });
 
   it("show a reset display's own reset display first", () => {
-    const state = playing(gameWithReset(resetDisplay("outer", { resetDisplay: resetDisplay("inner") })));
+    const state = playing(gameWithReset(resetScene("outer", { resetScene: resetScene("inner") })));
 
     expect(shownScope(state)).toEqual([INNER_RESET]);
     expect(shownScope(start(state, INNER_RESET))).toEqual([RESET]);
@@ -81,14 +81,14 @@ describe("reset displays", () => {
   });
 
   it("change the display key as they finish, so the reveal fades", () => {
-    const state = playing(gameWithReset(resetDisplay("get-ready")));
+    const state = playing(gameWithReset(resetScene("get-ready")));
     const key = (s: GameState) => getDisplayKey(getLayeredRenderData(s, {}, "reset-test"));
     expect(key(start(state, RESET))).not.toBe(key(state));
   });
 
   it("take their parent's camera settings, with their own over them", () => {
-    const data = gameWithReset(resetDisplay("get-ready", { camera: { preview: false } }));
-    data.stages[0].challenges[0].displays[0].camera = { requirement: "enabled", preview: true };
+    const data = gameWithReset(resetScene("get-ready", { camera: { preview: false } }));
+    data.stages[0].challenges[0].scenes[0].camera = { requirement: "enabled", preview: true };
     const [render] = getLayeredRenderData(playing(data), {}, "reset-test").challengesRenderData!;
     expect(render.camera).toEqual({ requirement: "enabled", preview: false });
   });
@@ -101,30 +101,30 @@ describe("reset displays", () => {
     };
 
     it("shows once by default, before the parent's first showing", () => {
-      const finished = start(playing(gameWithReset(resetDisplay("get-ready"))), RESET);
+      const finished = start(playing(gameWithReset(resetScene("get-ready"))), RESET);
       expect(shownScope(leaveAndReturn(finished))).toEqual([CHALLENGE]);
     });
 
     it("shows before every showing when set to", () => {
-      const finished = start(playing(gameWithReset(resetDisplay("get-ready", { showOn: "every-show" }))), RESET);
+      const finished = start(playing(gameWithReset(resetScene("get-ready", { showOn: "every-show" }))), RESET);
       expect(shownScope(leaveAndReturn(finished))).toEqual([RESET]);
     });
 
     it("shows again when the parent's challenge is reset", () => {
       const reset: GameRule = { on: { start: true }, do: [{ resetChallenge: true }] };
-      const finished = start(playing(gameWithReset(resetDisplay("get-ready"), [reset])), RESET);
+      const finished = start(playing(gameWithReset(resetScene("get-ready"), [reset])), RESET);
       expect(shownScope(start(finished, CHALLENGE))).toEqual([RESET]);
     });
 
     it("starts from its initial state each time it shows", () => {
-      const data = gameWithReset(resetDisplay("get-ready"));
+      const data = gameWithReset(resetScene("get-ready"));
       const away = { ...createBlankGameState(data), current: OVERVIEW };
       const back = applyShowResets(away, { ...away, current: IN_STAGE, displayStates: { [RESET]: { ready: true } } });
       expect(back.displayStates).not.toHaveProperty(RESET);
     });
 
     it("shows again when a saved game is loaded, as finishing isn't saved", () => {
-      const data = gameWithReset(resetDisplay("get-ready"));
+      const data = gameWithReset(resetScene("get-ready"));
       saveGameState("reset-test", start(playing(data), RESET));
       const loaded = loadGameState("reset-test", data)!;
       expect(loaded.session.finishedResets).toEqual([]);
@@ -135,19 +135,19 @@ describe("reset displays", () => {
   describe("when the game loads", () => {
     it("accepts finishReset on a reset display, including a nested one", () => {
       expect(() =>
-        compileGameRules(gameWithReset(resetDisplay("outer", { resetDisplay: resetDisplay("inner") }))),
+        compileGameRules(gameWithReset(resetScene("outer", { resetScene: resetScene("inner") }))),
       ).not.toThrow();
     });
 
     it("rejects finishReset anywhere else, naming the display", () => {
-      expect(() => compileGameRules(gameWithReset(resetDisplay("get-ready"), [FINISH]))).toThrow(
+      expect(() => compileGameRules(gameWithReset(resetScene("get-ready"), [FINISH]))).toThrow(
         "challenges[0] (c1) › displays[0] (challenge-in-progress) › rules[0].do[0]: finishReset can only be used on a reset display",
       );
     });
 
     it("names a reset display's path in its errors", () => {
-      const bad: GameResetDisplay = { component: { ...scroll(), rules: [{ on: { when: "1 +" }, do: [] }] } };
-      expect(() => compileGameRules(gameWithReset(bad))).toThrow("› resetDisplay › rules[0].on.when");
+      const bad: GameResetScene = { component: { ...scroll(), rules: [{ on: { when: "1 +" }, do: [] }] } };
+      expect(() => compileGameRules(gameWithReset(bad))).toThrow("› resetScene › rules[0].on.when");
     });
   });
 });

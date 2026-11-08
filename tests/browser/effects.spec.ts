@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { GameData } from "../../src/entities/data/GameData";
-import type { GameRule } from "../../src/entities/data/displays/GameDisplayData";
+import type { GameRule } from "../../src/entities/data/scenes/GameSceneData";
 import type { GameRepository } from "../../src/entities/GameRepository";
 import { MODEL_TIMEOUT } from "./fixtures/cameraGame";
 import { installFakeCamera } from "./fixtures/fakeCamera";
@@ -29,17 +29,17 @@ const openWith = async (page: Page, rules: GameRule[], change: (game: GameData) 
     const repository = (await response.json()) as GameRepository;
     const game = repository.games["rules-demo"];
     for (const display of [
-      ...game.displays,
+      ...game.scenes,
       // The effects stage acts on players, so it can't load without the camera
       ...game.stages
         .filter((stage) => stage.id !== "effects")
-        .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.displays)),
+        .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
     ]) {
       display.camera = { requirement: false };
     }
     const stage = game.stages.find(({ id }) => id === "balloons")!;
-    const [display] = stage.challenges[0].displays;
-    delete display.resetDisplay;
+    const [display] = stage.challenges[0].scenes;
+    delete display.resetScene;
     display.component = {
       type: "template",
       data: {},
@@ -111,11 +111,11 @@ test("a move in a second column still places its centre by the whole display", a
   await openWith(page, [], (game) => {
     const stage = game.stages.find(({ id }) => id === "balloons")!;
     const [first] = stage.challenges;
-    const [display] = first.displays;
+    const [display] = first.scenes;
     const second = {
       ...first,
       id: "second",
-      displays: [
+      scenes: [
         {
           ...display,
           component: {
@@ -282,7 +282,7 @@ test("a quake moves each item and ends, leaving it where it was", async ({ page 
 
 test("a quake enlarges a full-size item so no gap shows", async ({ page }) => {
   await openWith(page, [onGo([{ effect: "quake", target: "#sky", dx: 2, durationMs: 300 }])], (game) => {
-    const [display] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].displays;
+    const [display] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].scenes;
     display.component.foregroundTemplate = {
       sourceType: "embedded",
       content: `<div id="sky" style="position: absolute; inset: 0"></div>${ITEMS}`,
@@ -352,7 +352,7 @@ test("an effect's end fires a rule once per element, with its id", async ({ page
       { on: { effectEnd: "item-fall", target: "#platform" }, do: [{ set: { last: "event.id" } }] },
     ],
     (game) => {
-      const [display] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].displays;
+      const [display] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].scenes;
       display.component.foregroundTemplate = {
         sourceType: "embedded",
         content: `${ITEMS}<p id="last">{{state.last}}</p>`,
@@ -459,7 +459,7 @@ test.describe("on players, with a fake camera", () => {
     await page.context().grantPermissions(["camera"]);
     await installFakeCamera(page, peoplePhotoUrls());
     await openWith(page, rules, (game) => {
-      const [display] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].displays;
+      const [display] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].scenes;
       display.camera = { requirement: "enabled" };
       display.component.foregroundTemplate = { sourceType: "embedded", content: `${ITEMS}${PLAYERS}` };
     });

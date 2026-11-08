@@ -1,6 +1,6 @@
 import type { GameChallengeId } from "../data/GameChallengeData";
 import type { GameId, GameData } from "../data/GameData";
-import type { GameOverviewDisplayPurpose } from "../data/displays/GameDisplayData";
+import type { GameOverviewScenePurpose } from "../data/scenes/GameSceneData";
 import type { GameStageId } from "../data/GameStageData";
 import { stageCompletion } from "../../components/core/logic/GameStateUtils";
 import { allDisplayScopes } from "../../components/core/logic/RenderDataUtils";
@@ -27,7 +27,7 @@ interface StoredGameProgress {
     /** The stage being played, or null while an overview was showing. */
     stageId: GameStageId | null;
     /** The overview display that was showing, if any. */
-    overviewDisplay: GameOverviewDisplayPurpose | null;
+    overviewDisplay: GameOverviewScenePurpose | null;
   };
   /** Each display's own state, by scope. Read as empty from progress saved before displays had state. */
   displayStates: GameState["displayStates"];
@@ -54,12 +54,12 @@ const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((item) => typeof item === "string");
 
 /** Whether a string names one of the overview display purposes. */
-const isOverviewPurpose = (value: string): value is GameOverviewDisplayPurpose =>
+const isOverviewPurpose = (value: string): value is GameOverviewScenePurpose =>
   value === "game-overview-title" || value === "game-overview-stages" || value === "game-overview-complete";
 
 /** Whether a string names an overview display the game defines. */
-const isGameOverview = (value: string, gameData: GameData): value is GameOverviewDisplayPurpose =>
-  isOverviewPurpose(value) && gameData.displays.some((display) => display.purpose === value);
+const isGameOverview = (value: string, gameData: GameData): value is GameOverviewScenePurpose =>
+  isOverviewPurpose(value) && gameData.scenes.some((display) => display.purpose === value);
 
 /** Reads a saved current stage id, rejecting ids the game no longer has. */
 const parseStageId = (value: unknown, gameData: GameData): GameStageId | null | undefined => {
@@ -69,7 +69,7 @@ const parseStageId = (value: unknown, gameData: GameData): GameStageId | null | 
 };
 
 /** Reads a saved overview display purpose, rejecting purposes the game no longer has. */
-const parseOverviewDisplay = (value: unknown, gameData: GameData): GameOverviewDisplayPurpose | null | undefined => {
+const parseOverviewDisplay = (value: unknown, gameData: GameData): GameOverviewScenePurpose | null | undefined => {
   if (value === null) return null;
   if (typeof value !== "string" || !isGameOverview(value, gameData)) return undefined;
   return value;

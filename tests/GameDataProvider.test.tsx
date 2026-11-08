@@ -14,7 +14,7 @@ import { server } from "./mocks/server";
 const gameWith = (resources?: GameResourceDefinitions): GameData => ({
   title: "Resource Game",
   description: "A game for tests.",
-  displays: [],
+  scenes: [],
   stages: [],
   gameContainerStyle: {},
   resources,
@@ -105,7 +105,7 @@ describe("GameDataProvider", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const broken: GameData = {
       ...gameWith(),
-      displays: [
+      scenes: [
         {
           purpose: "game-overview-title",
           component: { type: "scroll", contents: [], data: {}, rules: [{ on: { when: "1 +" }, do: [] }] },

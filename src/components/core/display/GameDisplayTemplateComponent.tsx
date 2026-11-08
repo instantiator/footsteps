@@ -15,7 +15,7 @@ import {
   type PropsWithChildren,
   type SyntheticEvent,
 } from "react";
-import type { GameDisplayTemplateSourceData as GameDisplayTemplateData } from "../../../entities/data/displays/GameDisplayTemplateComponentData";
+import type { GameSceneTemplateSourceData as GameDisplayTemplateData } from "../../../entities/data/scenes/GameSceneTemplateComponentData";
 import useContentCache from "../../../providers/GameContentCacheHook";
 import { isDefined } from "../../../util/ObjectUtils";
 import { summariseTemplateSource, type DisplayDomEvent } from "../logic/TemplateUtils";

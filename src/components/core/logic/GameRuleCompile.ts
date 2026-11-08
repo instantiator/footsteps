@@ -3,14 +3,14 @@ import type { GameStageData } from "../../../entities/data/GameStageData";
 import {
   GAME_INTERACTIONS,
   type GameAction,
-  type GameDisplayBase,
-  type GameDisplayCameraData,
+  type GameSceneBase,
+  type GameSceneCameraData,
   type GameFeedbackAction,
   type GameInteractTrigger,
   type GameRule,
   type GameTrigger,
   type GameWhenTrigger,
-} from "../../../entities/data/displays/GameDisplayData";
+} from "../../../entities/data/scenes/GameSceneData";
 import { isDefined } from "../../../util/ObjectUtils";
 import { compileGameExpression, type GameExpression } from "./GameExpressionUtils";
 import {
@@ -30,7 +30,7 @@ const CHALLENGE_ACTIONS = ["completeChallenge", "answer", "resetChallenge"] as c
 
 /** A display to check, with a readable path to it for error messages. */
 interface DisplayToCompile {
-  display: Pick<GameDisplayBase, "component" | "camera" | "resetDisplay">;
+  display: Pick<GameSceneBase, "component" | "camera" | "resetScene">;
   path: string;
   isChallenge: boolean;
   /** Whether it is a reset display, where `finishReset` can be used. */
@@ -48,12 +48,12 @@ type CameraInheritance = {
 };
 
 /** Whether the camera could ever be on for a display, by the inheritance in `CameraModeUtils.ts`. */
-const canCameraBeOn = (camera: GameDisplayCameraData | undefined, { inherited, alongside }: CameraInheritance) =>
+const canCameraBeOn = (camera: GameSceneCameraData | undefined, { inherited, alongside }: CameraInheritance) =>
   alongside || (declaredValue("enabled", camera) ?? inherited) === true;
 
 /** A display, followed by its reset display, and theirs, each using its own camera setting over its parent's. */
 const withResets = (target: DisplayToCompile, camera: CameraInheritance): DisplayToCompile[] => {
-  const reset = target.display.resetDisplay;
+  const reset = target.display.resetScene;
   if (!isDefined(reset)) return [target];
   const merged = { ...target.display.camera, ...reset.camera };
   return [
@@ -62,7 +62,7 @@ const withResets = (target: DisplayToCompile, camera: CameraInheritance): Displa
       {
         ...target,
         display: { ...reset, camera: merged },
-        path: `${target.path} › resetDisplay`,
+        path: `${target.path} › resetScene`,
         isReset: true,
         cameraCanBeOn: canCameraBeOn(merged, camera),
       },
@@ -72,8 +72,8 @@ const withResets = (target: DisplayToCompile, camera: CameraInheritance): Displa
 };
 
 /** The value several displays' camera settings give together: on if any is on, otherwise off if any is off. */
-const anyDeclared = (displays: Pick<GameDisplayBase, "camera">[]): boolean | undefined => {
-  const values = displays.map(({ camera }) => declaredValue("enabled", camera)).filter(isDefined);
+const anyDeclared = (scenes: Pick<GameSceneBase, "camera">[]): boolean | undefined => {
+  const values = scenes.map(({ camera }) => declaredValue("enabled", camera)).filter(isDefined);
   return values.length === 0 ? undefined : values.includes(true);
 };
 
@@ -90,10 +90,10 @@ const compilable = (display: DisplayToCompile["display"], { path, isChallenge, .
 /** A stage's displays to check, with what they inherit. */
 const stageDisplays = (stage: GameStageData, s: number, fromOverview: boolean | undefined): DisplayToCompile[] => {
   const stagePath = `stages[${s}] (${stage.id})`;
-  const challengesOn = stage.challenges.map((challenge) => anyDeclared(challenge.displays) === true);
-  const inherited = anyDeclared(stage.displays ?? []) ?? fromOverview;
+  const challengesOn = stage.challenges.map((challenge) => anyDeclared(challenge.scenes) === true);
+  const inherited = anyDeclared(stage.scenes ?? []) ?? fromOverview;
   return [
-    ...(stage.displays ?? []).flatMap((display, d) =>
+    ...(stage.scenes ?? []).flatMap((display, d) =>
       compilable(display, {
         path: `${stagePath} › displays[${d}] (${display.purpose})`,
         isChallenge: false,
@@ -102,7 +102,7 @@ const stageDisplays = (stage: GameStageData, s: number, fromOverview: boolean | 
       }),
     ),
     ...stage.challenges.flatMap((challenge, c) =>
-      challenge.displays.flatMap((display, d) =>
+      challenge.scenes.flatMap((display, d) =>
         compilable(display, {
           path: `${stagePath} › challenges[${c}] (${challenge.id}) › displays[${d}] (${display.purpose})`,
           isChallenge: true,
@@ -118,9 +118,9 @@ const stageDisplays = (stage: GameStageData, s: number, fromOverview: boolean | 
 /** Every display in the game, overview, stage and challenge, and their reset displays, with its path. */
 const allDisplays = (gameData: GameData): DisplayToCompile[] => {
   const fromGame = declaredValue("enabled", gameData.modules?.camera);
-  const fromOverview = anyDeclared(gameData.displays) ?? fromGame;
+  const fromOverview = anyDeclared(gameData.scenes) ?? fromGame;
   return [
-    ...gameData.displays.flatMap((display, d) =>
+    ...gameData.scenes.flatMap((display, d) =>
       compilable(display, {
         path: `displays[${d}] (${display.purpose})`,
         isChallenge: false,

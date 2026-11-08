@@ -9,7 +9,7 @@ import {
   type PlayerEffectRun,
 } from "../src/components/core/effects/PlayerEffects";
 import { NO_EVENT } from "../src/components/core/logic/GameRuleUtils";
-import type { GameEffect } from "../src/entities/data/displays/GameEffectData";
+import type { GameEffect } from "../src/entities/data/scenes/GameEffectData";
 import { noKeyPoints, type VisionFrame, type VisionPerson } from "../src/vision/VisionTypes";
 
 const WIDTH = 100;

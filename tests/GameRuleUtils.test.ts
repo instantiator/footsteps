@@ -15,15 +15,15 @@ import { compileGameRules } from "../src/components/core/logic/GameRuleCompile";
 import { startDisplayRuns } from "../src/components/core/logic/GameStateUtils";
 import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
 import type { GameData } from "../src/entities/data/GameData";
-import type { GameAction, GameRule } from "../src/entities/data/displays/GameDisplayData";
+import type { GameAction, GameRule } from "../src/entities/data/scenes/GameSceneData";
 import type { GameRepository } from "../src/entities/GameRepository";
 import { challenge, game, stage } from "./data/GameBuilders";
 
 /** A game whose stages overview, and the challenge in its only stage, have the given rules. */
 const gameWithRules = (overviewRules: GameRule[], challengeRules: GameRule[] = []): GameData => {
   const data = game(["game-overview-stages"], [stage("s1", [challenge("c1")])]);
-  data.displays[0].component.rules = overviewRules;
-  data.stages[0].challenges[0].displays[0].component.rules = challengeRules;
+  data.scenes[0].component.rules = overviewRules;
+  data.stages[0].challenges[0].scenes[0].component.rules = challengeRules;
   return data;
 };
 
@@ -154,7 +154,7 @@ describe("applyShowResets", () => {
   /** A game whose challenge display resets on show, with both displays holding state. */
   const withStates = (current: GameState["current"]): GameState => {
     const data = gameWithRules([]);
-    data.stages[0].challenges[0].displays[0].component.resetStateOnShow = true;
+    data.stages[0].challenges[0].scenes[0].component.resetStateOnShow = true;
     return {
       ...createBlankGameState(data),
       current,
@@ -208,7 +208,7 @@ describe("rule engine", () => {
       ["game-overview-stages"],
       [stage("s1", [challenge("c1"), challenge("c2")]), stage("s2", [challenge("c3")])],
     );
-    Object.assign(data.stages[0].challenges[0].displays[0].component, { rules, initialState });
+    Object.assign(data.stages[0].challenges[0].scenes[0].component, { rules, initialState });
     const state = createBlankGameState(data);
     return { ...state, current: { ...state.current, stageId: "s1" } };
   };
@@ -311,9 +311,9 @@ describe("rule engine", () => {
 
     it("includes a challenge's reset displays, and theirs", () => {
       const state = playing([{ on: { start: true }, do: [{ resetChallenge: true }] }]);
-      const component = state.gameData.stages[0].challenges[0].displays[0].component;
-      const resetDisplay = { component, resetDisplay: { component } };
-      state.gameData.stages[0].challenges[0].displays[0].resetDisplay = resetDisplay;
+      const component = state.gameData.stages[0].challenges[0].scenes[0].component;
+      const resetScene = { component, resetScene: { component } };
+      state.gameData.stages[0].challenges[0].scenes[0].resetScene = resetScene;
       const shown = {
         ...state,
         session: { ...state.session, finishedResets: [`${SCOPE}/reset`, `${SCOPE}/reset/reset`] },

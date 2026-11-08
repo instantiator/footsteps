@@ -110,12 +110,12 @@ const openRulesDemoWithCamera = async (page: Page, query: string): Promise<void>
     const game = repository.games["rules-demo"];
     game.modules = { camera: { requirement: "enabled", preview: false } };
     if (process.env.VISION_BENCH_STATIC) {
-      const [{ component }] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].displays;
+      const [{ component }] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].scenes;
       const again = { on: { every: 500 }, do: [{ effect: "player-static" as const, players: "all" as const }] };
       component.rules = [...(component.rules ?? []), again];
     }
     if (process.env.VISION_BENCH_FILTER) {
-      const [{ component }] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].displays;
+      const [{ component }] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].scenes;
       const sequence = [{ filter: "brightness(1.5) drop-shadow(0 0 1cqw gold)" }];
       const highlight = {
         effect: "highlight" as const,
@@ -126,7 +126,7 @@ const openRulesDemoWithCamera = async (page: Page, query: string): Promise<void>
       component.rules = [...(component.rules ?? []), { on: { every: 1000 }, do: [highlight] }];
     }
     if (process.env.VISION_BENCH_NEAR) {
-      const [{ component }] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].displays;
+      const [{ component }] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].scenes;
       const near = { interact: ["near-enter" as const], target: "#score", within: 10 };
       component.rules = [...(component.rules ?? []), { on: near, do: [] }];
     }

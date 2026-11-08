@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from "react";
-import type { GameDisplayMediaData } from "../../../entities/data/displays/GameDisplayMediaData";
+import type { GameSceneMediaData } from "../../../entities/data/scenes/GameSceneMediaData";
 import { useGameData } from "../../../providers/GameDataHook";
 import useGameMusic from "../../../providers/GameMusicHook";
 import { isDefined } from "../../../util/ObjectUtils";
@@ -7,7 +7,7 @@ import { isDefined } from "../../../util/ObjectUtils";
 /** Props for {@link GameAudioComponent}. */
 interface GameAudioComponentProps {
   /** The audio resource, with optional still and motion images. */
-  media: GameDisplayMediaData;
+  media: GameSceneMediaData;
   /** Whether to show the browser's own audio controls. */
   controls: boolean;
   /** Style for the audio element's controls. */

@@ -1,13 +1,10 @@
-import type { GameOverviewDisplayPurpose } from "../../../entities/data/displays/GameDisplayData";
+import type { GameOverviewScenePurpose } from "../../../entities/data/scenes/GameSceneData";
 import type { GameState } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
 import { calcOverviewDisplay } from "./RenderDataUtils";
 
 /** The order in which the overview displays are normally shown. */
-export const GameOverviewPurposeSequence: GameOverviewDisplayPurpose[] = [
-  "game-overview-title",
-  "game-overview-stages",
-];
+export const GameOverviewPurposeSequence: GameOverviewScenePurpose[] = ["game-overview-title", "game-overview-stages"];
 
 /**
  * Moves from the title screen to the stages overview, as any click (or Enter/Space) on the title does.

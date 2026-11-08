@@ -1,5 +1,5 @@
 import { useCallback, useContext } from "react";
-import type { GameDisplayTemplateSourceData } from "../entities/data/displays/GameDisplayTemplateComponentData";
+import type { GameSceneTemplateSourceData } from "../entities/data/scenes/GameSceneTemplateComponentData";
 import type { GameSource } from "../entities/GameSource";
 import { getBaseURL, isDefined, resolveRelativeURL } from "../util/ObjectUtils";
 import { GameContentCacheContext } from "./GameContentCacheContext";
@@ -39,7 +39,7 @@ export default function useContentCache() {
   const { templates } = useContext(GameContentCacheContext);
 
   const getTemplate = useCallback(
-    async (template: GameDisplayTemplateSourceData | undefined): Promise<GameDisplayTemplateSourceData | undefined> => {
+    async (template: GameSceneTemplateSourceData | undefined): Promise<GameSceneTemplateSourceData | undefined> => {
       if (!isDefined(template)) return undefined;
       if (template.sourceType === "embedded") return template;
 

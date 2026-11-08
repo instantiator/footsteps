@@ -2,16 +2,16 @@ import type { GameChallengeData, GameChallengeId } from "../../../entities/data/
 import type { GameChallengeSolution } from "../../../entities/data/GameChallengeSolution";
 import type { GameStageData, GameStageId } from "../../../entities/data/GameStageData";
 import type {
-  GameChallengeDisplay,
-  GameChallengeDisplayPurpose,
-  GameDisplayBase,
-  GameDisplayCameraData,
-  GameDisplayComponentData,
-  GameOverviewDisplay,
-  GameOverviewDisplayPurpose,
-  GameStageDisplay,
-  GameStageDisplayPurpose,
-} from "../../../entities/data/displays/GameDisplayData";
+  GameChallengeScene,
+  GameChallengeScenePurpose,
+  GameSceneBase,
+  GameSceneCameraData,
+  GameSceneComponentData,
+  GameOverviewScene,
+  GameOverviewScenePurpose,
+  GameStageScene,
+  GameStageScenePurpose,
+} from "../../../entities/data/scenes/GameSceneData";
 import type { GameData, GameId } from "../../../entities/data/GameData";
 import type { GameChallengeState } from "../../../entities/state/GameChallengeState";
 import { toGameSnapshot, type GameSnapshot } from "../../../entities/state/GameSnapshot";
@@ -24,7 +24,7 @@ import { decorateGameState, type DecoratedGameState } from "./TemplateUtils";
 export type GameDisplayMode = "overview" | "stage";
 
 /** Everything needed to render one display, and to respond to input on it. */
-export interface GameDisplayRenderData extends GameDisplayBase {
+export interface GameDisplayRenderData extends GameSceneBase {
   /** Identifies the display, and so its state. */
   scope: DisplayScope;
   /** Which run of the display this is; a new one rebuilds its templates. */
@@ -91,7 +91,7 @@ export const getDisplayKey = ({
   });
 
 /** The scope of an overview display. */
-export const overviewScope = (purpose: GameOverviewDisplayPurpose): DisplayScope => `overview:${purpose}`;
+export const overviewScope = (purpose: GameOverviewScenePurpose): DisplayScope => `overview:${purpose}`;
 
 /** The scope of a stage's shared display. */
 export const stageScope = (stageId: GameStageId): DisplayScope => `stage:${stageId}:shared`;
@@ -100,16 +100,16 @@ export const stageScope = (stageId: GameStageId): DisplayScope => `stage:${stage
 export const challengeScope = (
   stageId: GameStageId,
   challengeId: GameChallengeId,
-  purpose: GameChallengeDisplayPurpose,
+  purpose: GameChallengeScenePurpose,
 ) => `challenge:${stageId}:${challengeId}:${purpose}`;
 
 /** Every scope the game's displays have. */
 export const allDisplayScopes = (gameData: GameData): Set<DisplayScope> =>
   new Set([
-    ...gameData.displays.map((d) => overviewScope(d.purpose)),
+    ...gameData.scenes.map((d) => overviewScope(d.purpose)),
     ...gameData.stages.flatMap((stage) => [
-      ...(stage.displays ?? []).map(() => stageScope(stage.id)),
-      ...stage.challenges.flatMap((c) => c.displays.map((d) => challengeScope(stage.id, c.id, d.purpose))),
+      ...(stage.scenes ?? []).map(() => stageScope(stage.id)),
+      ...stage.challenges.flatMap((c) => c.scenes.map((d) => challengeScope(stage.id, c.id, d.purpose))),
     ]),
   ]);
 
@@ -117,7 +117,7 @@ export const allDisplayScopes = (gameData: GameData): Set<DisplayScope> =>
 export const getDisplayState = (
   state: GameState,
   scope: DisplayScope,
-  component: GameDisplayComponentData,
+  component: GameSceneComponentData,
 ): Record<string, unknown> => state.displayStates[scope] ?? component.initialState ?? {};
 
 /** The scope of a display's reset display. */
@@ -128,9 +128,9 @@ interface ResolvedDisplay {
   /** The scope of what shows. */
   scope: DisplayScope;
   /** How what shows renders, and its rules. */
-  component: GameDisplayComponentData;
+  component: GameSceneComponentData;
   /** Its camera settings: a reset display's over its parent's. */
-  camera: GameDisplayCameraData | undefined;
+  camera: GameSceneCameraData | undefined;
   /** Whether what shows is a reset display. */
   isReset: boolean;
 }
@@ -142,10 +142,10 @@ interface ResolvedDisplay {
 export const resolveResets = (
   state: GameState,
   scope: DisplayScope,
-  display: Pick<GameDisplayBase, "component" | "camera" | "resetDisplay">,
+  display: Pick<GameSceneBase, "component" | "camera" | "resetScene">,
 ): ResolvedDisplay => {
   let shown: ResolvedDisplay = { scope, component: display.component, camera: display.camera, isReset: false };
-  for (let reset = display.resetDisplay; isDefined(reset); reset = reset.resetDisplay) {
+  for (let reset = display.resetScene; isDefined(reset); reset = reset.resetScene) {
     const nextScope = resetScope(shown.scope);
     if (state.session.finishedResets.includes(nextScope)) break;
     shown = {
@@ -163,7 +163,7 @@ export interface ShownDisplay {
   /** Identifies the display, and so its state. */
   scope: DisplayScope;
   /** How the display renders, and its rules. */
-  component: GameDisplayComponentData;
+  component: GameSceneComponentData;
   /** The stage it belongs to; undefined for overview displays. */
   stageId?: GameStageId;
   /** The challenge it belongs to; undefined unless it is a challenge display. */
@@ -177,7 +177,7 @@ export interface DisplaySlot {
   /** The display's own scope. */
   scope: DisplayScope;
   /** The display. */
-  display: GameDisplayBase;
+  display: GameSceneBase;
   /** The stage it belongs to; undefined for overview displays. */
   stageId?: GameStageId;
   /** The challenge it belongs to; undefined unless it is a challenge display. */
@@ -333,22 +333,20 @@ const getChallengesRenderData = (
  * Selects the display for the game overview: the current overview display if one is set,
  * otherwise the title screen, falling back to the stages overview.
  */
-export const calcOverviewDisplay = (gameState: GameState): GameOverviewDisplay | undefined =>
+export const calcOverviewDisplay = (gameState: GameState): GameOverviewScene | undefined =>
   isDefined(gameState.current.overviewDisplay)
-    ? gameState.gameData.displays.find((d) => d.purpose === gameState.current.overviewDisplay)
-    : (gameState.gameData.displays.find((d) => d.purpose === "game-overview-title") ??
-      gameState.gameData.displays.find((d) => d.purpose === "game-overview-stages"));
+    ? gameState.gameData.scenes.find((d) => d.purpose === gameState.current.overviewDisplay)
+    : (gameState.gameData.scenes.find((d) => d.purpose === "game-overview-title") ??
+      gameState.gameData.scenes.find((d) => d.purpose === "game-overview-stages"));
 
 /**
  * Gets the stage display for the given stage and purpose.
  * @param stage the stage to get the display for
  * @param purpose the purpose of the display to get
- * @returns a GameStageDisplay if one can be determined, or undefined if not
+ * @returns a GameStageScene if one can be determined, or undefined if not
  */
-export const calcStageDisplay = (
-  stage: GameStageData,
-  purpose: GameStageDisplayPurpose,
-): GameStageDisplay | undefined => stage.displays?.find((d) => d.purpose === purpose);
+export const calcStageDisplay = (stage: GameStageData, purpose: GameStageScenePurpose): GameStageScene | undefined =>
+  stage.scenes?.find((d) => d.purpose === purpose);
 
 /**
  * Gets the displays for the given challenge states, in order (undefined where one can't be determined).
@@ -358,7 +356,7 @@ export const calcChallengeDisplays = (challengeStates: GameChallengeState[]) =>
   challengeStates?.map((challengeState) => calcChallengeDisplay(challengeState)) ?? [];
 
 /** The order in which a challenge's displays are preferred, before and after it is solved. */
-const CHALLENGE_DISPLAY_PREFERENCE: Record<"unsolved" | "solved", GameChallengeDisplayPurpose[]> = {
+const CHALLENGE_DISPLAY_PREFERENCE: Record<"unsolved" | "solved", GameChallengeScenePurpose[]> = {
   unsolved: ["challenge-title", "challenge-in-progress", "challenge-completed"],
   solved: ["challenge-completed", "challenge-in-progress", "challenge-title"],
 };
@@ -367,11 +365,11 @@ const CHALLENGE_DISPLAY_PREFERENCE: Record<"unsolved" | "solved", GameChallengeD
  * Gets the challenge display for the given challenge state: the first it has of title, in-progress and
  * completed while unsolved, or of completed, in-progress and title once solved.
  * @param challengeState the state of the challenge to get the display for
- * @returns a GameChallengeDisplay if one can be determined, or undefined if not
+ * @returns a GameChallengeScene if one can be determined, or undefined if not
  */
-export const calcChallengeDisplay = (challengeState: GameChallengeState): GameChallengeDisplay | undefined => {
+export const calcChallengeDisplay = (challengeState: GameChallengeState): GameChallengeScene | undefined => {
   const preference = CHALLENGE_DISPLAY_PREFERENCE[challengeState.succeeded ? "solved" : "unsolved"];
   return preference
-    .map((purpose) => challengeState.challenge.displays.find((d) => d.purpose === purpose))
+    .map((purpose) => challengeState.challenge.scenes.find((d) => d.purpose === purpose))
     .find(isDefined);
 };

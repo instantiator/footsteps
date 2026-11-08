@@ -1,4 +1,4 @@
-import type { GameDisplayCameraData } from "../../../entities/data/displays/GameDisplayData";
+import type { GameSceneCameraData } from "../../../entities/data/scenes/GameSceneData";
 import type { GameData } from "../../../entities/data/GameData";
 import { isDefined } from "../../../util/ObjectUtils";
 import type { LayeredGameDisplayRenderData } from "./RenderDataUtils";
@@ -18,10 +18,7 @@ type CameraModeField = keyof ResolvedCameraMode;
 const CAMERA_MODE_DEFAULTS: ResolvedCameraMode = { enabled: false, preview: true };
 
 /** What a display or the game's module declares for a setting, if anything. */
-export const declaredValue = (
-  field: CameraModeField,
-  source: GameDisplayCameraData | undefined,
-): boolean | undefined => {
+export const declaredValue = (field: CameraModeField, source: GameSceneCameraData | undefined): boolean | undefined => {
   if (field === "preview") return source?.preview;
   return isDefined(source?.requirement) ? source.requirement !== false : undefined;
 };
@@ -33,7 +30,7 @@ const challengeValues = (field: CameraModeField, renderData: LayeredGameDisplayR
 /** The first value the given sources declare for the field, if any. */
 const firstDeclared = (
   field: CameraModeField,
-  ...sources: (GameDisplayCameraData | undefined)[]
+  ...sources: (GameSceneCameraData | undefined)[]
 ): boolean | undefined => {
   for (const source of sources) {
     const value = declaredValue(field, source);

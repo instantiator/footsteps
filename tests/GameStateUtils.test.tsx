@@ -124,20 +124,20 @@ describe("GameStateUtils", () => {
         });
 
         it("with neither a title nor a finale display, shows the stages overview once the game is complete", () => {
-          const stagesOnly = { ...simpleGameState.gameData.displays[0], purpose: "game-overview-stages" as const };
+          const stagesOnly = { ...simpleGameState.gameData.scenes[0], purpose: "game-overview-stages" as const };
           const withoutTitle: GameState = {
             ...simpleGameState_s3_c1,
-            gameData: { ...simpleGameState.gameData, displays: [stagesOnly] },
+            gameData: { ...simpleGameState.gameData, scenes: [stagesOnly] },
           };
           const finished = completeChallenge(withoutTitle, "stage-3", "stage-3-challenge-1");
           expect(finished.current.overviewDisplay).toBe("game-overview-stages");
         });
 
         it("shows the finale display once the game is complete, when the game has one", () => {
-          const finale = { ...simpleGameState.gameData.displays[0], purpose: "game-overview-complete" as const };
+          const finale = { ...simpleGameState.gameData.scenes[0], purpose: "game-overview-complete" as const };
           const withFinale: GameState = {
             ...simpleGameState_s3_c1,
-            gameData: { ...simpleGameState.gameData, displays: [...simpleGameState.gameData.displays, finale] },
+            gameData: { ...simpleGameState.gameData, scenes: [...simpleGameState.gameData.scenes, finale] },
           };
           const finished = completeChallenge(withFinale, "stage-3", "stage-3-challenge-1");
           expect(finished.current.overviewDisplay).toBe("game-overview-complete");

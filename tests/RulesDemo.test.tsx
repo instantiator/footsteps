@@ -7,8 +7,8 @@ import type { CameraInteraction } from "../src/components/camera/PlayerMonitor";
 import Game from "../src/components/core/Game";
 import type GameLayersLayout from "../src/components/core/layout/GameLayersLayout";
 import type { GameData } from "../src/entities/data/GameData";
-import type { GameDisplayBase, GameResetDisplay } from "../src/entities/data/displays/GameDisplayData";
-import type { GameDisplayTemplateSourceData } from "../src/entities/data/displays/GameDisplayTemplateComponentData";
+import type { GameSceneBase, GameResetScene } from "../src/entities/data/scenes/GameSceneData";
+import type { GameSceneTemplateSourceData } from "../src/entities/data/scenes/GameSceneTemplateComponentData";
 import type { GameRepository } from "../src/entities/GameRepository";
 import GameProviders from "./helpers/GameProviders";
 import { stubMediaPlayback } from "./helpers/media";
@@ -31,7 +31,7 @@ vi.mock("../src/components/core/layout/GameLayersLayout", async (importOriginal)
 });
 
 /** A template file's source, inlined, as a raw repository has no location to resolve relative files from. */
-const inline = (source: GameDisplayTemplateSourceData | undefined): GameDisplayTemplateSourceData | undefined =>
+const inline = (source: GameSceneTemplateSourceData | undefined): GameSceneTemplateSourceData | undefined =>
   source?.sourceType === "relative"
     ? { sourceType: "embedded", content: readFileSync(`public/${source.templateSource}`, "utf8") }
     : source;
@@ -43,14 +43,14 @@ const inline = (source: GameDisplayTemplateSourceData | undefined): GameDisplayT
 const demo = (change: (game: GameData) => void): GameData => {
   const game: GameData = structuredClone((localRepository as GameRepository).games["rules-demo"]);
   change(game);
-  const withResets = (display: GameResetDisplay | GameDisplayBase): (GameResetDisplay | GameDisplayBase)[] =>
-    display.resetDisplay ? [display, ...withResets(display.resetDisplay)] : [display];
+  const withResets = (display: GameResetScene | GameSceneBase): (GameResetScene | GameSceneBase)[] =>
+    display.resetScene ? [display, ...withResets(display.resetScene)] : [display];
   for (const display of [
-    ...game.displays,
+    ...game.scenes,
     // The effects stage acts on players, so it can't load without the camera
     ...game.stages
       .filter((stage) => stage.id !== "effects")
-      .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.displays)),
+      .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
   ].flatMap(withResets)) {
     display.camera = { requirement: false };
     if (display.component.type !== "template") continue;
@@ -146,7 +146,7 @@ describe("rules demo, played by camera", () => {
 
   it("completes the balloons at the target, though each pop also plays a sound", async () => {
     await start((game) => {
-      game.stages.find((stage) => stage.id === "balloons")!.challenges[0].displays[0].component.data = { target: 1 };
+      game.stages.find((stage) => stage.id === "balloons")!.challenges[0].scenes[0].component.data = { target: 1 };
     });
     await startBalloons();
 

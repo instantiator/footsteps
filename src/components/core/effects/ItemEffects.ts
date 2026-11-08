@@ -6,7 +6,7 @@ import type {
   GameItemFallEffect,
   GameItemMoveEffect,
   GameQuakeEffect,
-} from "../../../entities/data/displays/GameEffectData";
+} from "../../../entities/data/scenes/GameEffectData";
 import { easingFunction } from "./EasingProbe";
 import { DISPLAY_FRAME_CLASS, centreOnScreen, displayDistance, displayRect, type ScreenPoint } from "./EffectTargets";
 

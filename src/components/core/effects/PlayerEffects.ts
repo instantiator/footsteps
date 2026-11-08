@@ -6,7 +6,7 @@ import type {
   GamePlayerRestoreEffect,
   GamePlayerSpinAwayEffect,
   GamePlayerStaticEffect,
-} from "../../../entities/data/displays/GameEffectData";
+} from "../../../entities/data/scenes/GameEffectData";
 import type { DisplayScope } from "../../../entities/state/GameState";
 import { centreOf } from "../../../vision/Tracking";
 import type { PlayerRegistry } from "../../camera/PlayerRegistry";

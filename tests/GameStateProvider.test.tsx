@@ -85,7 +85,7 @@ describe("GameStateProvider", () => {
 describe("GameStateProvider display resets", () => {
   const SCOPE = "challenge:s1:c1:challenge-in-progress";
   const resettingGame = game(["game-overview-stages"], [stage("s1", [challenge("c1")])]);
-  resettingGame.stages[0].challenges[0].displays[0].component.resetStateOnShow = true;
+  resettingGame.stages[0].challenges[0].scenes[0].component.resetStateOnShow = true;
 
   /** Moves in and out of the stage with plain states, as the HUD does, and sets the challenge display's state. */
   function DisplayStateProbe() {

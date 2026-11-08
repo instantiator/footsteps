@@ -23,7 +23,7 @@ const chunkedGame = (chunking: number, withShared = true) =>
     [
       stage("s1", [challenge("c1"), challenge("c2"), challenge("c3"), challenge("c4")], {
         challengeChunking: chunking,
-        displays: withShared ? [display("shared")] : undefined,
+        scenes: withShared ? [display("shared")] : undefined,
       }),
       stage("s2", [challenge("c5")]),
     ],
@@ -178,7 +178,7 @@ describe("calcOverviewDisplay", () => {
 
 describe("calcStageDisplay", () => {
   it("finds the stage's display by purpose", () => {
-    expect(calcStageDisplay(stage("s", [], { displays: [display("shared")] }), "shared")?.purpose).toBe("shared");
+    expect(calcStageDisplay(stage("s", [], { scenes: [display("shared")] }), "shared")?.purpose).toBe("shared");
   });
 
   it("is undefined when the stage has no displays", () => {
@@ -256,7 +256,7 @@ describe("display scopes and state", () => {
 
   it("gives each display its scope, and its state, data and the game snapshot to render", () => {
     const data = chunkedGame(1);
-    data.stages[0].challenges[0].displays[0].component.initialState = { n: 0 };
+    data.stages[0].challenges[0].scenes[0].component.initialState = { n: 0 };
     const state = {
       ...inStage(createBlankGameState(data), "s1"),
       displayStates: { "stage:s1:shared": { open: true } },
