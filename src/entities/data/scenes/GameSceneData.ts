@@ -65,9 +65,10 @@ export const DEFAULT_INTERACTION_THRESHOLD = 1;
 
 /**
  * How a scene is laid out. `2D`: a full-screen background, the players, and a foreground, with elements' `data-depth`
- * deciding which pass in front of players.
+ * deciding which pass in front of players. `2.5D`: as `2D`, but fitted to the floor the player calibrated: the camera
+ * is cropped to the floor, and the view takes the crop's shape, so players' feet stay in view all over the floor.
  */
-export type GameSceneMode = "2D";
+export type GameSceneMode = "2D" | "2.5D";
 
 /**
  * What stands in for the player. `mouse`: clicks and mouse moves. `camera`: the player's camera cut-out.

@@ -1,10 +1,9 @@
 import type { StaticLook } from "./PlayerStatic";
-import { BODY_PART_STYLES, BodyPart, type Color } from "../../vision/BodyPart";
-import { partRegion } from "../../vision/VisionQueries";
+import type { Color } from "../../vision/BodyPart";
 import type { VisionFrame } from "../../vision/VisionTypes";
 
-/** How the silhouette is drawn: plain, tinted per person and part, or tinted at the hands and feet only. */
-export type MaskType = "binary" | "colored" | "extremities";
+/** How the silhouette is drawn: plain, or tinted per person so people can be told apart. */
+export type MaskType = "binary" | "colored";
 
 /** Tints that tell people apart in a coloured mask, used in turn. */
 const PERSON_TINTS: Color[] = [
@@ -12,15 +11,6 @@ const PERSON_TINTS: Color[] = [
   { r: 255, g: 140, b: 0, a: 255 },
   { r: 160, g: 0, b: 255, a: 255 },
   { r: 0, g: 200, b: 120, a: 255 },
-];
-
-/** The parts tinted in an "extremities" mask, and over the person's tint in a "colored" one. */
-const TINTED_PARTS: BodyPart[] = [
-  BodyPart.HEAD,
-  BodyPart.LEFT_HAND,
-  BodyPart.RIGHT_HAND,
-  BodyPart.LEFT_FOOT,
-  BodyPart.RIGHT_FOOT,
 ];
 
 /**
@@ -46,35 +36,18 @@ const paint = (pixels: Uint8ClampedArray, i: number, { r, g, b, a }: Color) => {
 };
 
 /**
- * RGBA pixels that tint the silhouette: each person in their own colour for "colored", then the head,
- * hands and feet in their part's colour; transparent elsewhere.
+ * RGBA pixels that tint the silhouette, each person in their own colour; transparent elsewhere.
  * @param pixels a buffer to fill, reused between frames; a new one if omitted
  */
 export const tintPixels = (
-  frame: VisionFrame,
-  maskType: Exclude<MaskType, "binary">,
-  pixels: Uint8ClampedArray<ArrayBuffer> = new Uint8ClampedArray(frame.width * frame.height * 4),
+  { width, height, people }: VisionFrame,
+  pixels: Uint8ClampedArray<ArrayBuffer> = new Uint8ClampedArray(width * height * 4),
 ): Uint8ClampedArray<ArrayBuffer> => {
-  const { width, height, people } = frame;
   pixels.fill(0);
-  people.forEach((person) => {
-    const { mask } = person;
-    if (maskType === "colored") {
-      const tint = PERSON_TINTS[person.id % PERSON_TINTS.length];
-      for (let i = 0; i < mask.length; i++) if (mask[i] === 1) paint(pixels, i, tint);
-    }
-    for (const part of TINTED_PARTS) {
-      const region = partRegion(person, part, width, height);
-      if (!region) continue;
-      const { left, top, right, bottom } = region.bounds;
-      for (let y = top; y < bottom; y++) {
-        for (let x = left; x < right; x++) {
-          const i = y * width + x;
-          if (mask[i] === 1 && region.contains(x, y)) paint(pixels, i, BODY_PART_STYLES[part].color);
-        }
-      }
-    }
-  });
+  for (const { id, mask } of people) {
+    const tint = PERSON_TINTS[id % PERSON_TINTS.length];
+    for (let i = 0; i < mask.length; i++) if (mask[i] === 1) paint(pixels, i, tint);
+  }
   return pixels;
 };
 
@@ -163,8 +136,8 @@ export const drawStatic = (ctx: CanvasRenderingContext2D, { pixelSize, proportio
 };
 
 /**
- * Draws the people from the video onto the canvas, cut out by their silhouettes, and tints them for debugging
- * unless the mask type is "binary".
+ * Draws the people from the video onto the canvas, cut out by their silhouettes, and tints each person their own
+ * colour for debugging unless the mask type is "binary".
  */
 export const drawPeople = (
   video: HTMLVideoElement,
@@ -188,7 +161,7 @@ export const drawPeople = (
   if (maskType !== "binary") {
     // The tint's hue and saturation over the video's luminosity
     ctx.globalCompositeOperation = "color";
-    tintPixels(frame, maskType, surface.image.data);
+    tintPixels(frame, surface.image.data);
     drawSurface(ctx, surface);
   }
   ctx.restore();

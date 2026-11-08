@@ -9,6 +9,11 @@ export default {
   basename: process.env.BASE_URL ?? "/",
   prerender: [
     "/",
-    ...Object.keys(localRepository.games).flatMap((id) => [`/game/${id}`, `/game/${id}/play`, `/game/${id}/json`]),
+    ...Object.keys(localRepository.games).flatMap((id) => [
+      `/game/${id}`,
+      `/game/${id}/play`,
+      `/game/${id}/calibrate`,
+      `/game/${id}/json`,
+    ]),
   ],
 } satisfies Config;

@@ -149,9 +149,21 @@
   font: inherit;
 }
 
-.game-camera-picker video {
-  width: 100%;
+/* Shrink-wraps the preview, so the floor drawn over it lines up with the picture */
+.game-camera-preview {
+  position: relative;
+  align-self: start;
   max-width: 20rem;
+}
+
+.game-camera-preview .floorOverlay {
+  position: absolute;
+  inset: 2px;
+}
+
+.game-camera-picker video {
+  display: block;
+  width: 100%;
   border: 2px solid #22303c;
   border-radius: 0.5rem;
   background: #22303c;

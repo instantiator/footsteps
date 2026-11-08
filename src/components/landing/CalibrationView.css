@@ -1,0 +1,92 @@
+/* The floor calibration page: the camera picture with the floor over it, the steps, and the buttons */
+.calibration {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  overflow: auto;
+  padding: 1rem;
+  background: #22303c;
+  color: white;
+}
+
+.calibration ol {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.calibration li {
+  opacity: 0.6;
+}
+
+.calibration li[aria-current="step"] {
+  font-weight: bold;
+  opacity: 1;
+}
+
+/* Shrink-wraps the video, so the overlay over it lines up with the picture */
+.calibration-picture {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.calibration-picture video {
+  display: block;
+  max-width: 100%;
+  max-height: 65vh;
+}
+
+.calibration-picture .floorOverlay {
+  position: absolute;
+  inset: 0;
+}
+
+.calibration-corner {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 3px solid white;
+  border-radius: 50%;
+  background: rgb(0 120 255);
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
+  transform: translate(-50%, -50%);
+}
+
+.calibration-corner:active {
+  cursor: grabbing;
+}
+
+.calibration-corner:focus-visible {
+  outline: 3px solid #ffd54f;
+  outline-offset: 2px;
+}
+
+.calibration-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.calibration-actions button,
+.calibration-actions a {
+  padding: 0.5rem 1rem;
+  border: 2px solid white;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.calibration-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

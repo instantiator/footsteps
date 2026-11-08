@@ -11,8 +11,18 @@ import {
   type SetStateAction,
 } from "react";
 import { isDefined } from "../../../util/ObjectUtils";
+import type { GameSceneMode } from "../../../entities/data/scenes/GameSceneData";
 import { loadCameraChoice } from "../../camera/CameraChoice";
-import type { FeetPositions } from "../../camera/CameraSupport";
+import { calibrationOrDefault, cameraKeyOf } from "../../camera/FloorCalibration";
+import {
+  ASSUMED_IMAGE_ASPECT,
+  cropAspect,
+  cropPlacement,
+  DEFAULT_CORNERS,
+  floorCrop,
+  type Corners,
+  type CropPlacement,
+} from "../../camera/FloorGeometry";
 import { DEPTH_STACK_CLASS, UNSORTED_PLAYER_Z_INDEX } from "../../camera/PlayerDepth";
 import type { PlayerFrame } from "../../camera/PlayerMonitor";
 import { cameraModeOf, type ResolvedAvatarMode, type ResolvedCameraMode } from "../logic/AvatarModeUtils";
@@ -26,7 +36,7 @@ import {
 } from "./GameLayerWrappers";
 import { usePlayerInteractions, type CameraRuleEvent, type CameraRuleTarget } from "./PlayerInteractionHook";
 import { useMouseFeet } from "./MouseFeetHook";
-import useSceneTransition, { type SceneTransition } from "./useSceneTransition";
+import useSceneTransition, { type SceneTransition, type ViewportTarget } from "./useSceneTransition";
 
 /** Props for {@link GameLayersLayout}. */
 interface GameLayersLayoutProps {
@@ -36,6 +46,8 @@ interface GameLayersLayoutProps {
   sceneKey?: string;
   /** The game's avatar settings, already resolved for the scenes currently shown. */
   avatar: ResolvedAvatarMode;
+  /** How the scenes currently shown are laid out; `2D` if not given. */
+  sceneMode?: GameSceneMode;
   /** Shows the debug overlay and the camera's colour key. */
   debug?: boolean;
   /** Switches the debug aids on or off, from the HUD. */
@@ -75,6 +87,23 @@ export interface GameLayers {
 const aspectRatioOf = (element: Element | null | undefined): number | undefined => {
   const rect = element?.getBoundingClientRect();
   return rect && rect.width > 0 && rect.height > 0 ? rect.width / rect.height : undefined;
+};
+
+/**
+ * The shape the viewport takes: a 2.5D scene's is the floor's crop of the camera image (the default floor on a
+ * typical webcam's image without a camera); a 2D scene's is the camera's, or the container's without one.
+ */
+const viewportShapeOf = (
+  sceneMode: GameSceneMode,
+  camera: ResolvedCameraMode,
+  cameraAspectRatio: number | undefined,
+  calibrated: Corners,
+): ViewportTarget => {
+  if (sceneMode === "2.5D") {
+    if (!camera.enabled) return cropAspect(floorCrop(DEFAULT_CORNERS), ASSUMED_IMAGE_ASPECT);
+    return isDefined(cameraAspectRatio) ? cropAspect(floorCrop(calibrated), cameraAspectRatio) : undefined;
+  }
+  return camera.enabled ? cameraAspectRatio : "fill";
 };
 
 /** Props for the groups of scene layers. */
@@ -132,32 +161,46 @@ interface SceneProps {
   media: ReturnType<typeof useCameraMedia> & { onCameraError: () => void };
   /** The video's shape, once the camera reports it. */
   aspectRatio: number | undefined;
-  /** Receives the players' feet positions for the debug overlay. */
-  setFeetPositions: Dispatch<SetStateAction<FeetPositions>>;
-  /** The players' feet positions, for the debug overlay. */
-  feetPositions: FeetPositions;
+  /** The people the camera last found, for the debug overlay. */
+  debugPlayers: PlayerFrame[];
   /** The character canvas's element, for camera interactions. */
   canvasRef: RefObject<HTMLCanvasElement | null>;
   /** Handles camera frames and turns body parts into interactions. */
   handlePlayers: (players: PlayerFrame[], timestamp: number) => void;
   /** Receives the video's shape from the camera. */
   setAspectRatio: Dispatch<SetStateAction<number | undefined>>;
+  /** The floor a 2.5D scene is fitted to; undefined in a 2D scene. */
+  floor: ShownFloor | undefined;
 }
+
+/** The floor a 2.5D scene shows, and where the camera image sits so that the floor's crop of it fills the viewport. */
+interface ShownFloor {
+  corners: Corners;
+  crop: CropPlacement;
+}
+
+/** The shown scene's floor: the calibrated one with a camera, else the default one. */
+const shownFloorOf = (
+  scene: SceneTransition<GameLayers>,
+  calibrated: Corners,
+  mirror: boolean,
+): ShownFloor | undefined => {
+  if (scene.sceneMode !== "2.5D") return undefined;
+  const corners = scene.camera.enabled ? calibrated : DEFAULT_CORNERS;
+  return { corners, crop: cropPlacement(floorCrop(corners), mirror) };
+};
 
 /** The players and the challenge foreground, in one stacking context so they can be sorted among each other by depth. */
 function DepthStack({
   scene,
   media,
   aspectRatio,
-  setFeetPositions,
   canvasRef,
   handlePlayers,
   mirror,
   debug,
-}: Pick<
-  SceneProps,
-  "scene" | "media" | "aspectRatio" | "setFeetPositions" | "canvasRef" | "handlePlayers" | "mirror" | "debug"
->) {
+  floor,
+}: Pick<SceneProps, "scene" | "media" | "aspectRatio" | "canvasRef" | "handlePlayers" | "mirror" | "debug" | "floor">) {
   return (
     <div className={DEPTH_STACK_CLASS}>
       {scene.camera.enabled && (
@@ -166,11 +209,11 @@ function DepthStack({
           video={media.video}
           characterStream={media.characterStream}
           aspectRatio={aspectRatio}
-          setFeetPositions={setFeetPositions}
           canvasRef={canvasRef}
           onPlayersChange={handlePlayers}
           mirror={mirror}
           debug={debug}
+          crop={floor?.crop}
         />
       )}
       <GameLayerWrapper
@@ -183,21 +226,8 @@ function DepthStack({
 }
 
 /** The scene and camera layers, grouped so a scene change can fade them together. */
-function Scene({
-  scene,
-  cameraToMount,
-  showPreview,
-  show,
-  mirror,
-  debug,
-  media,
-  aspectRatio,
-  setFeetPositions,
-  feetPositions,
-  canvasRef,
-  handlePlayers,
-  setAspectRatio,
-}: SceneProps) {
+function Scene({ scene, cameraToMount, showPreview, show, media, debugPlayers, setAspectRatio, ...depth }: SceneProps) {
+  const { mirror, debug } = depth;
   const aids = { mirror, debug };
   return (
     <div
@@ -207,17 +237,7 @@ function Scene({
       aria-busy={scene.transitioning}
     >
       {show && <LowerSceneLayers layers={scene.layers} />}
-      {show && (
-        <DepthStack
-          scene={scene}
-          media={media}
-          aspectRatio={aspectRatio}
-          setFeetPositions={setFeetPositions}
-          canvasRef={canvasRef}
-          handlePlayers={handlePlayers}
-          {...aids}
-        />
-      )}
+      {show && <DepthStack scene={scene} media={media} {...depth} />}
       {cameraToMount && (
         <CharacterCameraLayerWrapper
           zIndex={7}
@@ -234,13 +254,30 @@ function Scene({
       {show && debug && (
         <DebugLayerWrapper
           zIndex={9}
-          feetPositions={feetPositions}
-          cameraEnabled={scene.camera.enabled}
+          players={scene.camera.enabled ? debugPlayers : undefined}
+          corners={depth.floor?.corners}
+          crop={depth.floor?.crop}
           mirror={mirror}
         />
       )}
     </div>
   );
+}
+
+/**
+ * Hands each camera frame's people to the interactions, and to the debug overlay while it shows. Reporting them
+ * otherwise would re-render the game every frame.
+ */
+function useDebugPlayers(handlePlayers: SceneProps["handlePlayers"], debug: boolean | undefined) {
+  const [debugPlayers, setDebugPlayers] = useState<PlayerFrame[]>([]);
+  const onPlayers = useCallback(
+    (players: PlayerFrame[], timestamp: number) => {
+      handlePlayers(players, timestamp);
+      if (debug === true) setDebugPlayers(players);
+    },
+    [handlePlayers, debug],
+  );
+  return { debugPlayers, onPlayers };
 }
 
 /** The game viewport's ref, and ways to measure it and its container. */
@@ -263,7 +300,22 @@ function useCameraFallback(requested: ResolvedAvatarMode) {
   return { mouseFeet: mode === "mouse-feet", camera, onCameraError };
 }
 
-/** The viewport's target shape, and the shape a camera reshape starts from while one is running. */
+/**
+ * Which camera layers to draw: the camera to mount (the latest one mounts early when it turns on, so it can report
+ * the shape the viewport will take), whether its preview shows, and whether the scene layers can show (with a camera,
+ * only once it reports its shape, so they line up with the video).
+ */
+const cameraLayersOf = (
+  camera: ResolvedCameraMode,
+  scene: SceneTransition<GameLayers>,
+  cameraAspectRatio: number | undefined,
+): Pick<SceneProps, "cameraToMount" | "showPreview" | "show"> => ({
+  cameraToMount: camera.enabled ? camera : scene.camera.enabled ? scene.camera : undefined,
+  showPreview: scene.camera.enabled && scene.camera.preview,
+  show: !scene.camera.enabled || isDefined(cameraAspectRatio),
+});
+
+/** The viewport's target shape, and the shape a reshape starts from while one is running. */
 const viewportStyle = (scene: SceneTransition<GameLayers>): CSSProperties => {
   const style: CSSProperties & { "--reshape-from"?: string; "--reshape-to"?: string } = {
     aspectRatio: scene.viewport.ratio,
@@ -275,19 +327,25 @@ const viewportStyle = (scene: SceneTransition<GameLayers>): CSSProperties => {
   return style;
 };
 
+/** The chosen camera's mirror setting and floor, as the landing page left them. */
+const loadCameraSetup = () => {
+  const choice = loadCameraChoice();
+  return { mirror: choice.mirror, corners: calibrationOrDefault(cameraKeyOf(choice)) };
+};
+
 /** Stacks the game's scene layers, the optional camera character, debug overlay, and HUD, and runs mouse-feet input. */
 export default function GameLayersLayout({
   gameLayers = {},
   sceneKey = "default",
   avatar: requestedAvatar,
+  sceneMode = "2D",
   cameraRules,
   onPlayerInteraction,
   ...aids
 }: GameLayersLayoutProps) {
-  const [feetPositions, setFeetPositions] = useState<FeetPositions>({});
   const [cameraAspectRatio, setCameraAspectRatio] = useState<number>();
-  // Read once: changing it means going back to the landing page
-  const [mirror] = useState(() => loadCameraChoice().mirror);
+  // Read once: changing them means going back to the landing page
+  const [{ mirror, corners }] = useState(loadCameraSetup);
   const { viewportRef, measureViewport, measureContainer } = useViewportMeasurements();
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const { mouseFeet, camera, onCameraError } = useCameraFallback(requestedAvatar);
@@ -295,7 +353,8 @@ export default function GameLayersLayout({
     layers: gameLayers,
     sceneKey,
     camera,
-    cameraAspectRatio,
+    sceneMode,
+    shape: viewportShapeOf(sceneMode, camera, cameraAspectRatio, corners),
     reducedMotion,
     measureViewport,
     measureContainer,
@@ -303,19 +362,13 @@ export default function GameLayersLayout({
   // Keep the media until the shown camera goes too, so a camera-off reshape keeps its preview alive
   const media = useCameraMedia(camera.enabled || scene.camera.enabled);
 
-  // The latest camera mounts early when it turns on, so it can report the shape the viewport will take
-  const cameraToMount = camera.enabled ? camera : scene.camera.enabled ? scene.camera : undefined;
-  const showPreview = scene.camera.enabled && scene.camera.preview;
-
-  // With a camera, wait for its aspect ratio so the layers line up with the video
-  const show = !scene.camera.enabled || isDefined(cameraAspectRatio);
-
   const { canvasRef, handlePlayers } = usePlayerInteractions(
     cameraRules,
     onPlayerInteraction,
     scene.camera.enabled && !scene.transitioning,
     mirror,
   );
+  const { debugPlayers, onPlayers } = useDebugPlayers(handlePlayers, aids.debug);
   useMouseFeet(viewportRef, cameraRules, onPlayerInteraction, { enabled: mouseFeet, paused: scene.transitioning });
 
   return (
@@ -327,18 +380,16 @@ export default function GameLayersLayout({
     >
       <Scene
         scene={scene}
-        cameraToMount={cameraToMount}
-        showPreview={showPreview}
-        show={show}
+        {...cameraLayersOf(camera, scene, cameraAspectRatio)}
         mirror={mirror}
         debug={aids.debug}
         media={{ ...media, onCameraError }}
         aspectRatio={cameraAspectRatio}
-        setFeetPositions={setFeetPositions}
-        feetPositions={feetPositions}
+        debugPlayers={debugPlayers}
         canvasRef={canvasRef}
-        handlePlayers={handlePlayers}
+        handlePlayers={onPlayers}
         setAspectRatio={setCameraAspectRatio}
+        floor={shownFloorOf(scene, corners, mirror)}
       />
       <HudLayerWrapper zIndex={10} {...aids} />
     </div>

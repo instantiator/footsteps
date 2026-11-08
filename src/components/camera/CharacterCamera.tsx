@@ -1,7 +1,6 @@
 import { useEffect, useRef, type Dispatch, type RefObject, type SetStateAction } from "react";
 import useAppConfig from "../../providers/AppConfigHook";
 import { isDefined } from "../../util/ObjectUtils";
-import { BODY_PART_STYLES } from "../../vision/BodyPart";
 import { loadCameraChoice } from "./CameraChoice";
 import { getCameraStream, stopTracks } from "./CameraSupport";
 
@@ -15,8 +14,6 @@ interface CharacterCameraProps {
   setVideo: Dispatch<SetStateAction<HTMLVideoElement | null>>;
   /** Reports the video's aspect ratio (width / height) once it is playing. */
   onAspectChange: Dispatch<SetStateAction<number | undefined>>;
-  /** Whether to show the colour key for the body parts, as used in a coloured mask. */
-  colorKey: boolean;
   /** Called when the camera can't start (refused, missing or busy). Keep it stable: a new one restarts the camera. */
   onError: () => void;
   /** Whether to flip the preview like a mirror. */
@@ -68,14 +65,13 @@ function useCameraStart(
   useEffect(() => () => stream && stopTracks(stream), [stream]);
 }
 
-/** Captures the player's webcam into a small preview video, for the segmentation to read; optionally with a colour key. */
+/** Captures the player's webcam into a small preview video, for the segmentation to read. */
 export default function CharacterCamera({
   stream,
   setStream,
   video,
   setVideo,
   onAspectChange: setAspect,
-  colorKey,
   onError,
   mirror,
 }: CharacterCameraProps) {
@@ -101,21 +97,6 @@ export default function CharacterCamera({
         autoPlay
         playsInline
       />
-      {colorKey &&
-        Object.entries(BODY_PART_STYLES).map(([key, part]) => (
-          <div key={`body-part-${key}`} style={{ display: "flex", alignItems: "center", backgroundColor: "#ffffffaa" }}>
-            <div
-              style={{
-                width: "1rem",
-                height: "1rem",
-                backgroundColor: `rgba(${part.color.r}, ${part.color.g}, ${part.color.b}, ${part.color.a / 255})`,
-                marginRight: "0.5rem",
-                border: "solid 1px black",
-              }}
-            />
-            <span>{part.description}</span>
-          </div>
-        ))}
     </div>
   );
 }

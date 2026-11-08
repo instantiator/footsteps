@@ -700,6 +700,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
+                  "scene": "2.5D",
                   "avatar": { "mode": "camera", "fallback": "mouse" },
                   "component": {
                     "type": "template",

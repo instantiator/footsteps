@@ -20,7 +20,7 @@ import type { PlayerEffects } from "./effects/PlayerEffects";
 import "./Game.css";
 import GameStylesheets from "./GameStylesheets";
 import GameLayersLayout, { type GameLayers } from "./layout/GameLayersLayout";
-import { resolveAvatarMode } from "./logic/AvatarModeUtils";
+import { resolveAvatarMode, resolveSceneMode } from "./logic/AvatarModeUtils";
 import { leaveTitleScreen } from "./logic/GameClickUtils";
 import { findChallengeState } from "./logic/GameDataUtils";
 import type { SceneDomEvent } from "./logic/TemplateUtils";
@@ -296,6 +296,7 @@ export default function Game() {
     [renderData, onAnswer, onSceneEvent],
   );
   const avatar = useMemo(() => resolveAvatarMode(gameState.gameData, renderData), [gameState.gameData, renderData]);
+  const sceneMode = useMemo(() => resolveSceneMode(gameState.gameData, renderData), [gameState.gameData, renderData]);
 
   return (
     <div
@@ -325,6 +326,7 @@ export default function Game() {
           gameLayers={layers}
           sceneKey={sceneKey}
           avatar={avatar}
+          sceneMode={sceneMode}
           cameraRules={cameraRules}
           onPlayerInteraction={onPlayerInteraction}
         />

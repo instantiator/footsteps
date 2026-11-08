@@ -6,16 +6,17 @@ awake while the game is incomplete, with a warning on every page when the batter
 
 ## Routes
 
-| Route            | What it shows                             |
-| ---------------- | ----------------------------------------- |
-| `/`              | The list of games in the local repository |
-| `/game/:id`      | The game's landing page                   |
-| `/game/:id/play` | The game itself                           |
-| `/game/:id/json` | The game's resolved JSON, for debugging   |
+| Route                 | What it shows                                                                   |
+| --------------------- | ------------------------------------------------------------------------------- |
+| `/`                   | The list of games in the local repository                                       |
+| `/game/:id`           | The game's landing page                                                         |
+| `/game/:id/play`      | The game itself                                                                 |
+| `/game/:id/calibrate` | [Floor calibration](camera-mode.md#calibrating-the-floor) for the chosen camera |
+| `/game/:id/json`      | The game's resolved JSON, for debugging                                         |
 
-The three game routes are prerendered for every game in `public/game-repository.json`. A direct visit
-to `/game/:id/play` checks the game's required permissions first and sends the player back to the
-landing page if one is missing.
+The game routes are prerendered for every game in `public/game-repository.json`. A direct visit
+to `/game/:id/play` checks the game's required permissions first, and for a game with 2.5D scenes played by camera,
+that the floor is calibrated. It sends the player back to the landing page if either is missing.
 
 ## Landing page
 
@@ -31,7 +32,9 @@ Below the description is a permissions panel, if the game uses the camera, with 
 - **Continue** appears only when valid saved progress exists, and resumes it.
 
 Both buttons stay disabled until the initial checks have finished, and until every permission the game requires has
-been granted.
+been granted. For a game with [2.5D scenes](game-data.md#scene-and-avatar-modes), with the camera granted, they also
+stay disabled until the chosen camera's floor is [calibrated](camera-mode.md#calibrating-the-floor). The camera
+preview shows the floor, says whether it has been saved, and links to the calibration page.
 
 ## Permissions
 

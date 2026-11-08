@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import type { GameData } from "../../src/entities/data/GameData";
 import type { GameRule } from "../../src/entities/data/scenes/GameSceneData";
 import type { GameRepository } from "../../src/entities/GameRepository";
-import { MODEL_TIMEOUT } from "./fixtures/cameraGame";
+import { MODEL_TIMEOUT, seedCalibration } from "./fixtures/cameraGame";
 import { installFakeCamera } from "./fixtures/fakeCamera";
 import { peoplePhotoUrls } from "./fixtures/people/people";
 
@@ -50,6 +50,7 @@ const openWith = async (page: Page, rules: GameRule[], change: (game: GameData) 
     change(game);
     await route.fulfill({ response, json: repository });
   });
+  await seedCalibration(page); // the demo has a 2.5D stage, which a granted camera must calibrate for
   await page.goto("/game/rules-demo/play");
   await page.locator("#demo-title").click();
   await page.locator("#stage-link-balloons").click();
@@ -429,6 +430,7 @@ test("the demo's effects stage removes a player, says who, and starts again once
   test.setTimeout(MODEL_TIMEOUT + 60_000);
   await page.context().grantPermissions(["camera"]);
   await installFakeCamera(page, peoplePhotoUrls());
+  await seedCalibration(page);
   await page.goto("/game/rules-demo/play");
   await page.locator("#demo-title").click();
   await page.locator("#stage-link-effects").click();

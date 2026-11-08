@@ -167,8 +167,11 @@
                     "description": "Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it."
                 },
                 "scene": {
-                    "const": "2D",
                     "description": "How this scene is laid out, over broader scenes' setting.",
+                    "enum": [
+                        "2.5D",
+                        "2D"
+                    ],
                     "type": "string"
                 }
             },
@@ -730,8 +733,11 @@
                     "description": "What stands in for the player, unless a scene says otherwise. Defaults to `mouse`."
                 },
                 "scene": {
-                    "const": "2D",
                     "description": "How scenes are laid out, unless a scene says otherwise. Defaults to `2D`.",
+                    "enum": [
+                        "2.5D",
+                        "2D"
+                    ],
                     "type": "string"
                 }
             },
@@ -757,8 +763,11 @@
                     "description": "Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it."
                 },
                 "scene": {
-                    "const": "2D",
                     "description": "How this scene is laid out, over broader scenes' setting.",
+                    "enum": [
+                        "2.5D",
+                        "2D"
+                    ],
                     "type": "string"
                 }
             },
@@ -1223,8 +1232,11 @@
                     "description": "A reset scene for this reset scene, shown before it."
                 },
                 "scene": {
-                    "const": "2D",
                     "description": "How it is laid out, over its parent's setting.",
+                    "enum": [
+                        "2.5D",
+                        "2D"
+                    ],
                     "type": "string"
                 },
                 "showOn": {
@@ -1794,8 +1806,11 @@
                     "description": "Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it."
                 },
                 "scene": {
-                    "const": "2D",
                     "description": "How this scene is laid out, over broader scenes' setting.",
+                    "enum": [
+                        "2.5D",
+                        "2D"
+                    ],
                     "type": "string"
                 }
             },

@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentProps, ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { saveCameraChoice } from "../src/components/camera/CameraChoice";
+import { saveCalibration } from "../src/components/camera/FloorCalibration";
 import type CharacterCamera from "../src/components/camera/CharacterCamera";
 import type CharacterCanvas from "../src/components/camera/CharacterCanvas";
 import type { PlayerFrame } from "../src/components/camera/PlayerMonitor";
@@ -166,11 +167,10 @@ describe("GameLayersLayout", () => {
     expect(received.canvas.at(-1)?.maskType).toBe("colored");
   });
 
-  it("doesn't re-render the game for each camera frame unless the debug overlay shows the feet", async () => {
+  it("doesn't re-render the game for each camera frame unless the debug overlay shows the players", async () => {
     renderLayout({ avatar: { mode: "camera", fallback: "mouse", preview: true }, debug: false });
     await screen.findByTestId("canvas");
     const canvas = received.canvas.at(-1)!;
-    expect(canvas.onFeetPositionsChange).toBeUndefined();
     const renders = received.canvas.length;
 
     act(() => canvas.onPlayersChange?.([playerWithHandAt(1, 1)], 0));
@@ -178,10 +178,18 @@ describe("GameLayersLayout", () => {
     expect(received.canvas).toHaveLength(renders);
   });
 
-  it("reports the feet to the debug overlay when debugging", async () => {
-    renderLayout({ avatar: { mode: "camera", fallback: "mouse", preview: true }, debug: true });
+  it("marks the players' body parts on the debug overlay when debugging", async () => {
+    const { container } = renderLayout({ avatar: { mode: "camera", fallback: "mouse", preview: true }, debug: true });
     await screen.findByTestId("canvas");
-    expect(received.canvas.at(-1)?.onFeetPositionsChange).toBeDefined();
+    act(() => received.canvas.at(-1)?.onPlayersChange?.([playerWithHandAt(1, 1)], 0));
+    expect(container.querySelectorAll("#debug-overlay-container .floorMarker")).toHaveLength(1);
+    expect(container.querySelector("#debug-overlay-container polygon")).toBeNull();
+  });
+
+  it("outlines the floor on the debug overlay in a 2.5D scene, with or without a camera", async () => {
+    const { container } = renderLayout({ sceneMode: "2.5D", debug: true });
+    expect(container.querySelector("#debug-overlay-container polygon")).not.toBeNull();
+    expect(container.querySelectorAll("#debug-overlay-container .floorMarker")).toHaveLength(0);
   });
 
   it("hides the preview, but keeps the camera and canvas, when the preview is off", async () => {
@@ -206,6 +214,73 @@ describe("GameLayersLayout", () => {
     const { container } = renderLayout({ avatar: { mode: "camera", fallback: "mouse", preview: true } });
     expect(container.querySelector("#overview-foreground-container")).toBeNull();
     expect(screen.queryByTestId("canvas")).toBeNull();
+  });
+});
+
+describe("GameLayersLayout in 2.5D scenes", () => {
+  const CAMERA = { mode: "camera", fallback: "mouse", preview: true } as const;
+  const ratioOf = (element: HTMLElement) => parseFloat(element.style.aspectRatio);
+  const viewportOf = (container: HTMLElement) => container.querySelector<HTMLElement>("#game-viewport")!;
+  const stackOf = (container: HTMLElement) => container.querySelector<HTMLElement>("#character-canvas-container")!;
+
+  afterEach(() => localStorage.clear());
+
+  it("fits the viewport to the default floor's crop of the camera, and crops the camera to it", async () => {
+    const { container } = renderLayout({ avatar: CAMERA, sceneMode: "2.5D" });
+    await screen.findByTestId("canvas");
+    // The default floor spans 8–92% of a 1.5 camera image, down to 90%
+    expect(ratioOf(viewportOf(container))).toBeCloseTo((0.84 * 1.5) / 0.9, 6);
+    const stack = stackOf(container).style;
+    expect(parseFloat(stack.width)).toBeCloseTo(100 / 0.84, 4);
+    expect(parseFloat(stack.height)).toBeCloseTo(100 / 0.9, 4);
+    expect(parseFloat(stack.left)).toBeCloseTo((-100 * 0.08) / 0.84, 4);
+  });
+
+  it("uses the chosen camera's calibration, and crops from the right of a mirrored image", async () => {
+    saveCameraChoice({ deviceId: "rear", mirror: true });
+    saveCalibration("rear", {
+      backLeft: { x: 0.3, y: 0.4 },
+      backRight: { x: 0.65, y: 0.5 },
+      frontRight: { x: 0.97, y: 0.95 },
+      frontLeft: { x: 0.12, y: 0.8 },
+    });
+    const { container } = renderLayout({ avatar: CAMERA, sceneMode: "2.5D" });
+    await screen.findByTestId("canvas");
+    expect(ratioOf(viewportOf(container))).toBeCloseTo((0.85 * 1.5) / 0.95, 6);
+    expect(parseFloat(stackOf(container).style.left)).toBeCloseTo((-100 * 0.03) / 0.85, 4);
+  });
+
+  it("uses the default floor on a 4:3 image without a camera", () => {
+    const { container } = renderLayout({ sceneMode: "2.5D" });
+    expect(ratioOf(viewportOf(container))).toBeCloseTo((0.84 * 4) / 3 / 0.9, 6);
+  });
+
+  it("leaves a 2D scene's camera uncropped", async () => {
+    const { container } = renderLayout({ avatar: CAMERA, sceneMode: "2D" });
+    await screen.findByTestId("canvas");
+    expect(ratioOf(viewportOf(container))).toBe(1.5);
+    expect(stackOf(container).style.width).toBe("");
+  });
+
+  it("reshapes, rather than fading, between a 2D and a 2.5D scene with the camera on throughout", async () => {
+    setReducedMotion(false);
+    const { container, rerender } = renderLayout({ avatar: CAMERA, sceneKey: "flat" });
+    await screen.findByTestId("canvas");
+    vi.useFakeTimers();
+    const viewport = viewportOf(container);
+    stubRect(viewport, new DOMRect(0, 0, 150, 100));
+
+    rerender(layout({ avatar: CAMERA, sceneMode: "2.5D", sceneKey: "floor" }));
+
+    expect(viewport).toHaveClass("gameViewportReshaping");
+    expect(viewport.style.getPropertyValue("--reshape-from")).toBe("1.5 / 1");
+    expect(parseFloat(viewport.style.getPropertyValue("--reshape-to"))).toBeCloseTo(1.4, 6);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+    expect(viewport).not.toHaveClass("gameViewportReshaping");
+    expect(ratioOf(viewport)).toBeCloseTo(1.4, 6);
+    expect(stackOf(container).style.width).not.toBe("");
   });
 });
 

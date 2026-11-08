@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { canModeFire, cameraModeOf, resolveAvatarMode } from "../src/components/core/logic/AvatarModeUtils";
+import {
+  canModeFire,
+  cameraModeOf,
+  resolveAvatarMode,
+  resolveSceneMode,
+} from "../src/components/core/logic/AvatarModeUtils";
 import { getLayeredRenderData, type LayeredGameSceneRenderData } from "../src/components/core/logic/RenderDataUtils";
-import type { GameSceneAvatarData } from "../src/entities/data/scenes/GameSceneData";
+import type { GameSceneAvatarData, GameSceneMode } from "../src/entities/data/scenes/GameSceneData";
 import type { GameData } from "../src/entities/data/GameData";
 import { createBlankGameState } from "../src/entities/state/GameState";
 import { scroll } from "./data/GameBuilders";
@@ -131,5 +136,58 @@ describe("canModeFire", () => {
     ["camera", "hand-enter", true],
   ] as const)("%s fires %s: %s", (mode, interaction, fires) => {
     expect(canModeFire(mode, interaction)).toBe(fires);
+  });
+});
+
+/** Scene modes to give each level of a test game, as {@link AvatarSettings} does for avatars. */
+interface SceneModes {
+  game?: GameSceneMode;
+  overview?: GameSceneMode;
+  stage?: GameSceneMode;
+  challenges?: (GameSceneMode | undefined)[];
+}
+
+/** A one-stage game whose scenes carry the given scene modes. */
+const gameWithScenes = ({ game, overview, stage, challenges = [undefined] }: SceneModes): GameData => {
+  const base = gameWithAvatar({ challenges: challenges.map(() => undefined) });
+  return {
+    ...base,
+    ...(game && { modules: { scene: game } }),
+    scenes: base.scenes.map((scene) => ({ ...scene, scene: overview })),
+    stages: base.stages.map((s) => ({
+      ...s,
+      scenes: s.scenes?.map((scene) => ({ ...scene, scene: stage })),
+      challenges: s.challenges.map((challenge, index) => ({
+        ...challenge,
+        scenes: challenge.scenes.map((scene) => ({ ...scene, scene: challenges[index] })),
+      })),
+    })),
+  };
+};
+
+/** Resolves the scene mode on the stages overview, or while stage-1 and its challenges are showing. */
+const sceneModeOf = (modes: SceneModes, inStageShown: boolean) => {
+  const gameData = gameWithScenes(modes);
+  const state = createBlankGameState(gameData);
+  const shown = inStageShown ? { ...state, current: { stageId: "stage-1", overviewScene: null } } : state;
+  return resolveSceneMode(gameData, getLayeredRenderData(shown, {}, "game"));
+};
+
+describe("resolveSceneMode", () => {
+  it("defaults to 2D", () => {
+    expect(sceneModeOf({}, false)).toBe("2D");
+    expect(sceneModeOf({}, true)).toBe("2D");
+  });
+
+  it("inherits from the game, then the overview, then the stage, then a challenge, most specific first", () => {
+    expect(sceneModeOf({ game: "2.5D" }, false)).toBe("2.5D");
+    expect(sceneModeOf({ game: "2.5D", overview: "2D" }, false)).toBe("2D");
+    expect(sceneModeOf({ overview: "2D", stage: "2.5D" }, true)).toBe("2.5D");
+    expect(sceneModeOf({ stage: "2.5D", challenges: ["2D"] }, true)).toBe("2D");
+  });
+
+  it("lets a 2.5D challenge win over a 2D one", () => {
+    expect(sceneModeOf({ challenges: ["2D", "2.5D"] }, true)).toBe("2.5D");
+    expect(sceneModeOf({ stage: "2.5D", challenges: ["2D", undefined] }, true)).toBe("2D");
   });
 });

@@ -1,12 +1,11 @@
 import { useContext, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { DEFAULT_APP_CONFIG, type AppConfig } from "../../config/AppConfig";
 import useAppConfig from "../../providers/AppConfigHook";
-import { isDefined } from "../../util/ObjectUtils";
 import { createVisionModel } from "../../vision/createVisionModel";
 import type { FootstepsVisionModelImplementation } from "../../vision/FootstepsVisionModelImplementation";
 import { PersonTracker, type HoldTimes } from "../../vision/Tracking";
 import type { VisionFrame } from "../../vision/VisionTypes";
-import { feetOf, type FeetPositions } from "./CameraSupport";
+import { feetOf } from "./CameraSupport";
 import type { MaskType } from "./DrawPeople";
 import { drawPlayers } from "./DrawPlayers";
 import { frameQuality, FrameStatsRecorder, type FrameStats, type FrameSteps } from "./FrameStats";
@@ -24,8 +23,6 @@ interface CharacterCanvasProps {
   mediaStream: MediaStream | undefined;
   /** Feet lower than this (% of frame height) count as off screen and are not reported. */
   offScreenThreshold_percent?: number;
-  /** Called every frame with the feet of everyone found (empty if nobody is). */
-  onFeetPositionsChange?: (feetPositions: FeetPositions) => void;
   /**
    * Called every frame with the people found (empty if nobody is) and when the frame was taken, in milliseconds.
    *
@@ -82,15 +79,6 @@ const playersOf = ({ width, height, people }: VisionFrame, offScreenThreshold_pe
     feet: feetOf(person, width, height, offScreenThreshold_percent),
   }));
 
-/** The feet of the players that are on screen, keyed by player id; a held player's are flagged, as where they were. */
-const feetPositionsOf = (players: PlayerFrame[]): FeetPositions => {
-  const feetPositions: FeetPositions = {};
-  for (const { id, feet, held } of players) {
-    if (feet) feetPositions[id] = isDefined(held) ? { ...feet, held: true } : feet;
-  }
-  return feetPositions;
-};
-
 /**
  * Calls back once per new video frame where the browser supports it, so a 30fps camera isn't tracked twice per
  * frame on a 60–120Hz scene; otherwise once per animation frame.
@@ -127,10 +115,7 @@ const detectFrame = async (
 };
 
 /** What the tracking loop reports to, and how it draws. */
-type LoopHandlers = Pick<
-  CharacterCanvasProps,
-  "offScreenThreshold_percent" | "onFeetPositionsChange" | "onPlayersChange"
-> & {
+type LoopHandlers = Pick<CharacterCanvasProps, "offScreenThreshold_percent" | "onPlayersChange"> & {
   /** How the silhouettes are tinted. */
   maskType: MaskType;
   /** How the loop follows, holds and draws players. */
@@ -333,7 +318,6 @@ const startTrackingLoop = (
   }: { reference: HTMLCanvasElement; canvases: PlayerCanvases; players: PlayerRegistry },
   {
     offScreenThreshold_percent,
-    onFeetPositionsChange,
     onPlayersChange,
     maskType,
     settings: { smoothing, hold, fillGaps, inputWidth, featherPx, depth },
@@ -354,7 +338,6 @@ const startTrackingLoop = (
     const players = playersOf(frames.interactive, offScreenThreshold_percent);
     const trackEnd = performance.now();
     onPlayersChange?.(players, timestamp);
-    onFeetPositionsChange?.(feetPositionsOf(players));
     const monitorEnd = performance.now();
     drawPlayers(video, frames, { canvases, depths, players: registry }, { maskType, featherPx });
     reportStats(detected, timestamp, inferenceEnd, {
@@ -414,7 +397,7 @@ export default function CharacterCanvas({
   const canvas = canvasRef ?? internalCanvasRef;
   const canvasesRef = useRef<PlayerCanvases | null>(null);
   const players = useContext(PlayerRegistryContext);
-  const { video, mediaStream, offScreenThreshold_percent, onFeetPositionsChange, onPlayersChange } = loopProps;
+  const { video, mediaStream, offScreenThreshold_percent, onPlayersChange } = loopProps;
 
   // The stream belongs to CharacterCamera, which stops its tracks; this effect only stops its own loop
   useEffect(() => {
@@ -423,7 +406,6 @@ export default function CharacterCanvas({
     const onStats = showStats ? setStats : undefined;
     const handlers = {
       offScreenThreshold_percent,
-      onFeetPositionsChange,
       onPlayersChange,
       maskType,
       settings,
@@ -437,7 +419,6 @@ export default function CharacterCanvas({
     video,
     canvas,
     players,
-    onFeetPositionsChange,
     onPlayersChange,
     offScreenThreshold_percent,
     maskType,

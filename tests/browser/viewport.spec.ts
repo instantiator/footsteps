@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openCameraGame } from "./fixtures/cameraGame";
 import { installFakeCamera } from "./fixtures/fakeCamera";
 
 test("eases the game viewport into the camera's shape, then fades the overview in", async ({ page }) => {
@@ -69,4 +70,30 @@ test("eases the game viewport into the camera's shape, then fades the overview i
     expect(stone.top).toBeGreaterThanOrEqual(measured.viewport.top - 1);
     expect(stone.bottom).toBeLessThanOrEqual(measured.viewport.bottom + 1);
   }
+});
+
+test("fits a 2.5D scene's viewport to the floor, cropping the camera, and its elements still take clicks", async ({
+  page,
+}) => {
+  await openCameraGame(page, { sceneMode: "2.5D" });
+  await page.locator("#magic-trifle-title").click({ force: true });
+  const firstStage = page.locator("#stages-link-stage-1");
+  await expect(firstStage).toBeVisible();
+  await expect(page.locator("#character-canvas-container canvas").first()).toBeAttached();
+
+  const measured = await page.evaluate(() => {
+    const size = (selector: string) => {
+      const { width, height } = document.querySelector(selector)!.getBoundingClientRect();
+      return { width, height };
+    };
+    return { viewport: size("#game-viewport"), stack: size("#character-canvas-container") };
+  });
+  // The default floor spans 8–92% of the fake camera's 4:3 image, down to 90%
+  expect(measured.viewport.width / measured.viewport.height).toBeCloseTo((0.84 * 4) / 3 / 0.9, 2);
+  expect(measured.stack.width).toBeCloseTo(measured.viewport.width / 0.84, 0);
+  expect(measured.stack.height).toBeCloseTo(measured.viewport.height / 0.9, 0);
+
+  // The stage links float, so a plain click never sees them as stable
+  await firstStage.click({ force: true });
+  await expect(page.getByRole("button", { name: "Close challenge" })).toBeVisible();
 });

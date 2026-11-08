@@ -63,9 +63,19 @@ takes moves on to the stages overview. Clicks remain the keyboard-accessible rou
 }
 ```
 
-**`scene`** is how a scene is laid out. The only mode so far is `"2D"`, the default: a full-screen background, the
-players, and a foreground. With only one mode, nothing reads the setting yet. Elements in a challenge's foreground can have a `data-depth`, so that players pass in
-front of and behind them: see [player depth](camera-mode.md#player-depth).
+**`scene`** is how a scene is laid out:
+
+| `scene` | Layout                                                                                                                                                                                                                 |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `2D`    | A full-screen background, the players, and a foreground. The default.                                                                                                                                                  |
+| `2.5D`  | As `2D`, fitted to the floor the player [calibrated](camera-mode.md#calibrating-the-floor): the camera is cropped to the floor, and the view takes the crop's shape, so players' feet stay in view all over the floor. |
+
+A game with any `2.5D` scene asks a player using the camera to calibrate the floor before starting. In both modes,
+elements in a challenge's foreground can have a `data-depth`, so that players pass in front of and behind them: see
+[player depth](camera-mode.md#player-depth). The scene mode resolves most specific first: `2.5D` if any active
+challenge sets it, else `2D` if one does, then the open stage's `shared` scene, the overview scene, the game's
+`modules`, and finally `2D`. A reset scene's setting is over its parent's. The rules demo's "Walk around" stage is
+`2.5D`.
 
 **`avatar`** is what stands in for the player:
 

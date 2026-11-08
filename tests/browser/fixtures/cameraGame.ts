@@ -1,4 +1,6 @@
 import type { Page } from "@playwright/test";
+import { DEFAULT_CORNERS, type Corners } from "../../../src/components/camera/FloorGeometry";
+import type { GameSceneMode } from "../../../src/entities/data/scenes/GameSceneData";
 import type { GameRepository } from "../../../src/entities/GameRepository";
 import { installCameraDrawCounter } from "./cameraDraws";
 import { installFakeCamera } from "./fakeCamera";
@@ -21,7 +23,21 @@ export interface CameraGameOptions {
   photos?: Record<string, string>;
   /** The fake camera's resolution; see {@link installFakeCamera}. */
   cameraSize?: { width: number; height: number };
+  /** How the game's scenes are laid out; the game's own setting if omitted. */
+  sceneMode?: GameSceneMode;
 }
+
+/**
+ * Saves a floor calibration for a camera before the page loads, as a player would on the calibration page, so a game
+ * with 2.5D scenes can start. It is saved again on every page load.
+ * @param cameraKey the camera chosen on the landing page; the system default if omitted
+ */
+export const seedCalibration = async (page: Page, corners: Corners = DEFAULT_CORNERS, cameraKey = "default") => {
+  await page.addInitScript(
+    ({ key, saved }) => localStorage.setItem("footsteps:floor-calibration", JSON.stringify({ [key]: saved })),
+    { key: cameraKey, saved: corners },
+  );
+};
 
 /** Intercepts the repository and switches camera mode on, with the options the test needs. */
 const patchRepository = async (page: Page, options: CameraGameOptions): Promise<void> => {
@@ -30,6 +46,7 @@ const patchRepository = async (page: Page, options: CameraGameOptions): Promise<
     const repository = (await response.json()) as GameRepository;
     const game = repository.games[GAME_ID];
     game.modules = { ...game.modules, avatar: { mode: "camera", fallback: "mouse", preview: options.preview ?? true } };
+    if (options.sceneMode) game.modules.scene = options.sceneMode;
 
     if (options.cameraOffStage) {
       const stage = game.stages.find(({ id }) => id === options.cameraOffStage);
@@ -49,5 +66,6 @@ export const openCameraGame = async (page: Page, options: CameraGameOptions = {}
   await installFakeCamera(page, options.photos, options.cameraSize);
   await installCameraDrawCounter(page);
   await patchRepository(page, options);
+  if (options.sceneMode === "2.5D") await seedCalibration(page);
   await page.goto(`/game/${GAME_ID}/play${options.query ?? ""}`);
 };

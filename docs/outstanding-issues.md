@@ -44,6 +44,10 @@ the camera feedback work too ([ADRs 0007](ADRs/0007-camera-flicker.md) and [0008
 
 Tune the `VITE_JUMP_*` and `VITE_CAMERA_HOLD_MS` / `FADE_MS` defaults from what you see, as they are estimates.
 
+Run [the floor and 2.5D scenes](testing/manual-testing.md#the-floor-and-25d-scenes) checklist too: the default
+corners are calculated for an assumed camera, not measured, and whether a calibrated floor lines up, keeps feet green
+at every edge and fits a small floor without cutting anything off can only be seen in a real room.
+
 ## Tracking from behind is not proven on a real camera
 
 The game is built for a camera behind the player, but this has only been tested with photos, and only one is from
@@ -336,9 +340,34 @@ drawn avatar there, and let player effects act on it.
 **Act when:** an author reports a threshold behaving differently by mouse than by camera. Give the feet a small
 area (a foot-sized box under the pointer) and measure coverage against it.
 
-## Scene mode is set but never read
+## The vision model sees the whole camera picture in 2.5D scenes
 
-`scene` (only `"2D"` so far) is in the game data and schema, but nothing resolves it, as there's only one mode.
+A 2.5D scene crops what the player sees to the floor, but the vision model is still given the whole picture. Cropping
+its input too (with a margin, so feet at the front and arms past the sides aren't lost) was deferred, unbuilt:
 
-**Act when:** [002.03.04](prompts/002.03.04.prompt%20-%20calibration.md) adds `2.5D`. Resolve it like the avatar
-mode, most specific first, in `AvatarModeUtils.ts` or beside it.
+- With the default floor (8–92% across, down to 90%), a margin of a tenth of the picture's width already reaches every
+  edge, so the model's crop would be the whole picture: no faster, and nobody shown larger.
+- The vision bench's photos are 960 px wide, the model's input width, so showing a crop of them larger adds no detail.
+  The bench can't show the gain that matters, people at the back being found more often.
+- Masks and key points would have to be mapped back to the whole picture, which costs a copy per person per frame.
+
+**Act when:** players calibrate floors narrower than about 60% of the picture's width, or the bench gets
+back-of-room photos at 1280 px or more. Then crop `detectFrame`'s input in `CharacterCanvas.tsx` to the floor's
+crop plus a margin, map the results back, and compare the bench's people, feet and inference time with and without it
+([ADR 0005](ADRs/0005-vision-models.md)).
+
+## A camera's "System default" floor stays when the default changes
+
+Floors are saved per camera chosen on the landing page (`cameraKeyOf` in `FloorCalibration.ts`), so "System default"
+is one camera. If the system's default camera changes, its old floor is still used.
+
+**Act when:** a player reports a misaligned floor after switching cameras, or the landing page starts saving the
+camera a stream really uses. Key floors by the stream's resolved device id instead.
+
+## Camera scenes in dialogs aren't tested
+
+No game has a camera in a dialog scene. Camera interactions map elements through the camera canvas's rectangle on
+screen (`maskRectForElement`), which a 2.5D crop only moves and enlarges, so dialogs should work as templates do.
+
+**Act when:** a game puts a camera interaction in a dialog scene. Add a browser check that a hand on a dialog's
+element fires in a 2.5D scene.

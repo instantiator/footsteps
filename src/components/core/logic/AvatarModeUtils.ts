@@ -1,4 +1,9 @@
-import type { GameAvatarMode, GameInteraction, GameSceneAvatarData } from "../../../entities/data/scenes/GameSceneData";
+import type {
+  GameAvatarMode,
+  GameInteraction,
+  GameSceneAvatarData,
+  GameSceneMode,
+} from "../../../entities/data/scenes/GameSceneData";
 import { POINTER_INTERACTIONS } from "../../../entities/data/scenes/GameSceneData";
 import type { GameData } from "../../../entities/data/GameData";
 import { isDefined } from "../../../util/ObjectUtils";
@@ -104,3 +109,16 @@ export const cameraModeOf = ({ mode, preview }: Pick<ResolvedAvatarMode, "mode" 
   enabled: mode === "camera",
   preview: mode === "camera" && preview,
 });
+
+/**
+ * Resolves how the scenes shown are laid out: `2.5D` if any active challenge declares it, else `2D` if one declares
+ * that, else the stage scene's, the overview scene's, the game's `modules.scene`, and finally `2D`.
+ */
+export const resolveSceneMode = (gameData: GameData, renderData: LayeredGameSceneRenderData): GameSceneMode => {
+  const challenges = (renderData.challengesRenderData ?? []).map((challenge) => challenge.scene).filter(isDefined);
+  if (challenges.length > 0) return challenges.includes("2.5D") ? "2.5D" : "2D";
+  return (
+    firstDefined(renderData.stageRenderData?.scene, renderData.overviewRenderData?.scene, gameData.modules?.scene) ??
+    "2D"
+  );
+};
