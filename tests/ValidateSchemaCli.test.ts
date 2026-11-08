@@ -39,6 +39,12 @@ describe("validate-schema CLI", () => {
     expect(result.stderr).toContain('games.old: "displays" is now "scenes"');
   });
 
+  it("fails data with an old camera setting, naming avatar", () => {
+    const result = validate({ games: { old: { modules: { camera: { requirement: "enabled" } } } } });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('games.old.modules: "camera" is now "avatar": requirement "required" → mode');
+  });
+
   it("explains its usage when a file is missing", () => {
     const result = spawnSync(process.execPath, [CLI, SCHEMA], { encoding: "utf8" });
     expect(result.status).toBe(2);

@@ -1,5 +1,10 @@
 /** Game data keys that were renamed, and their new names, named in the error for old game data. */
-const RENAMED_KEYS: Record<string, string> = { displays: "scenes", resetDisplay: "resetScene" };
+const RENAMED_KEYS: Record<string, string> = { displays: "scenes", resetDisplay: "resetScene", camera: "avatar" };
+
+/** How to rewrite a renamed key's value, where it changed shape too. */
+const RENAME_HINTS: Record<string, string> = {
+  camera: ': requirement "required" → mode "camera"; "enabled" → mode "camera", fallback "mouse"; false → mode "mouse"',
+};
 
 /** Keys whose values belong to the author, so may use any names. */
 const AUTHOR_KEYS = new Set(["data", "initialState"]);
@@ -9,7 +14,8 @@ const AUTHOR_KEYS = new Set(["data", "initialState"]);
  * Has no imports, so the validation scripts can run it directly.
  * @param value parsed JSON
  * @param path where `value` is, for the messages
- * @returns one message per old key, eg. `stages[0].scenes[1]: "resetDisplay" is now "resetScene"`
+ * @returns one message per old key, eg. `stages[0].scenes[1]: "resetDisplay" is now "resetScene"`, with how to
+ * rewrite its value where that changed too
  */
 export const renamedKeyProblems = (value: unknown, path = ""): string[] => {
   if (Array.isArray(value)) return value.flatMap((item, i) => renamedKeyProblems(item, `${path}[${i}]`));
@@ -17,7 +23,7 @@ export const renamedKeyProblems = (value: unknown, path = ""): string[] => {
   return Object.entries(value).flatMap(([key, child]) => {
     const where = path === "" ? key : `${path}.${key}`;
     const renamed = Object.hasOwn(RENAMED_KEYS, key)
-      ? [`${path || "game"}: "${key}" is now "${RENAMED_KEYS[key]}"`]
+      ? [`${path || "game"}: "${key}" is now "${RENAMED_KEYS[key]}"${RENAME_HINTS[key] ?? ""}`]
       : [];
     return AUTHOR_KEYS.has(key) ? renamed : [...renamed, ...renamedKeyProblems(child, where)];
   });
