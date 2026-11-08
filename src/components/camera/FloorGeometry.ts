@@ -173,6 +173,28 @@ export const floorCrop = (corners: Corners): FloorCrop => {
 export const cropAspect = ({ left, right, bottom }: FloorCrop, imageAspect: number): number =>
   ((right - left) * imageAspect) / bottom;
 
+/** The camera image's width over its height when there is no camera: a typical webcam's. */
+export const ASSUMED_IMAGE_ASPECT = 4 / 3;
+
+/** Where the whole camera image sits so that the crop fills the viewport, as fractions of the viewport's size. */
+export interface CropPlacement {
+  /** The image's width. */
+  width: number;
+  /** The image's height. */
+  height: number;
+  /** The image's left edge, from the viewport's: zero or less. */
+  left: number;
+}
+
+/**
+ * Places the camera image so the crop fills the viewport: the floor spans its width, and its lowest point sits on the
+ * bottom edge. A mirrored image is flipped about its own centre, so the crop's right edge lands on the viewport's left.
+ */
+export const cropPlacement = ({ left, right, bottom }: FloorCrop, mirrored: boolean): CropPlacement => {
+  const width = 1 / (right - left);
+  return { width, height: 1 / bottom, left: -(mirrored ? 1 - right : left) * width };
+};
+
 /** Whether an image point is on the floor. */
 export const isOnFloor = (corners: Corners, image: Point): boolean => {
   const { x, y } = floorHomography(corners).toFloor(image);

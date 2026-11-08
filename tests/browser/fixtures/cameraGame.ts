@@ -1,4 +1,5 @@
 import type { Page } from "@playwright/test";
+import type { GameSceneMode } from "../../../src/entities/data/scenes/GameSceneData";
 import type { GameRepository } from "../../../src/entities/GameRepository";
 import { installCameraDrawCounter } from "./cameraDraws";
 import { installFakeCamera } from "./fakeCamera";
@@ -21,6 +22,8 @@ export interface CameraGameOptions {
   photos?: Record<string, string>;
   /** The fake camera's resolution; see {@link installFakeCamera}. */
   cameraSize?: { width: number; height: number };
+  /** How the game's scenes are laid out; the game's own setting if omitted. */
+  sceneMode?: GameSceneMode;
 }
 
 /** Intercepts the repository and switches camera mode on, with the options the test needs. */
@@ -30,6 +33,7 @@ const patchRepository = async (page: Page, options: CameraGameOptions): Promise<
     const repository = (await response.json()) as GameRepository;
     const game = repository.games[GAME_ID];
     game.modules = { ...game.modules, avatar: { mode: "camera", fallback: "mouse", preview: options.preview ?? true } };
+    if (options.sceneMode) game.modules.scene = options.sceneMode;
 
     if (options.cameraOffStage) {
       const stage = game.stages.find(({ id }) => id === options.cameraOffStage);

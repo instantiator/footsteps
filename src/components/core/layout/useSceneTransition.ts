@@ -1,26 +1,37 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { isDefined } from "../../../util/ObjectUtils";
+import type { GameSceneMode } from "../../../entities/data/scenes/GameSceneData";
 import type { ResolvedCameraMode } from "../logic/AvatarModeUtils";
 
 /** How long each half of an ordinary scene change takes. */
 export const SCENE_FADE_MS = 1000;
 
-/** How long the viewport takes to reshape for a camera change. */
+/** How long the viewport takes to reshape for a change of shape. */
 export const CAMERA_RESHAPE_MS = 2000;
+
+/**
+ * The shape the viewport takes: a width-to-height ratio, `fill` to fill its container, or undefined while it waits
+ * for a camera that has not yet reported its shape.
+ */
+export type ViewportTarget = number | "fill" | undefined;
 
 /** The scene currently on screen, and the targets it is heading towards. */
 interface SceneTarget<T> {
   layers: T;
   sceneKey: string;
   camera: ResolvedCameraMode;
-  cameraAspectRatio: number | undefined;
+  sceneMode: GameSceneMode;
+  shape: ViewportTarget;
 }
+
+/** The ratio the viewport's style takes for a shape: none while it fills its container or the shape is unknown. */
+const ratioOf = (shape: ViewportTarget): number | undefined => (shape === "fill" ? undefined : shape);
 
 /** The game viewport's target shape, and the shape a camera reshape starts from. */
 export interface ViewportShape {
   /** The shape the viewport settles at, or undefined while it fills the container. */
   ratio: number | undefined;
-  /** The shape a camera reshape animates from, while one is running. */
+  /** The shape a reshape animates from, while one is running. */
   from: number | undefined;
 }
 
@@ -30,9 +41,11 @@ export interface SceneTransition<T> {
   layers: T;
   /** The camera settings that belong to those layers. */
   camera: ResolvedCameraMode;
-  /** The game viewport's target shape, and the shape a camera reshape starts from. */
+  /** How those layers are laid out. */
+  sceneMode: GameSceneMode;
+  /** The game viewport's target shape, and the shape a reshape starts from. */
   viewport: ViewportShape;
-  /** Whether the viewport is reshaping for a camera change. */
+  /** Whether the viewport is reshaping. */
   reshaping: boolean;
   /** 1 when visible, 0 while faded out. */
   opacity: 0 | 1;
@@ -48,8 +61,10 @@ interface SceneTransitionOptions<T> {
   sceneKey: string;
   /** The latest camera settings. */
   camera: ResolvedCameraMode;
-  /** The shape the camera reports, once its video is playing. */
-  cameraAspectRatio: number | undefined;
+  /** How the latest scene is laid out. */
+  sceneMode: GameSceneMode;
+  /** The shape the latest scene needs the viewport to take. */
+  shape: ViewportTarget;
   /** Skip the waits when the player prefers reduced motion. */
   reducedMotion: boolean;
   /** Measures the viewport's current width-to-height ratio, if it has a size. */
@@ -83,10 +98,21 @@ const sameCamera = (a: ResolvedCameraMode, b: ResolvedCameraMode) => a.enabled =
 const syncScene = <T>(run: TransitionRun<T>) => {
   const latest = run.latestRef.current;
   const shown = run.shownRef.current;
-  if (latest.layers !== shown.layers || !sameCamera(latest.camera, shown.camera)) {
-    run.show({ ...shown, layers: latest.layers, camera: latest.camera });
+  if (
+    latest.layers !== shown.layers ||
+    !sameCamera(latest.camera, shown.camera) ||
+    latest.sceneMode !== shown.sceneMode ||
+    latest.shape !== shown.shape
+  ) {
+    run.show({
+      ...shown,
+      layers: latest.layers,
+      camera: latest.camera,
+      sceneMode: latest.sceneMode,
+      shape: latest.shape,
+    });
   }
-  run.setViewport({ ratio: latest.camera.enabled ? latest.cameraAspectRatio : undefined, from: undefined });
+  run.setViewport({ ratio: ratioOf(latest.shape), from: undefined });
 };
 
 /** Fades the shown scene out, swaps to the latest scene, and fades it in. */
@@ -102,9 +128,7 @@ const fadeScene = async <T>(run: TransitionRun<T>) => {
 /** Reshapes the viewport over two seconds, fading the scene out over the final second when it changes. */
 const reshapeScene = async <T>(run: TransitionRun<T>) => {
   const target = run.latestRef.current;
-  const targetRatio = target.camera.enabled
-    ? target.cameraAspectRatio
-    : (run.measureContainer() ?? run.measureViewport());
+  const targetRatio = target.shape === "fill" ? (run.measureContainer() ?? run.measureViewport()) : target.shape;
   const startRatio = run.measureViewport() ?? targetRatio;
 
   run.setViewport({ ratio: targetRatio, from: startRatio });
@@ -120,7 +144,7 @@ const reshapeScene = async <T>(run: TransitionRun<T>) => {
   const swapped = run.latestRef.current;
   run.show(swapped);
   run.setReshaping(false);
-  run.setViewport({ ratio: swapped.camera.enabled ? swapped.cameraAspectRatio : undefined, from: undefined });
+  run.setViewport({ ratio: ratioOf(swapped.shape), from: undefined });
   if (!fading) return;
   run.setOpacity(1);
   await wait(SCENE_FADE_MS);
@@ -132,15 +156,16 @@ const runTransition = async <T>(run: TransitionRun<T>) => {
     const latest = run.latestRef.current;
     const shown = run.shownRef.current;
     const sceneChanged = latest.sceneKey !== shown.sceneKey;
-    const cameraChanged = latest.camera.enabled !== shown.camera.enabled;
+    // A shape only reshapes from a known one: a camera reporting its first shape just settles there
+    const shapeChanged = isDefined(shown.shape) && latest.shape !== shown.shape;
 
-    if (!sceneChanged && !cameraChanged) {
+    if (!sceneChanged && !shapeChanged) {
       syncScene(run);
       run.setTransitioning(false);
       return;
     }
-    // Camera mode cannot start reshaping until the video reports a shape
-    if (cameraChanged && latest.camera.enabled && !isDefined(latest.cameraAspectRatio)) {
+    // A camera turning on cannot start reshaping until its video reports a shape
+    if (shapeChanged && !isDefined(latest.shape)) {
       run.setTransitioning(false);
       return;
     }
@@ -148,17 +173,17 @@ const runTransition = async <T>(run: TransitionRun<T>) => {
     run.setTransitioning(true);
     if (run.reducedMotionRef.current) {
       run.show(run.latestRef.current);
-      run.setViewport({ ratio: latest.camera.enabled ? latest.cameraAspectRatio : undefined, from: undefined });
+      run.setViewport({ ratio: ratioOf(latest.shape), from: undefined });
       run.setOpacity(1);
       run.setReshaping(false);
       continue;
     }
-    if (cameraChanged) await reshapeScene(run);
+    if (shapeChanged) await reshapeScene(run);
     else await fadeScene(run);
   }
 };
 
-/** The shown scene, the latest target, and the refs the transition runner needs. */
+/** The shown scene, whether a transition is running, and the refs and callbacks the transition runner needs. */
 function useSceneTargets<T>(target: SceneTarget<T>, reducedMotion: boolean) {
   const [shown, setShown] = useState(target);
   const shownRef = useRef(target);
@@ -192,83 +217,54 @@ function useSceneTargets<T>(target: SceneTarget<T>, reducedMotion: boolean) {
     setTransitioningState(next);
   }, []);
 
-  return {
-    shown,
-    shownRef,
-    latestRef,
-    reducedMotionRef,
-    mountedRef,
-    transitioning,
-    transitioningRef,
-    show,
-    setTransitioning,
-  };
+  // The refs never change and the callbacks are stable, so this is made once
+  const run = useMemo(
+    () => ({ shownRef, latestRef, reducedMotionRef, mountedRef, show, setTransitioning }),
+    [show, setTransitioning],
+  );
+  return { shown, transitioning, transitioningRef, run };
 }
 
 /**
  * Shows the current scene, fading out the old one and fading in the new one when the scene key
- * changes. A camera on/off change reshapes the viewport over two seconds instead, and a scene that
- * changes with it fades out over the final second of the reshape before fading in. Content updates
- * within the same scene pass straight through.
+ * changes. A change of the viewport's shape (the camera turning on or off, or a change between 2D and 2.5D)
+ * reshapes it over two seconds instead, and a scene that changes with it fades out over the final second of the
+ * reshape before fading in. Content updates within the same scene pass straight through.
  */
 export default function useSceneTransition<T>({
-  layers,
-  sceneKey,
-  camera,
-  cameraAspectRatio,
   reducedMotion,
   measureViewport,
   measureContainer,
+  ...target
 }: SceneTransitionOptions<T>): SceneTransition<T> {
-  const {
-    shown,
-    shownRef,
-    latestRef,
-    reducedMotionRef,
-    mountedRef,
-    transitioning,
-    transitioningRef,
-    show,
-    setTransitioning,
-  } = useSceneTargets<T>({ layers, sceneKey, camera, cameraAspectRatio }, reducedMotion);
+  const { shown, transitioning, transitioningRef, run } = useSceneTargets<T>(target, reducedMotion);
   const [opacity, setOpacity] = useState<0 | 1>(1);
   const [reshaping, setReshaping] = useState(false);
-  const [viewport, setViewport] = useState<ViewportShape>({
-    ratio: camera.enabled ? cameraAspectRatio : undefined,
-    from: undefined,
-  });
+  const [viewport, setViewport] = useState<ViewportShape>({ ratio: ratioOf(target.shape), from: undefined });
   // Start a run whenever a target changes while nothing is running
   useEffect(() => {
     if (transitioningRef.current) return;
-    void runTransition({
-      latestRef,
-      shownRef,
-      reducedMotionRef,
-      mountedRef,
-      measureViewport,
-      measureContainer,
-      show,
-      setOpacity,
-      setReshaping,
-      setViewport,
-      setTransitioning,
-    });
+    void runTransition({ ...run, measureViewport, measureContainer, setOpacity, setReshaping, setViewport });
   }, [
-    layers,
-    sceneKey,
-    camera.enabled,
-    camera.preview,
-    cameraAspectRatio,
+    target.layers,
+    target.sceneKey,
+    target.camera.enabled,
+    target.camera.preview,
+    target.sceneMode,
+    target.shape,
     reducedMotion,
     measureViewport,
     measureContainer,
-    show,
-    setTransitioning,
-    latestRef,
-    shownRef,
-    reducedMotionRef,
-    mountedRef,
+    run,
     transitioningRef,
   ]);
-  return { layers: shown.layers, camera: shown.camera, viewport, reshaping, opacity, transitioning };
+  return {
+    layers: shown.layers,
+    camera: shown.camera,
+    sceneMode: shown.sceneMode,
+    viewport,
+    reshaping,
+    opacity,
+    transitioning,
+  };
 }

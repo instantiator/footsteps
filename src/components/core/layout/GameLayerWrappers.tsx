@@ -3,6 +3,7 @@ import useAppConfig from "../../../providers/AppConfigHook";
 import { isDefined } from "../../../util/ObjectUtils";
 import CameraDebugOverlay from "../../camera/CameraDebugOverlay";
 import type { FeetPositions } from "../../camera/CameraSupport";
+import type { CropPlacement } from "../../camera/FloorGeometry";
 import CharacterCamera from "../../camera/CharacterCamera";
 import CharacterCanvas from "../../camera/CharacterCanvas";
 import type { PlayerFrame } from "../../camera/PlayerMonitor";
@@ -45,6 +46,8 @@ export interface LayerNodeProps {
   onPlayersChange?: (players: PlayerFrame[], timestamp: number) => void;
   /** Whether the camera's picture is flipped like a mirror. */
   mirror?: boolean;
+  /** Where the camera image sits so a 2.5D scene's crop of it fills the viewport; the whole image fits it if not given. */
+  crop?: CropPlacement;
   /** Whether debug aids (colour key, coloured mask) are shown. */
   debug?: boolean;
   /** Switches the debug aids on or off, from the HUD. */
@@ -134,11 +137,15 @@ export const CharacterCanvasLayerWrapper = ({
   onPlayersChange,
   mirror,
   debug,
+  crop,
 }: LayerNodeProps) => {
   const { showFps } = useAppConfig();
+  const cropped = isDefined(crop)
+    ? { width: `${crop.width * 100}%`, height: `${crop.height * 100}%`, left: `${crop.left * 100}%`, top: 0 }
+    : undefined;
   return (
     // Clicks pass through to the game layers beneath; the silhouette is decoration
-    <div id="character-canvas-container" className="outerStyle noClicks characterCanvasStack">
+    <div id="character-canvas-container" className="outerStyle noClicks characterCanvasStack" style={cropped}>
       <CharacterCanvas
         video={video ?? null}
         mediaStream={characterStream}
