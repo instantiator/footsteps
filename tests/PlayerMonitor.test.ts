@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { EMPTY_MASK_RECT, type FootPosition, type MaskRect } from "../src/components/camera/CameraSupport";
+import type { FootPosition } from "../src/components/camera/CameraSupport";
+import { EMPTY_MASK_RECT, type MaskRect } from "../src/components/camera/FloorGeometry";
 import {
   PlayerMonitor,
   type MonitorTarget,

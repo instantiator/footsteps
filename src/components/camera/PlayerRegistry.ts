@@ -1,7 +1,7 @@
 import { centreOf, MAX_MATCH_DISTANCE } from "../../vision/Tracking";
 import type { VisionFrame, VisionPerson } from "../../vision/VisionTypes";
 import type { SceneScope } from "../../entities/state/GameState";
-import type { MaskSize } from "./CameraSupport";
+import type { MaskSize } from "./FloorGeometry";
 import type { PlayerStatic } from "./PlayerStatic";
 
 /**

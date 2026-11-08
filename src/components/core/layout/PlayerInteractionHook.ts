@@ -7,7 +7,7 @@ import {
   maskPointForScreenPoint,
   maskRectForElement,
   screenPointForMaskPoint,
-} from "../../camera/CameraSupport";
+} from "../../camera/FloorGeometry";
 import { jumpSettingsOf } from "../../camera/JumpDetector";
 import {
   PlayerMonitor,

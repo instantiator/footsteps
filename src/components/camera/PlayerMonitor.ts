@@ -4,7 +4,8 @@ import { isDefined } from "../../util/ObjectUtils";
 import { BODY_PARTS, BodyPart } from "../../vision/BodyPart";
 import { bodyPartsIn, partRegion, isSilhouetteWithin } from "../../vision/VisionQueries";
 import type { Point, VisionPerson } from "../../vision/VisionTypes";
-import type { FootPosition, MaskRect } from "./CameraSupport";
+import type { FootPosition } from "./CameraSupport";
+import type { MaskRect } from "./FloorGeometry";
 import { JumpDetector, jumpSettingsOf, type JumpSettings } from "./JumpDetector";
 
 /** Interactions the player monitor can detect through the camera. */
