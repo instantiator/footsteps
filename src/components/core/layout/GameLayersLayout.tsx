@@ -25,6 +25,7 @@ import {
   HudLayerWrapper,
 } from "./GameLayerWrappers";
 import { usePlayerInteractions, type CameraRuleEvent, type CameraRuleTarget } from "./PlayerInteractionHook";
+import { useMouseFeet } from "./MouseFeetHook";
 import useSceneTransition, { type SceneTransition } from "./useSceneTransition";
 
 /** Props for {@link GameLayersLayout}. */
@@ -257,7 +258,7 @@ function useCameraFallback(requested: ResolvedAvatarMode) {
   const onCameraError = useCallback(() => setFailed(true), []);
   const mode = failed && requested.mode === "camera" ? (requested.fallback ?? "mouse") : requested.mode;
   const camera = useMemo(() => cameraModeOf({ mode, preview: requested.preview }), [mode, requested.preview]);
-  return { mode, camera, onCameraError };
+  return { mouseFeet: mode === "mouse-feet", camera, onCameraError };
 }
 
 /** The viewport's target shape, and the shape a camera reshape starts from while one is running. */
@@ -272,7 +273,7 @@ const viewportStyle = (scene: SceneTransition<GameLayers>): CSSProperties => {
   return style;
 };
 
-/** Stacks the game's scene layers, the optional camera character, debug overlay, and HUD. */
+/** Stacks the game's scene layers, the optional camera character, debug overlay, and HUD, and runs mouse-feet input. */
 export default function GameLayersLayout({
   gameLayers = {},
   sceneKey = "default",
@@ -287,7 +288,7 @@ export default function GameLayersLayout({
   const [mirror] = useState(() => loadCameraChoice().mirror);
   const { viewportRef, measureViewport, measureContainer } = useViewportMeasurements();
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
-  const { camera, onCameraError } = useCameraFallback(requestedAvatar);
+  const { mouseFeet, camera, onCameraError } = useCameraFallback(requestedAvatar);
   const scene = useSceneTransition({
     layers: gameLayers,
     sceneKey,
@@ -313,6 +314,7 @@ export default function GameLayersLayout({
     scene.camera.enabled && !scene.transitioning,
     mirror,
   );
+  useMouseFeet(viewportRef, cameraRules, onPlayerInteraction, { enabled: mouseFeet, paused: scene.transitioning });
 
   return (
     <div

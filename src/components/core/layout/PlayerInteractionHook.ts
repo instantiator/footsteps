@@ -64,7 +64,7 @@ let nextGeneratedKey = 0;
  * between frames: its `id`, or a generated key. (An element without an `id` that a re-render replaces gets a new
  * key, and so counts as new.)
  */
-const elementKey = (element: Element): string => {
+export const elementKey = (element: Element): string => {
   if (element.id) return `id:${element.id}`;
   let key = generatedKeys.get(element);
   if (key === undefined) generatedKeys.set(element, (key = `el:${nextGeneratedKey++}`));

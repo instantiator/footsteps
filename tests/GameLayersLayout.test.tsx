@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentProps, ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { saveCameraChoice } from "../src/components/camera/CameraChoice";
@@ -217,6 +217,32 @@ describe("GameLayersLayout without a working camera", () => {
     await vi.waitFor(() => expect(container.querySelector("#overview-foreground-container")).not.toBeNull());
     expect(container.querySelector("#character-camera-layer")).toBeNull();
     expect(screen.queryByTestId("canvas")).toBeNull();
+  });
+
+  it("switches to a mouse-feet fallback, so the pointer fires foot rules", async () => {
+    settings.fail = true;
+    const onPlayerInteraction = vi.fn();
+    const footRule: CameraRuleTarget = {
+      scope: SCOPE,
+      run: 0,
+      ruleIndex: 0,
+      selector: "#overview-thing",
+      interactions: ["foot-enter"],
+      threshold: 1,
+      includeCovered: true,
+      holdMs: 0,
+    };
+    const { container } = renderLayout({
+      avatar: { mode: "camera", fallback: "mouse-feet", preview: true },
+      cameraRules: [footRule],
+      onPlayerInteraction,
+    });
+    await vi.waitFor(() => expect(container.querySelector("#overview-thing")).not.toBeNull());
+    stubRect(container.querySelector("#overview-thing")!, DOMRect.fromRect({ width: 10, height: 10 }));
+    const viewport = container.querySelector("#game-viewport")!;
+    fireEvent.pointerMove(viewport, { clientX: 50, clientY: 50 });
+    fireEvent.pointerMove(viewport, { clientX: 5, clientY: 5 });
+    expect(onPlayerInteraction).toHaveBeenCalledWith(expect.objectContaining({ interaction: "foot-enter", player: 1 }));
   });
 
   it("moves on to a camera scene, without the camera, when it can't start", () => {
