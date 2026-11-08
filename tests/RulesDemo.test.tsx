@@ -52,7 +52,7 @@ const demo = (change: (game: GameData) => void): GameData => {
       .filter((stage) => stage.id !== "effects")
       .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
   ].flatMap(withResets)) {
-    scene.camera = { requirement: false };
+    scene.avatar = { mode: "mouse" };
     if (scene.component.type !== "template") continue;
     scene.component.foregroundTemplate = inline(scene.component.foregroundTemplate);
     scene.component.backgroundTemplate = inline(scene.component.backgroundTemplate);

@@ -2,26 +2,26 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import localRepository from "../public/game-repository.json";
 import { compileGameRules } from "../src/components/core/logic/GameRuleCompile";
 import type { GameData } from "../src/entities/data/GameData";
-import type { GameSceneCameraData, GameRule } from "../src/entities/data/scenes/GameSceneData";
+import type { GameSceneAvatarData, GameRule } from "../src/entities/data/scenes/GameSceneData";
 import type { GameEffect } from "../src/entities/data/scenes/GameEffectData";
 import type { GameRepository } from "../src/entities/GameRepository";
 import { challenge, game, stage } from "./data/GameBuilders";
 
-const ON_CAMERA: GameSceneCameraData = { requirement: "enabled" };
+const ON_CAMERA: GameSceneAvatarData = { mode: "camera", fallback: "mouse" };
 const CHALLENGE_SCENE = "stages[0] (lava) › challenges[0] (floor) › scenes[0] (challenge-in-progress)";
 const RULE = `${CHALLENGE_SCENE} › rules[0]`;
 
 /** A game whose only challenge scene has the given rules, with the camera on unless the test says otherwise. */
-const gameWith = (rules: GameRule[], camera: GameSceneCameraData | undefined = ON_CAMERA): GameData => {
+const gameWith = (rules: GameRule[], camera: GameSceneAvatarData | undefined = ON_CAMERA): GameData => {
   const data = game(["game-overview-stages"], [stage("lava", [challenge("floor")])]);
   const [scene] = data.stages[0].challenges[0].scenes;
   scene.component.rules = rules;
-  scene.camera = camera;
+  scene.avatar = camera;
   return data;
 };
 
 /** Compiling a game whose challenge has one rule, firing on a click and doing this. */
-const compilingEffect = (effect: GameEffect, camera?: GameSceneCameraData) => () =>
+const compilingEffect = (effect: GameEffect, camera?: GameSceneAvatarData) => () =>
   compileGameRules(gameWith([{ on: { interact: ["click"], target: "#a" }, do: [effect] }], camera));
 
 /** Compiling a game whose challenge has one rule with this trigger. */
@@ -160,17 +160,17 @@ describe("the camera when the game loads", () => {
   const fall: GameEffect = { effect: "player-fall" };
 
   it("names the rule and scene of a player effect where the camera is off", () => {
-    expect(compilingEffect(fall, { requirement: false })).toThrow(
-      `${RULE}.do[0]: player-fall needs a player, but this scene doesn't have the camera enabled`,
+    expect(compilingEffect(fall, { mode: "mouse" })).toThrow(
+      `${RULE}.do[0]: player-fall needs a player, but this scene's avatar mode is never "camera"`,
     );
   });
 
   it.each([
-    ["false", { requirement: false }, true],
+    ["mouse", { mode: "mouse" }, true],
     ["set nowhere", {}, true],
-    ["enabled", { requirement: "enabled" }, false],
-    ["required", { requirement: "required" }, false],
-  ] satisfies [string, GameSceneCameraData, boolean][])("with the scene's camera %s", (_, camera, rejected) => {
+    ["camera with a fallback", { mode: "camera", fallback: "mouse" }, false],
+    ["camera", { mode: "camera" }, false],
+  ] satisfies [string, GameSceneAvatarData, boolean][])("with the scene's avatar %s", (_, camera, rejected) => {
     const compiling = compilingEffect(fall, camera);
     if (rejected) expect(compiling).toThrow("needs a player");
     else expect(compiling).not.toThrow();
@@ -181,22 +181,22 @@ describe("the camera when the game loads", () => {
     ["a players property", { effect: "stop", players: "all" }],
     ["a player target", { effect: "quake", target: ".player-1" }],
   ] satisfies [string, GameEffect][])("covers %s", (_, effect) => {
-    expect(compilingEffect(effect, { requirement: false })).toThrow("needs a player");
+    expect(compilingEffect(effect, { mode: "mouse" })).toThrow("needs a player");
   });
 
   it("covers a reward from a player, but not other rewards or effects", () => {
     const withReward = (extra: object) =>
       gameWith([{ on: { interact: ["click"], target: "#a" }, do: [{ reward: { animation: "stars" }, ...extra }] }], {
-        requirement: false,
+        mode: "mouse",
       });
     expect(() => compileGameRules(withReward({ players: "triggering" }))).toThrow("reward needs a player");
     expect(() => compileGameRules(withReward({ target: ".player" }))).toThrow("reward needs a player");
     expect(() => compileGameRules(withReward({ target: "#b" }))).not.toThrow();
-    expect(compilingEffect({ effect: "quake", target: "#b" }, { requirement: false })).not.toThrow();
+    expect(compilingEffect({ effect: "quake", target: "#b" }, { mode: "mouse" })).not.toThrow();
   });
 
   it("rejects a rule only the camera could fire, and not one with a pointer interaction too", () => {
-    const rule = (interact: GameRule["on"]) => gameWith([{ on: interact, do: [] }], { requirement: false });
+    const rule = (interact: GameRule["on"]) => gameWith([{ on: interact, do: [] }], { mode: "mouse" });
     expect(() => compileGameRules(rule({ interact: ["near-enter"], target: "#a", within: 1 }))).toThrow(
       `${RULE}.on: nothing can fire this rule`,
     );
@@ -205,10 +205,28 @@ describe("the camera when the game loads", () => {
     expect(() => compileGameRules(rule({ start: true }))).not.toThrow();
   });
 
+  it("lets mouse-feet fire foot, any and jump rules, but not hand rules, and the mouse none of them", () => {
+    const rule = (interact: GameRule["on"], avatar: GameSceneAvatarData) => () =>
+      compileGameRules(gameWith([{ on: interact, do: [] }], avatar));
+    const feet: GameSceneAvatarData = { mode: "mouse-feet" };
+    expect(rule({ interact: ["foot-enter"], target: "#a" }, feet)).not.toThrow();
+    expect(rule({ interact: ["any-exit"], target: "#a" }, feet)).not.toThrow();
+    expect(rule({ interact: "jump" }, feet)).not.toThrow();
+    expect(rule({ interact: ["hand-enter"], target: "#a" }, feet)).toThrow(
+      `${RULE}.on: nothing can fire this rule, as no avatar mode this scene can have (mouse-feet) fires its interactions`,
+    );
+    expect(rule({ interact: ["foot-enter"], target: "#a" }, { mode: "mouse" })).toThrow("nothing can fire this rule");
+    expect(rule({ interact: ["foot-enter"], target: "#a" }, { mode: "camera", fallback: "mouse-feet" })).not.toThrow();
+  });
+
+  it("keeps player effects to scenes that can have the camera", () => {
+    expect(compilingEffect(fall, { mode: "mouse-feet" })).toThrow("needs a player");
+  });
+
   describe("by inheritance", () => {
     const compiled = (change: (data: GameData) => void) => () => {
       const data = gameWith([{ on: { start: true }, do: [fall] }]);
-      delete data.stages[0].challenges[0].scenes[0].camera;
+      delete data.stages[0].challenges[0].scenes[0].avatar;
       change(data);
       return compileGameRules(data);
     };
@@ -220,7 +238,7 @@ describe("the camera when the game loads", () => {
     it("follows the game's module", () => {
       expect(
         compiled((data) => {
-          data.modules = { camera: ON_CAMERA };
+          data.modules = { avatar: ON_CAMERA };
         }),
       ).not.toThrow();
     });
@@ -228,7 +246,7 @@ describe("the camera when the game loads", () => {
     it("follows an overview, as it renders behind a stage", () => {
       expect(
         compiled((data) => {
-          data.scenes[0].camera = ON_CAMERA;
+          data.scenes[0].avatar = ON_CAMERA;
         }),
       ).not.toThrow();
     });
@@ -236,9 +254,9 @@ describe("the camera when the game loads", () => {
     it("follows the stage's shared scene over the overview", () => {
       expect(
         compiled((data) => {
-          data.scenes[0].camera = ON_CAMERA;
+          data.scenes[0].avatar = ON_CAMERA;
           data.stages[0].scenes = [
-            { purpose: "shared", camera: { requirement: false }, component: data.scenes[0].component },
+            { purpose: "shared", avatar: { mode: "mouse" }, component: data.scenes[0].component },
           ];
         }),
       ).toThrow("needs a player");
@@ -247,34 +265,34 @@ describe("the camera when the game loads", () => {
     it("lets a scene's own setting win", () => {
       expect(
         compiled((data) => {
-          data.modules = { camera: ON_CAMERA };
-          data.stages[0].challenges[0].scenes[0].camera = { requirement: false };
+          data.modules = { avatar: ON_CAMERA };
+          data.stages[0].challenges[0].scenes[0].avatar = { mode: "mouse" };
         }),
       ).toThrow("needs a player");
     });
 
     it("uses a reset scene's setting over its parent's, and its parent's when it has none", () => {
-      const withReset = (reset: GameSceneCameraData | undefined, parent: GameSceneCameraData) => () => {
+      const withReset = (reset: GameSceneAvatarData | undefined, parent: GameSceneAvatarData) => () => {
         const data = gameWith([], parent);
         const [scene] = data.stages[0].challenges[0].scenes;
         scene.resetScene = {
-          camera: reset,
+          avatar: reset,
           component: { ...scene.component, rules: [{ on: { start: true }, do: [fall] }] },
         };
         return compileGameRules(data);
       };
-      expect(withReset({ requirement: "enabled" }, { requirement: false })).not.toThrow();
-      expect(withReset({ requirement: false }, ON_CAMERA)).toThrow(`${CHALLENGE_SCENE} › resetScene › rules[0].do[0]`);
+      expect(withReset({ mode: "camera", fallback: "mouse" }, { mode: "mouse" })).not.toThrow();
+      expect(withReset({ mode: "mouse" }, ON_CAMERA)).toThrow(`${CHALLENGE_SCENE} › resetScene › rules[0].do[0]`);
       expect(withReset(undefined, ON_CAMERA)).not.toThrow();
     });
 
     it("counts a challenge shown alongside that turns the camera on, as that turns it on for all", () => {
       const sideBySide = (challengeChunking: number) => () => {
-        const data = gameWith([{ on: { start: true }, do: [fall] }], { requirement: false });
+        const data = gameWith([{ on: { start: true }, do: [fall] }], { mode: "mouse" });
         data.stages[0].challengeChunking = challengeChunking;
         data.stages[0].challenges.push({
           ...challenge("other"),
-          scenes: [{ ...challenge("other").scenes[0], camera: ON_CAMERA }],
+          scenes: [{ ...challenge("other").scenes[0], avatar: ON_CAMERA }],
         });
         return compileGameRules(data);
       };
@@ -289,7 +307,7 @@ describe("the camera when the game loads", () => {
           data.stages[0].scenes = [{ purpose: "shared", component: shared }];
           const [scene] = data.stages[0].challenges[0].scenes;
           scene.component = { ...scene.component, rules: [] };
-          scene.camera = ON_CAMERA;
+          scene.avatar = ON_CAMERA;
         }),
       ).not.toThrow();
     });

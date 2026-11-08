@@ -5,7 +5,7 @@ import type {
   GameChallengeScene,
   GameChallengeScenePurpose,
   GameSceneBase,
-  GameSceneCameraData,
+  GameSceneAvatarData,
   GameSceneComponentData,
   GameOverviewScene,
   GameOverviewScenePurpose,
@@ -17,6 +17,7 @@ import type { GameChallengeState } from "../../../entities/state/GameChallengeSt
 import { toGameSnapshot, type GameSnapshot } from "../../../entities/state/GameSnapshot";
 import type { SceneScope, GameState } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
+import { avatarOver } from "./AvatarModeUtils";
 import { sceneRun, getActiveStageStateChallenges, getStageState } from "./GameStateUtils";
 import { decorateGameState, type DecoratedGameState } from "./TemplateUtils";
 
@@ -129,8 +130,8 @@ interface ResolvedScene {
   scope: SceneScope;
   /** How what shows renders, and its rules. */
   component: GameSceneComponentData;
-  /** Its camera settings: a reset scene's over its parent's. */
-  camera: GameSceneCameraData | undefined;
+  /** Its avatar settings: a reset scene's over its parent's. */
+  avatar: GameSceneAvatarData | undefined;
   /** Whether what shows is a reset scene. */
   isReset: boolean;
 }
@@ -142,16 +143,16 @@ interface ResolvedScene {
 export const resolveResets = (
   state: GameState,
   scope: SceneScope,
-  scene: Pick<GameSceneBase, "component" | "camera" | "resetScene">,
+  scene: Pick<GameSceneBase, "component" | "avatar" | "resetScene">,
 ): ResolvedScene => {
-  let shown: ResolvedScene = { scope, component: scene.component, camera: scene.camera, isReset: false };
+  let shown: ResolvedScene = { scope, component: scene.component, avatar: scene.avatar, isReset: false };
   for (let reset = scene.resetScene; isDefined(reset); reset = reset.resetScene) {
     const nextScope = resetScope(shown.scope);
     if (state.session.finishedResets.includes(nextScope)) break;
     shown = {
       scope: nextScope,
       component: reset.component,
-      camera: { ...shown.camera, ...reset.camera },
+      avatar: avatarOver(shown.avatar, reset.avatar),
       isReset: true,
     };
   }
@@ -254,11 +255,11 @@ export const getLayeredRenderData = (
 const getOverviewRenderData = (gameState: GameState, shared: SharedTemplateData): GameSceneRenderData | undefined => {
   const overviewScene = calcOverviewScene(gameState);
   if (!isDefined(overviewScene)) return undefined;
-  const { scope, component, camera } = resolveResets(gameState, overviewScope(overviewScene.purpose), overviewScene);
+  const { scope, component, avatar } = resolveResets(gameState, overviewScope(overviewScene.purpose), overviewScene);
   return {
     purpose: overviewScene.purpose,
     component,
-    camera,
+    avatar,
     scope,
     run: sceneRun(gameState, scope),
     templateData: templateDataFor(shared, gameState, { scope, component }),
@@ -274,11 +275,11 @@ const getStageSceneRenderData = (gameState: GameState, shared: SharedTemplateDat
   if (!isDefined(stageState)) return undefined;
   const sharedStageScene = calcStageScene(stageState.stage, "shared");
   if (!isDefined(sharedStageScene)) return undefined;
-  const { scope, component, camera } = resolveResets(gameState, stageScope(stageState.stage.id), sharedStageScene);
+  const { scope, component, avatar } = resolveResets(gameState, stageScope(stageState.stage.id), sharedStageScene);
   return {
     ...sharedStageScene,
     component,
-    camera,
+    avatar,
     scope,
     run: sceneRun(gameState, scope),
     templateData: templateDataFor(shared, gameState, { scope, component }),
@@ -303,7 +304,7 @@ const getChallengesRenderData = (
     if (!isDefined(challengeScene)) {
       throw new Error(`No scene for challenge ${challengeState.challenge.id} in stage ${stageState.stage.id}.`);
     }
-    const { scope, component, camera } = resolveResets(
+    const { scope, component, avatar } = resolveResets(
       gameState,
       challengeScope(stageState.stage.id, challengeState.challenge.id, challengeScene.purpose),
       challengeScene,
@@ -311,7 +312,7 @@ const getChallengesRenderData = (
     return {
       purpose: challengeScene.purpose,
       component,
-      camera,
+      avatar,
       scope,
       run: sceneRun(gameState, scope),
       templateData: templateDataFor(shared, gameState, { scope, component }, challengeState),

@@ -4,7 +4,8 @@ import {
   GAME_INTERACTIONS,
   type GameAction,
   type GameSceneBase,
-  type GameSceneCameraData,
+  type GameAvatarMode,
+  type GameSceneAvatarData,
   type GameFeedbackAction,
   type GameInteractTrigger,
   type GameRule,
@@ -14,15 +15,15 @@ import {
 import { isDefined } from "../../../util/ObjectUtils";
 import { compileGameExpression, type GameExpression } from "./GameExpressionUtils";
 import {
-  cameraOnlyRuleProblem,
   checkEffectEnd,
   checkInteractTrigger,
   checkSelector,
   effectProblem,
   needsPlayerProblem,
   rewardProblem,
+  unfireableRuleProblem,
 } from "./GameEffectCompile";
-import { declaredValue } from "./CameraModeUtils";
+import { avatarOver, declaredChoice } from "./AvatarModeUtils";
 import { isEntering, triggerInteractions, type GameExpressions } from "./GameRuleUtils";
 import { renamedKeyProblems } from "./RenamedKeys";
 
@@ -31,72 +32,84 @@ const CHALLENGE_ACTIONS = ["completeChallenge", "answer", "resetChallenge"] as c
 
 /** A scene to check, with a readable path to it for error messages. */
 interface SceneToCompile {
-  scene: Pick<GameSceneBase, "component" | "camera" | "resetScene">;
+  scene: Pick<GameSceneBase, "component" | "avatar" | "resetScene">;
   path: string;
   isChallenge: boolean;
   /** Whether it is a reset scene, where `finishReset` can be used. */
   isReset: boolean;
-  /** Whether the camera could ever be on while it shows. */
-  cameraCanBeOn: boolean;
+  /** The avatar modes that could ever be on while it shows. */
+  modes: Set<GameAvatarMode>;
 }
 
-/** What a scene inherits its camera from, when it doesn't say: a broader scene's setting, or the game's. */
-type CameraInheritance = {
-  /** Whether a broader scene or the game turns the camera on; undefined if none says. */
-  inherited: boolean | undefined;
-  /** Whether a scene shown alongside it turns the camera on, which turns it on for all of them. */
-  alongside: boolean;
+/** What a scene inherits its avatar mode from, when it doesn't say. */
+type ModeInheritance = {
+  /** The modes a broader scene or the game could turn on; undefined if none says. */
+  inherited: GameAvatarMode[] | undefined;
+  /** The modes scenes shown alongside it could turn on, which could then be on for it too. */
+  alongside: GameAvatarMode[];
 };
 
-/** Whether the camera could ever be on for a scene, by the inheritance in `CameraModeUtils.ts`. */
-const canCameraBeOn = (camera: GameSceneCameraData | undefined, { inherited, alongside }: CameraInheritance) =>
-  alongside || (declaredValue("enabled", camera) ?? inherited) === true;
+/** A declared mode and its fallback, which could each be on. */
+const modesOf = (avatar: GameSceneAvatarData | undefined): GameAvatarMode[] | undefined => {
+  const choice = declaredChoice(avatar);
+  return choice && [choice.mode, ...(isDefined(choice.fallback) ? [choice.fallback] : [])];
+};
 
-/** A scene, followed by its reset scene, and theirs, each using its own camera setting over its parent's. */
-const withResets = (target: SceneToCompile, camera: CameraInheritance): SceneToCompile[] => {
+/**
+ * The avatar modes that could ever be on for a scene, by the inheritance in `AvatarModeUtils.ts`.
+ * ponytail: a union over everything that could apply, so it can only miss an error, never raise a false one.
+ */
+const possibleModes = (avatar: GameSceneAvatarData | undefined, { inherited, alongside }: ModeInheritance) =>
+  new Set([...(modesOf(avatar) ?? inherited ?? ["mouse"]), ...alongside]);
+
+/** A scene, followed by its reset scene, and theirs, each using its own avatar setting over its parent's. */
+const withResets = (target: SceneToCompile, inheritance: ModeInheritance): SceneToCompile[] => {
   const reset = target.scene.resetScene;
   if (!isDefined(reset)) return [target];
-  const merged = { ...target.scene.camera, ...reset.camera };
+  const merged = avatarOver(target.scene.avatar, reset.avatar);
   return [
     target,
     ...withResets(
       {
         ...target,
-        scene: { ...reset, camera: merged },
+        scene: { ...reset, avatar: merged },
         path: `${target.path} › resetScene`,
         isReset: true,
-        cameraCanBeOn: canCameraBeOn(merged, camera),
+        modes: possibleModes(merged, inheritance),
       },
-      camera,
+      inheritance,
     ),
   ];
 };
 
-/** The value several scenes' camera settings give together: on if any is on, otherwise off if any is off. */
-const anyDeclared = (scenes: Pick<GameSceneBase, "camera">[]): boolean | undefined => {
-  const values = scenes.map(({ camera }) => declaredValue("enabled", camera)).filter(isDefined);
-  return values.length === 0 ? undefined : values.includes(true);
+/** The modes several scenes' avatar settings could turn on, or undefined if none declares a mode. */
+const declaredModes = (scenes: Pick<GameSceneBase, "avatar">[]): GameAvatarMode[] | undefined => {
+  const modes = scenes.flatMap(({ avatar }) => modesOf(avatar) ?? []);
+  return modes.length === 0 ? undefined : modes;
 };
 
 /** A scene's place in the game, with what it inherits. */
-type ScenePlace = Pick<SceneToCompile, "path" | "isChallenge"> & CameraInheritance;
+type ScenePlace = Pick<SceneToCompile, "path" | "isChallenge"> & ModeInheritance;
 
 /** A scene to check, and its reset scenes, at their place in the game. */
-const compilable = (scene: SceneToCompile["scene"], { path, isChallenge, ...camera }: ScenePlace) =>
-  withResets({ scene, path, isChallenge, isReset: false, cameraCanBeOn: canCameraBeOn(scene.camera, camera) }, camera);
+const compilable = (scene: SceneToCompile["scene"], { path, isChallenge, ...inheritance }: ScenePlace) =>
+  withResets(
+    { scene, path, isChallenge, isReset: false, modes: possibleModes(scene.avatar, inheritance) },
+    inheritance,
+  );
 
 /** A stage's scenes to check, with what they inherit. */
-const stageScenes = (stage: GameStageData, s: number, fromOverview: boolean | undefined): SceneToCompile[] => {
+const stageScenes = (stage: GameStageData, s: number, fromOverview: GameAvatarMode[] | undefined): SceneToCompile[] => {
   const stagePath = `stages[${s}] (${stage.id})`;
-  const challengesOn = stage.challenges.map((challenge) => anyDeclared(challenge.scenes) === true);
-  const inherited = anyDeclared(stage.scenes ?? []) ?? fromOverview;
+  const challengeModes = stage.challenges.map((challenge) => declaredModes(challenge.scenes) ?? []);
+  const inherited = declaredModes(stage.scenes ?? []) ?? fromOverview;
   return [
     ...(stage.scenes ?? []).flatMap((scene, d) =>
       compilable(scene, {
         path: `${stagePath} › scenes[${d}] (${scene.purpose})`,
         isChallenge: false,
         inherited: fromOverview,
-        alongside: challengesOn.includes(true),
+        alongside: challengeModes.flat(),
       }),
     ),
     ...stage.challenges.flatMap((challenge, c) =>
@@ -106,7 +119,7 @@ const stageScenes = (stage: GameStageData, s: number, fromOverview: boolean | un
           isChallenge: true,
           inherited,
           // ponytail: any other challenge counts if the stage shows several at once, even in another chunk
-          alongside: (stage.challengeChunking ?? 1) > 1 && challengesOn.some((on, other) => on && other !== c),
+          alongside: (stage.challengeChunking ?? 1) > 1 ? challengeModes.filter((_, other) => other !== c).flat() : [],
         }),
       ),
     ),
@@ -115,15 +128,15 @@ const stageScenes = (stage: GameStageData, s: number, fromOverview: boolean | un
 
 /** Every scene in the game, overview, stage and challenge, and their reset scenes, with its path. */
 const allScenes = (gameData: GameData): SceneToCompile[] => {
-  const fromGame = declaredValue("enabled", gameData.modules?.camera);
-  const fromOverview = anyDeclared(gameData.scenes) ?? fromGame;
+  const fromGame = modesOf(gameData.modules?.avatar);
+  const fromOverview = declaredModes(gameData.scenes) ?? fromGame;
   return [
     ...gameData.scenes.flatMap((scene, d) =>
       compilable(scene, {
         path: `scenes[${d}] (${scene.purpose})`,
         isChallenge: false,
         inherited: fromGame,
-        alongside: false,
+        alongside: [],
       }),
     ),
     ...gameData.stages.flatMap((stage, s) => stageScenes(stage, s, fromOverview)),
@@ -217,7 +230,8 @@ const actionSources = (
   const problem =
     (action.delayMs ?? 0) < 0
       ? "delayMs can't be negative"
-      : (actionProblem(action, target, gameData) ?? (target.cameraCanBeOn ? undefined : needsPlayerProblem(action)));
+      : (actionProblem(action, target, gameData) ??
+        (target.modes.has("camera") ? undefined : needsPlayerProblem(action)));
   if (isDefined(problem)) throw new Error(`${where}: ${problem}`);
   if ("set" in action) return Object.entries(action.set).map(([key, source]) => [source, `${where}.set.${key}`]);
   if ("answer" in action) return [[action.answer, `${where}.answer`]];
@@ -243,8 +257,8 @@ const ruleSources = (rule: GameRule, where: string, target: SceneToCompile, game
     ...rule.do.flatMap((action, a) => actionSources(action, `${where}.do[${a}]`, target, gameData)),
   ];
   checkStartRule(rule, where);
-  const cameraOnly = target.cameraCanBeOn ? undefined : cameraOnlyRuleProblem(rule);
-  if (isDefined(cameraOnly)) throw new Error(`${where}.on: ${cameraOnly}`);
+  const unfireable = unfireableRuleProblem(rule, target.modes);
+  if (isDefined(unfireable)) throw new Error(`${where}.on: ${unfireable}`);
   return sources;
 };
 

@@ -1,7 +1,7 @@
 import {
   GAME_INTERACTIONS,
-  POINTER_INTERACTIONS,
   type GameAction,
+  type GameAvatarMode,
   type GameEffectEndTrigger,
   type GameInteractTrigger,
   type GameRewardAction,
@@ -14,6 +14,7 @@ import {
   type GameHighlightStep,
 } from "../../../entities/data/scenes/GameEffectData";
 import { isDefined } from "../../../util/ObjectUtils";
+import { canModeFire } from "./AvatarModeUtils";
 import { triggerInteractions } from "./GameRuleUtils";
 
 /** Why game data is wrong, or undefined if it isn't. */
@@ -196,15 +197,15 @@ const needsPlayer = (action: GameAction): string | undefined => {
 /** Why an action can't be used on a scene where the camera can never be on, or undefined if it can. */
 export const needsPlayerProblem = (action: GameAction): Problem => {
   const name = needsPlayer(action);
-  return isDefined(name) ? `${name} needs a player, but this scene doesn't have the camera enabled` : undefined;
+  return isDefined(name) ? `${name} needs a player, but this scene's avatar mode is never "camera"` : undefined;
 };
 
-/** Why a rule can't fire on a scene where the camera can never be on, or undefined if it can. */
-export const cameraOnlyRuleProblem = ({ on }: GameRule): Problem => {
+/** Why a rule can't fire with any avatar mode the scene could have, or undefined if it can. */
+export const unfireableRuleProblem = ({ on }: GameRule, modes: ReadonlySet<GameAvatarMode>): Problem => {
   if (!("interact" in on)) return undefined;
-  const pointer: readonly string[] = POINTER_INTERACTIONS;
-  if (triggerInteractions(on).some((interaction) => pointer.includes(interaction))) return undefined;
-  return "nothing can fire this rule, as its interactions all need the camera, and this scene doesn't have it enabled";
+  const interactions = triggerInteractions(on);
+  if (interactions.some((interaction) => [...modes].some((mode) => canModeFire(mode, interaction)))) return undefined;
+  return `nothing can fire this rule, as no avatar mode this scene can have (${[...modes].join(", ")}) fires its interactions`;
 };
 
 /**

@@ -35,7 +35,7 @@ const openWith = async (page: Page, rules: GameRule[], change: (game: GameData) 
         .filter((stage) => stage.id !== "effects")
         .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
     ]) {
-      scene.camera = { requirement: false };
+      scene.avatar = { mode: "mouse" };
     }
     const stage = game.stages.find(({ id }) => id === "balloons")!;
     const [scene] = stage.challenges[0].scenes;
@@ -460,7 +460,7 @@ test.describe("on players, with a fake camera", () => {
     await installFakeCamera(page, peoplePhotoUrls());
     await openWith(page, rules, (game) => {
       const [scene] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].scenes;
-      scene.camera = { requirement: "enabled" };
+      scene.avatar = { mode: "camera", fallback: "mouse" };
       scene.component.foregroundTemplate = { sourceType: "embedded", content: `${ITEMS}${PLAYERS}` };
     });
     await page.evaluate(() => window.__fakeCamera.setImage("photo:jumping-side-on"));

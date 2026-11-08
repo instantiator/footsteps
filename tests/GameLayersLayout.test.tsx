@@ -78,7 +78,7 @@ const layers = {
 /** The layout under test, in the provider stack a game supplies. */
 const layout = (props: Partial<ComponentProps<typeof GameLayersLayout>> = {}, config: Partial<AppConfig> = {}) => (
   <GameProviders repository={smallRepository} gameId={SMALL_GAME_ID} config={config}>
-    <GameLayersLayout gameLayers={layers} camera={{ enabled: false, preview: false }} {...props} />
+    <GameLayersLayout gameLayers={layers} avatar={{ mode: "mouse", fallback: undefined, preview: false }} {...props} />
   </GameProviders>
 );
 
@@ -141,7 +141,7 @@ describe("GameLayersLayout", () => {
   });
 
   it("draws the camera preview and the character canvas once the camera reports its aspect ratio", async () => {
-    const { container } = renderLayout({ camera: { enabled: true, preview: true } });
+    const { container } = renderLayout({ avatar: { mode: "camera", fallback: "mouse", preview: true } });
     expect(await screen.findByTestId("canvas")).toBeInTheDocument();
     expect(container.querySelector("#character-camera-layer")).not.toBeNull();
   });
@@ -153,7 +153,7 @@ describe("GameLayersLayout", () => {
     expect(viewport()).not.toHaveStyle({ aspectRatio: "1.5" });
     expect(viewport()?.querySelector("#overview-foreground-container")).not.toBeNull();
 
-    rerender(layout({ camera: { enabled: true, preview: true } }));
+    rerender(layout({ avatar: { mode: "camera", fallback: "mouse", preview: true } }));
     await screen.findByTestId("canvas");
 
     expect(viewport()).toHaveStyle({ aspectRatio: "1.5" });
@@ -161,13 +161,13 @@ describe("GameLayersLayout", () => {
   });
 
   it("tints the camera silhouette by body part when debugging", async () => {
-    renderLayout({ camera: { enabled: true, preview: true }, debug: true });
+    renderLayout({ avatar: { mode: "camera", fallback: "mouse", preview: true }, debug: true });
     await screen.findByTestId("canvas");
     expect(received.canvas.at(-1)?.maskType).toBe("colored");
   });
 
   it("doesn't re-render the game for each camera frame unless the debug overlay shows the feet", async () => {
-    renderLayout({ camera: { enabled: true, preview: true }, debug: false });
+    renderLayout({ avatar: { mode: "camera", fallback: "mouse", preview: true }, debug: false });
     await screen.findByTestId("canvas");
     const canvas = received.canvas.at(-1)!;
     expect(canvas.onFeetPositionsChange).toBeUndefined();
@@ -179,31 +179,31 @@ describe("GameLayersLayout", () => {
   });
 
   it("reports the feet to the debug overlay when debugging", async () => {
-    renderLayout({ camera: { enabled: true, preview: true }, debug: true });
+    renderLayout({ avatar: { mode: "camera", fallback: "mouse", preview: true }, debug: true });
     await screen.findByTestId("canvas");
     expect(received.canvas.at(-1)?.onFeetPositionsChange).toBeDefined();
   });
 
   it("hides the preview, but keeps the camera and canvas, when the preview is off", async () => {
-    const { container } = renderLayout({ camera: { enabled: true, preview: false } });
+    const { container } = renderLayout({ avatar: { mode: "camera", fallback: "mouse", preview: false } });
     expect(await screen.findByTestId("canvas")).toBeInTheDocument();
     expect(container.querySelector("#character-camera-layer")).toHaveStyle({ visibility: "hidden" });
   });
 
   it("clears a disabled camera's stream, so re-enabling starts a fresh one", async () => {
-    const { rerender } = renderLayout({ camera: { enabled: true, preview: true } });
+    const { rerender } = renderLayout({ avatar: { mode: "camera", fallback: "mouse", preview: true } });
     await vi.waitFor(() => expect(received.camera.at(-1)?.stream).toBeDefined());
 
-    rerender(layout({ camera: { enabled: false, preview: false } }));
+    rerender(layout({ avatar: { mode: "mouse", fallback: undefined, preview: false } }));
     const firstCameraAfterReEnable = received.camera.length;
-    rerender(layout({ camera: { enabled: true, preview: true } }));
+    rerender(layout({ avatar: { mode: "camera", fallback: "mouse", preview: true } }));
 
     expect(received.camera[firstCameraAfterReEnable]?.stream).toBeUndefined();
   });
 
   it("keeps the scene layers hidden until the camera reports its aspect ratio", () => {
     settings.reportAspect = false;
-    const { container } = renderLayout({ camera: { enabled: true, preview: true } });
+    const { container } = renderLayout({ avatar: { mode: "camera", fallback: "mouse", preview: true } });
     expect(container.querySelector("#overview-foreground-container")).toBeNull();
     expect(screen.queryByTestId("canvas")).toBeNull();
   });
@@ -212,7 +212,7 @@ describe("GameLayersLayout", () => {
 describe("GameLayersLayout without a working camera", () => {
   it("shows the scene without the camera when it can't start", async () => {
     settings.fail = true;
-    const { container } = renderLayout({ camera: { enabled: true, preview: true } });
+    const { container } = renderLayout({ avatar: { mode: "camera", fallback: "mouse", preview: true } });
 
     await vi.waitFor(() => expect(container.querySelector("#overview-foreground-container")).not.toBeNull());
     expect(container.querySelector("#character-camera-layer")).toBeNull();
@@ -228,7 +228,9 @@ describe("GameLayersLayout without a working camera", () => {
     };
     const { rerender } = renderLayout({ gameLayers: title, sceneKey: "title" });
 
-    rerender(layout({ camera: { enabled: true, preview: true }, gameLayers: stages, sceneKey: "stages" }));
+    rerender(
+      layout({ avatar: { mode: "camera", fallback: "mouse", preview: true }, gameLayers: stages, sceneKey: "stages" }),
+    );
 
     expect(screen.getByText("stages")).toBeInTheDocument();
     expect(screen.queryByText("title")).toBeNull();
@@ -303,7 +305,11 @@ describe("GameLayersLayout scene transitions", () => {
     stubRect(viewport.parentElement!, new DOMRect(0, 0, 100, 100));
 
     rerender(
-      layout({ camera: { enabled: true, preview: true }, gameLayers: sceneLayers("overview"), sceneKey: "overview" }),
+      layout({
+        avatar: { mode: "camera", fallback: "mouse", preview: true },
+        gameLayers: sceneLayers("overview"),
+        sceneKey: "overview",
+      }),
     );
 
     expect(viewport).toHaveClass("gameViewportReshaping");
@@ -344,7 +350,7 @@ describe("GameLayersLayout scene transitions", () => {
     setReducedMotion(false);
     vi.useFakeTimers();
     const { container, rerender } = renderLayout({
-      camera: { enabled: true, preview: true },
+      avatar: { mode: "camera", fallback: "mouse", preview: true },
       gameLayers: sceneLayers("overview"),
       sceneKey: "overview",
     });
@@ -354,7 +360,11 @@ describe("GameLayersLayout scene transitions", () => {
     expect(viewport).toHaveStyle({ aspectRatio: "1.5" });
 
     rerender(
-      layout({ camera: { enabled: false, preview: false }, gameLayers: sceneLayers("stage"), sceneKey: "stage" }),
+      layout({
+        avatar: { mode: "mouse", fallback: undefined, preview: false },
+        gameLayers: sceneLayers("stage"),
+        sceneKey: "stage",
+      }),
     );
 
     expect(viewport).toHaveClass("gameViewportReshaping");
@@ -394,7 +404,11 @@ describe("GameLayersLayout scene transitions", () => {
     stubRect(viewport.parentElement!, new DOMRect(0, 0, 100, 100));
 
     rerender(
-      layout({ camera: { enabled: true, preview: true }, gameLayers: sceneLayers("overview"), sceneKey: "overview" }),
+      layout({
+        avatar: { mode: "camera", fallback: "mouse", preview: true },
+        gameLayers: sceneLayers("overview"),
+        sceneKey: "overview",
+      }),
     );
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3000);
@@ -426,7 +440,11 @@ describe("GameLayersLayout scene transitions", () => {
     stubRect(viewport.parentElement!, new DOMRect(0, 0, 100, 100));
 
     rerender(
-      layout({ camera: { enabled: true, preview: true }, gameLayers: sceneLayers("overview"), sceneKey: "overview" }),
+      layout({
+        avatar: { mode: "camera", fallback: "mouse", preview: true },
+        gameLayers: sceneLayers("overview"),
+        sceneKey: "overview",
+      }),
     );
     expect(viewport).toHaveClass("gameViewportReshaping");
     expect(viewport.style.getPropertyValue("--reshape-from")).toBe("1 / 1");
@@ -451,7 +469,11 @@ describe("GameLayersLayout scene transitions", () => {
     const viewport = container.querySelector<HTMLElement>("#game-viewport")!;
 
     rerender(
-      layout({ camera: { enabled: true, preview: true }, gameLayers: sceneLayers("overview"), sceneKey: "overview" }),
+      layout({
+        avatar: { mode: "camera", fallback: "mouse", preview: true },
+        gameLayers: sceneLayers("overview"),
+        sceneKey: "overview",
+      }),
     );
 
     expect(await screen.findByTestId("canvas")).toBeInTheDocument();
@@ -475,7 +497,10 @@ describe("GameLayersLayout camera interactions", () => {
     canvas: HTMLCanvasElement;
     rerender: (ui: ReactElement) => void;
   }> => {
-    const { container, rerender } = renderLayout({ camera: { enabled: true, preview: true }, ...props }, config);
+    const { container, rerender } = renderLayout(
+      { avatar: { mode: "camera", fallback: "mouse", preview: true }, ...props },
+      config,
+    );
     await screen.findByTestId("canvas");
     return { container, canvas: container.querySelector("canvas")!, rerender };
   };
@@ -549,7 +574,7 @@ describe("GameLayersLayout camera interactions", () => {
 
     rerender(
       layout({
-        camera: { enabled: true, preview: true },
+        avatar: { mode: "camera", fallback: "mouse", preview: true },
         cameraRules: [{ ...rules[0], run: 2 }],
         onPlayerInteraction,
       }),
@@ -675,9 +700,9 @@ describe("GameLayersLayout camera interactions", () => {
     sendPlayers([playerWithHandAt(0, 7)], 1200);
     sendPlayers([playerWithHandAt(6, 1)], 1300);
     onPlayerInteraction.mockClear();
-    const camera = { enabled: true, preview: true };
+    const avatar = { mode: "camera", fallback: "mouse", preview: true } as const;
     vi.useFakeTimers();
-    rerender(layout({ camera, cameraRules: [inOut], onPlayerInteraction, sceneKey: "next" }));
+    rerender(layout({ avatar, cameraRules: [inOut], onPlayerInteraction, sceneKey: "next" }));
     sendPlayers([], 1400);
     expect(onPlayerInteraction).not.toHaveBeenCalled();
   });
@@ -725,7 +750,7 @@ describe("GameLayersLayout camera interactions", () => {
     stubRect(container.querySelector("#overview-thing")!, new DOMRect(0, 0, 50, 50));
 
     vi.useFakeTimers();
-    rerender(layout({ camera: { enabled: true, preview: true }, ...props, sceneKey: "new" }));
+    rerender(layout({ avatar: { mode: "camera", fallback: "mouse", preview: true }, ...props, sceneKey: "new" }));
 
     sendPlayers([playerWithHandAt(6, 1)], 1000);
     expect(onPlayerInteraction).not.toHaveBeenCalled();
@@ -773,7 +798,7 @@ describe("GameLayersLayout camera rules", () => {
   const renderRules = async (cameraRules: CameraRuleTarget[], gameLayers = balloons()) => {
     const onPlayerInteraction = vi.fn();
     const view = renderLayout({
-      camera: { enabled: true, preview: true },
+      avatar: { mode: "camera", fallback: "mouse", preview: true },
       cameraRules,
       onPlayerInteraction,
       gameLayers,
@@ -819,7 +844,7 @@ describe("GameLayersLayout camera rules", () => {
     send([playerWithHandAt(6, 1)], 900);
     rerender(
       layout({
-        camera: { enabled: true, preview: true },
+        avatar: { mode: "camera", fallback: "mouse", preview: true },
         cameraRules: [balloonRule({ includeCovered: true })],
         onPlayerInteraction,
         gameLayers: balloons(1),

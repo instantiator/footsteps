@@ -22,7 +22,7 @@ const openDemo = async (page: Page, change: (game: GameData) => void = () => {})
         .filter((stage) => stage.id !== "effects")
         .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
     ]) {
-      scene.camera = { requirement: false };
+      scene.avatar = { mode: "mouse" };
     }
     change(game);
     await route.fulfill({ response, json: repository });

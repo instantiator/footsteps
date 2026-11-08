@@ -6,8 +6,10 @@
       "title": "Test Game",
       "description": "A test game for the validator.",
       "modules": {
-        "camera": {
-          "requirement": "enabled"
+        "scene": "2D",
+        "avatar": {
+          "mode": "camera",
+          "fallback": "mouse"
         }
       },
       "scenes": [

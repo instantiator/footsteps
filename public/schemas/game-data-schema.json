@@ -150,9 +150,9 @@
         "GameChallengeScene": {
             "description": "A scene for one stage of a challenge's lifecycle.",
             "properties": {
-                "camera": {
-                    "$ref": "#/definitions/GameSceneCameraData",
-                    "description": "Camera mode settings for this scene, falling back to broader scenes."
+                "avatar": {
+                    "$ref": "#/definitions/GameSceneAvatarData",
+                    "description": "What stands in for the player in this scene, over broader scenes' settings."
                 },
                 "component": {
                     "$ref": "#/definitions/GameSceneComponentData",
@@ -165,6 +165,11 @@
                 "resetScene": {
                     "$ref": "#/definitions/GameResetScene",
                     "description": "Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it."
+                },
+                "scene": {
+                    "const": "2D",
+                    "description": "How this scene is laid out, over broader scenes' setting.",
+                    "type": "string"
                 }
             },
             "required": [
@@ -595,12 +600,27 @@
             ],
             "type": "object"
         },
+        "GameModulesData": {
+            "description": "Game-wide settings, which any scene can override.",
+            "properties": {
+                "avatar": {
+                    "$ref": "#/definitions/GameSceneAvatarData",
+                    "description": "What stands in for the player, unless a scene says otherwise. Defaults to `mouse`."
+                },
+                "scene": {
+                    "const": "2D",
+                    "description": "How scenes are laid out, unless a scene says otherwise. Defaults to `2D`.",
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
         "GameOverviewScene": {
             "description": "A scene shown when no stage is active.",
             "properties": {
-                "camera": {
-                    "$ref": "#/definitions/GameSceneCameraData",
-                    "description": "Camera mode settings for this scene, falling back to broader scenes."
+                "avatar": {
+                    "$ref": "#/definitions/GameSceneAvatarData",
+                    "description": "What stands in for the player in this scene, over broader scenes' settings."
                 },
                 "component": {
                     "$ref": "#/definitions/GameSceneComponentData",
@@ -613,6 +633,11 @@
                 "resetScene": {
                     "$ref": "#/definitions/GameResetScene",
                     "description": "Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it."
+                },
+                "scene": {
+                    "const": "2D",
+                    "description": "How this scene is laid out, over broader scenes' setting.",
+                    "type": "string"
                 }
             },
             "required": [
@@ -1063,9 +1088,9 @@
         "GameResetScene": {
             "description": "A scene that helps the player get ready for its parent scene, eg. \"Return to the start\".",
             "properties": {
-                "camera": {
-                    "$ref": "#/definitions/GameSceneCameraData",
-                    "description": "Camera mode settings while it shows, over its parent's."
+                "avatar": {
+                    "$ref": "#/definitions/GameSceneAvatarData",
+                    "description": "What stands in for the player while it shows, over its parent's settings."
                 },
                 "component": {
                     "$ref": "#/definitions/GameSceneComponentData",
@@ -1074,6 +1099,11 @@
                 "resetScene": {
                     "$ref": "#/definitions/GameResetScene",
                     "description": "A reset scene for this reset scene, shown before it."
+                },
+                "scene": {
+                    "const": "2D",
+                    "description": "How it is laid out, over its parent's setting.",
+                    "type": "string"
                 },
                 "showOn": {
                     "description": "When it shows: before its parent is first shown since the game loaded (the default), or before every showing.\nIt always shows again when its parent's challenge is reset. A nested reset scene shows with this one.",
@@ -1206,20 +1236,29 @@
             ],
             "type": "object"
         },
-        "GameSceneCameraData": {
-            "description": "Camera mode settings for one scene; unset fields fall back to broader scenes.",
+        "GameSceneAvatarData": {
+            "description": "Avatar settings for one scene. `mode` and `fallback` go together: a scene that sets `mode` doesn't inherit a broader\nscene's `fallback`. `preview` inherits on its own.",
             "properties": {
-                "preview": {
-                    "description": "Whether the webcam preview shows while this scene shows.",
-                    "type": "boolean"
-                },
-                "requirement": {
-                    "description": "Whether camera mode is on while this scene shows, and how much the game depends on it: `\"enabled\"` lets the\nplayer start the game without granting the camera, while `\"required\"` doesn't.",
+                "fallback": {
+                    "description": "The mode to use when the camera isn't available. Leaving it out of a `camera` mode means the camera is required.",
                     "enum": [
-                        "enabled",
-                        false,
-                        "required"
-                    ]
+                        "mouse",
+                        "mouse-feet"
+                    ],
+                    "type": "string"
+                },
+                "mode": {
+                    "description": "What stands in for the player while this scene shows.",
+                    "enum": [
+                        "camera",
+                        "mouse",
+                        "mouse-feet"
+                    ],
+                    "type": "string"
+                },
+                "preview": {
+                    "description": "Whether the webcam preview shows while this scene shows; only in `camera` mode.",
+                    "type": "boolean"
                 }
             },
             "type": "object"
@@ -1615,9 +1654,9 @@
         "GameStageScene": {
             "description": "A scene shared by all challenges in a stage.",
             "properties": {
-                "camera": {
-                    "$ref": "#/definitions/GameSceneCameraData",
-                    "description": "Camera mode settings for this scene, falling back to broader scenes."
+                "avatar": {
+                    "$ref": "#/definitions/GameSceneAvatarData",
+                    "description": "What stands in for the player in this scene, over broader scenes' settings."
                 },
                 "component": {
                     "$ref": "#/definitions/GameSceneComponentData",
@@ -1631,6 +1670,11 @@
                 "resetScene": {
                     "$ref": "#/definitions/GameResetScene",
                     "description": "Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it."
+                },
+                "scene": {
+                    "const": "2D",
+                    "description": "How this scene is laid out, over broader scenes' setting.",
+                    "type": "string"
                 }
             },
             "required": [
@@ -1851,14 +1895,8 @@
             "description": "CSS applied to the element containing the whole game, e.g. fonts, colours and sizing."
         },
         "modules": {
-            "description": "Optional modules to switch on for this game.",
-            "properties": {
-                "camera": {
-                    "$ref": "#/definitions/GameSceneCameraData",
-                    "description": "Layers the player's camera view into the game."
-                }
-            },
-            "type": "object"
+            "$ref": "#/definitions/GameModulesData",
+            "description": "Game-wide scene and avatar settings."
         },
         "resources": {
             "$ref": "#/definitions/GameResourceDefinitions",

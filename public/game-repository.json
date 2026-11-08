@@ -7,8 +7,9 @@
       "description": "A rhyming Christmas treasure hunt through the house: follow the clues from room to room to find Nanny's magic trifle.",
       "tileGraphic": "title-background",
       "modules": {
-        "camera": {
-          "requirement": false
+        "scene": "2D",
+        "avatar": {
+          "mode": "mouse"
         }
       },
       "config": {
@@ -158,7 +159,7 @@
               }
             ]
           },
-          "camera": { "requirement": "enabled" }
+          "avatar": { "mode": "camera", "fallback": "mouse" }
         }
       ],
       "stages": [
@@ -167,7 +168,7 @@
           "scenes": [
             {
               "purpose": "shared",
-              "camera": { "requirement": false },
+              "avatar": { "mode": "mouse" },
               "component": {
                 "type": "template",
                 "foregroundTemplate": {
@@ -196,7 +197,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": false },
+                  "avatar": { "mode": "mouse" },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -227,7 +228,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": false },
+                  "avatar": { "mode": "mouse" },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -262,7 +263,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": false },
+                  "avatar": { "mode": "mouse" },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -288,7 +289,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": false },
+                  "avatar": { "mode": "mouse" },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -319,7 +320,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": false },
+                  "avatar": { "mode": "mouse" },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -354,7 +355,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": false },
+                  "avatar": { "mode": "mouse" },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -385,7 +386,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": false },
+                  "avatar": { "mode": "mouse" },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -416,7 +417,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": false },
+                  "avatar": { "mode": "mouse" },
                   "component": {
                     "type": "scroll",
                     "data": {},
@@ -464,7 +465,7 @@
       "id": "rules-demo",
       "title": "Rules demo",
       "description": "Pop balloons and cross a floor of lava: a demonstration of scene rules and state, by mouse or camera.",
-      "modules": { "camera": { "requirement": false } },
+      "modules": { "scene": "2D", "avatar": { "mode": "mouse" } },
       "config": { "sequential": false, "autoAdvanceStages": false },
       "stylesheets": ["demo-css"],
       "resources": {
@@ -486,7 +487,7 @@
         },
         {
           "purpose": "game-overview-stages",
-          "camera": { "requirement": "enabled" },
+          "avatar": { "mode": "camera", "fallback": "mouse" },
           "component": {
             "type": "template",
             "data": {
@@ -543,7 +544,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": "enabled" },
+                  "avatar": { "mode": "camera", "fallback": "mouse" },
                   "component": {
                     "type": "template",
                     "data": { "target": 10 },
@@ -622,7 +623,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": "enabled" },
+                  "avatar": { "mode": "camera", "fallback": "mouse" },
                   "component": {
                     "type": "template",
                     "data": {},
@@ -690,7 +691,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": "enabled" },
+                  "avatar": { "mode": "camera", "fallback": "mouse" },
                   "component": {
                     "type": "template",
                     "data": {},
@@ -717,7 +718,7 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "camera": { "requirement": "enabled", "preview": false },
+                  "avatar": { "mode": "camera", "fallback": "mouse", "preview": false },
                   "component": {
                     "type": "template",
                     "data": {},

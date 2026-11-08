@@ -29,13 +29,13 @@ const patchRepository = async (page: Page, options: CameraGameOptions): Promise<
     const response = await route.fetch();
     const repository = (await response.json()) as GameRepository;
     const game = repository.games[GAME_ID];
-    game.modules = { ...game.modules, camera: { requirement: "enabled", preview: options.preview ?? true } };
+    game.modules = { ...game.modules, avatar: { mode: "camera", fallback: "mouse", preview: options.preview ?? true } };
 
     if (options.cameraOffStage) {
       const stage = game.stages.find(({ id }) => id === options.cameraOffStage);
       const scene = stage?.scenes?.[0];
       if (!scene) throw new Error(`no scene on stage ${options.cameraOffStage}`);
-      scene.camera = { requirement: false };
+      scene.avatar = { mode: "mouse" };
     }
 
     await route.fulfill({ response, json: repository });

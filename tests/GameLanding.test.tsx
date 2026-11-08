@@ -13,8 +13,8 @@ import { stubGetUserMedia, stubPermissionQuery, type PermissionQueryResult } fro
 
 const GAME_ID = "simple-game";
 
-const cameraGame: GameData = { ...simpleGameData, modules: { camera: { requirement: "required" } } };
-const optionalCameraGame: GameData = { ...simpleGameData, modules: { camera: { requirement: "enabled" } } };
+const cameraGame: GameData = { ...simpleGameData, modules: { avatar: { mode: "camera" } } };
+const optionalCameraGame: GameData = { ...simpleGameData, modules: { avatar: { mode: "camera", fallback: "mouse" } } };
 
 /** A state with stage 1 complete and stage 2 partly complete. */
 const partlyComplete = (): GameState => {

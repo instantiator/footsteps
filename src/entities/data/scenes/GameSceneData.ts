@@ -63,14 +63,29 @@ export type PointerInteraction = (typeof POINTER_INTERACTIONS)[number];
 /** The fraction of a body part that must be inside an element when a rule doesn't name a threshold. */
 export const DEFAULT_INTERACTION_THRESHOLD = 1;
 
-/** Camera mode settings for one scene; unset fields fall back to broader scenes. */
-export interface GameSceneCameraData {
-  /**
-   * Whether camera mode is on while this scene shows, and how much the game depends on it: `"enabled"` lets the
-   * player start the game without granting the camera, while `"required"` doesn't.
-   */
-  requirement?: "enabled" | "required" | false;
-  /** Whether the webcam preview shows while this scene shows. */
+/**
+ * How a scene is laid out. `2D`: a full-screen background, the players, and a foreground, with elements' `data-depth`
+ * deciding which pass in front of players.
+ */
+export type GameSceneMode = "2D";
+
+/**
+ * What stands in for the player. `mouse`: clicks and mouse moves. `camera`: the player's camera cut-out.
+ * `mouse-feet`: as `mouse`, but the pointer is also player 1's feet: moving over elements fires foot interactions, and
+ * a drag is a jump from where it starts to where it ends.
+ */
+export type GameAvatarMode = "mouse" | "camera" | "mouse-feet";
+
+/**
+ * Avatar settings for one scene. `mode` and `fallback` go together: a scene that sets `mode` doesn't inherit a broader
+ * scene's `fallback`. `preview` inherits on its own.
+ */
+export interface GameSceneAvatarData {
+  /** What stands in for the player while this scene shows. */
+  mode?: GameAvatarMode;
+  /** The mode to use when the camera isn't available. Leaving it out of a `camera` mode means the camera is required. */
+  fallback?: Exclude<GameAvatarMode, "camera">;
+  /** Whether the webcam preview shows while this scene shows; only in `camera` mode. */
   preview?: boolean;
 }
 
@@ -80,8 +95,10 @@ export interface GameSceneBase {
   purpose: GameScenePurpose;
   /** How this scene is rendered. */
   component: GameSceneComponentData;
-  /** Camera mode settings for this scene, falling back to broader scenes. */
-  camera?: GameSceneCameraData;
+  /** How this scene is laid out, over broader scenes' setting. */
+  scene?: GameSceneMode;
+  /** What stands in for the player in this scene, over broader scenes' settings. */
+  avatar?: GameSceneAvatarData;
   /** Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it. */
   resetScene?: GameResetScene;
 }
@@ -90,8 +107,10 @@ export interface GameSceneBase {
 export interface GameResetScene {
   /** How this scene is rendered, and the rules that finish it (`finishReset`). */
   component: GameSceneComponentData;
-  /** Camera mode settings while it shows, over its parent's. */
-  camera?: GameSceneCameraData;
+  /** How it is laid out, over its parent's setting. */
+  scene?: GameSceneMode;
+  /** What stands in for the player while it shows, over its parent's settings. */
+  avatar?: GameSceneAvatarData;
   /**
    * When it shows: before its parent is first shown since the game loaded (the default), or before every showing.
    * It always shows again when its parent's challenge is reset. A nested reset scene shows with this one.

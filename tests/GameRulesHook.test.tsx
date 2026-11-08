@@ -29,7 +29,7 @@ const rulesGame = (components: Record<string, Partial<GameSceneComponentBase>> =
     [C1]: data.stages[0].challenges[0].scenes[0].component,
   };
   for (const [scope, extra] of Object.entries(components)) Object.assign(componentFor[scope], extra);
-  data.modules = { camera: { requirement: "enabled" } };
+  data.modules = { avatar: { mode: "camera", fallback: "mouse" } };
   return data;
 };
 const scrollWith = () => ({ type: "scroll" as const, contents: [], data: {} });
