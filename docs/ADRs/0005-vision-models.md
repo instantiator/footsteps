@@ -186,6 +186,13 @@ path is Windows-only, and Safari has given no signal. Revisit when it ships. See
 - The head box for MediaPipe and MoveNet comes from the ears and eyes, with typical proportions. It is not
   measured from the mask, so it is approximate.
 
+## Cropping the model's input to the floor (002.03.04)
+
+2.5D scenes crop the view to the calibrated floor. Cropping the model's input to it as well was considered, as a
+narrower frame at the same input width runs faster or shows people larger. It was not built: with the default floor,
+a margin of a tenth of the width covers the whole picture, and the bench's 960 px photos can't show people at the back
+being found more often. `docs/outstanding-issues.md` says when to revisit it.
+
 ## Sources
 
 - BodyPix and body-segmentation (deprecated): <https://github.com/tensorflow/tfjs-models/tree/master/body-segmentation>
