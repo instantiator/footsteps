@@ -1,11 +1,8 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { setTrackingFps } from "../src/components/camera/TrackingFpsStore";
 import HeadsUpDisplay from "../src/components/core/HeadsUpDisplay";
-import { ENV_APP_CONFIG } from "../src/config/AppConfig";
 import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
-import { AppConfigContext } from "../src/providers/AppConfigContext";
 import { GameStateContext } from "../src/providers/GameStateContext";
 import { simpleGameData } from "./data/SampleGameState";
 import { smallGame } from "./data/SmallGame";
@@ -15,7 +12,7 @@ const Harness = ({ initial }: { initial: GameState }) => {
   const [gameState, setGameState] = useState(initial);
   return (
     <GameStateContext.Provider value={{ gameState, setGameState }}>
-      <HeadsUpDisplay />
+      <HeadsUpDisplay debug={false} />
       <output>{JSON.stringify(gameState.current)}</output>
     </GameStateContext.Provider>
   );
@@ -139,33 +136,32 @@ describe("HeadsUpDisplay", () => {
   });
 });
 
-describe("HeadsUpDisplay frame rate", () => {
-  afterEach(() => act(() => setTrackingFps(null)));
-
-  /** The HUD over the title screen, with `showFps` as given. */
-  const renderHud = (showFps: boolean) =>
+describe("HeadsUpDisplay debug button", () => {
+  /** The HUD over the title screen, with the debug aids as given. */
+  const renderHud = (debug: boolean, onToggleDebug?: () => void) =>
     render(
-      <AppConfigContext.Provider value={{ ...ENV_APP_CONFIG, showFps }}>
-        <Harness initial={titleState} />
-      </AppConfigContext.Provider>,
+      <GameStateContext.Provider value={{ gameState: titleState, setGameState: () => {} }}>
+        <HeadsUpDisplay debug={debug} onToggleDebug={onToggleDebug} />
+      </GameStateContext.Provider>,
     );
 
-  const indicator = () => screen.queryByLabelText("Camera tracking frame rate");
-
-  it("shows the tracking frame rate, in whole frames, while a camera is tracked", () => {
-    renderHud(true);
-    expect(indicator()).toBeNull(); // no camera yet
-
-    act(() => setTrackingFps(12.4));
-    expect(indicator()).toHaveTextContent("12 fps");
-
-    act(() => setTrackingFps(null));
-    expect(indicator()).toBeNull();
+  it("offers to switch the debug aids on while they are off, and off while they are on", () => {
+    const { unmount } = renderHud(false, () => {});
+    expect(screen.getByRole("button", { name: "Debug on" })).toHaveAttribute("aria-pressed", "false");
+    unmount();
+    renderHud(true, () => {});
+    expect(screen.getByRole("button", { name: "Debug off" })).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("hides the frame rate when the setting is off", () => {
-    renderHud(false);
-    act(() => setTrackingFps(12));
-    expect(indicator()).toBeNull();
+  it("switches them when pressed", () => {
+    const onToggleDebug = vi.fn();
+    renderHud(false, onToggleDebug);
+    fireEvent.click(screen.getByRole("button", { name: "Debug on" }));
+    expect(onToggleDebug).toHaveBeenCalledOnce();
+  });
+
+  it("shows no frame rate, which the vision stats readout shows instead", () => {
+    renderHud(true, () => {});
+    expect(screen.queryByText(/fps/)).toBeNull();
   });
 });

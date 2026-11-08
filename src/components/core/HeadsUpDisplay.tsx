@@ -1,6 +1,4 @@
-import useAppConfig from "../../providers/AppConfigHook";
 import { useGameState } from "../../providers/GameStateHook";
-import { useTrackingFps } from "../camera/TrackingFpsStore";
 import useFullscreen from "./FullscreenHook";
 import { getRenderMode } from "./logic/RenderDataUtils";
 
@@ -10,94 +8,69 @@ import { getRenderMode } from "./logic/RenderDataUtils";
  */
 const buttonStyle = { margin: 0, padding: 5, fontSize: "0.75em", fontFamily: "var(--app-font)", lineHeight: "normal" };
 
-/** The camera tracking's frame rate, when the `showFps` setting is on and a camera is being tracked. */
-const FpsIndicator = () => {
-  const { showFps } = useAppConfig();
-  const fps = useTrackingFps();
-  if (!showFps || fps === null) return null;
-  // A transparent border as wide as a button's, so the indicator is as tall as the buttons beside it
-  return (
-    <output
-      style={{
-        ...buttonStyle,
-        border: "2px solid transparent",
-        color: "#fff",
-        background: "#000a",
-        borderRadius: 4,
-        fontVariantNumeric: "tabular-nums",
-      }}
-      aria-label="Camera tracking frame rate"
-    >
-      {fps} fps
-    </output>
-  );
-};
+/** Props for {@link HeadsUpDisplay}. */
+interface HeadsUpDisplayProps {
+  /** Whether the debug aids are showing. */
+  debug: boolean;
+  /** Switches the debug aids on or off; no button without it. */
+  onToggleDebug?: () => void;
+}
 
-/**
- * Buttons to toggle fullscreen, leave the current challenge, or return to the title screen, when either applies;
- * and the camera tracking's frame rate (`FpsIndicator`).
- */
-export default function HeadsUpDisplay() {
+/** The HUD's panel: a frosted strip along the top right, its controls in a row that wraps on narrow screens. */
+const panelStyle = {
+  background: "#ffffff22",
+  backdropFilter: "blur(4px)",
+  padding: "10px",
+  borderBottomLeftRadius: "10px",
+  display: "flex",
+  flexFlow: "row wrap",
+  justifyContent: "flex-end",
+  alignItems: "center",
+  gap: "5px",
+} as const;
+
+/** "Close challenge" while a stage is open, and "To title" when the game has a title screen that isn't showing. */
+function LeaveButtons() {
   const { gameState, setGameState } = useGameState();
-  const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
-
-  /** Offered while a stage is open. */
   const showCloseChallengeButton = getRenderMode(gameState) === "stage";
-  /** Offered when the game has a title screen and it is not showing. */
   const showTitleReturnButton =
     gameState.current.overviewScene !== "game-overview-title" &&
     gameState.gameData.scenes.some((d) => d.purpose === "game-overview-title");
-
-  const returnToTitle = () => {
-    setGameState({
-      ...gameState,
-      current: {
-        ...gameState.current,
-        overviewScene: "game-overview-title",
-        stageId: null,
-      },
-    });
-  };
-
-  const closeChallenge = () => {
-    setGameState({
-      ...gameState,
-      current: {
-        ...gameState.current,
-        stageId: null,
-      },
-    });
-  };
-
+  const show = (current: Partial<typeof gameState.current>) =>
+    setGameState({ ...gameState, current: { ...gameState.current, ...current } });
   return (
     <>
-      <div
-        style={{
-          background: "#ffffff22",
-          backdropFilter: "blur(4px)",
-          padding: "10px",
-          borderBottomLeftRadius: "10px",
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          gap: "5px",
-        }}
-      >
-        {showCloseChallengeButton && (
-          <button style={buttonStyle} onClick={closeChallenge}>
-            Close challenge
-          </button>
-        )}
-        {showTitleReturnButton && (
-          <button style={buttonStyle} onClick={returnToTitle}>
-            To title
-          </button>
-        )}
-        <FpsIndicator />
-        <button style={buttonStyle} onClick={toggleFullscreen} aria-pressed={isFullscreen}>
-          {isFullscreen ? "Exit full screen" : "Full screen"}
+      {showCloseChallengeButton && (
+        <button style={buttonStyle} onClick={() => show({ stageId: null })}>
+          Close challenge
         </button>
-      </div>
+      )}
+      {showTitleReturnButton && (
+        <button style={buttonStyle} onClick={() => show({ overviewScene: "game-overview-title", stageId: null })}>
+          To title
+        </button>
+      )}
     </>
+  );
+}
+
+/**
+ * Buttons to toggle fullscreen and the debug aids, and to leave the current challenge or return to the title screen,
+ * when either applies.
+ */
+export default function HeadsUpDisplay({ debug, onToggleDebug }: HeadsUpDisplayProps) {
+  const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
+  return (
+    <div style={panelStyle}>
+      <LeaveButtons />
+      {onToggleDebug && (
+        <button style={buttonStyle} onClick={onToggleDebug} aria-pressed={debug}>
+          {debug ? "Debug off" : "Debug on"}
+        </button>
+      )}
+      <button style={buttonStyle} onClick={toggleFullscreen} aria-pressed={isFullscreen}>
+        {isFullscreen ? "Exit full screen" : "Full screen"}
+      </button>
+    </div>
   );
 }

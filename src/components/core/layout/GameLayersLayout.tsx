@@ -38,6 +38,8 @@ interface GameLayersLayoutProps {
   avatar: ResolvedAvatarMode;
   /** Shows the debug overlay and the camera's colour key. */
   debug?: boolean;
+  /** Switches the debug aids on or off, from the HUD. */
+  onToggleDebug?: () => void;
   /** The rules the camera can fire, for the scenes shown now. */
   cameraRules?: CameraRuleTarget[];
   /** Called when a player interacts with an element a camera rule watches. */
@@ -278,9 +280,9 @@ export default function GameLayersLayout({
   gameLayers = {},
   sceneKey = "default",
   avatar: requestedAvatar,
-  debug,
   cameraRules,
   onPlayerInteraction,
+  ...aids
 }: GameLayersLayoutProps) {
   const [feetPositions, setFeetPositions] = useState<FeetPositions>({});
   const [cameraAspectRatio, setCameraAspectRatio] = useState<number>();
@@ -329,7 +331,7 @@ export default function GameLayersLayout({
         showPreview={showPreview}
         show={show}
         mirror={mirror}
-        debug={debug}
+        debug={aids.debug}
         media={{ ...media, onCameraError }}
         aspectRatio={cameraAspectRatio}
         setFeetPositions={setFeetPositions}
@@ -338,7 +340,7 @@ export default function GameLayersLayout({
         handlePlayers={handlePlayers}
         setAspectRatio={setCameraAspectRatio}
       />
-      <HudLayerWrapper zIndex={10} />
+      <HudLayerWrapper zIndex={10} {...aids} />
     </div>
   );
 }

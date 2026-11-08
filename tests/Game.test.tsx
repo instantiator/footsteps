@@ -132,6 +132,34 @@ describe("Game", () => {
   });
 });
 
+describe("Game debug aids", () => {
+  const renderWith = (debug: boolean) =>
+    render(
+      <GameProviders repository={smallRepository} gameId={SMALL_GAME_ID} debug={debug}>
+        <Game />
+      </GameProviders>,
+    );
+
+  it("starts as the config says, and the HUD switches them on and off", async () => {
+    renderWith(false);
+    await screen.findByText("Small Game");
+    expect(document.querySelector("#debug-overlay-container")).toBeNull();
+    expect(receivedLayout.at(-1)!.debug).toBe(false);
+
+    fireEvent.click(screen.getByRole("button", { name: "Debug on" }));
+    expect(receivedLayout.at(-1)!.debug).toBe(true);
+    expect(document.querySelector("#debug-overlay-container")).not.toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Debug off" }));
+    expect(document.querySelector("#debug-overlay-container")).toBeNull();
+  });
+
+  it("starts on with debug set", async () => {
+    renderWith(true);
+    expect(await screen.findByRole("button", { name: "Debug off" })).toBeInTheDocument();
+  });
+});
+
 describe("Game camera interactions", () => {
   /** A variant of the small game whose first stage opens on a hand wave instead of a click. */
   const handGame: GameData = {
