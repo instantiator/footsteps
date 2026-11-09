@@ -37,12 +37,13 @@ interface HarnessProps {
   onEvent: (event: CameraRuleEvent) => void;
   enabled?: boolean;
   onClick?: () => void;
+  onPosition?: (point: { x: number; y: number } | null) => void;
 }
 
 /** A viewport holding one scene with #a, #b and the #cover over #b, fed to the hook. */
-function Harness({ rules, onEvent, enabled = true, onClick }: HarnessProps) {
+function Harness({ rules, onEvent, enabled = true, onClick, onPosition }: HarnessProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
-  useMouseFeet(viewportRef, rules, onEvent, { enabled });
+  useMouseFeet(viewportRef, rules, onEvent, { enabled, onPosition });
   return (
     <div ref={viewportRef} data-testid="viewport" onClick={onClick}>
       <div data-scene-scope={SCOPE}>
@@ -101,6 +102,23 @@ afterEach(() => {
 });
 
 describe("useMouseFeet", () => {
+  it("reports where the feet stand, holds it through a jump, and reports nothing as they leave", () => {
+    const onPosition = vi.fn();
+    const { viewport, move, down, up } = setup([], { onPosition });
+    move(20, 30);
+    expect(onPosition).toHaveBeenLastCalledWith({ x: 20, y: 30 });
+
+    onPosition.mockClear();
+    down(20, 30);
+    move(60, 30, 1);
+    expect(onPosition).not.toHaveBeenCalled();
+    up(60, 30);
+    expect(onPosition).toHaveBeenLastCalledWith({ x: 60, y: 30 });
+
+    fireEvent.pointerLeave(viewport);
+    expect(onPosition).toHaveBeenLastCalledWith(null);
+  });
+
   it("fires foot-enter and foot-exit once each as the pointer moves over and off", () => {
     const { onEvent, move } = setup([rule(["foot-enter", "foot-exit"], "#a")]);
     move(10);

@@ -1,6 +1,8 @@
 import { useMediaQuery } from "@uidotdev/usehooks";
 import {
   useCallback,
+  useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -20,6 +22,7 @@ import {
   cropPlacement,
   DEFAULT_CORNERS,
   floorCrop,
+  viewportToFloor,
   type Corners,
   type FloorView,
 } from "../../camera/FloorGeometry";
@@ -37,6 +40,10 @@ import {
 import { usePlayerInteractions, type CameraRuleEvent, type CameraRuleTarget } from "./PlayerInteractionHook";
 import { useMouseFeet } from "./MouseFeetHook";
 import { useFloorPlacement } from "./FloorPlacement";
+import { usePositionVariables, type PublishedPositions } from "../../camera/PositionPublisher";
+import { PlayerRegistryContext } from "../../../providers/PlayerRegistryContext";
+import type { PlayerRegistry } from "../../camera/PlayerRegistry";
+import type { Point } from "../../../vision/VisionTypes";
 import useSceneTransition, { type SceneTransition, type ViewportTarget } from "./useSceneTransition";
 
 /** Props for {@link GameLayersLayout}. */
@@ -57,6 +64,8 @@ interface GameLayersLayoutProps {
   cameraRules?: CameraRuleTarget[];
   /** Called when a player interacts with an element a camera rule watches. */
   onPlayerInteraction?: (event: CameraRuleEvent) => void;
+  /** Gives rules and templates every player's position; keep it stable. */
+  onPlayerPositions?: (positions: PublishedPositions) => void;
 }
 
 /** The nodes for the background and foreground of the overview, the stage, and its challenges. */
@@ -276,6 +285,91 @@ function useDebugPlayers(handlePlayers: SceneProps["handlePlayers"], debug: bool
   return { debugPlayers, onPlayers };
 }
 
+/** Each camera player's position, by their number; players with no number or position have none. */
+const numberedPositions = (players: PlayerFrame[], registry: PlayerRegistry): Map<number, Point> =>
+  new Map(
+    players.flatMap(({ id, position }) => {
+      const number = registry.numberOf(id);
+      return isDefined(number) && position !== null ? [[number, position] as const] : [];
+    }),
+  );
+
+/**
+ * Publishes players' positions to rules and templates: the camera's players from each frame, or the mouse as
+ * player 1's feet, in floor coordinates in a 2.5D scene and % of the viewport in a 2D one.
+ * @returns the camera frame handler, which also publishes, and the feet's position handler
+ */
+function usePositionReports(
+  viewportRef: RefObject<HTMLElement | null>,
+  {
+    handlePlayers,
+    floor,
+    publish,
+  }: Pick<SceneProps, "handlePlayers" | "floor"> & {
+    publish: GameLayersLayoutProps["onPlayerPositions"];
+  },
+) {
+  const report = usePositionVariables(publish);
+  const registry = useContext(PlayerRegistryContext);
+  const floorRef = useRef(floor);
+  useEffect(() => {
+    floorRef.current = floor;
+  }, [floor]);
+
+  const onCameraPlayers = useCallback(
+    (players: PlayerFrame[], timestamp: number) => {
+      handlePlayers(players, timestamp);
+      report(numberedPositions(players, registry));
+    },
+    [handlePlayers, report, registry],
+  );
+  const onFeet = useCallback(
+    (point: Point | null) => {
+      const rect = viewportRef.current?.getBoundingClientRect();
+      if (point === null || !rect || rect.width === 0 || rect.height === 0) return report(new Map());
+      const at = { x: (point.x - rect.left) / rect.width, y: (point.y - rect.top) / rect.height };
+      const view = floorRef.current;
+      report(new Map([[1, view ? viewportToFloor(view, at) : { x: 100 * at.x, y: 100 * at.y }]]));
+    },
+    [viewportRef, report],
+  );
+  return { onCameraPlayers, onFeet, clear: useCallback(() => report(new Map()), [report]) };
+}
+
+/** What players do and where they are, for {@link usePlayerInput}. */
+interface PlayerInputProps extends Pick<SceneProps, "scene" | "mirror" | "floor" | "debug"> {
+  /** Whether the mouse is player 1's feet. */
+  mouseFeet: boolean;
+  /** The rules players can fire, and where their positions go. */
+  rules: Pick<GameLayersLayoutProps, "cameraRules" | "onPlayerInteraction" | "onPlayerPositions">;
+}
+
+/**
+ * Turns what players do into interactions, and where they are into positions for rules and templates: the camera's
+ * players, or the mouse as player 1's feet.
+ * @returns the character canvas's ref, the frame handler to give it, and the players for the debug overlay
+ */
+function usePlayerInput(viewportRef: RefObject<HTMLElement | null>, props: PlayerInputProps) {
+  const { scene, mirror, mouseFeet, floor, debug, rules } = props;
+  const { canvasRef, handlePlayers } = usePlayerInteractions(
+    rules.cameraRules,
+    rules.onPlayerInteraction,
+    scene.camera.enabled && !scene.transitioning,
+    { mirrored: mirror, onFloor: scene.sceneMode === "2.5D" },
+  );
+  const positions = usePositionReports(viewportRef, { handlePlayers, floor, publish: rules.onPlayerPositions });
+  const { debugPlayers, onPlayers } = useDebugPlayers(positions.onCameraPlayers, debug);
+  useMouseFeet(viewportRef, rules.cameraRules, rules.onPlayerInteraction, {
+    enabled: mouseFeet,
+    paused: scene.transitioning,
+    onPosition: positions.onFeet,
+  });
+  // Whoever stood somewhere before has gone when the way players are followed changes
+  const { clear } = positions;
+  useEffect(() => clear(), [mouseFeet, scene.camera.enabled, clear]);
+  return { canvasRef, debugPlayers, onPlayers };
+}
+
 /** The game viewport's ref, and ways to measure it and its container. */
 function useViewportMeasurements() {
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -337,6 +431,7 @@ export default function GameLayersLayout({
   sceneMode = "2D",
   cameraRules,
   onPlayerInteraction,
+  onPlayerPositions,
   ...aids
 }: GameLayersLayoutProps) {
   const [cameraAspectRatio, setCameraAspectRatio] = useState<number>();
@@ -358,15 +453,15 @@ export default function GameLayersLayout({
   // Keep the media until the shown camera goes too, so a camera-off reshape keeps its preview alive
   const media = useCameraMedia(camera.enabled || scene.camera.enabled);
 
-  const { canvasRef, handlePlayers } = usePlayerInteractions(
-    cameraRules,
-    onPlayerInteraction,
-    scene.camera.enabled && !scene.transitioning,
-    { mirrored: mirror, onFloor: scene.sceneMode === "2.5D" },
-  );
-  const { debugPlayers, onPlayers } = useDebugPlayers(handlePlayers, aids.debug);
-  useMouseFeet(viewportRef, cameraRules, onPlayerInteraction, { enabled: mouseFeet, paused: scene.transitioning });
   const floor = useShownFloor(scene, corners, mirror);
+  const { canvasRef, debugPlayers, onPlayers } = usePlayerInput(viewportRef, {
+    scene,
+    mirror,
+    mouseFeet,
+    floor,
+    debug: aids.debug,
+    rules: { cameraRules, onPlayerInteraction, onPlayerPositions },
+  });
   useFloorPlacement(viewportRef, floor);
 
   return (

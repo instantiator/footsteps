@@ -289,7 +289,7 @@ export default function Game() {
   const onAnswer = useAnswerHandler();
   const renderData = useMemo(() => getLayeredRenderData(gameState, resources, gameId), [gameState, resources, gameId]);
   const sceneKey = useMemo(() => getSceneKey(renderData), [renderData]);
-  const { onSceneEvent, cameraRules, onPlayerInteraction, players, playerEffects } = useGameRules();
+  const { onSceneEvent, cameraRules, onPlayerInteraction, players, playerEffects, onPlayerPositions } = useGameRules();
   const ruleRewards = useRuleEffects(reducedMotion, playerEffects);
   const layers = useMemo(
     () => createLayers(renderData, { onAnswer, onSceneEvent }),
@@ -329,6 +329,7 @@ export default function Game() {
           sceneMode={sceneMode}
           cameraRules={cameraRules}
           onPlayerInteraction={onPlayerInteraction}
+          onPlayerPositions={onPlayerPositions}
         />
       </PlayerRegistryContext.Provider>
     </div>
