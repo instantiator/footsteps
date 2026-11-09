@@ -66,6 +66,6 @@ export const openCameraGame = async (page: Page, options: CameraGameOptions = {}
   await installFakeCamera(page, options.photos, options.cameraSize);
   await installCameraDrawCounter(page);
   await patchRepository(page, options);
-  if (options.sceneMode === "2.5D") await seedCalibration(page);
+  await seedCalibration(page); // the game is 2.5D unless a test says otherwise, so a granted camera needs a floor
   await page.goto(`/game/${GAME_ID}/play${options.query ?? ""}`);
 };

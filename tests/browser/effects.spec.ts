@@ -124,7 +124,7 @@ test("a move in a second column still places its centre by the whole scene", asy
             foregroundTemplate: {
               sourceType: "embedded" as const,
               content:
-                '<div id="right" style="position: absolute; left: 60cqw; top: 40cqh; width: 5cqw; height: 5cqh; background: pink"></div><button id="right-go" style="position: absolute; left: 60cqw; top: 1cqh">Go</button>',
+                '<div id="right" style="position: absolute; left: 60cqw; top: 40cqh; width: 5cqw; height: 5cqh; background: pink"></div><button id="right-go" style="position: absolute; left: 60cqw; top: 30cqh">Go</button>',
             },
             rules: [
               {

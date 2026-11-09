@@ -1,21 +1,40 @@
 import { expect, test, type Page } from "@playwright/test";
+import {
+  cropPlacement,
+  DEFAULT_CORNERS,
+  floorCrop,
+  floorToViewport,
+  floorWidthRatio,
+  type FloorView,
+} from "../../src/components/camera/FloorGeometry";
 import { MODEL_TIMEOUT, seedCalibration } from "./fixtures/cameraGame";
 import { installCameraDrawCounter } from "./fixtures/cameraDraws";
 import { installFakeCamera } from "./fixtures/fakeCamera";
 import { peoplePhotoUrls } from "./fixtures/people/people";
 
-/** Opens the rules demo's depth stage, with a fake camera showing a person. */
-const openDepthStage = async (page: Page, query = "") => {
-  await page.context().grantPermissions(["camera"]);
+/** The floor the demo shows with the default calibration, unmirrored, as a new camera choice is. */
+const VIEW: FloorView = {
+  corners: DEFAULT_CORNERS,
+  crop: cropPlacement(floorCrop(DEFAULT_CORNERS), false),
+  mirrored: false,
+};
+
+/** Opens the demo's "Walk around" stage, past its scroll; with a camera, a fake one showing a person. */
+const openWalkAround = async (page: Page, { camera = true, query = "" } = {}) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await installFakeCamera(page, peoplePhotoUrls());
-  await installCameraDrawCounter(page);
-  await seedCalibration(page); // the stage is 2.5D
+  if (camera) {
+    await page.context().grantPermissions(["camera"]);
+    await installFakeCamera(page, peoplePhotoUrls());
+    await installCameraDrawCounter(page);
+    await seedCalibration(page);
+  }
   await page.goto(`/game/rules-demo/play${query}`);
   await page.locator("#demo-title").click({ force: true });
   await page.locator("#stage-link-depth").click();
+  await page.getByLabel("Next page").click();
+  await page.locator('input[name="answer"]').fill("walk");
   await expect(page.locator("#depth-far")).toBeVisible();
-  await page.evaluate(() => window.__fakeCamera.setImage("photo:jumping-side-on"));
+  if (camera) await page.evaluate(() => window.__fakeCamera.setImage("photo:jumping-side-on"));
 };
 
 /** The z-index an element computes to. */
@@ -25,18 +44,52 @@ const zIndexOf = (page: Page, selector: string) =>
     .first()
     .evaluate((element) => Number(getComputedStyle(element).zIndex));
 
-test("sorts a player among the items, in one stacking context", async ({ page }) => {
-  await openDepthStage(page);
+/** Where an item's bottom centre is drawn, and how much it is scaled, relative to the viewport. */
+const drawnAt = (page: Page, selector: string) =>
+  page.locator(selector).evaluate((element: HTMLElement) => {
+    const viewport = document.querySelector("#game-viewport")!.getBoundingClientRect();
+    const drawn = element.getBoundingClientRect();
+    return {
+      x: drawn.left + drawn.width / 2 - viewport.left,
+      y: drawn.bottom - viewport.top,
+      scale: drawn.width / element.offsetWidth,
+      viewport: { width: viewport.width, height: viewport.height },
+    };
+  });
+
+test("stands each floor item on its floor spot, shrunk by how far back it is", async ({ page }) => {
+  await openWalkAround(page, { camera: false });
+  for (const [selector, floor] of [
+    ["#depth-near", { x: 75, y: 80 }],
+    ["#depth-far", { x: 20, y: 30 }],
+  ] as const) {
+    await expect
+      .poll(async () => {
+        const { x, y, scale, viewport } = await drawnAt(page, selector);
+        const spot = floorToViewport(VIEW, floor);
+        const ratio = floorWidthRatio(VIEW, viewport, floor.y);
+        return [
+          Math.abs(x - spot.x * viewport.width) < 2,
+          Math.abs(y - spot.y * viewport.height) < 2,
+          Math.abs(scale - ratio) < 0.01,
+        ];
+      })
+      .toEqual([true, true, true]);
+  }
+});
+
+test("sorts a player among the floor items, in one stacking context", async ({ page }) => {
+  await openWalkAround(page);
   const canvas = "#character-canvas-container .player";
   await expect.poll(() => zIndexOf(page, canvas), { timeout: MODEL_TIMEOUT }).toBeGreaterThan(-1000);
 
-  // The photo's person stands with their feet about 69% down: between the far post (45) and the near one (80)
+  // The photo's person stands about two thirds of the way down the picture: between the far post and the near one
   const [far, near, player] = await Promise.all([
     zIndexOf(page, "#depth-far"),
     zIndexOf(page, "#depth-near"),
     zIndexOf(page, canvas),
   ]);
-  expect(far).toBe(-955);
+  expect(far).toBe(-970);
   expect(near).toBe(-920);
   expect(player).toBeGreaterThan(far);
   expect(player).toBeLessThan(near);
@@ -61,7 +114,7 @@ test("sorts a player among the items, in one stacking context", async ({ page })
 });
 
 test("paints a far post behind the player's canvas and a near one in front", async ({ page }) => {
-  await openDepthStage(page);
+  await openWalkAround(page);
   const canvas = page.locator("#character-canvas-container .player").first();
   await expect
     .poll(() => canvas.evaluate((c) => Number(c.style.zIndex)), { timeout: MODEL_TIMEOUT })
@@ -79,12 +132,14 @@ test("paints a far post behind the player's canvas and a near one in front", asy
         .filter((id) => id === target.slice(1) || id === "CANVAS");
     }, selector);
 
-  expect(await topmostAt("#depth-far")).toEqual(["CANVAS", "depth-far"]);
-  expect(await topmostAt("#depth-near")).toEqual(["depth-near", "CANVAS"]);
+  await expect.poll(() => topmostAt("#depth-far")).toEqual(["CANVAS", "depth-far"]);
+  await expect.poll(() => topmostAt("#depth-near")).toEqual(["depth-near", "CANVAS"]);
 });
 
-test("keeps an item with no depth in front of the player, where a click still reaches it", async ({ page }) => {
-  await openDepthStage(page);
+test("keeps an item that isn't on the floor in front of the player, where a click still reaches it", async ({
+  page,
+}) => {
+  await openWalkAround(page);
   const done = page.locator("#depth-done");
   await expect
     .poll(() => zIndexOf(page, "#character-canvas-container .player"), { timeout: MODEL_TIMEOUT })
@@ -95,8 +150,18 @@ test("keeps an item with no depth in front of the player, where a click still re
   await expect(page.locator("#stage-link-depth")).toHaveClass(/completed/);
 });
 
-test("draws each player's depth as a line when debugging", async ({ page }) => {
-  await openDepthStage(page, "?debug=true");
+test("shows where player 1 stands, and puts a ring under them", async ({ page }) => {
+  await openWalkAround(page);
+  const position = page.locator("#depth-position");
+  await expect(position).toContainText("Player 1 is at", { timeout: MODEL_TIMEOUT });
+  const [, x, y] = /at (-?[\d.]+) across, (-?[\d.]+) forward/.exec((await position.textContent()) ?? "")!.map(Number);
+  expect(y).toBeGreaterThan(30);
+  expect(y).toBeLessThan(80);
+  await expect(page.locator("#depth-ring")).toHaveAttribute("data-floor-x", String(x));
+});
+
+test("draws the height of each player's ground point as a line when debugging", async ({ page }) => {
+  await openWalkAround(page, { query: "?debug=true" });
   const canvas = page.locator("#character-canvas-container .player").first();
   await expect
     .poll(() => canvas.evaluate((c) => Number(c.style.zIndex)), { timeout: MODEL_TIMEOUT })
@@ -114,10 +179,11 @@ test("draws each player's depth as a line when debugging", async ({ page }) => {
   await expect.poll(hasDepthLine).toBe(true);
 });
 
-test("outlines the floor and marks the player's feet when debugging the 2.5D stage", async ({ page }) => {
-  await openDepthStage(page, "?debug=true");
+test("outlines the floor, shades what's off it, and marks the player's feet when debugging", async ({ page }) => {
+  await openWalkAround(page, { query: "?debug=true" });
   const overlay = page.locator("#debug-overlay-container");
   await expect(overlay.locator("polygon")).toBeAttached();
+  await expect(overlay.locator("path.floorOffFloor")).toBeAttached();
   await expect(overlay.locator(".floorMarkerOn, .floorMarkerOff").first()).toBeAttached({ timeout: MODEL_TIMEOUT });
 
   // The overlay covers the whole camera image, which a 2.5D scene crops: wider than the viewport

@@ -2,6 +2,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { saveCalibration } from "../src/components/camera/FloorCalibration";
+import { DEFAULT_CORNERS } from "../src/components/camera/FloorGeometry";
 import type { GameData } from "../src/entities/data/GameData";
 import LocalGame from "../src/pages/LocalGame";
 import { simpleGameData } from "./data/SampleGameState";
@@ -54,6 +56,7 @@ const cameraGame: GameData = { ...simpleGameData, modules: { avatar: { mode: "ca
 describe("LocalGame", () => {
   it("plays the game with the routed id once the local repository loads", async () => {
     permissionQuery("granted"); // magic-trifle uses the camera
+    saveCalibration("default", DEFAULT_CORNERS); // and is 2.5D, so a granted camera needs a floor
     const { container } = renderAt("/game/magic-trifle/play");
     // jsdom never loads stylesheets, and React holds the game back until they have
     await waitFor(() => {

@@ -237,9 +237,11 @@
   box-shadow: 0 0 6cqh #ffd166;
 }
 
-/* Posts for a player to walk behind and in front of; each one's foot is on the floor line its data-depth names */
+/* Posts for a player to walk behind and in front of, sized as at the front of the floor, where the engine stands them */
 .demo-depth-item {
   position: absolute;
+  left: 0;
+  top: 0;
   display: flex;
   align-items: end;
   justify-content: center;
@@ -250,6 +252,34 @@
   background: #5b7c99;
   color: #fff;
   font-weight: bold;
+}
+
+.demo-depth-lit {
+  background: #ffd166;
+  color: #333;
+}
+
+/* A ring on the floor under player 1, following their position */
+.demo-depth-ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 14cqw;
+  height: 5cqw;
+  border: 0.4rem solid #ffd166;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.demo-depth-position {
+  position: absolute;
+  bottom: 4rem;
+  left: 0;
+  right: 0;
+  margin: 0;
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 0 4px #000;
 }
 
 .demo-depth-hint {
