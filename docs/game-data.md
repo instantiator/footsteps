@@ -70,12 +70,49 @@ takes moves on to the stages overview. Clicks remain the keyboard-accessible rou
 | `2D`    | A full-screen background, the players, and a foreground. The default.                                                                                                                                                  |
 | `2.5D`  | As `2D`, fitted to the floor the player [calibrated](camera-mode.md#calibrating-the-floor): the camera is cropped to the floor, and the view takes the crop's shape, so players' feet stay in view all over the floor. |
 
-A game with any `2.5D` scene asks a player using the camera to calibrate the floor before starting. In both modes,
-elements in a challenge's foreground can have a `data-depth`, so that players pass in front of and behind them: see
-[player depth](camera-mode.md#player-depth). The scene mode resolves most specific first: `2.5D` if any active
-challenge sets it, else `2D` if one does, then the open stage's `shared` scene, the overview scene, the game's
-`modules`, and finally `2D`. A reset scene's setting is over its parent's. The rules demo's "Walk around" stage is
-`2.5D`.
+A game with any `2.5D` scene asks a player using the camera to calibrate the floor before starting. In a `2.5D` scene,
+items can be [placed on the floor](#floor-placed-items), and players pass in front of and behind them. The scene mode
+resolves most specific first: `2.5D` if any active challenge sets it, else `2D` if one does, then the open stage's
+`shared` scene, the overview scene, the game's `modules`, and finally `2D`. A reset scene's setting is over its
+parent's. Nanny's Magic Trifle and the demo are `2.5D` games.
+
+#### Floor-placed items
+
+Every room's calibration differs, so items can't be hand-placed on the floor. Instead, give an item in a template
+floor coordinates, and the engine places it and scales it for its distance. Floor coordinates run 0–100 across the
+floor at the item's depth, and 0–100 from back to front, so every floor point can be reached in any room.
+
+| Attribute              | Meaning                                                                                                                              | Default                                                       |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| `data-floor-y`         | How far forward the item stands: 0 at the back edge, 100 at the front. Its presence makes the item floor-placed.                     | required                                                      |
+| `data-floor-x`         | Where across the floor it stands: 0 at the left edge on screen, 100 at the right, at that depth.                                     | where the layout puts it across the viewport, read as floor x |
+| `data-floor-height`    | How high above the floor its anchor sits, in the same units as x, so it shrinks with distance.                                       | `0`                                                           |
+| `data-floor-anchor`    | The point on the item that sits at those coordinates, in CSS `transform-origin` syntax: `center bottom`, `left center`, `40% 70%`, … | `center bottom`, the point that touches the floor             |
+| `data-floor-thickness` | The band of floor y, centred on the item, that a player must stand in for their camera interactions with it to count.                | none: interactions count from anywhere                        |
+
+```html
+<div id="tree" data-floor-x="20" data-floor-y="40" style="position: absolute; width: 15cqw; height: 40cqh">…</div>
+```
+
+- **Size an item as it would appear at the front edge.** The engine scales it by the floor's width at its depth,
+  relative to the front edge's, and moves its anchor onto its floor point. It uses the CSS `translate` and `scale`
+  properties, not `transform`, so the layout is untouched, and animations and effects that use `transform` still
+  work. The anchor becomes the item's `transform-origin`, so such an animation pivots on it. Effects that `replace`
+  rather than add to an item's motion override its placement while they run.
+- **Layering.** Floor items in a challenge's foreground sort among the players by depth. Elsewhere, they are placed and
+  scaled, but stay behind the players (overview and stage foregrounds) or in front of them (anything in a challenge's
+  foreground that isn't floor-placed, like a dialog or a HUD).
+- **Not inside a transformed wrapper.** An item is placed from where the layout puts it, which ignores transforms, so a
+  wrapper with its own `transform` throws it off.
+- **The back corners.** The floor narrows towards the back, so the back corners of a scene may be out of reach. Put
+  anything a player must stand on onto the floor. In debug mode, what is off the floor is shaded.
+- **Thickness only counts for the camera's players.** The mouse, even as feet, points at an item rather than
+  standing by it.
+- **In a 2D scene** the attributes do nothing, and validation warns of them. `data-depth`, which came before them,
+  fails validation, naming `data-floor-y`.
+- A scene's background image set to `cover` still fills the reshaped viewport, though it doesn't line up with the floor.
+
+The demo's "Walk around" stage shows floor items, thickness, and an item following a player's position.
 
 **`avatar`** is what stands in for the player:
 
