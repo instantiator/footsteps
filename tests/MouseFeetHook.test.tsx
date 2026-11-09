@@ -157,6 +157,21 @@ describe("useMouseFeet", () => {
     expect(fired(included.onEvent)).toEqual(["foot-enter@b"]);
   });
 
+  it("stands on a floor area only where it is drawn, not anywhere in its wider box", () => {
+    // #a is drawn in perspective over the left half of its box
+    Object.defineProperty(document, "elementsFromPoint", {
+      configurable: true,
+      value: (x: number) => (x < 50 ? [document.getElementById("a")] : []),
+    });
+    const { onEvent, move, view } = setup([rule(["foot-enter"], "#a", { includeCovered: true })]);
+    view.container.querySelector("#a")!.setAttribute("data-floor-area", "0 0 50 50");
+    move(75);
+    expect(onEvent).not.toHaveBeenCalled();
+    move(25);
+    expect(fired(onEvent)).toEqual(["foot-enter@a"]);
+    Reflect.deleteProperty(document, "elementsFromPoint");
+  });
+
   it("waits out a rule's hold before entering, and forgets it if the feet move off first", () => {
     vi.useFakeTimers();
     const { onEvent, move } = setup([rule(["foot-enter"], "#a", { holdMs: 500 })]);

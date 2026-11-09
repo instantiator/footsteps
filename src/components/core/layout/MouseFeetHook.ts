@@ -3,6 +3,7 @@ import type { SceneScope } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
 import type { CameraInteraction } from "../../camera/PlayerMonitor";
 import { MOUSE_FEET_INTERACTIONS } from "../logic/AvatarModeUtils";
+import { FLOOR_AREA_ATTRIBUTE } from "./FloorSurfacePlacement";
 import { sceneRoots } from "../logic/TemplateUtils";
 import { elementKey, type CameraRuleEvent, type CameraRuleTarget } from "./PlayerInteractionHook";
 
@@ -28,11 +29,19 @@ interface ClientPoint {
   y: number;
 }
 
-/** Whether a point is inside an element's box, and (unless covered elements count) the element is on top there. */
+/**
+ * Whether a point is on an element, and (unless covered elements count) the element is on top there. A floor area's
+ * box is wider than the area drawn in perspective, so it is hit-tested, which follows its transform.
+ */
 const isUnder = (element: Element, { x, y }: ClientPoint, includeCovered: boolean): boolean => {
   const { left, right, top, bottom } = element.getBoundingClientRect();
   if (x < left || x >= right || y < top || y >= bottom) return false;
-  if (includeCovered) return true;
+  if (includeCovered) {
+    return (
+      !element.closest(`[${FLOOR_AREA_ATTRIBUTE}]`) ||
+      document.elementsFromPoint(x, y).some((hit) => element.contains(hit))
+    );
+  }
   const hit = document.elementFromPoint(x, y);
   return hit !== null && element.contains(hit);
 };

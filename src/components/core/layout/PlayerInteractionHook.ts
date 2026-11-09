@@ -18,7 +18,8 @@ import {
   type PlayerMonitorEvent,
 } from "../../camera/PlayerMonitor";
 import { centreOnScreen } from "../effects/EffectTargets";
-import { floorBandOf, type FloorBand } from "./FloorPlacement";
+import { floorRegionOf, isInRegion } from "./FloorPlacement";
+import type { FloorArea } from "../../camera/FloorSurfaces";
 import { sceneRoots } from "../logic/TemplateUtils";
 
 /** A rule the camera can fire: which scene it belongs to, and the elements and interactions it watches. */
@@ -79,8 +80,8 @@ interface FrameTargets {
   targets: Record<string, MonitorTarget>;
   /** The rule and element behind each key. */
   sources: Map<string, Omit<CameraRuleEvent, "interaction" | "player">>;
-  /** The band of floor a player must stand in for each thick floor item's key; only in a 2.5D scene. */
-  bands: Map<string, FloorBand>;
+  /** The part of the floor a player must stand on for each floor area's or thick floor item's key; only in 2.5D. */
+  regions: Map<string, FloorArea>;
 }
 
 /** What a monitor reads as it reports: the latest sources, handler and settings. */
@@ -105,21 +106,23 @@ const monitorMaker =
   };
 
 /** A frame with no targets, keeping the given sources, so players who have gone can report what they left. */
-const noTargets = (sources: FrameTargets["sources"]): FrameTargets => ({ targets: {}, sources, bands: new Map() });
+const noTargets = (sources: FrameTargets["sources"]): FrameTargets => ({ targets: {}, sources, regions: new Map() });
 
 /**
- * The targets as one player can reach them: a thick floor item is out of reach unless they stand in its band, so
- * it counts as having nothing over it, and whatever they had entered they leave.
+ * The targets as one player can reach them: a floor area, or a thick floor item, is out of reach unless they stand on
+ * its part of the floor (its box on screen is wider), so it counts as having nothing over it, and whatever they had
+ * entered they leave.
  */
 export const targetsInReach = (
-  { targets, bands }: Pick<FrameTargets, "targets" | "bands">,
+  { targets, regions }: Pick<FrameTargets, "targets" | "regions">,
   position: PlayerFrame["position"],
 ): Record<string, MonitorTarget> => {
-  if (bands.size === 0) return targets;
+  if (regions.size === 0) return targets;
   const reachable = { ...targets };
-  for (const [key, { min, max }] of bands) {
-    const inBand = position !== null && position.y >= min && position.y <= max;
-    if (!inBand) reachable[key] = { ...targets[key], rect: EMPTY_MASK_RECT, near: undefined };
+  for (const [key, region] of regions) {
+    if (position === null || !isInRegion(position, region)) {
+      reachable[key] = { ...targets[key], rect: EMPTY_MASK_RECT, near: undefined };
+    }
   }
   return reachable;
 };
@@ -151,7 +154,7 @@ const frameTargets = (
 ): FrameTargets => {
   const canvasRect = canvas.getBoundingClientRect();
   const [mask] = players;
-  const result: FrameTargets = { targets: {}, sources: new Map(), bands: new Map() };
+  const result: FrameTargets = { targets: {}, sources: new Map(), regions: new Map() };
   for (const rule of rules) {
     if (rule.selector === undefined) {
       const key = `${rule.scope}#${rule.ruleIndex}#anywhere`;
@@ -176,8 +179,8 @@ const frameTargets = (
         ...(rule.within !== undefined && { near: nearTarget(element, rule.within, canvas, { mask, mirrored }) }),
       };
       result.sources.set(key, { scope: rule.scope, ruleIndex: rule.ruleIndex, element });
-      const band = onFloor ? floorBandOf(element) : undefined;
-      if (band) result.bands.set(key, band);
+      const region = onFloor ? floorRegionOf(element) : undefined;
+      if (region) result.regions.set(key, region);
     }
   }
   return result;
@@ -242,7 +245,8 @@ interface PlayerInteractions {
  * @param onPlayerInteraction called for each interaction that begins
  * @param enabled whether interactions are running; switching it off clears the monitors
  * @param scene whether the character canvas shows the mask flipped (`mirrored`, fixed for the hook's lifetime), and
- * whether a 2.5D scene shows (`onFloor`), where thick floor items only count from inside their band
+ * whether a 2.5D scene shows (`onFloor`), where floor areas and thick floor items only count from on their part of
+ * the floor
  * @returns the character canvas's ref, and the stable frame handler to give it
  */
 export function usePlayerInteractions(

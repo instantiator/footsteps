@@ -1,6 +1,7 @@
 import { useEffect, type RefObject } from "react";
 import { isDefined } from "../../../util/ObjectUtils";
 import { placeOnFloor, viewportToFloor, type FloorView, type Rect } from "../../camera/FloorGeometry";
+import type { FloorArea } from "../../camera/FloorSurfaces";
 import { sceneRoots } from "../logic/TemplateUtils";
 import type { CameraRuleTarget } from "./PlayerInteractionHook";
 import { DEPTH_STACK_CLASS, depthZIndex } from "../../camera/PlayerPosition";
@@ -8,6 +9,7 @@ import type { Point } from "../../../vision/VisionTypes";
 import {
   FLOOR_AREA_ATTRIBUTE,
   numberOf,
+  parseFloorArea,
   placeSurface,
   setStyle,
   SURFACE_PROPERTIES,
@@ -48,21 +50,27 @@ export const parseFloorItem = (element: Element): FloorItem | null => {
   };
 };
 
-/** A band of floor y, across the whole floor. */
-export interface FloorBand {
-  /** Its back edge. */
-  min: number;
-  /** Its front edge. */
-  max: number;
-}
-
-/** The band of floor y a player must stand in to interact with an element, if it is a thick floor item. */
-export const floorBandOf = (element: Element): FloorBand | undefined => {
+/**
+ * The part of the floor a player must stand on to interact with an element, if it has one: a floor area's rectangle,
+ * or the band of floor y across a thick floor item.
+ */
+export const floorRegionOf = (element: Element): FloorArea | undefined => {
+  const area = element.closest(`[${FLOOR_AREA_ATTRIBUTE}]`);
+  if (area) return parseFloorArea(area.getAttribute(FLOOR_AREA_ATTRIBUTE));
   const item = element.closest(FLOOR_ITEM_SELECTOR);
   const floor = item === null ? null : parseFloorItem(item);
   if (!isDefined(floor?.thickness)) return undefined;
-  return { min: floor.y - floor.thickness / 2, max: floor.y + floor.thickness / 2 };
+  return {
+    left: -Infinity,
+    back: floor.y - floor.thickness / 2,
+    right: Infinity,
+    front: floor.y + floor.thickness / 2,
+  };
 };
+
+/** Whether a floor point is in a region. */
+export const isInRegion = ({ x, y }: Point, { left, back, right, front }: FloorArea): boolean =>
+  x >= left && x <= right && y >= back && y <= front;
 
 /** Where the layout puts an element's top left, in page pixels, ignoring any transforms. */
 const layoutOffset = (element: HTMLElement): Point => {
