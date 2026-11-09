@@ -214,6 +214,36 @@ const surfaceBox = (page: Page, selector: string) =>
       };
     });
 
+test("tiles Walk around's floor, and lights the tile underfoot", async ({ page }) => {
+  await openWalkAround(page, { camera: false });
+  const tilesBox = () =>
+    page.locator("[data-floor-area]").evaluateAll((elements) => {
+      const viewport = document.querySelector("#game-viewport")!.getBoundingClientRect();
+      const boxes = elements.map((element) => element.getBoundingClientRect());
+      return {
+        count: boxes.length,
+        left: Math.min(...boxes.map(({ left }) => left)) - viewport.left,
+        top: Math.min(...boxes.map(({ top }) => top)) - viewport.top,
+        right: Math.max(...boxes.map(({ right }) => right)) - viewport.left,
+        bottom: Math.max(...boxes.map(({ bottom }) => bottom)) - viewport.top,
+        width: viewport.width,
+        height: viewport.height,
+      };
+    });
+  // Every tile is placed within a frame or two of appearing
+  await expect.poll(async () => (await tilesBox()).top).toBeGreaterThan(0);
+  const tiles = await tilesBox();
+  // Together the tiles cover the floor: its front corners are the viewport's bottom corners
+  expect(tiles.count).toBe(16);
+  expect(tiles.left).toBeCloseTo(0, 0);
+  expect(tiles.right).toBeCloseTo(tiles.width, 0);
+  expect(tiles.bottom).toBeCloseTo(tiles.height, 0);
+  expect(tiles.top / tiles.height).toBeCloseTo(floorToViewport(VIEW, { x: 0, y: 0 }).y, 2);
+
+  await page.locator("#depth-tile").hover({ force: true });
+  await expect(page.locator("#depth-tile")).toHaveClass(/demo-tile-lit/);
+});
+
 test("lays Nanny's Magic Trifle's river on the floor, in the overview and in a stage's shared scene", async ({
   page,
 }) => {

@@ -457,7 +457,7 @@
     "rules-demo": {
       "id": "rules-demo",
       "title": "Demo scenes (2.5D)",
-      "description": "Pop balloons, cross a floor of lava, and walk among things on the floor: a demonstration of 2.5D scenes, rules and state, by mouse or camera.",
+      "description": "Pop balloons, cross a floor of lava, and walk around a room with a tiled floor, walls and hills: a demonstration of 2.5D scenes, rules and state, by mouse or camera.",
       "modules": { "scene": "2.5D", "avatar": { "mode": "mouse" } },
       "config": { "sequential": false, "autoAdvanceStages": false },
       "stylesheets": ["demo-css"],
@@ -720,11 +720,19 @@
                   "component": {
                     "type": "template",
                     "data": {},
-                    "initialState": { "lit": false },
+                    "initialState": { "lit": false, "tile": false },
                     "rules": [
                       {
                         "on": { "interact": ["click"], "target": "#depth-done" },
                         "do": [{ "completeChallenge": true }]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter", "mouse-enter"], "target": "#depth-tile" },
+                        "do": [{ "set": { "tile": "true" } }]
+                      },
+                      {
+                        "on": { "interact": ["foot-exit", "mouse-exit"], "target": "#depth-tile" },
+                        "do": [{ "set": { "tile": "false" } }]
                       },
                       {
                         "on": { "interact": ["foot-enter", "mouse-enter"], "target": "#depth-near" },

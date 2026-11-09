@@ -7,13 +7,14 @@
   font-family: system-ui, sans-serif;
   color: white;
   text-align: center;
+  /* The floor surfaces paint beneath this positioned wrapper, so it lets the pointer through to them */
+  pointer-events: none;
 }
 
 .demo-title-screen {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  background: linear-gradient(#1d3557, #457b9d);
   cursor: pointer;
 }
 
@@ -60,8 +61,12 @@
   top: 70cqh;
 }
 
-.demo-sky {
-  background: linear-gradient(#a8dadc, #f1faee);
+/* The scenery every screen shares, drawn in the floor's perspective: sky above the horizon, and grass to it */
+.demo-horizon {
+  background: linear-gradient(#457b9d, #a8dadc 90%, #f1faee);
+}
+.demo-ground {
+  background: #52796f;
 }
 
 .demo-score {
@@ -157,14 +162,12 @@
   }
 }
 
-.demo-floor {
+.demo-lava-floor {
   background: #3d405b;
 }
 
+/* Pools laid on the floor; the box is drawn onto each pool's rectangle */
 .lava {
-  position: absolute;
-  width: 20cqw;
-  height: 12cqh;
   border-radius: 40%;
   background: radial-gradient(#ffd166, #ef476f);
 }
@@ -183,10 +186,11 @@
   font-size: 3cqh;
 }
 
+/* Stands at the back of the floor, where the engine places it */
 .lava-door {
   position: absolute;
-  right: 6cqw;
-  top: 8cqh;
+  left: 0;
+  top: 0;
   width: 10cqw;
   height: 30cqh;
   border-radius: 1cqh 1cqh 0 0;
@@ -329,43 +333,21 @@
 
 /* Stone hop: everything is lava but three stones, jumped between by dragging */
 .stones-lava {
-  position: absolute;
-  inset: 0;
   background: radial-gradient(circle at 30% 70%, #ffd166, #ef476f 60%, #9d0208);
 }
 
+/* Stones laid on the floor; the box is drawn onto each stone's rectangle */
 .stone {
-  position: absolute;
-  width: 18cqw;
-  height: 20cqh;
   border-radius: 45%;
   background: #6c757d;
   box-shadow: inset 0 -1cqh 0 #495057;
 }
 
-#stone-1,
-#reset-start.stone {
-  left: 6cqw;
-  top: 62cqh;
-}
-
-#stone-2 {
-  left: 41cqw;
-  top: 40cqh;
-}
-
-#stone-3 {
-  left: 74cqw;
-  top: 18cqh;
-}
-
+/* A hatch in the last stone, lying flat with it */
 .stones-door {
   position: absolute;
-  left: 30%;
-  bottom: 40%;
-  width: 40%;
-  height: 120%;
-  border-radius: 1cqh 1cqh 0 0;
+  inset: 25%;
+  border-radius: 1cqh;
   background: #5c3d2e;
   cursor: pointer;
 }
@@ -378,4 +360,23 @@
 /* Text over the lava is not somewhere to stand */
 .stones-message {
   pointer-events: none;
+}
+
+/* Walk around's room: a chequered floor that shows the camera through it, low brick walls, and hills beyond */
+.demo-tile {
+  background: rgba(241, 250, 238, 0.45);
+}
+.demo-tile-dark {
+  background: rgba(29, 53, 87, 0.45);
+}
+.demo-tile-lit {
+  background: rgba(255, 209, 102, 0.9);
+}
+.demo-wall {
+  background: repeating-linear-gradient(90deg, #bc6c25 0 9%, #8f4d1c 9% 10%);
+}
+.demo-hills {
+  background:
+    radial-gradient(ellipse 30% 35% at 25% 100%, #2d6a4f 98%, transparent),
+    radial-gradient(ellipse 40% 25% at 70% 100%, #40916c 98%, transparent);
 }
