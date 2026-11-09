@@ -108,7 +108,7 @@ A `target` looks inside the scene whose rule fired, so two challenges side by si
 | `.scene-background`           | The scene background containers, named the same way.                                                                                      |
 
 - **Items move, not layers.** An effect on `.scene-foreground` or `.scene-background`, or with no `target`, applies to each top-level item (`.templateBody > *`), never to a container. Moving a container would make it a stacking context, so items inside it could no longer sit between players.
-- **Wrappers around depth items.** A top-level item holding `data-depth` items gives its children instead, recursively, for the same reason. A `target` that names one directly logs a warning, and those items can't sort among players during the effect.
+- **Wrappers around floor items.** A top-level item holding [floor-placed](game-data.md#floor-placed-items) items gives its children instead, recursively, for the same reason. A `target` that names one directly logs a warning, and those items can't sort among players during the effect.
 - **Dialogs and scrolls** give their whole frame, keeping the image, text and controls together. A dialog's layers always share one motion, even with `consistentMotion: false`.
 - **Missing elements:** a `target` matching nothing logs a warning. Effects wait up to 5 s for their scene's elements to reach the screen first, as a scene's state changes before its fade is over.
 - **Give items an `id`.** An effect stays on its element through template re-renders, but an element without an `id` may be replaced by one.

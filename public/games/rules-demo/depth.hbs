@@ -1,6 +1,12 @@
 <div class="demo-depth">
-  <div id="depth-far" class="demo-depth-item" data-depth="45" style="left: 12cqw; bottom: 55cqh">Far</div>
-  <div id="depth-near" class="demo-depth-item" data-depth="80" style="right: 12cqw; bottom: 20cqh">Near</div>
-  <p class="demo-depth-hint">Walk towards and away from the camera, past each post.</p>
+  <div id="depth-far" class="demo-depth-item" data-floor-x="20" data-floor-y="30">Far</div>
+  <div id="depth-near" class="demo-depth-item{{#if state.lit}} demo-depth-lit{{/if}}" data-floor-x="75" data-floor-y="80" data-floor-thickness="20">Near</div>
+  {{#if game.players.[1]}}
+  <div id="depth-ring" class="demo-depth-ring" data-floor-x="{{game.players.[1].x}}" data-floor-y="{{game.players.[1].y}}" data-floor-anchor="center"></div>
+  {{/if}}
+  <p class="demo-depth-hint">Walk towards and away from the camera, past each post. Stand beside the near one to light it.</p>
+  <p id="depth-position" class="demo-depth-position">
+    {{#if game.players.[1]}}Player 1 is at {{game.players.[1].x}} across, {{game.players.[1].y}} forward{{else}}Nobody is on the floor yet{{/if}}
+  </p>
   <button id="depth-done" type="button" class="demo-depth-done">Done</button>
 </div>

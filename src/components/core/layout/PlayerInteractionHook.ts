@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect, useRef, type RefObject } from "reac
 import type { SceneScope } from "../../../entities/state/GameState";
 import useAppConfig from "../../../providers/AppConfigHook";
 import { PlayerRegistryContext } from "../../../providers/PlayerRegistryContext";
+import type { PlayerRegistry } from "../../camera/PlayerRegistry";
 import {
   EMPTY_MASK_RECT,
   maskPointForScreenPoint,
@@ -17,6 +18,7 @@ import {
   type PlayerMonitorEvent,
 } from "../../camera/PlayerMonitor";
 import { centreOnScreen } from "../effects/EffectTargets";
+import { floorBandOf, type FloorBand } from "./FloorPlacement";
 import { sceneRoots } from "../logic/TemplateUtils";
 
 /** A rule the camera can fire: which scene it belongs to, and the elements and interactions it watches. */
@@ -77,7 +79,50 @@ interface FrameTargets {
   targets: Record<string, MonitorTarget>;
   /** The rule and element behind each key. */
   sources: Map<string, Omit<CameraRuleEvent, "interaction" | "player">>;
+  /** The band of floor a player must stand in for each thick floor item's key; only in a 2.5D scene. */
+  bands: Map<string, FloorBand>;
 }
+
+/** What a monitor reads as it reports: the latest sources, handler and settings. */
+interface MonitorRefs {
+  sourcesRef: RefObject<FrameTargets["sources"]>;
+  callbackRef: RefObject<((event: CameraRuleEvent) => void) | undefined>;
+  stableFramesRef: RefObject<number>;
+  jumpRef: RefObject<ReturnType<typeof jumpSettingsOf>>;
+}
+
+/** Makes a player's monitor, which reports each interaction as the rule and element behind it, from that player. */
+const monitorMaker =
+  (registry: PlayerRegistry, { sourcesRef, callbackRef, stableFramesRef, jumpRef }: MonitorRefs) =>
+  (player: PlayerFrame): PlayerMonitor => {
+    // Their number is read now, as it may be free again by the time they are released
+    const number = registry.numberOf(player.id) ?? 0;
+    const report = (event: PlayerMonitorEvent) => {
+      const source = sourcesRef.current.get(event.key);
+      if (source) callbackRef.current?.({ ...source, interaction: event.interaction, player: number });
+    };
+    return new PlayerMonitor(report, stableFramesRef.current, jumpRef.current);
+  };
+
+/** A frame with no targets, keeping the given sources, so players who have gone can report what they left. */
+const noTargets = (sources: FrameTargets["sources"]): FrameTargets => ({ targets: {}, sources, bands: new Map() });
+
+/**
+ * The targets as one player can reach them: a thick floor item is out of reach unless they stand in its band, so
+ * it counts as having nothing over it, and whatever they had entered they leave.
+ */
+export const targetsInReach = (
+  { targets, bands }: Pick<FrameTargets, "targets" | "bands">,
+  position: PlayerFrame["position"],
+): Record<string, MonitorTarget> => {
+  if (bands.size === 0) return targets;
+  const reachable = { ...targets };
+  for (const [key, { min, max }] of bands) {
+    const inBand = position !== null && position.y >= min && position.y <= max;
+    if (!inBand) reachable[key] = { ...targets[key], rect: EMPTY_MASK_RECT, near: undefined };
+  }
+  return reachable;
+};
 
 /** How being near an element reads in mask pixels. Its centre may be off the mask, unlike its bounds. */
 const nearTarget = (
@@ -102,11 +147,11 @@ const frameTargets = (
   canvas: HTMLCanvasElement,
   players: PlayerFrame[],
   rules: CameraRuleTarget[],
-  mirrored: boolean,
+  { mirrored, onFloor }: { mirrored: boolean; onFloor: boolean },
 ): FrameTargets => {
   const canvasRect = canvas.getBoundingClientRect();
   const [mask] = players;
-  const result: FrameTargets = { targets: {}, sources: new Map() };
+  const result: FrameTargets = { targets: {}, sources: new Map(), bands: new Map() };
   for (const rule of rules) {
     if (rule.selector === undefined) {
       const key = `${rule.scope}#${rule.ruleIndex}#anywhere`;
@@ -131,6 +176,8 @@ const frameTargets = (
         ...(rule.within !== undefined && { near: nearTarget(element, rule.within, canvas, { mask, mirrored }) }),
       };
       result.sources.set(key, { scope: rule.scope, ruleIndex: rule.ruleIndex, element });
+      const band = onFloor ? floorBandOf(element) : undefined;
+      if (band) result.bands.set(key, band);
     }
   }
   return result;
@@ -194,14 +241,15 @@ interface PlayerInteractions {
  * @param cameraRules the rules the camera can fire, for the scenes shown now
  * @param onPlayerInteraction called for each interaction that begins
  * @param enabled whether interactions are running; switching it off clears the monitors
- * @param mirrored whether the character canvas shows the mask flipped; fixed for the hook's lifetime
+ * @param scene whether the character canvas shows the mask flipped (`mirrored`, fixed for the hook's lifetime), and
+ * whether a 2.5D scene shows (`onFloor`), where thick floor items only count from inside their band
  * @returns the character canvas's ref, and the stable frame handler to give it
  */
 export function usePlayerInteractions(
   cameraRules: CameraRuleTarget[] | undefined,
   onPlayerInteraction: ((event: CameraRuleEvent) => void) | undefined,
   enabled: boolean,
-  mirrored: boolean,
+  { mirrored, onFloor = false }: { mirrored: boolean; onFloor?: boolean },
 ): PlayerInteractions {
   const config = useAppConfig();
   const registry = useContext(PlayerRegistryContext);
@@ -214,13 +262,15 @@ export function usePlayerInteractions(
   const sourcesRef = useRef<FrameTargets["sources"]>(new Map());
   const callbackRef = useRef(onPlayerInteraction);
   const enabledRef = useRef(enabled);
+  const onFloorRef = useRef(onFloor);
 
   useRearmOnReset(cameraRules, monitorsRef);
 
   useEffect(() => {
     rulesRef.current = cameraRules;
     callbackRef.current = onPlayerInteraction;
-  }, [cameraRules, onPlayerInteraction]);
+    onFloorRef.current = onFloor;
+  }, [cameraRules, onPlayerInteraction, onFloor]);
 
   useEffect(() => {
     stableFramesRef.current = stableFrames;
@@ -243,21 +293,16 @@ export function usePlayerInteractions(
         return;
       }
 
-      const { targets, sources } =
+      const scene = { mirrored, onFloor: onFloorRef.current };
+      const frame =
         players.length > 0
-          ? frameTargets(canvas, players, rulesRef.current ?? [], mirrored)
-          : { targets: {}, sources: sourcesRef.current };
-      sourcesRef.current = sources;
-      const createMonitor = (player: PlayerFrame) => {
-        // Their number is read now, as it may be free again by the time they are released
-        const number = registry.numberOf(player.id) ?? 0;
-        const report = (event: PlayerMonitorEvent) => {
-          const source = sourcesRef.current.get(event.key);
-          if (source) callbackRef.current?.({ ...source, interaction: event.interaction, player: number });
-        };
-        return new PlayerMonitor(report, stableFramesRef.current, jumpRef.current);
-      };
-      updateMonitors(monitors, players, (monitor, player) => monitor.update(player, targets, timestamp), createMonitor);
+          ? frameTargets(canvas, players, rulesRef.current ?? [], scene)
+          : noTargets(sourcesRef.current);
+      sourcesRef.current = frame.sources;
+      const createMonitor = monitorMaker(registry, { sourcesRef, callbackRef, stableFramesRef, jumpRef });
+      const update = (monitor: PlayerMonitor, player: PlayerFrame) =>
+        monitor.update(player, targetsInReach(frame, player.position), timestamp);
+      updateMonitors(monitors, players, update, createMonitor);
     },
     [canvasRef, mirrored, registry],
   );

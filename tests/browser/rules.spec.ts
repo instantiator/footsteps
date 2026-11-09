@@ -58,12 +58,18 @@ const returnToStart = async (page: Page) => {
   await expect(page.locator("#door-base")).toBeVisible({ timeout: 6000 });
 };
 
+/** Moves the mouse just inside the game viewport's top left, on the lava; the viewport may not fill the page. */
+const moveToViewportCorner = async (page: Page) => {
+  const viewport = (await page.locator("#game-viewport").boundingBox())!;
+  await page.mouse.move(viewport.x + 5, viewport.y + 5);
+};
+
 /**
  * Puts the mouse on stone hop's first stone in its reset scene. The feet start afresh when a scene changes, and what
  * they first find under them counts as already there, so the mouse moves off and back on.
  */
 const standOnFirstStoneOf = (page: Page) => async () => {
-  await page.mouse.move(5, 5);
+  await moveToViewportCorner(page);
   await moveTo(page, "#reset-start");
 };
 
@@ -259,7 +265,7 @@ test.describe("rules demo", () => {
     await page.locator("#stage-link-stone-hop").click();
     await standOnFirstStone();
     await expect(page.locator("#stone-1")).toBeVisible();
-    await page.mouse.move(5, 5);
+    await moveToViewportCorner(page);
     await expect(page.locator("#reset-message")).toHaveText("Put your mouse on the first stone");
   });
 

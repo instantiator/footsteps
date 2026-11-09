@@ -67,7 +67,7 @@
 }
 
 /* z-index only applies to positioned elements; :where() keeps this from overriding an author's own position */
-:where([data-depth]) {
+:where([data-floor-y]) {
   position: relative;
 }
 

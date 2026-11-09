@@ -7,7 +7,7 @@ import type { fireRules, RuleEvent } from "../logic/GameRuleUtils";
 import { sceneRun } from "../logic/GameStateUtils";
 import { getSceneSlots, getShownScenes } from "../logic/RenderDataUtils";
 import { sceneRoots } from "../logic/TemplateUtils";
-import { resolveTargets, warnIfTrappingDepth } from "./EffectTargets";
+import { resolveTargets, warnIfTrappingFloorItems } from "./EffectTargets";
 import { ItemEffects, type EffectRun } from "./ItemEffects";
 import { PlayerEffects } from "./PlayerEffects";
 import type { PlayerRegistry } from "../../camera/PlayerRegistry";
@@ -155,7 +155,7 @@ const startOnElements = (
     const ready =
       targetsPlayers(selector) || (isOnScreen(scope, run) && (selector === undefined || elements.length > 0));
     if (ready) {
-      warnIfTrappingDepth(elements, selector, where);
+      warnIfTrappingFloorItems(elements, selector, where);
       noteAffectedPlayers(elements, scope, players);
       const find = (other: string) => resolveTargets(scope, other, shownScopes)[0];
       runEffect(effects, effect, elements, { reducedMotion, find, onEnd });

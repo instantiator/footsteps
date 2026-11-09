@@ -1,5 +1,6 @@
 import type { SceneScope } from "../../../entities/state/GameState";
 import { sceneRoots } from "../logic/TemplateUtils";
+import { FLOOR_ITEM_SELECTOR } from "../layout/FloorPlacement";
 
 /** A point on screen, or a distance on it. */
 export interface ScreenPoint {
@@ -21,18 +22,18 @@ const OUTSIDE_TEMPLATES = ".player, .scene-foreground, .scene-background";
 /** The classes of the layers' containers, whose items an effect moves in their place. */
 const LAYER_CONTAINERS = ".scene-foreground, .scene-background";
 
-/** An item with something inside it that sorts among players, which a stacking context on the item would trap. */
-const holdsDepthItems = (element: Element): boolean => element.querySelector("[data-depth]") !== null;
+/** An item with floor items inside it, which sort among players, and which a stacking context on the item would trap. */
+const holdsFloorItems = (element: Element): boolean => element.querySelector(FLOOR_ITEM_SELECTOR) !== null;
 
 /** An item as an effect should treat it: its children, and theirs, if it holds items that sort among players. */
-const withoutDepthWrappers = (element: Element): Element[] =>
-  holdsDepthItems(element) ? Array.from(element.children).flatMap(withoutDepthWrappers) : [element];
+const withoutFloorWrappers = (element: Element): Element[] =>
+  holdsFloorItems(element) ? Array.from(element.children).flatMap(withoutFloorWrappers) : [element];
 
 /** The items in a scene's template: its frame if it is a dialog or scroll, as a quake must keep those lined up. */
 const itemsOf = (root: Element): Element[] => {
   const frame = root.closest(`.${SCENE_FRAME_CLASS}`);
   if (frame !== null) return [frame];
-  return Array.from(root.querySelectorAll(":scope > .templateBody > *")).flatMap(withoutDepthWrappers);
+  return Array.from(root.querySelectorAll(":scope > .templateBody > *")).flatMap(withoutFloorWrappers);
 };
 
 /** A matching element as an effect should treat it: a layer's container gives the items inside it. */
@@ -67,9 +68,9 @@ export const playerWrappers = (choice: "triggering" | "all", number: number): El
   Array.from(document.querySelectorAll(choice === "all" ? ".player" : `.player-${number}`));
 
 /** Warns about a target that traps items sorting among players, as moving or filtering it makes a stacking context. */
-export const warnIfTrappingDepth = (elements: Element[], selector: string | undefined, where: string): void => {
-  if (selector === undefined || !elements.some(holdsDepthItems)) return;
-  console.warn(`${where}: "${selector}" holds data-depth items, which can't sort among players during this effect`);
+export const warnIfTrappingFloorItems = (elements: Element[], selector: string | undefined, where: string): void => {
+  if (selector === undefined || !elements.some(holdsFloorItems)) return;
+  console.warn(`${where}: "${selector}" holds floor items, which can't sort among players during this effect`);
 };
 
 /** The whole scene an element is in. */

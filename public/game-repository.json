@@ -7,7 +7,7 @@
       "description": "A rhyming Christmas treasure hunt through the house: follow the clues from room to room to find Nanny's magic trifle.",
       "tileGraphic": "title-background",
       "modules": {
-        "scene": "2D",
+        "scene": "2.5D",
         "avatar": {
           "mode": "mouse"
         }
@@ -463,9 +463,9 @@
     },
     "rules-demo": {
       "id": "rules-demo",
-      "title": "Rules demo",
-      "description": "Pop balloons and cross a floor of lava: a demonstration of scene rules and state, by mouse or camera.",
-      "modules": { "scene": "2D", "avatar": { "mode": "mouse" } },
+      "title": "Demo scenes (2.5D)",
+      "description": "Pop balloons, cross a floor of lava, and walk among things on the floor: a demonstration of 2.5D scenes, rules and state, by mouse or camera.",
+      "modules": { "scene": "2.5D", "avatar": { "mode": "mouse" } },
       "config": { "sequential": false, "autoAdvanceStages": false },
       "stylesheets": ["demo-css"],
       "resources": {
@@ -695,20 +695,51 @@
           "id": "depth",
           "challenges": [
             {
+              "id": "walk-around-intro",
+              "solution": { "answers": ["walk"] },
+              "scenes": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "component": {
+                    "type": "scroll",
+                    "data": {},
+                    "contents": [
+                      {
+                        "text": "In a 2.5D scene, things stand on the floor.\nThey shrink as they go further back,\nand you can walk in front of them and behind them."
+                      },
+                      {
+                        "text": "The near post only notices you when you stand beside it.\nA ring follows you around, and your position shows at the bottom.",
+                        "showInput": true,
+                        "label": "Type walk to start walking"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
               "id": "walk-around",
               "solution": { "answers": [] },
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "scene": "2.5D",
                   "avatar": { "mode": "camera", "fallback": "mouse" },
                   "component": {
                     "type": "template",
                     "data": {},
+                    "initialState": { "lit": false },
                     "rules": [
                       {
                         "on": { "interact": ["click"], "target": "#depth-done" },
                         "do": [{ "completeChallenge": true }]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter", "mouse-enter"], "target": "#depth-near" },
+                        "do": [{ "set": { "lit": "true" } }]
+                      },
+                      {
+                        "on": { "interact": ["foot-exit", "mouse-exit"], "target": "#depth-near" },
+                        "do": [{ "set": { "lit": "false" } }]
                       }
                     ],
                     "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/depth.hbs" },

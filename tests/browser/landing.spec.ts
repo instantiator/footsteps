@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { MODEL_TIMEOUT } from "./fixtures/cameraGame";
+import { DEFAULT_CORNERS } from "../../src/components/camera/FloorGeometry";
+import { MODEL_TIMEOUT, seedCalibration } from "./fixtures/cameraGame";
 import { installFakeCamera } from "./fixtures/fakeCamera";
 import { peoplePhotoUrls } from "./fixtures/people/people";
 
@@ -9,6 +10,7 @@ test.beforeEach(async ({ context }) => {
 });
 
 test("starts the game from the landing page at /play", async ({ page }) => {
+  await seedCalibration(page); // the game is 2.5D, so a granted camera needs a floor
   await page.goto("/game/magic-trifle");
 
   await expect(page.getByRole("heading", { level: 1, name: "Nanny's Magic Trifle" })).toBeVisible();
@@ -36,6 +38,7 @@ test("plays with the camera chosen on the landing page, and shows no picker with
   context,
 }) => {
   await installFakeCamera(page);
+  await seedCalibration(page, DEFAULT_CORNERS, "fake-rear"); // the camera chosen below
   await page.goto("/game/magic-trifle");
 
   const dropdown = page.getByRole("combobox", { name: "Camera" });

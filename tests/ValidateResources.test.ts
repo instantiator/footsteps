@@ -96,7 +96,7 @@ describe("checkGame", () => {
       optionsWith(["/site/games/local.png", "/repo/games/relative.png", "/repo/views/overview.hbs"]),
     );
 
-    expect(result).toEqual({ problems: [], checked: { files: 3, urls: 0, names: 0 } });
+    expect(result).toEqual({ problems: [], warnings: [], checked: { files: 3, urls: 0, names: 0 } });
   });
 
   it("reports a missing file with the field's path and resolved location", async () => {
@@ -173,7 +173,7 @@ describe("URL targets", () => {
     const options = optionsWith();
     const result = await checkGame(urlGame, options);
 
-    expect(result).toEqual({ problems: [], checked: { files: 0, urls: 1, names: 0 } });
+    expect(result).toEqual({ problems: [], warnings: [], checked: { files: 0, urls: 1, names: 0 } });
     expect(options.requested).toEqual(["https://example.com/font.css"]);
   });
 
@@ -343,5 +343,57 @@ describe("checkRepository", () => {
 
     expect(result.checked.urls).toBe(2);
     expect(options.requested).toEqual(["https://example.com/font.css"]);
+  });
+});
+
+describe("template text", () => {
+  const embedded = (content: string) => ({ sourceType: "embedded" as const, content });
+  const FLOOR_ITEM = '<div data-floor-y="80"></div>';
+
+  it("fails an embedded template using data-depth, naming data-floor-y", async () => {
+    const result = await checkGame(
+      gameWith({ scenes: [templateScene(embedded('<p data-depth="40"></p>'))] }),
+      optionsWith(),
+    );
+    expect(result.problems).toEqual([
+      { path: "scenes[0].component.foregroundTemplate", message: expect.stringContaining("data-floor-y") },
+    ]);
+  });
+
+  it("reads a template's file to check it, when it can", async () => {
+    const game = gameWith({ scenes: [templateScene({ sourceType: "relative", templateSource: "views/a.hbs" })] });
+    const options = { ...optionsWith(["/repo/views/a.hbs"]), readText: async () => '<p data-depth="40"></p>' };
+    const result = await checkGame(game, options);
+    expect(result.problems.map(({ path }) => path)).toEqual(["scenes[0].component.foregroundTemplate.templateSource"]);
+  });
+
+  it("warns of floor items in a scene that never shows in 2.5D, without failing", async () => {
+    const result = await checkGame(gameWith({ scenes: [templateScene(embedded(FLOOR_ITEM))] }), optionsWith());
+    expect(result.problems).toEqual([]);
+    expect(result.warnings).toEqual([
+      { path: "scenes[0].component.foregroundTemplate", message: expect.stringContaining("never shows in 2.5D") },
+    ]);
+  });
+
+  it("takes floor items in a 2.5D scene, and in a stage's scene that a 2.5D challenge shows with", async () => {
+    const inGame = gameWith({ modules: { scene: "2.5D" }, scenes: [templateScene(embedded(FLOOR_ITEM))] });
+    expect((await checkGame(inGame, optionsWith())).warnings).toEqual([]);
+
+    const challengeScene = {
+      ...templateScene(embedded("")),
+      purpose: "challenge-in-progress" as const,
+      scene: "2.5D" as const,
+    };
+    const stageScene = { ...templateScene(embedded(FLOOR_ITEM)), purpose: "shared" as const };
+    const inStage = gameWith({
+      stages: [
+        {
+          id: "s",
+          scenes: [stageScene],
+          challenges: [{ id: "c", solution: { answers: [] }, scenes: [challengeScene] }],
+        },
+      ],
+    });
+    expect((await checkGame(inStage, optionsWith())).warnings).toEqual([]);
   });
 });

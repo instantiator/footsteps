@@ -133,6 +133,12 @@ Sapiens is far too slow for a browser. [ADR 0005](0005-vision-models.md) has the
 > canvas per player. `?debug=true` draws each player's depth as a green line on their canvas.
 >
 > Tests: `tests/Depth.test.ts`, `tests/PlayerCanvases.test.ts` and `tests/browser/depth.spec.ts`.
+>
+> **Update (002.03.06):** depth became a floor position. `groundPointOf` and `PositionFollower`
+> (`src/components/camera/PlayerPosition.ts`) add an x, held through jumps, and map the ground point onto the
+> calibrated floor in 2.5D scenes. `data-depth` gave way to floor-placed items (`data-floor-y`), and only 2.5D scenes
+> sort players. Tests: `tests/PlayerPosition.test.ts` and `tests/browser/floor.spec.ts`. See
+> [player positions](../camera-mode.md#player-positions).
 
 ## Sources
 

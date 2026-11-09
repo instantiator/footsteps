@@ -106,6 +106,11 @@ export class MouseFeet {
     this.report = report;
   }
 
+  /** Whether the feet are in the air, mid-jump. */
+  get airborne(): boolean {
+    return this.press?.airborne === true;
+  }
+
   /** The feet are at a point, on the ground. */
   move(point: ClientPoint): void {
     if (this.press?.airborne === true) return;
@@ -254,15 +259,16 @@ const swallowNextClick = (): void => {
  * @param cameraRules the rules the camera (and so the feet) can fire, for the scenes shown now
  * @param onPlayerInteraction called for each interaction that begins
  * @param when whether the feet are on (`mouse-feet` mode), and whether they wait, as during a scene change; switching
- * off or pausing forgets everything without firing exits
+ * off or pausing forgets everything without firing exits. `onPosition` hears where the feet stand, in client
+ * pixels, held through a jump, and null as they leave the viewport; keep it stable.
  */
 export function useMouseFeet(
   viewportRef: RefObject<HTMLElement | null>,
   cameraRules: CameraRuleTarget[] | undefined,
   onPlayerInteraction: ((event: CameraRuleEvent) => void) | undefined,
-  when: { enabled: boolean; paused?: boolean },
+  when: { enabled: boolean; paused?: boolean; onPosition?: (point: ClientPoint | null) => void },
 ): void {
-  const { enabled, paused = false } = when;
+  const { enabled, paused = false, onPosition } = when;
   const [feet] = useState(() => new MouseFeet());
   const runsRef = useRef(new Map<SceneScope, number>());
 
@@ -280,12 +286,31 @@ export function useMouseFeet(
     const viewport = viewportRef.current;
     if (!enabled || paused || !viewport) return;
     const at = (event: PointerEvent) => ({ x: event.clientX, y: event.clientY });
+    const stand = (point: ClientPoint | null) => {
+      if (point === null || !feet.airborne) onPosition?.(point);
+    };
+    const leave = () => {
+      feet.leave();
+      stand(null);
+    };
     const listeners: [string, (event: PointerEvent) => void][] = [
-      ["pointermove", (event) => feet.move(at(event))],
+      [
+        "pointermove",
+        (event) => {
+          feet.move(at(event));
+          stand(at(event));
+        },
+      ],
       ["pointerdown", (event) => event.button === 0 && feet.down(at(event))],
-      ["pointerup", (event) => feet.up(at(event)) && swallowNextClick()],
-      ["pointerleave", () => feet.leave()],
-      ["pointercancel", () => feet.leave()],
+      [
+        "pointerup",
+        (event) => {
+          if (feet.up(at(event))) swallowNextClick();
+          stand(at(event));
+        },
+      ],
+      ["pointerleave", leave],
+      ["pointercancel", leave],
     ];
     const preventDefault = (event: Event) => event.preventDefault();
     listeners.forEach(([type, listener]) => viewport.addEventListener(type, listener as EventListener));
@@ -298,5 +323,5 @@ export function useMouseFeet(
       viewport.removeEventListener("selectstart", preventDefault);
       feet.stop();
     };
-  }, [enabled, paused, viewportRef, feet]);
+  }, [enabled, paused, viewportRef, feet, onPosition]);
 }

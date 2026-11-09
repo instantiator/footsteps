@@ -371,3 +371,45 @@ screen (`maskRectForElement`), which a 2.5D crop only moves and enlarges, so dia
 
 **Act when:** a game puts a camera interaction in a dialog scene. Add a browser check that a hand on a dialog's
 element fires in a 2.5D scene.
+
+## Floor placement isn't proven on a real camera
+
+The browser suite proves floor items are placed, scaled and sorted, and that positions reach templates, with a fake
+camera and the default floor. It can't show that items appear under a real player's feet, that sorting and position
+variables don't flicker or lag, or that thickness feels right. The checks are in [Floor-placed items, on a real
+camera](testing/manual-testing.md#floor-placed-items-on-a-real-camera).
+
+**Act when:** before either 2.5D game is played with the camera. Run the checks on both, and tune `positionCellSize`,
+`positionUpdatesPerSecond` and `cameraDepthDeadband` if positions jitter or lag.
+
+## Floor items inside a transformed wrapper are misplaced
+
+Placement reads an item's layout position from `offsetLeft`/`offsetTop`, which ignore transforms, so a wrapper with its
+own `transform` (or `translate`, `scale`) throws its floor items off. No game does this.
+
+**Act when:** a game puts floor items inside a transformed wrapper. Measure the item through its wrapper instead, for
+example by placing it relative to its offset parent's on-screen box.
+
+## Floor placement checks every item every frame
+
+`useFloorPlacement` visits every `[data-floor-y]` item on each animation frame in a 2.5D scene, reading its layout
+and writing only what changed. It is O(items), and the games have a handful.
+
+**Act when:** profiling shows placement taking more than about 1 ms a frame, or a scene has more than about 50 floor
+items. Then place on resize, scene change and template mutation instead.
+
+## Spectators count as players (002.03.14)
+
+Everyone the camera sees is a player, including people standing off the floor. 002.03.14 is to ignore spectators:
+
+- A spectator is a person whose held position (`PlayerPositions`, which already holds through jumps) falls outside the
+  floor (x or y outside 0–100) by more than a margin, about 5 units, for longer than a short hold, so stepping over
+  an edge doesn't drop someone at once.
+- The filter goes between `PlayerPositions` and the registry and interactions, in `CharacterCanvas`'s loop. Spectators
+  get no number, interactions, position variables or count. Whether they are drawn (dimmed, or not at all) is a
+  choice for that prompt.
+- 2D scenes have no floor, so nobody is a spectator there.
+- Tests: someone off the floor is ignored, walking on makes them a player, and a jump at the front edge doesn't drop
+  them.
+
+**Act when:** prompt 002.03.14 is planned.

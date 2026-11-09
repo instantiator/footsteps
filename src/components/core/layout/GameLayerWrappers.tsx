@@ -125,7 +125,7 @@ export const DebugLayerWrapper = ({ style, zIndex, players, corners, crop, mirro
     className="outerStyle noClicks"
     style={{ ...style, ...imageBoxStyle(crop), zIndex: zIndex, transform: mirror ? "scaleX(-1)" : undefined }}
   >
-    <FloorOverlay className="innerStyle" corners={corners} players={players} />
+    <FloorOverlay className="innerStyle" corners={corners} players={players} shadeOffFloor />
   </div>
 );
 
@@ -140,6 +140,7 @@ export const CharacterCanvasLayerWrapper = ({
   onPlayersChange,
   mirror,
   debug,
+  corners,
   crop,
 }: LayerNodeProps) => {
   const { showFps } = useAppConfig();
@@ -159,6 +160,8 @@ export const CharacterCanvasLayerWrapper = ({
         canvasRef={canvasRef}
         maskType={debug ? "colored" : "binary"}
         showStats={debug || showFps}
+        floor={corners}
+        mirrored={mirror}
       />
     </div>
   );

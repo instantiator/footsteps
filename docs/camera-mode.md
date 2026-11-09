@@ -167,8 +167,8 @@ enlarges, so they work unchanged.
   character: everything that is not them is removed. It is flipped if the player chose to mirror the picture.
 - **A small preview** in the top-right corner, flipped the same way, so they can line themselves up.
   It can be hidden with `preview: false`.
-- **The game's artwork** behind them, and a challenge's foreground in front of them, or around them if its items have
-  [depths](#player-depth).
+- **The game's artwork** behind them, and a challenge's foreground in front of them, or around them if its items are
+  [on the floor](#sorting-players-among-floor-items) of a 2.5D scene.
 - **The HUD** in the top-right: "Close challenge", "To title", and the fullscreen button.
 
 An ordinary scene change fades the old scene out over 1s, swaps, then fades the new one in over
@@ -210,35 +210,50 @@ visible until the swap.
 | 10       | HUD                   | the application's buttons (`HeadsUpDisplay`)           |
 
 Backgrounds sit behind the player, so they seem to stand inside the scene. A challenge's foreground
-sits in front, which lets a game put a doorway over them, for example, unless an item has a depth.
+sits in front, which lets a game put a doorway over them, for example, unless an item is on the floor of a 2.5D scene.
 
-## Player depth
+## Player positions
 
-A player can pass in front of and behind a challenge's foreground items. Give an item a `data-depth`: the height of
-the floor where it stands, as a percentage of the scene, from 0 at the top to 100 at the bottom. Usually that is the
-bottom of the item:
+Every player has a position, worked out each frame from their **ground point**: the bottom of their silhouette, and
+the middle of its lowest pixels across. It uses the silhouette rather than the feet because models often can't find
+feet from behind. [ADR 0010](ADRs/0010-player-tracking-from-behind.md) explains the choice and the alternatives.
 
-```html
-<div id="tree" data-depth="60" style="position: absolute; bottom: 40%">…</div>
-```
+- **In a 2.5D scene**, the ground point goes through the inverse of the floor's homography to **floor coordinates**:
+  x from 0 at the floor's left edge (as seen on screen, so mirroring is taken care of) to 100 at its right, and y from
+  0 at the back to 100 at the front. Someone standing off the floor gets values outside 0–100.
+- **In a 2D scene**, the position is the ground point as a percentage of the scene, x from the left and y from the top.
+- **With `mouse-feet`**, the pointer is player 1, and its position goes through the same mapping.
 
-A player standing lower on the screen than 60 is nearer the camera, so they are drawn in front of the tree. Standing
-higher, they are drawn behind it. Each player is sorted separately. An item with no `data-depth` stays in front of every player.
-The "Walk around" stage of the rules demo shows this.
+The position keeps the lowest ground point of the last `cameraDepthWindowMs`, so a jump doesn't look like walking away:
+stepping nearer shows at once, and stepping away shows after that time. It only moves across while the player is on
+the ground, so it holds where they took off from through a jump. Moves smaller than `cameraDepthDeadband` are ignored,
+so a player standing still doesn't flicker.
 
-- **Only challenge foregrounds can be sorted.** Overview and stage foregrounds stay behind the player, because they
-  must stay beneath challenge backgrounds.
-- **Don't wrap items in a layer of their own.** If something in the template around an item creates a CSS stacking context (for
-  example with `transform`, `opacity` below 1, or `isolation`), the item can't be sorted with the players. A `transform`
-  on the item itself is fine.
+The engine uses each frame's position to sort players among [floor items](game-data.md#floor-placed-items) and to
+check items' thickness. Rules and templates get a coarser copy as `game.players.N.x` and `.y` (see [player
+tracking](player-tracking.md#where-players-stand)), so templates don't re-render every frame.
+
+### Sorting players among floor items
+
+In a 2.5D scene, a player passes in front of and behind the challenge foreground's floor-placed items: each is sorted
+by its floor y, and each player by theirs. Items that aren't floor-placed stay in front of every player, like a HUD.
+2D scenes don't sort players at all.
+
+- **Only challenge foregrounds are sorted.** Overview and stage foregrounds stay behind the players, because they
+  must stay beneath challenge backgrounds. Their floor items are still placed and scaled.
+- **Don't wrap floor items in a layer of their own.** If something in the template around an item creates a CSS
+  stacking context (for example with `transform`, `opacity` below 1, or `isolation`), the item can't be sorted with
+  the players. A `transform` on the item itself is fine.
 - **It assumes a camera looking down at a flat floor.** Someone whose legs are hidden will seem further away than they
   are.
 
-A player's depth comes from the bottom of their silhouette, because models often can't find feet from behind. It keeps
-the lowest point of the last `cameraDepthWindowMs`, so a jump doesn't look like walking away: stepping nearer shows at
-once, and stepping away shows after that time. It ignores moves smaller than `cameraDepthDeadband`, so a player on an
-item's line doesn't flicker. A scene with no `data-depth` items doesn't do this work. [ADR
-0010](ADRs/0010-player-tracking-from-behind.md) explains the choice and the alternatives.
+### The back of the floor
+
+The floor narrows towards the back, so a scene's back corners may be out of reach. Floor-placed items avoid this, as
+every floor point is reachable. This was chosen over sliding players sideways by depth (people drift sideways when
+walking forwards, and it amplifies jitter), and over warping the camera image to a rectangle (it distorts bodies, and
+costs time every frame). Debug mode shades what is off the floor, and warns of any target of a foot or jump rule that
+isn't floor-placed and that no player can stand on.
 
 The layers ignore the mouse (`pointer-events: none`), including the silhouette, so clicks reach the
 game's elements underneath. Each element's `id` says what a click or camera interaction does.
@@ -371,7 +386,8 @@ has `?debug=true` (the [`debug` setting](configuration.md)). In camera mode they
   marked faded (they can't interact until found again);
 - show the vision stats readout over the silhouette: the frame rate, the time each step takes (inference, tracking,
   monitors, drawing), and the people, hands and feet found. `?showFps=true` shows the readout on its own;
-- draw a bright green line across the scene at each player's [depth](#player-depth).
+- draw a bright green line across each player at the height of the ground point their [position](#player-positions)
+  comes from, and shade what is off the floor in a 2.5D scene.
 
 Lower a rule's `threshold` when testing interactions, and use the feet markers to see where the
 camera thinks the player is. Switching the debug aids restarts the tracking loop with the new
@@ -389,10 +405,12 @@ toggling it.
 | `src/components/camera/PlayerCanvases.ts`             | one canvas and wrapper per player, and the hidden reference canvas                                                 |
 | `src/components/camera/PlayerRegistry.ts`             | stable player ids and numbers, player states, and notes of lost players; see [player tracking](player-tracking.md) |
 | `src/components/camera/PlayerStatic.ts`               | how a player's static changes over time                                                                            |
-| `src/components/camera/PlayerDepth.ts`                | each player's depth, and sorting players and items by it                                                           |
+| `src/components/camera/PlayerPosition.ts`             | each player's ground point, held through jumps, and their position on the floor or in the scene                    |
+| `src/components/camera/PositionPublisher.ts`          | players' positions for rules and templates: quantised, with hysteresis, rate-limited                               |
+| `src/components/core/layout/FloorPlacement.ts`        | placing, scaling and sorting floor items; the debug warning for targets off the floor                              |
 | `src/components/camera/CharacterCanvas.tsx`           | tracking loop; draws the silhouettes; reports players and feet; the stats readout                                  |
 | `src/components/camera/DrawPeople.ts`                 | cuts the people out of the video, and tints them for debugging                                                     |
-| `src/components/camera/DrawPlayers.ts`                | draws each player on their canvas, frozen or with static, sorted to their depth                                    |
+| `src/components/camera/DrawPlayers.ts`                | draws each player on their canvas, frozen or with static, sorted to their floor depth                              |
 | `src/components/camera/PlayerMonitor.ts`              | turns body-part coverage and feet into edge-triggered interactions                                                 |
 | `src/components/camera/JumpDetector.ts`               | follows a player's feet for jumps                                                                                  |
 | `src/components/camera/CameraSupport.ts`              | camera request and feet position                                                                                   |

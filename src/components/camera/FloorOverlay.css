@@ -19,6 +19,11 @@
   vector-effect: non-scaling-stroke;
 }
 
+/* The camera image beyond the floor, where players can't stand: the floor's back corners may be in it */
+.floorOverlay .floorOffFloor {
+  fill: rgb(0 0 0 / 35%);
+}
+
 .floorMarker {
   position: absolute;
   width: 14px;

@@ -1,10 +1,18 @@
 import { expect, test } from "@playwright/test";
 import { openCameraGame } from "./fixtures/cameraGame";
 import { installFakeCamera } from "./fixtures/fakeCamera";
+import type { GameRepository } from "../../src/entities/GameRepository";
 
 test("eases the game viewport into the camera's shape, then fades the overview in", async ({ page }) => {
   await page.context().grantPermissions(["camera"]);
   await installFakeCamera(page);
+  // A 2D scene takes the camera's shape; the game is 2.5D, which takes its floor's
+  await page.route("**/game-repository.json", async (route) => {
+    const response = await route.fetch();
+    const repository = (await response.json()) as GameRepository;
+    repository.games["magic-trifle"].modules = { ...repository.games["magic-trifle"].modules, scene: "2D" };
+    await route.fulfill({ response, json: repository });
+  });
   await page.goto("/game/magic-trifle/play");
 
   const viewport = page.locator("#game-viewport");
