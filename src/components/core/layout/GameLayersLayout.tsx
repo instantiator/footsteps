@@ -362,7 +362,7 @@ export default function GameLayersLayout({
     cameraRules,
     onPlayerInteraction,
     scene.camera.enabled && !scene.transitioning,
-    mirror,
+    { mirrored: mirror, onFloor: scene.sceneMode === "2.5D" },
   );
   const { debugPlayers, onPlayers } = useDebugPlayers(handlePlayers, aids.debug);
   useMouseFeet(viewportRef, cameraRules, onPlayerInteraction, { enabled: mouseFeet, paused: scene.transitioning });

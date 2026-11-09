@@ -7,6 +7,7 @@ import {
   type PlayerFrame,
   type PlayerMonitorEvent,
 } from "../src/components/camera/PlayerMonitor";
+import { targetsInReach } from "../src/components/core/layout/PlayerInteractionHook";
 import { noKeyPoints, type KeyPoints } from "../src/vision/VisionTypes";
 
 const WIDTH = 10;
@@ -640,5 +641,63 @@ describe("PlayerMonitor covering", () => {
       monitor.update(partFrame("leftFoot", [[1, 1]], feetAt(y)), covered, (index + 1) * 100),
     );
     expect(events).toEqual([]);
+  });
+});
+
+describe("thick floor items", () => {
+  const STONE = "stone";
+  const frameAt = (y: number | null, feet: FootPosition | null = null) => ({
+    ...partFrame("leftFoot", [[1, 1]], feet),
+    position: y === null ? null : { x: 50, y },
+  });
+  /** Targets with a stone that only counts from 50–70 on the floor. */
+  const reachFrom = (position: PlayerFrame["position"], interactions = ["foot-enter", "foot-exit"]) =>
+    targetsInReach(
+      { targets: { [STONE]: target(interactions, 0) }, bands: new Map([[STONE, { min: 50, max: 70 }]]) },
+      position,
+    );
+
+  it("fires only for a player standing in the item's band", () => {
+    const { events, monitor } = monitorWithEvents();
+    const outside = frameAt(30);
+    monitor.update(outside, reachFrom(outside.position), 1);
+    expect(events).toEqual([]);
+
+    const inside = frameAt(60);
+    monitor.update(inside, reachFrom(inside.position), 2);
+    expect(events).toEqual([{ key: STONE, interaction: "foot-enter" }]);
+  });
+
+  it("leaves the item as the player walks out of its band", () => {
+    const { events, monitor } = monitorWithEvents();
+    for (const [y, timestamp] of [
+      [60, 1],
+      [80, 2],
+    ]) {
+      const player = frameAt(y);
+      monitor.update(player, reachFrom(player.position), timestamp);
+    }
+    expect(events).toEqual([
+      { key: STONE, interaction: "foot-enter" },
+      { key: STONE, interaction: "foot-exit" },
+    ]);
+  });
+
+  it("puts a player with no position outside every band, and leaves other targets alone", () => {
+    const targets = { [STONE]: target(["foot-enter"], 0), sign: target(["foot-enter"], 0) };
+    const reachable = targetsInReach({ targets, bands: new Map([[STONE, { min: 50, max: 70 }]]) }, null);
+    expect(reachable[STONE].rect).toEqual(EMPTY_MASK_RECT);
+    expect(reachable.sign).toBe(targets.sign);
+  });
+
+  it("takes a jump that stays in the band", () => {
+    const { events, monitor } = monitorWithEvents();
+    let timestamp = 1000;
+    for (const y of [9, 9, 9, 5, 5, 9, 9, 9]) {
+      // The position holds from take-off, so it stays in the band through the jump
+      const player = { ...frame([[1, 9]], { leftFoot: { x: 1, y } }, feetAt(y), 1), position: { x: 50, y: 60 } };
+      monitor.update(player, reachFrom(player.position, ["jump"]), (timestamp += 100));
+    }
+    expect(events).toEqual([{ key: STONE, interaction: "jump" }]);
   });
 });
