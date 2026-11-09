@@ -114,6 +114,63 @@ floor at the item's depth, and 0–100 from back to front, so every floor point 
 
 The demo's "Walk around" stage shows floor items, thickness, and an item following a player's position.
 
+#### Floor surfaces
+
+A 2.5D scene can also draw surfaces in the floor's perspective: a floor made of tiles, walls around it, and
+backgrounds behind them. The engine works out where each surface's four corners are on screen and draws the element's
+box onto them with a CSS `matrix3d`, so whatever the element holds (colour, images, text) is drawn in perspective.
+
+| Attribute or class                                       | Surface                                                                                                                                                                                             |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data-floor-area="left back right front"`                | That rectangle of the floor, laid flat. Use several to make a floor of tiles.                                                                                                                       |
+| `floor-background`                                       | The whole floor, laid flat, behind any floor areas.                                                                                                                                                 |
+| `rear-wall`, `left-wall`, `right-wall`, `front-wall`     | Upright along the whole of that edge of the floor. `data-floor-height` sets its height, in floor x units like a floor item's; it defaults to `100`, as high as the floor is wide.                   |
+| `rear-background`, `left-background`, `right-background` | A backdrop behind the wall on that side: upright, standing on the ground some way beyond the floor's edge, and stretched to reach the top and sides of the viewport. It fills any gaps in the wall. |
+| `ground-background`                                      | The ground: the floor's plane carried on beyond its edges, to the sides and bottom of the viewport and back to the horizon. For a picture that spans the whole screen, not just the floor.          |
+| `horizon-background`                                     | The furthest backdrop: upright, with its bottom edge on the horizon, filling up to the top of the viewport.                                                                                         |
+
+```html
+<div class="horizon-background" style="background: linear-gradient(#457b9d, #a8dadc)"></div>
+<div class="rear-background" style="background: url('{{resources.forest}}') bottom / 50% 60% repeat-x"></div>
+<div class="floor-background" style="background: url('{{resources.river}}') center / 100% 100%"></div>
+<div class="rear-wall" data-floor-height="10" style="background: url('{{resources.bank}}') center / 100% 100%"></div>
+<div id="stepping-stone" data-floor-area="40 40 60 60" style="background: grey; border-radius: 45%"></div>
+```
+
+- **All optional.** Use whichever surfaces the scene needs. Outdoors, leave out the rear background and let the
+  horizon show. Indoors, a full-height rear wall or background hides the horizon, as a real room's would.
+- **The box.** A surface fills its container by default, from the container's top left. Its box is stretched onto the
+  surface, so its size only sets how its content is stretched: set `background-size` in percentages, and expect a
+  picture to be squashed or stretched to the surface's shape on screen.
+- **Distance.** `data-wall-distance` sets how far beyond the floor's edge an upright surface stands, in floor units: y
+  units for the rear and front, x units for the sides. Walls default to `0`, on the edge. Backgrounds default to `50`.
+  Backgrounds stand on the ground at a distance, so they shrink and move with the calibration, as walls do.
+- **Painting order**, back to front: `horizon-background`, `ground-background`, the rear, left and right backgrounds,
+  `floor-background`, floor areas, then walls. Transparent parts of a surface show what's behind it, which for a
+  background is the ground running on to the horizon.
+- **Surfaces paint beneath the rest of their template.** A positioned wrapper around them is above them, and takes the
+  pointer first, so give it `pointer-events: none` if anything should react to the surfaces. Each template outside a
+  challenge's foreground is its own stacking context, so surfaces still paint above the scene's `backgroundStyle`.
+- **Walls among players.** In a challenge's foreground, the rear and side walls stand behind every player and the front
+  wall in front of them all. A front wall stands between the players and the camera and hides their legs, so it only
+  really works as a low fence. Floor areas and backgrounds there are behind the players too, and a background in the
+  foreground hides the challenge's background layer.
+- **Upright means upright on screen.** That assumes the camera isn't rolled; a rolled camera makes walls lean slightly.
+- **The horizon** is where the floor's side edges meet, and where its front and back edges meet: with the default
+  corners it is level, about 4% below the viewport's top. It slants if the calibration isn't symmetrical, and
+  `horizon-background` slants with it. A steeper camera, or a back edge dragged lower, can push it above the viewport,
+  and then `horizon-background` isn't drawn.
+- **Standing on a floor area.** Feet interactions with a floor area (camera players and mouse-feet) count only where
+  the area is drawn, as its box on screen is wider than the area. A floor area is hit-tested where it is drawn, so
+  mouse moves and clicks on it are too.
+- **Effects** that move or drop an item use the CSS `translate` property, which applies on top of a surface's
+  `matrix3d`, so a floor area falls down the screen as other items do.
+- **In a 2D scene** these attributes and classes do nothing, and validation warns of them.
+
+Nanny's Magic Trifle's stepping stones stand on a river with its far bank, a forest and the sky. The demo's "Walk
+around" stage has a tiled floor (one tile lights underfoot), low walls, hills and a horizon. Its lava and stone hop
+stages lay their pools and stones on the floor.
+
 **`avatar`** is what stands in for the player:
 
 | `mode`       | The player plays with                                                                                                                  |

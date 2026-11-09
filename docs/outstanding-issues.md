@@ -382,6 +382,24 @@ camera](testing/manual-testing.md#floor-placed-items-on-a-real-camera).
 **Act when:** before either 2.5D game is played with the camera. Run the checks on both, and tune `positionCellSize`,
 `positionUpdatesPerSecond` and `cameraDepthDeadband` if positions jitter or lag.
 
+## Floor surfaces aren't proven on a real camera
+
+The browser suite proves floor surfaces are drawn onto the floor and that a floor area only counts where it is drawn,
+with the default floor and the mouse. It can't show that they line up with a real, recalibrated floor, or that standing
+on a tile feels right. The checks are in [Floor surfaces, on a real
+camera](testing/manual-testing.md#floor-surfaces-on-a-real-camera).
+
+**Act when:** before either 2.5D game is played with the camera. Run the checks on both.
+
+## The ground stops a fixed distance short of the horizon
+
+`ground-background` runs back to a fixed 20,000 floor units behind the floor (`GROUND_CUTOFF` in `FloorSurfaces.ts`),
+so it stays in front of the camera, and `horizon-background` reaches 2% of the viewport below the horizon to cover the
+gap. On a steep camera the gap could be wider than the overlap and show as a thin line below the horizon.
+
+**Act when:** a line shows between the ground and the horizon on some calibration. Then work out the cut-off from how
+many pixels short of the horizon it lands, rather than a fixed distance.
+
 ## Floor items inside a transformed wrapper are misplaced
 
 Placement reads an item's layout position from `offsetLeft`/`offsetTop`, which ignore transforms, so a wrapper with its
@@ -392,8 +410,8 @@ example by placing it relative to its offset parent's on-screen box.
 
 ## Floor placement checks every item every frame
 
-`useFloorPlacement` visits every `[data-floor-y]` item on each animation frame in a 2.5D scene, reading its layout
-and writing only what changed. It is O(items), and the games have a handful.
+`useFloorPlacement` visits every `[data-floor-y]` item and floor surface on each animation frame in a 2.5D scene,
+reading its layout and writing only what changed. It is O(items), and the games have a few dozen at most.
 
 **Act when:** profiling shows placement taking more than about 1 ms a frame, or a scene has more than about 50 floor
 items. Then place on resize, scene change and template mutation instead.

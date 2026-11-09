@@ -201,8 +201,8 @@ const firesOnFeet = ({ interactions }: CameraRuleTarget): boolean =>
   interactions.some((interaction) => interaction.startsWith("foot") || interaction.startsWith("jump"));
 
 /**
- * While debugging a 2.5D scene, warns once of each target of a foot or jump rule that isn't floor-placed and that no
- * player can stand on, as the floor narrows to the back and its back corners may be out of reach.
+ * While debugging a 2.5D scene, warns once of each target of a foot or jump rule that isn't a floor item or floor area
+ * and that no player can stand on, as the floor narrows to the back and its back corners may be out of reach.
  */
 export function useUnreachableWarnings(
   viewportRef: RefObject<HTMLElement | null>,

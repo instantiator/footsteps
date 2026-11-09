@@ -157,7 +157,8 @@ keep their heads in view. Scenes laid out in `cqw` and `cqh` reflow to the new s
 
 The default floor on a 4:3 camera gives a view of about 1.24:1, a little squarer than the camera's. All the
 conversions between the camera picture, the screen and the floor (the floor's perspective transform, the crop, and
-screen-to-mask rectangles) are in `src/components/camera/FloorGeometry.ts`, and nothing else does this maths.
+screen-to-mask rectangles) are in `src/components/camera/FloorGeometry.ts`, and nothing else does this maths beyond
+`FloorSurfaces.ts`, which builds the floor surfaces on it.
 Interactions still map elements through the camera canvas's rectangle on screen, which the crop only moves and
 enlarges, so they work unchanged.
 
@@ -247,13 +248,21 @@ by its floor y, and each player by theirs. Items that aren't floor-placed stay i
 - **It assumes a camera looking down at a flat floor.** Someone whose legs are hidden will seem further away than they
   are.
 
+### Floor surfaces and the horizon
+
+A 2.5D scene can draw [floor surfaces](game-data.md#floor-surfaces) in the floor's perspective: tiles, walls,
+backgrounds, the ground and the horizon. Each is the floor's homography carried on past its edges (walls are raised
+from it by the same scaling as floor items), so they move with the calibration. The horizon is where the floor's
+parallel edges meet: the image of the floor's line at infinity. With the default corners it is level, about 4% below
+the viewport's top. `FloorSurfaces.ts` works out every surface's corners on screen.
+
 ### The back of the floor
 
 The floor narrows towards the back, so a scene's back corners may be out of reach. Floor-placed items avoid this, as
 every floor point is reachable. This was chosen over sliding players sideways by depth (people drift sideways when
 walking forwards, and it amplifies jitter), and over warping the camera image to a rectangle (it distorts bodies, and
 costs time every frame). Debug mode shades what is off the floor, and warns of any target of a foot or jump rule that
-isn't floor-placed and that no player can stand on.
+isn't floor-placed or a floor area, and that no player can stand on.
 
 The layers ignore the mouse (`pointer-events: none`), including the silhouette, so clicks reach the
 game's elements underneath. Each element's `id` says what a click or camera interaction does.
@@ -408,6 +417,7 @@ toggling it.
 | `src/components/camera/PlayerPosition.ts`             | each player's ground point, held through jumps, and their position on the floor or in the scene                    |
 | `src/components/camera/PositionPublisher.ts`          | players' positions for rules and templates: quantised, with hysteresis, rate-limited                               |
 | `src/components/core/layout/FloorPlacement.ts`        | placing, scaling and sorting floor items; the debug warning for targets off the floor                              |
+| `src/components/core/layout/FloorSurfacePlacement.ts` | drawing floor surfaces onto the screen with a `matrix3d`, and their painting order                                 |
 | `src/components/camera/CharacterCanvas.tsx`           | tracking loop; draws the silhouettes; reports players and feet; the stats readout                                  |
 | `src/components/camera/DrawPeople.ts`                 | cuts the people out of the video, and tints them for debugging                                                     |
 | `src/components/camera/DrawPlayers.ts`                | draws each player on their canvas, frozen or with static, sorted to their floor depth                              |
@@ -415,6 +425,7 @@ toggling it.
 | `src/components/camera/JumpDetector.ts`               | follows a player's feet for jumps                                                                                  |
 | `src/components/camera/CameraSupport.ts`              | camera request and feet position                                                                                   |
 | `src/components/camera/FloorGeometry.ts`              | every conversion between the camera picture, the screen and the floor; the crop                                    |
+| `src/components/camera/FloorSurfaces.ts`              | where floor tiles, walls, backgrounds, the ground and the horizon appear on screen                                 |
 | `src/components/camera/FloorCalibration.ts`           | each camera's saved floor                                                                                          |
 | `src/components/camera/FloorOverlay.tsx`              | the floor outline and body-part markers, for calibration and debugging                                             |
 | `src/components/landing/CalibrationView.tsx`          | the calibration page                                                                                               |
