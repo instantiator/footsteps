@@ -3,6 +3,7 @@ import type { GameData } from "../src/entities/data/GameData";
 import type { GameSceneBase } from "../src/entities/data/scenes/GameSceneData";
 import type { GameSceneTemplateSourceData } from "../src/entities/data/scenes/GameSceneTemplateComponentData";
 import type { GameRepository } from "../src/entities/GameRepository";
+import { FLOOR_AREA_ATTRIBUTE, SURFACE_CLASSES } from "../src/components/core/layout/FloorSurfaceClasses.ts";
 
 /** True unless the value is undefined or null. */
 const isDefined = <T>(value: T | undefined | null): value is T => value !== undefined && value !== null;
@@ -154,15 +155,25 @@ function eachScene(game: GameData, visit: (scene: VisitedScene, path: string, ca
   });
 }
 
-/** What a template's text gets wrong: `data-depth`, which has gone, and floor items where they do nothing. */
+/** A class attribute naming a floor surface as a whole class name. */
+const SURFACE_CLASS = new RegExp(`class\\s*=\\s*["'][^"']*(?<![\\w-])(${SURFACE_CLASSES.join("|")})(?![\\w-])`);
+
+/** What does nothing outside a 2.5D scene: floor items, and floor surfaces. */
+const floorOnlyWarnings = (text: string, path: string) => [
+  ...(/\bdata-floor-(?!area)/.test(text)
+    ? [{ path, message: "data-floor-* does nothing here, as this scene never shows in 2.5D" }]
+    : []),
+  ...(SURFACE_CLASS.test(text) || text.includes(FLOOR_AREA_ATTRIBUTE) || /\bdata-wall-distance\b/.test(text)
+    ? [{ path, message: "floor surfaces do nothing here, as this scene never shows in 2.5D" }]
+    : []),
+];
+
+/** What a template's text gets wrong: `data-depth`, which has gone, and floor items and surfaces where they do nothing. */
 const templateProblems = (text: string, { path, can25D }: TemplateReference) => ({
   problems: /\bdata-depth\b/.test(text)
     ? [{ path, message: "data-depth is no longer supported; give the item data-floor-y (see game-data.md)" }]
     : [],
-  warnings:
-    !can25D && /\bdata-floor-/.test(text)
-      ? [{ path, message: "data-floor-* does nothing here, as this scene never shows in 2.5D" }]
-      : [],
+  warnings: can25D ? [] : floorOnlyWarnings(text, path),
 });
 
 /** What a template refers to: its file or URL, the text to check, or what is wrong with it. */

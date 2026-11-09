@@ -6,8 +6,8 @@ import { sceneRoots } from "../logic/TemplateUtils";
 import type { CameraRuleTarget } from "./PlayerInteractionHook";
 import { DEPTH_STACK_CLASS, depthZIndex } from "../../camera/PlayerPosition";
 import type { Point } from "../../../vision/VisionTypes";
+import { FLOOR_AREA_ATTRIBUTE } from "./FloorSurfaceClasses";
 import {
-  FLOOR_AREA_ATTRIBUTE,
   numberOf,
   parseFloorArea,
   placeSurface,

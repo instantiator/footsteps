@@ -3,7 +3,7 @@ import type { SceneScope } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
 import type { CameraInteraction } from "../../camera/PlayerMonitor";
 import { MOUSE_FEET_INTERACTIONS } from "../logic/AvatarModeUtils";
-import { FLOOR_AREA_ATTRIBUTE } from "./FloorSurfacePlacement";
+import { FLOOR_AREA_ATTRIBUTE } from "./FloorSurfaceClasses";
 import { sceneRoots } from "../logic/TemplateUtils";
 import { elementKey, type CameraRuleEvent, type CameraRuleTarget } from "./PlayerInteractionHook";
 

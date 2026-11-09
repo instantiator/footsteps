@@ -9,9 +9,9 @@ import {
   parseFloorArea,
   parseSurface,
   placeSurface,
-  SURFACE_CLASSES,
   surfaceZIndex,
 } from "../src/components/core/layout/FloorSurfacePlacement";
+import { SURFACE_CLASSES } from "../src/components/core/layout/FloorSurfaceClasses";
 
 const VIEW: FloorView = {
   corners: DEFAULT_CORNERS,

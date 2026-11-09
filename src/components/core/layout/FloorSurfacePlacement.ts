@@ -12,26 +12,10 @@ import {
   type Quad,
 } from "../../camera/FloorSurfaces";
 import { DEPTH_STACK_CLASS, depthZIndex } from "../../camera/PlayerPosition";
-
-/** The surface classes, in the order they paint, back to front, with floor areas between the floor and the walls. */
-export const SURFACE_CLASSES = [
-  "horizon-background",
-  "ground-background",
-  "rear-background",
-  "left-background",
-  "right-background",
-  "floor-background",
-  "rear-wall",
-  "left-wall",
-  "right-wall",
-  "front-wall",
-] as const;
+import { FLOOR_AREA_ATTRIBUTE, SURFACE_CLASSES } from "./FloorSurfaceClasses";
 
 /** A kind of floor surface: one of the classes, or a floor area. */
 export type SurfaceKind = (typeof SURFACE_CLASSES)[number] | "floor-area";
-
-/** The attribute that lays an element on a rectangle of the floor. */
-export const FLOOR_AREA_ATTRIBUTE = "data-floor-area";
 
 /** The selector for every floor surface. */
 export const SURFACE_SELECTOR = [`[${FLOOR_AREA_ATTRIBUTE}]`, ...SURFACE_CLASSES.map((name) => `.${name}`)].join(", ");
