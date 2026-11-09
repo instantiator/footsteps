@@ -14,6 +14,7 @@ const player = (keyPoints: Partial<KeyPoints>, held = false): PlayerFrame => ({
   width: 100,
   height: 100,
   feet: null,
+  position: null,
   ...(held && { held: { opacity: 0.5 } }),
 });
 

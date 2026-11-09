@@ -140,6 +140,7 @@ export const CharacterCanvasLayerWrapper = ({
   onPlayersChange,
   mirror,
   debug,
+  corners,
   crop,
 }: LayerNodeProps) => {
   const { showFps } = useAppConfig();
@@ -159,6 +160,8 @@ export const CharacterCanvasLayerWrapper = ({
         canvasRef={canvasRef}
         maskType={debug ? "colored" : "binary"}
         showStats={debug || showFps}
+        floor={corners}
+        mirrored={mirror}
       />
     </div>
   );

@@ -23,7 +23,7 @@ import {
   type Corners,
   type CropPlacement,
 } from "../../camera/FloorGeometry";
-import { DEPTH_STACK_CLASS, UNSORTED_PLAYER_Z_INDEX } from "../../camera/PlayerDepth";
+import { DEPTH_STACK_CLASS, UNSORTED_PLAYER_Z_INDEX } from "../../camera/PlayerPosition";
 import type { PlayerFrame } from "../../camera/PlayerMonitor";
 import { cameraModeOf, type ResolvedAvatarMode, type ResolvedCameraMode } from "../logic/AvatarModeUtils";
 import "./GameLayersLayout.css";
@@ -213,6 +213,7 @@ function DepthStack({
           onPlayersChange={handlePlayers}
           mirror={mirror}
           debug={debug}
+          corners={floor?.corners}
           crop={floor?.crop}
         />
       )}

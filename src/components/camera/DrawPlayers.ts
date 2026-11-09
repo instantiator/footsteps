@@ -2,7 +2,7 @@ import { isDefined } from "../../util/ObjectUtils";
 import type { VisionFrame } from "../../vision/VisionTypes";
 import { drawPeople, drawStatic, type DrawStyle } from "./DrawPeople";
 import type { PlayerCanvas, PlayerCanvases } from "./PlayerCanvases";
-import { depthZIndex, drawDepthLine, type PlayerDepths } from "./PlayerDepth";
+import { depthZIndex, drawDepthLine, type PlayerPosition } from "./PlayerPosition";
 import type { PlayerFrames, PlayerRegistry } from "./PlayerRegistry";
 import type { StaticLook } from "./PlayerStatic";
 
@@ -54,20 +54,35 @@ const drawPlayerImage = (
   drawStatic(ctx, look);
 };
 
-/** Draws each player on their own canvas, sorted to their depth, with a line showing it when debugging. */
+/** Where the players are, and whether they sort among the foreground by their floor depth. */
+interface DrawnPositions {
+  /** Each player's position, by id. */
+  positions: Map<number, PlayerPosition>;
+  /** Whether players sort among the foreground, as they do on a floor. */
+  sorted: boolean;
+}
+
+/** Sorts a player to their floor depth. Unsorted, they keep the reference's z-index, as their wrapper was made with. */
+const sortPlayer = (wrapper: HTMLElement, where: PlayerPosition | undefined) => {
+  if (where) wrapper.style.zIndex = String(depthZIndex(where.position.y));
+};
+
+/**
+ * Draws each player on their own canvas. On a floor, each is sorted to their depth. When debugging, a line shows the
+ * height of the ground point their position comes from.
+ */
 export const drawPlayers = (
   video: HTMLVideoElement,
   { drawn: frame, frozenIds, knownIds }: PlayerFrames,
-  { canvases, depths, players }: { canvases: PlayerCanvases; depths: PlayerDepths; players: PlayerRegistry },
+  { canvases, positions, sorted, players }: DrawnPositions & { canvases: PlayerCanvases; players: PlayerRegistry },
   style: DrawStyle,
 ) => {
   const debugging = style.maskType !== "binary";
-  const playerDepths = depths.update(frame, debugging);
   const drawOne = (player: PlayerCanvas, playerFrame: VisionFrame) => {
     const { wrapper, canvas } = player;
     const id = playerFrame.people[0]?.id;
-    const playerDepth = playerDepths.get(id);
-    if (playerDepth !== undefined) wrapper.style.zIndex = String(depthZIndex(playerDepth));
+    const where = positions.get(id);
+    if (sorted) sortPlayer(wrapper, where);
     if (id !== undefined) namePlayer(wrapper, players.numberOf(id));
     // The 2D context is missing in some environments (eg. tests); the reports above still happen
     const ctx = canvas.getContext("2d");
@@ -75,7 +90,7 @@ export const drawPlayers = (
     const look = id === undefined ? undefined : players.staticOf(id)?.lookAt(performance.now());
     const frozen = frozenIds.has(id);
     drawPlayerImage(player, ctx, { look, frozen, draw: (onto) => drawPeople(video, playerFrame, onto, style) });
-    if (!frozen && debugging && playerDepth !== undefined) drawDepthLine(ctx, playerDepth);
+    if (!frozen && debugging && where) drawDepthLine(ctx, where.ground.y);
   };
   canvases.draw(frame, drawOne, knownIds);
 };

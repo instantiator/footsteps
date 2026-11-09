@@ -1,10 +1,12 @@
 import { useContext, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { DEFAULT_APP_CONFIG, type AppConfig } from "../../config/AppConfig";
 import useAppConfig from "../../providers/AppConfigHook";
+import { isDefined } from "../../util/ObjectUtils";
 import { createVisionModel } from "../../vision/createVisionModel";
 import type { FootstepsVisionModelImplementation } from "../../vision/FootstepsVisionModelImplementation";
 import { PersonTracker, type HoldTimes } from "../../vision/Tracking";
 import type { VisionFrame } from "../../vision/VisionTypes";
+import type { Corners } from "./FloorGeometry";
 import { feetOf } from "./CameraSupport";
 import type { MaskType } from "./DrawPeople";
 import { drawPlayers } from "./DrawPlayers";
@@ -12,7 +14,7 @@ import { frameQuality, FrameStatsRecorder, type FrameStats, type FrameSteps } fr
 import { PlayerCanvases } from "./PlayerCanvases";
 import type { PlayerRegistry } from "./PlayerRegistry";
 import { PlayerRegistryContext } from "../../providers/PlayerRegistryContext";
-import { PlayerDepths, type DepthSettings } from "./PlayerDepth";
+import { PlayerPositions, positionMapping, type PlayerPosition, type PositionSettings } from "./PlayerPosition";
 import type { PlayerFrame } from "./PlayerMonitor";
 
 /** Props for {@link CharacterCanvas}. */
@@ -37,6 +39,10 @@ interface CharacterCanvasProps {
   maskType?: MaskType;
   /** Shows the loop's frame rate and the time each step takes, which benchmarks also read from its data attributes. */
   showStats?: boolean;
+  /** The floor players stand on in a 2.5D scene; none in a 2D one. Changing it doesn't restart tracking. */
+  floor?: Corners;
+  /** Whether the canvas is shown flipped like a mirror, so positions run from the screen's left. */
+  mirrored?: boolean;
 }
 
 /** How often the stats readout updates, in milliseconds; every frame would re-render too often. */
@@ -70,13 +76,18 @@ const useVisionModel = (
   return model;
 };
 
-/** Each person in the frame, with their feet, for the interaction monitors. */
-const playersOf = ({ width, height, people }: VisionFrame, offScreenThreshold_percent?: number): PlayerFrame[] =>
+/** Each person in the frame, with their feet and position, for the interaction monitors. */
+const playersOf = (
+  { width, height, people }: VisionFrame,
+  positions: Map<number, PlayerPosition>,
+  offScreenThreshold_percent?: number,
+): PlayerFrame[] =>
   people.map((person) => ({
     ...person,
     width,
     height,
     feet: feetOf(person, width, height, offScreenThreshold_percent),
+    position: positions.get(person.id)?.position ?? null,
   }));
 
 /**
@@ -122,7 +133,17 @@ type LoopHandlers = Pick<CharacterCanvasProps, "offScreenThreshold_percent" | "o
   settings: LoopSettings;
   /** Called at most every {@link STATS_INTERVAL_MS} with the loop's speed; omitted when nobody is looking. */
   onStats?: (stats: FrameStats) => void;
+  /** The floor players stand on now, read each frame as scenes change. */
+  floor: RefObject<PlayersFloor>;
 };
+
+/** How players' ground points become positions, and whether they are sorted among the foreground by them. */
+interface PlayersFloor {
+  /** How a ground point becomes a position. */
+  toPosition: ReturnType<typeof positionMapping>;
+  /** Whether players sort among the foreground by depth, which they do on a floor. */
+  sorted: boolean;
+}
 
 /** The app config settings the tracking loop uses. */
 interface LoopSettings {
@@ -136,8 +157,8 @@ interface LoopSettings {
   inputWidth: number;
   /** How far the silhouette's edges fade out, in canvas pixels. */
   featherPx: number;
-  /** How a player's depth follows them. */
-  depth: DepthSettings;
+  /** How a player's position follows them. */
+  position: PositionSettings;
 }
 
 /** The loop's settings from the app config, the same object until one of them changes. */
@@ -151,7 +172,7 @@ const useLoopSettings = (config: AppConfig): LoopSettings => {
       fillGaps: cameraFillGaps,
       inputWidth: visionInputWidth,
       featherPx: cameraFeatherPx,
-      depth: { windowMs: cameraDepthWindowMs, deadband: cameraDepthDeadband },
+      position: { windowMs: cameraDepthWindowMs, deadband: cameraDepthDeadband },
     }),
     [
       visionSmoothing,
@@ -320,8 +341,9 @@ const startTrackingLoop = (
     offScreenThreshold_percent,
     onPlayersChange,
     maskType,
-    settings: { smoothing, hold, fillGaps, inputWidth, featherPx, depth },
+    settings: { smoothing, hold, fillGaps, inputWidth, featherPx, position },
     onStats,
+    floor,
   }: LoopHandlers,
 ): (() => void) => {
   const detections = videoDetections(model, video, inputWidth);
@@ -329,17 +351,19 @@ const startTrackingLoop = (
   reference.height = video.videoHeight;
   canvases.resize();
   registry.resetTracking(video.videoWidth);
-  const depths = new PlayerDepths(reference, depth);
+  const positions = new PlayerPositions(position);
   const reportStats = statsReporter(onStats);
   const tracker = smoothing ? new PersonTracker(hold, fillGaps) : null;
 
   const reportAndDraw = (timestamp: number, detected: VisionFrame, inferenceEnd: number) => {
     const frames = registry.update(tracker ? tracker.update(detected) : detected);
-    const players = playersOf(frames.interactive, offScreenThreshold_percent);
+    const { toPosition, sorted } = floor.current;
+    const where = positions.update(frames.drawn, toPosition);
+    const players = playersOf(frames.interactive, where, offScreenThreshold_percent);
     const trackEnd = performance.now();
     onPlayersChange?.(players, timestamp);
     const monitorEnd = performance.now();
-    drawPlayers(video, frames, { canvases, depths, players: registry }, { maskType, featherPx });
+    drawPlayers(video, frames, { canvases, positions: where, sorted, players: registry }, { maskType, featherPx });
     reportStats(detected, timestamp, inferenceEnd, {
       trackMs: trackEnd - inferenceEnd,
       monitorMs: monitorEnd - trackEnd,
@@ -352,7 +376,6 @@ const startTrackingLoop = (
     stopDetecting();
     registry.resetTracking(reference.width);
     canvases.removeAllBut(registry.knownIds());
-    depths.clearItems();
   };
 };
 
@@ -387,6 +410,8 @@ export default function CharacterCanvas({
   style,
   maskType = "binary",
   showStats = false,
+  floor,
+  mirrored = false,
   ...loopProps
 }: CharacterCanvasProps) {
   const config = useAppConfig();
@@ -398,6 +423,14 @@ export default function CharacterCanvas({
   const canvasesRef = useRef<PlayerCanvases | null>(null);
   const players = useContext(PlayerRegistryContext);
   const { video, mediaStream, offScreenThreshold_percent, onPlayersChange } = loopProps;
+  const playersFloor = useMemo(
+    (): PlayersFloor => ({ toPosition: positionMapping(floor, mirrored), sorted: isDefined(floor) }),
+    [floor, mirrored],
+  );
+  const floorRef = useRef(playersFloor);
+  useEffect(() => {
+    floorRef.current = playersFloor;
+  }, [playersFloor]);
 
   // The stream belongs to CharacterCamera, which stops its tracks; this effect only stops its own loop
   useEffect(() => {
@@ -410,6 +443,7 @@ export default function CharacterCanvas({
       maskType,
       settings,
       onStats,
+      floor: floorRef,
     };
     const canvases = (canvasesRef.current ??= new PlayerCanvases(canvasElement));
     return startTrackingLoop(model, video, { reference: canvasElement, canvases, players }, handlers);

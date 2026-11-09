@@ -33,7 +33,16 @@ const frame = (
 ): PlayerFrame => {
   const mask = new Uint8Array(WIDTH * HEIGHT);
   for (const [x, y] of pixels) mask[y * WIDTH + x] = 1;
-  return { id: 1, mask, keyPoints: { ...noKeyPoints(), ...keyPoints }, scale, width: WIDTH, height: HEIGHT, feet };
+  return {
+    id: 1,
+    mask,
+    keyPoints: { ...noKeyPoints(), ...keyPoints },
+    scale,
+    width: WIDTH,
+    height: HEIGHT,
+    feet,
+    position: null,
+  };
 };
 
 /** A frame whose silhouette is the given pixels, all of them the given part. */

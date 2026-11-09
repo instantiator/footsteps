@@ -41,6 +41,7 @@ const personWithFeetAt = (id: number, x: number, y: number): PlayerFrame => ({
   width: 100,
   height: 100,
   feet: null,
+  position: null,
 });
 
 const renderView = () =>

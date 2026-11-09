@@ -92,7 +92,16 @@ const playerWithHandAt = (x: number, y: number): PlayerFrame => {
   const height = 8;
   const mask = new Uint8Array(width * height);
   mask[y * width + x] = 1;
-  return { id: 0, mask, keyPoints: { ...noKeyPoints(), leftHand: { x, y } }, scale: 0, width, height, feet: null };
+  return {
+    id: 0,
+    mask,
+    keyPoints: { ...noKeyPoints(), leftHand: { x, y } },
+    scale: 0,
+    width,
+    height,
+    feet: null,
+    position: null,
+  };
 };
 
 /** A camera rule watching the overview's element for hands, ignoring covering (jsdom can't hit-test). */
