@@ -39,7 +39,7 @@ import {
 } from "./GameLayerWrappers";
 import { usePlayerInteractions, type CameraRuleEvent, type CameraRuleTarget } from "./PlayerInteractionHook";
 import { useMouseFeet } from "./MouseFeetHook";
-import { useFloorPlacement } from "./FloorPlacement";
+import { useFloorPlacement, useUnreachableWarnings } from "./FloorPlacement";
 import { usePositionVariables, type PublishedPositions } from "../../camera/PositionPublisher";
 import { PlayerRegistryContext } from "../../../providers/PlayerRegistryContext";
 import type { PlayerRegistry } from "../../camera/PlayerRegistry";
@@ -346,7 +346,7 @@ interface PlayerInputProps extends Pick<SceneProps, "scene" | "mirror" | "floor"
 
 /**
  * Turns what players do into interactions, and where they are into positions for rules and templates: the camera's
- * players, or the mouse as player 1's feet.
+ * players, or the mouse as player 1's feet. While debugging, it also warns of targets no player can stand on.
  * @returns the character canvas's ref, the frame handler to give it, and the players for the debug overlay
  */
 function usePlayerInput(viewportRef: RefObject<HTMLElement | null>, props: PlayerInputProps) {
@@ -367,6 +367,7 @@ function usePlayerInput(viewportRef: RefObject<HTMLElement | null>, props: Playe
   // Whoever stood somewhere before has gone when the way players are followed changes
   const { clear } = positions;
   useEffect(() => clear(), [mouseFeet, scene.camera.enabled, clear]);
+  useUnreachableWarnings(viewportRef, { view: floor, rules: rules.cameraRules, debug: debug === true });
   return { canvasRef, debugPlayers, onPlayers };
 }
 

@@ -1,6 +1,8 @@
 import { useEffect, type RefObject } from "react";
 import { isDefined } from "../../../util/ObjectUtils";
-import { placeOnFloor, type FloorView } from "../../camera/FloorGeometry";
+import { placeOnFloor, viewportToFloor, type FloorView, type Rect } from "../../camera/FloorGeometry";
+import { sceneRoots } from "../logic/TemplateUtils";
+import type { CameraRuleTarget } from "./PlayerInteractionHook";
 import { DEPTH_STACK_CLASS, depthZIndex } from "../../camera/PlayerPosition";
 import type { Point } from "../../../vision/VisionTypes";
 
@@ -145,4 +147,66 @@ export function useFloorPlacement(viewportRef: RefObject<HTMLElement | null>, vi
       for (const element of placed) PLACEMENT_PROPERTIES.forEach((property) => element.style.removeProperty(property));
     };
   }, [viewportRef, view]);
+}
+
+/** Whether a floor point is on the floor. */
+const onFloor = ({ x, y }: Point): boolean => x >= 0 && x <= 100 && y >= 0 && y <= 100;
+
+/**
+ * Whether no player could stand on any part of a rectangle: none of its corners or its centre is on the floor.
+ * `ponytail:` five points, so a thin rectangle crossing a corner of the floor could be missed; it is a debug hint.
+ * @param rect in viewport fractions
+ * @param toFloor converts a viewport point to floor coordinates
+ */
+export const isUnreachable = ({ left, top, right, bottom }: Rect, toFloor: (point: Point) => Point): boolean =>
+  ![
+    { x: left, y: top },
+    { x: right, y: top },
+    { x: right, y: bottom },
+    { x: left, y: bottom },
+    { x: (left + right) / 2, y: (top + bottom) / 2 },
+  ].some((point) => onFloor(toFloor(point)));
+
+/** How often the debug view looks for targets no player can stand on, in milliseconds. */
+const UNREACHABLE_CHECK_MS = 2000;
+
+/** Whether a rule fires on where a player stands, so that its targets must be on the floor. */
+const firesOnFeet = ({ interactions }: CameraRuleTarget): boolean =>
+  interactions.some((interaction) => interaction.startsWith("foot") || interaction.startsWith("jump"));
+
+/**
+ * While debugging a 2.5D scene, warns once of each target of a foot or jump rule that isn't floor-placed and that no
+ * player can stand on, as the floor narrows to the back and its back corners may be out of reach.
+ */
+export function useUnreachableWarnings(
+  viewportRef: RefObject<HTMLElement | null>,
+  { view, rules, debug }: { view: FloorView | undefined; rules: CameraRuleTarget[] | undefined; debug: boolean },
+): void {
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport || !view || !debug) return;
+    const warned = new WeakSet<Element>();
+    const check = () => {
+      const box = viewport.getBoundingClientRect();
+      const toFloor = (point: Point) => viewportToFloor(view, point);
+      for (const rule of (rules ?? []).filter(firesOnFeet)) {
+        const { scope, ruleIndex, selector } = rule;
+        if (selector === undefined) continue;
+        for (const element of sceneRoots(scope).flatMap((root) => Array.from(root.querySelectorAll(selector)))) {
+          if (warned.has(element) || element.closest(FLOOR_ITEM_SELECTOR)) continue;
+          const { left, top, right, bottom } = element.getBoundingClientRect();
+          const fraction = (x: number, y: number) => ({ x: (x - box.left) / box.width, y: (y - box.top) / box.height });
+          const [from, to] = [fraction(left, top), fraction(right, bottom)];
+          if (!isUnreachable({ left: from.x, top: from.y, right: to.x, bottom: to.y }, toFloor)) continue;
+          warned.add(element);
+          console.warn(
+            `${scope} › rules[${ruleIndex}].on.target: "${selector}" sits where no player can stand; give it data-floor-y`,
+          );
+        }
+      }
+    };
+    check();
+    const timer = setInterval(check, UNREACHABLE_CHECK_MS);
+    return () => clearInterval(timer);
+  }, [viewportRef, view, rules, debug]);
 }

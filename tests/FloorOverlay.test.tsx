@@ -27,6 +27,16 @@ describe("FloorOverlay", () => {
     expect(container.querySelector("polygon")?.getAttribute("points")).toBe("0.25,0.55 0.75,0.55 0.92,0.9 0.08,0.9");
   });
 
+  it("shades everything off the floor only when asked", () => {
+    const shaded = render(<FloorOverlay corners={DEFAULT_CORNERS} shadeOffFloor />);
+    const path = shaded.container.querySelector("path.floorOffFloor");
+    expect(path?.getAttribute("d")).toBe("M0,0 H1 V1 H0 Z M0.25,0.55 L0.75,0.55 L0.92,0.9 L0.08,0.9 Z");
+    expect(path?.getAttribute("fill-rule")).toBe("evenodd");
+    shaded.unmount();
+
+    expect(render(<FloorOverlay corners={DEFAULT_CORNERS} />).container.querySelector("path")).toBeNull();
+  });
+
   it("shows a foot on the floor green and one off it red, placed in fractions of the image", () => {
     const { container } = render(<FloorOverlay corners={DEFAULT_CORNERS} players={[STRADDLING]} />);
     const [on, off] = Array.from(container.querySelectorAll<HTMLElement>(".floorMarker"));

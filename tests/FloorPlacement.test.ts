@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { floorBandOf, parseFloorItem } from "../src/components/core/layout/FloorPlacement";
+import { cropPlacement, DEFAULT_CORNERS, floorCrop, viewportToFloor } from "../src/components/camera/FloorGeometry";
+import { floorBandOf, isUnreachable, parseFloorItem } from "../src/components/core/layout/FloorPlacement";
+import type { Point } from "../src/vision/VisionTypes";
 
 /** An element with the given attributes. */
 const element = (attributes: Record<string, string>): Element => {
@@ -60,5 +62,19 @@ describe("floorBandOf", () => {
   it("is nothing for an item with no thickness, or anything off the floor", () => {
     expect(floorBandOf(element({ "data-floor-y": "60" }))).toBeUndefined();
     expect(floorBandOf(element({ "data-floor-thickness": "20" }))).toBeUndefined();
+  });
+});
+
+describe("isUnreachable", () => {
+  const view = { corners: DEFAULT_CORNERS, crop: cropPlacement(floorCrop(DEFAULT_CORNERS), false), mirrored: false };
+  const toFloor = (point: Point) => viewportToFloor(view, point);
+
+  it("is true for a rectangle in a back corner, beside the narrowing floor", () => {
+    expect(isUnreachable({ left: 0, top: 0.62, right: 0.1, bottom: 0.7 }, toFloor)).toBe(true);
+  });
+
+  it("is false for a rectangle on the floor, or straddling its edge", () => {
+    expect(isUnreachable({ left: 0.4, top: 0.8, right: 0.6, bottom: 0.9 }, toFloor)).toBe(false);
+    expect(isUnreachable({ left: 0, top: 0.62, right: 0.3, bottom: 0.7 }, toFloor)).toBe(false);
   });
 });

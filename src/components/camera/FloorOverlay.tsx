@@ -13,6 +13,8 @@ interface FloorOverlayProps {
   players?: PlayerFrame[];
   /** Whether each foot shows green on the floor and red off it; otherwise they are neutral. Defaults to true. */
   checkFeet?: boolean;
+  /** Whether to shade everything off the floor, where no player can stand. */
+  shadeOffFloor?: boolean;
   /** Placed over the image box too, such as the calibration view's corner handles. */
   children?: ReactNode;
   className?: string;
@@ -59,6 +61,10 @@ const markersOf = (player: PlayerFrame, corners: Corners | undefined, checkFeet:
   );
 };
 
+/** The whole image with the floor cut out of it, as an SVG path in image fractions. */
+const offFloorPath = (corners: Corners): string =>
+  `M0,0 H1 V1 H0 Z M${CORNER_NAMES.map((name) => `${corners[name].x},${corners[name].y}`).join(" L")} Z`;
+
 /**
  * Outlines the floor over a camera image, and marks each person's head, hands and feet, with each foot green on the
  * floor and red off it. It must be laid exactly over the image's box, with the image's mirroring, so it draws in image
@@ -68,6 +74,7 @@ export default function FloorOverlay({
   corners,
   players = [],
   checkFeet = true,
+  shadeOffFloor = false,
   children,
   className,
   style,
@@ -76,6 +83,7 @@ export default function FloorOverlay({
     <div className={`floorOverlay ${className ?? ""}`} style={style} data-testid="floor-overlay">
       {corners && (
         <svg viewBox="0 0 1 1" preserveAspectRatio="none" aria-hidden="true">
+          {shadeOffFloor && <path className="floorOffFloor" fillRule="evenodd" d={offFloorPath(corners)} />}
           <polygon points={CORNER_NAMES.map((name) => `${corners[name].x},${corners[name].y}`).join(" ")} />
         </svg>
       )}
