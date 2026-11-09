@@ -21,7 +21,7 @@ import {
   DEFAULT_CORNERS,
   floorCrop,
   type Corners,
-  type CropPlacement,
+  type FloorView,
 } from "../../camera/FloorGeometry";
 import { DEPTH_STACK_CLASS, UNSORTED_PLAYER_Z_INDEX } from "../../camera/PlayerPosition";
 import type { PlayerFrame } from "../../camera/PlayerMonitor";
@@ -36,6 +36,7 @@ import {
 } from "./GameLayerWrappers";
 import { usePlayerInteractions, type CameraRuleEvent, type CameraRuleTarget } from "./PlayerInteractionHook";
 import { useMouseFeet } from "./MouseFeetHook";
+import { useFloorPlacement } from "./FloorPlacement";
 import useSceneTransition, { type SceneTransition, type ViewportTarget } from "./useSceneTransition";
 
 /** Props for {@link GameLayersLayout}. */
@@ -170,24 +171,18 @@ interface SceneProps {
   /** Receives the video's shape from the camera. */
   setAspectRatio: Dispatch<SetStateAction<number | undefined>>;
   /** The floor a 2.5D scene is fitted to; undefined in a 2D scene. */
-  floor: ShownFloor | undefined;
+  floor: FloorView | undefined;
 }
 
-/** The floor a 2.5D scene shows, and where the camera image sits so that the floor's crop of it fills the viewport. */
-interface ShownFloor {
-  corners: Corners;
-  crop: CropPlacement;
-}
-
-/** The shown scene's floor: the calibrated one with a camera, else the default one. */
-const shownFloorOf = (
-  scene: SceneTransition<GameLayers>,
-  calibrated: Corners,
-  mirror: boolean,
-): ShownFloor | undefined => {
-  if (scene.sceneMode !== "2.5D") return undefined;
+/** The shown scene's floor: the calibrated one with a camera, else the default one; none in a 2D scene. */
+const useShownFloor = (scene: SceneTransition<GameLayers>, calibrated: Corners, mirror: boolean) => {
+  const is25D = scene.sceneMode === "2.5D";
   const corners = scene.camera.enabled ? calibrated : DEFAULT_CORNERS;
-  return { corners, crop: cropPlacement(floorCrop(corners), mirror) };
+  return useMemo(
+    (): FloorView | undefined =>
+      is25D ? { corners, crop: cropPlacement(floorCrop(corners), mirror), mirrored: mirror } : undefined,
+    [is25D, corners, mirror],
+  );
 };
 
 /** The players and the challenge foreground, in one stacking context so they can be sorted among each other by depth. */
@@ -371,6 +366,8 @@ export default function GameLayersLayout({
   );
   const { debugPlayers, onPlayers } = useDebugPlayers(handlePlayers, aids.debug);
   useMouseFeet(viewportRef, cameraRules, onPlayerInteraction, { enabled: mouseFeet, paused: scene.transitioning });
+  const floor = useShownFloor(scene, corners, mirror);
+  useFloorPlacement(viewportRef, floor);
 
   return (
     <div
@@ -390,7 +387,7 @@ export default function GameLayersLayout({
         canvasRef={canvasRef}
         handlePlayers={onPlayers}
         setAspectRatio={setCameraAspectRatio}
-        floor={shownFloorOf(scene, corners, mirror)}
+        floor={floor}
       />
       <HudLayerWrapper zIndex={10} {...aids} />
     </div>

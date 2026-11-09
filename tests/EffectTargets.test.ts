@@ -6,7 +6,7 @@ import {
   sceneDistance,
   sceneRect,
   resolveTargets,
-  warnIfTrappingDepth,
+  warnIfTrappingFloorItems,
 } from "../src/components/core/effects/EffectTargets";
 
 const A = "challenge:s:a:challenge-in-progress";
@@ -64,8 +64,8 @@ describe("resolveTargets", () => {
     expect(ids(resolveTargets(A, undefined, [B]))).toEqual(["door", "P"]);
   });
 
-  it("gives the children of a wrapper holding depth items, recursively, so they can still sort", () => {
-    page('<div id="wrapper"><div id="inner"><div id="post" data-depth="40"></div><p id="sign"></p></div></div>');
+  it("gives the children of a wrapper holding floor items, recursively, so they can still sort", () => {
+    page('<div id="wrapper"><div id="inner"><div id="post" data-floor-y="40"></div><p id="sign"></p></div></div>');
     expect(ids(resolveTargets(A, undefined, [B]))).toEqual(["post", "sign"]);
   });
 
@@ -83,16 +83,16 @@ describe("resolveTargets", () => {
   });
 });
 
-describe("warnIfTrappingDepth", () => {
-  it("warns about a chosen wrapper holding depth items, and not about anything else", () => {
-    page('<div id="wrapper"><div data-depth="40"></div></div>');
+describe("warnIfTrappingFloorItems", () => {
+  it("warns about a chosen wrapper holding floor items, and not about anything else", () => {
+    page('<div id="wrapper"><div data-floor-y="40"></div></div>');
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const [wrapper] = roots(B)[0].querySelectorAll("#wrapper");
-    warnIfTrappingDepth([wrapper], undefined, "rule");
-    warnIfTrappingDepth([document.body.querySelector("#p1")!], "#p1", "rule");
+    warnIfTrappingFloorItems([wrapper], undefined, "rule");
+    warnIfTrappingFloorItems([document.body.querySelector("#p1")!], "#p1", "rule");
     expect(warn).not.toHaveBeenCalled();
-    warnIfTrappingDepth([wrapper], "#wrapper", "rule");
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('rule: "#wrapper" holds data-depth items'));
+    warnIfTrappingFloorItems([wrapper], "#wrapper", "rule");
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('rule: "#wrapper" holds floor items'));
   });
 });
 
