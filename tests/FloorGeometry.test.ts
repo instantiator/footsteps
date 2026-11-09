@@ -1,10 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
   cropAspect,
+  cropPlacement,
   DEFAULT_CORNERS,
   dragCorner,
   floorCrop,
   floorHomography,
+  floorToViewport,
+  floorWidthRatio,
+  placeOnFloor,
+  screenFloorForImage,
+  viewportToFloor,
+  type FloorView,
   isOnFloor,
   isValidFloor,
   maskPointForScreenPoint,
@@ -302,5 +309,62 @@ describe("screenPointForMaskPoint", () => {
     expect(x).toBeLessThan(element.right);
     expect(y).toBeGreaterThan(element.top);
     expect(y).toBeLessThan(element.bottom);
+  });
+});
+
+describe("floor and viewport", () => {
+  const view = (mirrored: boolean, corners: Corners = DEFAULT_CORNERS): FloorView => ({
+    corners,
+    crop: cropPlacement(floorCrop(corners), mirrored),
+    mirrored,
+  });
+  const viewport = { width: 1240, height: 1000 };
+
+  it.each([false, true])("goes from the floor to the viewport and back (mirrored: %s)", (mirrored) => {
+    for (const floor of [
+      { x: 0, y: 0 },
+      { x: 30, y: 70 },
+      { x: 100, y: 100 },
+    ]) {
+      const back = viewportToFloor(view(mirrored, LOPSIDED), floorToViewport(view(mirrored, LOPSIDED), floor));
+      expect(back.x).toBeCloseTo(floor.x);
+      expect(back.y).toBeCloseTo(floor.y);
+    }
+  });
+
+  it("puts the front corners on the viewport's bottom corners, and the back inside it", () => {
+    const at = (floor: Point) => floorToViewport(view(false), floor);
+    expect(at({ x: 0, y: 100 }).x).toBeCloseTo(0);
+    expect(at({ x: 0, y: 100 }).y).toBeCloseTo(1);
+    expect(at({ x: 100, y: 100 }).x).toBeCloseTo(1);
+    expect(at({ x: 0, y: 0 }).x).toBeCloseTo((0.25 - 0.08) / 0.84);
+    expect(at({ x: 0, y: 0 }).y).toBeCloseTo(0.55 / 0.9);
+  });
+
+  it("keeps floor x 0 on the screen's left when mirrored", () => {
+    const left = floorToViewport(view(true, LOPSIDED), { x: 0, y: 100 });
+    const right = floorToViewport(view(true, LOPSIDED), { x: 100, y: 100 });
+    expect(left.x).toBeLessThan(right.x);
+    expect(screenFloorForImage(LOPSIDED, LOPSIDED.frontRight, true).x).toBeCloseTo(0);
+  });
+
+  it("scales by the floor's width at that depth, relative to the front", () => {
+    expect(floorWidthRatio(view(false), viewport, 100)).toBeCloseTo(1);
+    expect(floorWidthRatio(view(false), viewport, 0)).toBeCloseTo(0.5 / 0.84);
+    expect(floorWidthRatio(view(true), viewport, 0)).toBeCloseTo(0.5 / 0.84);
+  });
+
+  it("moves an item's anchor onto its floor spot, raised by its height at that depth", () => {
+    const anchor = { x: 100, y: 200 };
+    const flat = placeOnFloor(view(false), viewport, anchor, { floor: { x: 50, y: 100 }, height: 0 });
+    expect(flat.translate.x).toBeCloseTo(620 - 100);
+    expect(flat.translate.y).toBeCloseTo(1000 - 200);
+    expect(flat.scale).toBeCloseTo(1);
+
+    const back = placeOnFloor(view(false), viewport, anchor, { floor: { x: 50, y: 0 }, height: 10 });
+    const ground = placeOnFloor(view(false), viewport, anchor, { floor: { x: 50, y: 0 }, height: 0 });
+    expect(back.scale).toBeCloseTo(0.5 / 0.84);
+    // 10 units of a row that is 0.5 / 0.84 of the 1240 px front edge
+    expect(ground.translate.y - back.translate.y).toBeCloseTo(0.1 * 1240 * (0.5 / 0.84));
   });
 });
