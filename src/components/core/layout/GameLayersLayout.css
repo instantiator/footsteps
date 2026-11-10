@@ -1,3 +1,4 @@
+/* Lets the pointer through an element, such as a wrapper, to whatever is beneath it; its children still take it */
 .noClicks {
   pointer-events: none;
 }

@@ -7,8 +7,6 @@
   font-family: system-ui, sans-serif;
   color: white;
   text-align: center;
-  /* The floor surfaces paint beneath this positioned wrapper, so it lets the pointer through to them */
-  pointer-events: none;
 }
 
 .demo-title-screen {

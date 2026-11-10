@@ -148,8 +148,9 @@ box onto them with a CSS `matrix3d`, so whatever the element holds (colour, imag
 - **Painting order**, back to front: `horizon-background`, `ground-background`, the rear, left and right backgrounds,
   `floor-background`, floor areas, then walls. Transparent parts of a surface show what's behind it, which for a
   background is the ground running on to the horizon.
-- **Surfaces paint beneath the rest of their template.** A positioned wrapper around them is above them, and takes the
-  pointer first, so give it `pointer-events: none` if anything should react to the surfaces. Each template outside a
+- **Surfaces paint beneath the rest of their template.** An element wrapped around them is above them, and takes the
+  pointer first, so give the wrapper the `noClicks` class if anything should react to the surfaces. What's inside it
+  still takes the pointer. Each template outside a
   challenge's foreground is its own stacking context, so surfaces still paint above the scene's `backgroundStyle`.
 - **Walls among players.** In a challenge's foreground, the rear and side walls stand behind every player and the front
   wall in front of them all. A front wall stands between the players and the camera and hides their legs, so it only
@@ -380,7 +381,8 @@ camera rules for when there is a camera. In `mouse-feet` the pointer fires `foot
 Only elements a template draws take clicks: empty space in a layer lets them through to whatever is beneath,
 including background layers. An element drawn over another covers it, so the one beneath gets neither the click
 nor the camera's touch, unless its rule sets `"includeCovered": true` (camera and mouse-feet interactions only). Give decorative
-elements `pointer-events: none` so they don't cover what's beneath them.
+elements, and wrappers around other elements, the `noClicks` class so they don't cover what's beneath them; what's
+inside a `noClicks` wrapper still takes clicks.
 
 #### Elements that animate or keep state
 
