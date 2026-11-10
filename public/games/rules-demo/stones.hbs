@@ -1,8 +1,10 @@
-<div class="demo-screen">
-  <div id="lava" class="stones-lava"></div>
-  <div id="stone-1" class="stone"></div>
-  <div id="stone-2" class="stone"></div>
-  <div id="stone-3" class="stone">
+<div class="noClicks demo-screen">
+  <div class="horizon-background demo-horizon"></div>
+  <div class="ground-background demo-ground"></div>
+  <div id="lava" class="floor-background stones-lava"></div>
+  <div id="stone-1" class="stone" data-floor-area="6 68 28 90"></div>
+  <div id="stone-2" class="stone" data-floor-area="40 40 60 60"></div>
+  <div id="stone-3" class="stone" data-floor-area="70 8 92 30">
     <div id="door" class="stones-door{{#if state.doorOpen}} open{{/if}}" role="button" tabindex="0"></div>
   </div>
   <p id="stones-message" class="demo-score stones-message">

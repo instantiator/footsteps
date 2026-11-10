@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { cropPlacement, DEFAULT_CORNERS, floorCrop, viewportToFloor } from "../src/components/camera/FloorGeometry";
-import { floorBandOf, isUnreachable, parseFloorItem } from "../src/components/core/layout/FloorPlacement";
+import { floorRegionOf, isInRegion, isUnreachable, parseFloorItem } from "../src/components/core/layout/FloorPlacement";
 import type { Point } from "../src/vision/VisionTypes";
 
 /** An element with the given attributes. */
@@ -51,17 +51,33 @@ describe("parseFloorItem", () => {
   });
 });
 
-describe("floorBandOf", () => {
+describe("floorRegionOf", () => {
+  const band = { left: -Infinity, back: 50, right: Infinity, front: 70 };
+
   it("is the band of floor y centred on a thick item, from the item or anything inside it", () => {
     const item = element({ "data-floor-y": "60", "data-floor-thickness": "20" });
     const inside = item.appendChild(document.createElement("span"));
-    expect(floorBandOf(item)).toEqual({ min: 50, max: 70 });
-    expect(floorBandOf(inside)).toEqual({ min: 50, max: 70 });
+    expect(floorRegionOf(item)).toEqual(band);
+    expect(floorRegionOf(inside)).toEqual(band);
+  });
+
+  it("is a floor area's rectangle, from the area or anything inside it", () => {
+    const area = element({ "data-floor-area": "10 20 30 40" });
+    const inside = area.appendChild(document.createElement("span"));
+    expect(floorRegionOf(inside)).toEqual({ left: 10, back: 20, right: 30, front: 40 });
+    expect(floorRegionOf(element({ "data-floor-area": "10 20" }))).toBeUndefined();
   });
 
   it("is nothing for an item with no thickness, or anything off the floor", () => {
-    expect(floorBandOf(element({ "data-floor-y": "60" }))).toBeUndefined();
-    expect(floorBandOf(element({ "data-floor-thickness": "20" }))).toBeUndefined();
+    expect(floorRegionOf(element({ "data-floor-y": "60" }))).toBeUndefined();
+    expect(floorRegionOf(element({ "data-floor-thickness": "20" }))).toBeUndefined();
+  });
+
+  it("holds a point inside its edges, and not one just past them", () => {
+    const area = { left: 10, back: 20, right: 30, front: 40 };
+    expect(isInRegion({ x: 10, y: 40 }, area)).toBe(true);
+    expect(isInRegion({ x: 9.9, y: 30 }, area)).toBe(false);
+    expect(isInRegion({ x: 500, y: 60 }, band)).toBe(true);
   });
 });
 

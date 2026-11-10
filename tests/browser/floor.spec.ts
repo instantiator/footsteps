@@ -195,3 +195,81 @@ test("outlines the floor, shades what's off it, and marks the player's feet when
   expect(widths[1]).toBeGreaterThan(widths[0]);
   expect(widths[1]).toBeCloseTo(widths[2], 0);
 });
+
+/** Where a surface is drawn, as a box around it, relative to the viewport. */
+const surfaceBox = (page: Page, selector: string) =>
+  page
+    .locator(selector)
+    .first()
+    .evaluate((element) => {
+      const viewport = document.querySelector("#game-viewport")!.getBoundingClientRect();
+      const drawn = element.getBoundingClientRect();
+      return {
+        left: drawn.left - viewport.left,
+        top: drawn.top - viewport.top,
+        right: drawn.right - viewport.left,
+        bottom: drawn.bottom - viewport.top,
+        width: viewport.width,
+        height: viewport.height,
+      };
+    });
+
+test("tiles Walk around's floor, and lights the tile underfoot", async ({ page }) => {
+  await openWalkAround(page, { camera: false });
+  const tilesBox = () =>
+    page.locator("[data-floor-area]").evaluateAll((elements) => {
+      const viewport = document.querySelector("#game-viewport")!.getBoundingClientRect();
+      const boxes = elements.map((element) => element.getBoundingClientRect());
+      return {
+        count: boxes.length,
+        left: Math.min(...boxes.map(({ left }) => left)) - viewport.left,
+        top: Math.min(...boxes.map(({ top }) => top)) - viewport.top,
+        right: Math.max(...boxes.map(({ right }) => right)) - viewport.left,
+        bottom: Math.max(...boxes.map(({ bottom }) => bottom)) - viewport.top,
+        width: viewport.width,
+        height: viewport.height,
+      };
+    });
+  // Every tile is placed within a frame or two of appearing
+  await expect.poll(async () => (await tilesBox()).top).toBeGreaterThan(0);
+  const tiles = await tilesBox();
+  // Together the tiles cover the floor: its front corners are the viewport's bottom corners
+  expect(tiles.count).toBe(16);
+  expect(tiles.left).toBeCloseTo(0, 0);
+  expect(tiles.right).toBeCloseTo(tiles.width, 0);
+  expect(tiles.bottom).toBeCloseTo(tiles.height, 0);
+  expect(tiles.top / tiles.height).toBeCloseTo(floorToViewport(VIEW, { x: 0, y: 0 }).y, 2);
+
+  await page.locator("#depth-tile").hover({ force: true });
+  await expect(page.locator("#depth-tile")).toHaveClass(/demo-tile-lit/);
+});
+
+test("lays Nanny's Magic Trifle's river on the floor, in the overview and in a stage's shared scene", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/game/magic-trifle/play");
+  await page.locator("#magic-trifle-title").click({ force: true });
+  await expect(page.locator("#stages-link-stage-1")).toBeVisible();
+
+  // The floor's front corners are the viewport's bottom corners, and its back edge is level, part way down
+  const river = await surfaceBox(page, "#overview-background-container .floor-background");
+  expect(river.left).toBeCloseTo(0, 0);
+  expect(river.right).toBeCloseTo(river.width, 0);
+  expect(river.bottom).toBeCloseTo(river.height, 0);
+  expect(river.top / river.height).toBeCloseTo(floorToViewport(VIEW, { x: 0, y: 0 }).y, 2);
+
+  // The far bank stands on the floor's back edge, with the forest further back, higher up the screen
+  const bank = await surfaceBox(page, "#overview-background-container .rear-wall");
+  const forest = await surfaceBox(page, "#overview-background-container .rear-background");
+  expect(bank.bottom).toBeCloseTo(river.top, 0);
+  expect(forest.bottom).toBeLessThan(bank.bottom);
+  await expect(page.locator("#overview-background-container .horizon-background")).toBeVisible();
+
+  // The open stone floats, so it never holds still for a normal click
+  await page.locator("#stages-link-stage-1").click({ force: true });
+  const shared = page.locator("[id^='stage'][id$='-background-container'] .floor-background");
+  await expect(shared).toBeVisible();
+  const stageRiver = await surfaceBox(page, "[id^='stage'][id$='-background-container'] .floor-background");
+  expect(stageRiver.top).toBeCloseTo(river.top, 0);
+});

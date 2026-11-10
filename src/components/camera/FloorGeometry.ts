@@ -1,5 +1,6 @@
 /**
- * Every conversion between the camera image, the screen and the floor. Nothing else in the code does this maths.
+ * Every conversion between the camera image, the screen and the floor. Nothing else in the code does this maths, beyond
+ * `FloorSurfaces.ts`, which builds the floor's tiles, walls and backgrounds on it.
  *
  * - **Image fractions** run 0–1 across and down the camera's own, unmirrored image, whatever its resolution.
  * - **Mask pixels** are the vision model's, from the top left.
@@ -52,7 +53,7 @@ const project = ([a, b, c, d, e, f, g, h, i]: Matrix, { x, y }: Point): Point =>
 };
 
 /** The matrix taking the unit square's corners (0,0), (1,0), (1,1), (0,1) to the floor's corners, in that order. */
-const squareToQuad = ({ backLeft: p0, backRight: p1, frontRight: p2, frontLeft: p3 }: Corners): Matrix => {
+export const squareToQuad = ({ backLeft: p0, backRight: p1, frontRight: p2, frontLeft: p3 }: Corners): Matrix => {
   const [dx1, dx2, dx3] = [p1.x - p2.x, p3.x - p2.x, p0.x - p1.x + p2.x - p3.x];
   const [dy1, dy2, dy3] = [p1.y - p2.y, p3.y - p2.y, p0.y - p1.y + p2.y - p3.y];
   const det = dx1 * dy2 - dx2 * dy1;
@@ -72,7 +73,7 @@ const squareToQuad = ({ backLeft: p0, backRight: p1, frontRight: p2, frontLeft: 
 };
 
 /** A projective matrix's inverse, up to scale, which is all a projective matrix needs. */
-const adjugate = ([a, b, c, d, e, f, g, h, i]: Matrix): Matrix => [
+export const adjugate = ([a, b, c, d, e, f, g, h, i]: Matrix): Matrix => [
   e * i - f * h,
   c * h - b * i,
   b * f - c * e,
@@ -247,7 +248,7 @@ export const viewportToFloor = ({ corners, crop, mirrored }: FloorView, point: P
   screenFloorForImage(corners, imagePointForViewport(point, crop, mirrored), mirrored);
 
 /** The length of the floor's row at depth `y` on screen, in pixels of a viewport of the given size. */
-const rowLength = (view: FloorView, { width, height }: MaskSize, y: number): number => {
+export const rowLength = (view: FloorView, { width, height }: MaskSize, y: number): number => {
   const left = floorToViewport(view, { x: 0, y });
   const right = floorToViewport(view, { x: 100, y });
   return Math.hypot((right.x - left.x) * width, (right.y - left.y) * height);

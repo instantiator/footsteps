@@ -1,8 +1,11 @@
-<div class="demo-screen demo-floor">
-  <div id="lava-1" class="lava" style="left: 20cqw; top: 55cqh"></div>
-  <div id="lava-2" class="lava" style="left: 55cqw; top: 70cqh"></div>
-  <div id="lava-3" class="lava" style="left: 40cqw; top: 30cqh"></div>
+<div class="noClicks demo-screen">
+  <div class="horizon-background demo-horizon"></div>
+  <div class="ground-background demo-ground"></div>
+  <div class="floor-background demo-lava-floor"></div>
+  <div id="lava-1" class="lava" data-floor-area="18 52 42 68"></div>
+  <div id="lava-2" class="lava" data-floor-area="55 74 80 90"></div>
+  <div id="lava-3" class="lava" data-floor-area="38 22 62 38"></div>
   <div id="start" class="lava-start">Start</div>
-  <div id="door" class="lava-door"><div id="door-base" class="lava-door-base"></div></div>
+  <div id="door" class="lava-door" data-floor-x="88" data-floor-y="8"><div id="door-base" class="lava-door-base"></div></div>
   <p id="lava-message" class="demo-score">Reach the door without touching the lava.</p>
 </div>

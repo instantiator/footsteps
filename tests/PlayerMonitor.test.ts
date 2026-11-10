@@ -653,7 +653,10 @@ describe("thick floor items", () => {
   /** Targets with a stone that only counts from 50–70 on the floor. */
   const reachFrom = (position: PlayerFrame["position"], interactions = ["foot-enter", "foot-exit"]) =>
     targetsInReach(
-      { targets: { [STONE]: target(interactions, 0) }, bands: new Map([[STONE, { min: 50, max: 70 }]]) },
+      {
+        targets: { [STONE]: target(interactions, 0) },
+        regions: new Map([[STONE, { left: -Infinity, back: 50, right: Infinity, front: 70 }]]),
+      },
       position,
     );
 
@@ -685,7 +688,10 @@ describe("thick floor items", () => {
 
   it("puts a player with no position outside every band, and leaves other targets alone", () => {
     const targets = { [STONE]: target(["foot-enter"], 0), sign: target(["foot-enter"], 0) };
-    const reachable = targetsInReach({ targets, bands: new Map([[STONE, { min: 50, max: 70 }]]) }, null);
+    const reachable = targetsInReach(
+      { targets, regions: new Map([[STONE, { left: -Infinity, back: 50, right: Infinity, front: 70 }]]) },
+      null,
+    );
     expect(reachable[STONE].rect).toEqual(EMPTY_MASK_RECT);
     expect(reachable.sign).toBe(targets.sign);
   });
@@ -699,5 +705,37 @@ describe("thick floor items", () => {
       monitor.update(player, reachFrom(player.position, ["jump"]), (timestamp += 100));
     }
     expect(events).toEqual([{ key: STONE, interaction: "jump" }]);
+  });
+});
+
+describe("floor areas", () => {
+  const TILE = "tile";
+  /** A player whose feet are over the tile's box on screen, standing at a floor point. */
+  const standingAt = (x: number, y: number) => ({ ...partFrame("leftFoot", [[1, 1]], null), position: { x, y } });
+  const reachFrom = (position: PlayerFrame["position"]) =>
+    targetsInReach(
+      {
+        targets: { [TILE]: target(["foot-enter", "foot-exit"], 0) },
+        regions: new Map([[TILE, { left: 20, back: 20, right: 40, front: 40 }]]),
+      },
+      position,
+    );
+
+  it("fires on the tile, and not just off its corner, though the feet are inside its box either way", () => {
+    const { events, monitor } = monitorWithEvents();
+    const offCorner = standingAt(41, 19);
+    monitor.update(offCorner, reachFrom(offCorner.position), 1);
+    expect(events).toEqual([]);
+
+    const on = standingAt(39, 21);
+    monitor.update(on, reachFrom(on.position), 2);
+    expect(events).toEqual([{ key: TILE, interaction: "foot-enter" }]);
+
+    const off = standingAt(45, 30);
+    monitor.update(off, reachFrom(off.position), 3);
+    expect(events).toEqual([
+      { key: TILE, interaction: "foot-enter" },
+      { key: TILE, interaction: "foot-exit" },
+    ]);
   });
 });

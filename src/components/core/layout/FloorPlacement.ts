@@ -1,10 +1,20 @@
 import { useEffect, type RefObject } from "react";
 import { isDefined } from "../../../util/ObjectUtils";
 import { placeOnFloor, viewportToFloor, type FloorView, type Rect } from "../../camera/FloorGeometry";
+import type { FloorArea } from "../../camera/FloorSurfaces";
 import { sceneRoots } from "../logic/TemplateUtils";
 import type { CameraRuleTarget } from "./PlayerInteractionHook";
 import { DEPTH_STACK_CLASS, depthZIndex } from "../../camera/PlayerPosition";
 import type { Point } from "../../../vision/VisionTypes";
+import { FLOOR_AREA_ATTRIBUTE } from "./FloorSurfaceClasses";
+import {
+  numberOf,
+  parseFloorArea,
+  placeSurface,
+  setStyle,
+  SURFACE_PROPERTIES,
+  SURFACE_SELECTOR,
+} from "./FloorSurfacePlacement";
 
 /** The selector for items placed on the floor. */
 export const FLOOR_ITEM_SELECTOR = "[data-floor-y]";
@@ -26,12 +36,6 @@ export interface FloorItem {
 /** The anchor when none is given: the middle of the item's bottom edge, the point that touches the floor. */
 const DEFAULT_ANCHOR = "center bottom";
 
-/** A finite number from game content, or undefined. */
-const numberOf = (value: string | null): number | undefined => {
-  const parsed = value === null || value.trim() === "" ? NaN : Number(value);
-  return Number.isFinite(parsed) ? parsed : undefined;
-};
-
 /** An item's floor attributes, which come from game content; null if it has no valid `data-floor-y`. */
 export const parseFloorItem = (element: Element): FloorItem | null => {
   const y = numberOf(element.getAttribute("data-floor-y"));
@@ -46,21 +50,27 @@ export const parseFloorItem = (element: Element): FloorItem | null => {
   };
 };
 
-/** A band of floor y, across the whole floor. */
-export interface FloorBand {
-  /** Its back edge. */
-  min: number;
-  /** Its front edge. */
-  max: number;
-}
-
-/** The band of floor y a player must stand in to interact with an element, if it is a thick floor item. */
-export const floorBandOf = (element: Element): FloorBand | undefined => {
+/**
+ * The part of the floor a player must stand on to interact with an element, if it has one: a floor area's rectangle,
+ * or the band of floor y across a thick floor item.
+ */
+export const floorRegionOf = (element: Element): FloorArea | undefined => {
+  const area = element.closest(`[${FLOOR_AREA_ATTRIBUTE}]`);
+  if (area) return parseFloorArea(area.getAttribute(FLOOR_AREA_ATTRIBUTE));
   const item = element.closest(FLOOR_ITEM_SELECTOR);
   const floor = item === null ? null : parseFloorItem(item);
   if (!isDefined(floor?.thickness)) return undefined;
-  return { min: floor.y - floor.thickness / 2, max: floor.y + floor.thickness / 2 };
+  return {
+    left: -Infinity,
+    back: floor.y - floor.thickness / 2,
+    right: Infinity,
+    front: floor.y + floor.thickness / 2,
+  };
 };
+
+/** Whether a floor point is in a region. */
+export const isInRegion = ({ x, y }: Point, { left, back, right, front }: FloorArea): boolean =>
+  x >= left && x <= right && y >= back && y <= front;
 
 /** Where the layout puts an element's top left, in page pixels, ignoring any transforms. */
 const layoutOffset = (element: HTMLElement): Point => {
@@ -72,9 +82,10 @@ const layoutOffset = (element: HTMLElement): Point => {
   return { x, y };
 };
 
-/** Sets an inline style property, only if it changes, so an unchanged item costs no style work. */
-const setStyle = (element: HTMLElement, property: string, value: string) => {
-  if (element.style.getPropertyValue(property) !== value) element.style.setProperty(property, value);
+/** Where the layout puts an element's top left in the viewport, in pixels, ignoring any transforms. */
+const offsetIn = (element: HTMLElement, viewport: HTMLElement): Point => {
+  const [at, base] = [layoutOffset(element), layoutOffset(viewport)];
+  return { x: at.x - base.x, y: at.y - base.y };
 };
 
 /** The properties placement sets, which it takes off again when it stops. */
@@ -94,14 +105,30 @@ const placeItem = (element: HTMLElement, view: FloorView, viewport: HTMLElement)
   const [originX, originY] = getComputedStyle(element).transformOrigin.split(" ").map(parseFloat);
   if (!Number.isFinite(originX) || !Number.isFinite(originY) || size.width === 0) return false;
 
-  const [at, base] = [layoutOffset(element), layoutOffset(viewport)];
-  const anchor = { x: at.x - base.x + originX, y: at.y - base.y + originY };
+  const at = offsetIn(element, viewport);
+  const anchor = { x: at.x + originX, y: at.y + originY };
   const floor = { x: item.x ?? (100 * anchor.x) / size.width, y: item.y };
   const { translate, scale } = placeOnFloor(view, size, anchor, { floor, height: item.height });
   setStyle(element, "translate", `${translate.x.toFixed(1)}px ${translate.y.toFixed(1)}px`);
   setStyle(element, "scale", scale.toFixed(4));
   if (element.closest(`.${DEPTH_STACK_CLASS}`)) setStyle(element, "z-index", String(depthZIndex(item.y)));
   return true;
+};
+
+/** Places every floor item and draws every surface, remembering which so their styles can be taken off again. */
+const placeAll = (
+  viewport: HTMLElement,
+  view: FloorView,
+  placed: { items: Set<HTMLElement>; surfaces: Set<HTMLElement> },
+) => {
+  for (const element of viewport.querySelectorAll<HTMLElement>(FLOOR_ITEM_SELECTOR)) {
+    if (placeItem(element, view, viewport)) placed.items.add(element);
+  }
+  const size = { width: viewport.clientWidth, height: viewport.clientHeight };
+  if (size.width === 0 || size.height === 0) return;
+  for (const element of viewport.querySelectorAll<HTMLElement>(SURFACE_SELECTOR)) {
+    if (placeSurface(element, view, size, offsetIn(element, viewport))) placed.surfaces.add(element);
+  }
 };
 
 /** Says once per element that `data-depth` has gone, naming what replaced it. */
@@ -117,7 +144,7 @@ const warnOfDepthItems = (viewport: HTMLElement, warned: WeakSet<Element>) => {
 };
 
 /**
- * Places the scenes' floor items while a 2.5D scene shows, every frame, as reshapes and template re-renders move them
+ * Places the scenes' floor items, and draws their floor surfaces, while a 2.5D scene shows, every frame, as reshapes and template re-renders move them
  * or rewrite their style. Elsewhere it only reports items still using `data-depth`.
  *
  * `ponytail:` the layout position is the sum of `offsetLeft`/`offsetTop`, so an item inside a wrapper with its own
@@ -129,22 +156,21 @@ export function useFloorPlacement(viewportRef: RefObject<HTMLElement | null>, vi
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
-    const placed = new Set<HTMLElement>();
+    const placed = { items: new Set<HTMLElement>(), surfaces: new Set<HTMLElement>() };
     const warned = new WeakSet<Element>();
     let frame = 0;
     const place = () => {
       warnOfDepthItems(viewport, warned);
-      if (view) {
-        for (const element of viewport.querySelectorAll<HTMLElement>(FLOOR_ITEM_SELECTOR)) {
-          if (placeItem(element, view, viewport)) placed.add(element);
-        }
-      }
+      if (view) placeAll(viewport, view, placed);
       frame = requestAnimationFrame(place);
     };
     place();
     return () => {
       cancelAnimationFrame(frame);
-      for (const element of placed) PLACEMENT_PROPERTIES.forEach((property) => element.style.removeProperty(property));
+      const clear = (elements: Set<HTMLElement>, properties: string[]) =>
+        elements.forEach((element) => properties.forEach((property) => element.style.removeProperty(property)));
+      clear(placed.items, PLACEMENT_PROPERTIES);
+      clear(placed.surfaces, SURFACE_PROPERTIES);
     };
   }, [viewportRef, view]);
 }
@@ -175,8 +201,8 @@ const firesOnFeet = ({ interactions }: CameraRuleTarget): boolean =>
   interactions.some((interaction) => interaction.startsWith("foot") || interaction.startsWith("jump"));
 
 /**
- * While debugging a 2.5D scene, warns once of each target of a foot or jump rule that isn't floor-placed and that no
- * player can stand on, as the floor narrows to the back and its back corners may be out of reach.
+ * While debugging a 2.5D scene, warns once of each target of a foot or jump rule that isn't a floor item or floor area
+ * and that no player can stand on, as the floor narrows to the back and its back corners may be out of reach.
  */
 export function useUnreachableWarnings(
   viewportRef: RefObject<HTMLElement | null>,
@@ -193,7 +219,7 @@ export function useUnreachableWarnings(
         const { scope, ruleIndex, selector } = rule;
         if (selector === undefined) continue;
         for (const element of sceneRoots(scope).flatMap((root) => Array.from(root.querySelectorAll(selector)))) {
-          if (warned.has(element) || element.closest(FLOOR_ITEM_SELECTOR)) continue;
+          if (warned.has(element) || element.closest(`${FLOOR_ITEM_SELECTOR}, [${FLOOR_AREA_ATTRIBUTE}]`)) continue;
           const { left, top, right, bottom } = element.getBoundingClientRect();
           const fraction = (x: number, y: number) => ({ x: (x - box.left) / box.width, y: (y - box.top) / box.height });
           const [from, to] = [fraction(left, top), fraction(right, bottom)];

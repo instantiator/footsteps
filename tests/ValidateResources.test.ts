@@ -375,6 +375,27 @@ describe("template text", () => {
     ]);
   });
 
+  it.each([
+    '<div class="sky horizon-background"></div>',
+    "<div class='rear-wall'></div>",
+    '<div data-floor-area="0 0 50 50"></div>',
+    '<div class="fence" data-wall-distance="10"></div>',
+  ])("warns of floor surfaces in a scene that never shows in 2.5D: %s", async (content) => {
+    const result = await checkGame(gameWith({ scenes: [templateScene(embedded(content))] }), optionsWith());
+    expect(result.problems).toEqual([]);
+    expect(result.warnings).toEqual([
+      { path: "scenes[0].component.foregroundTemplate", message: expect.stringContaining("floor surfaces") },
+    ]);
+  });
+
+  it("takes floor surfaces in a 2.5D scene, and doesn't mistake a class that only contains a surface's name", async () => {
+    const wall = '<div class="rear-wall"></div>';
+    const inGame = gameWith({ modules: { scene: "2.5D" }, scenes: [templateScene(embedded(wall))] });
+    expect((await checkGame(inGame, optionsWith())).warnings).toEqual([]);
+    const lookalike = gameWith({ scenes: [templateScene(embedded('<div class="my-rear-wall-x"></div>'))] });
+    expect((await checkGame(lookalike, optionsWith())).warnings).toEqual([]);
+  });
+
   it("takes floor items in a 2.5D scene, and in a stage's scene that a 2.5D challenge shows with", async () => {
     const inGame = gameWith({ modules: { scene: "2.5D" }, scenes: [templateScene(embedded(FLOOR_ITEM))] });
     expect((await checkGame(inGame, optionsWith())).warnings).toEqual([]);
