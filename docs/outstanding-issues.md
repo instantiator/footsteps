@@ -168,6 +168,8 @@ A delayed `"triggering"` effect looks up the player's number when it runs, so if
 
 **Act when:** a game delays an effect by more than a few seconds, or a tester sees an effect land on the wrong person. Then carry the player's stable id on the event as well.
 
+**Related:** [002.03.20 (actions events and sequences)](prompts/002.03.20.prompt%20-%20actions%20events%20and%20sequences.md), whose series of actions make longer waits common.
+
 ## A challenge's sibling counts for the camera check, across chunks
 
 The load check that a scene's camera can be on counts another challenge in the same stage as turning it on if the stage shows several at once, even if they fall in different chunks, so aren't shown together. It can miss a mistake, but never rejects a working game.
@@ -323,6 +325,8 @@ rules up with an effect by its `delayMs` and a matching `after` or `every`.
 **Act when:** a game needs to act when a sound or animation ends (eg. reveal a scene after a fanfare). Then add
 an `effectEnd` trigger, naming the effect, fired by `useRuleEffects` in `Game.tsx`.
 
+**Planned in:** [002.03.20 (actions events and sequences)](prompts/002.03.20.prompt%20-%20actions%20events%20and%20sequences.md), where every action reports its end.
+
 ## Mouse-feet has no body for player effects
 
 In `mouse-feet` the pointer is player 1's feet only: there's no silhouette, so effects that act on players
@@ -332,6 +336,8 @@ mode. The session's player count stays 0.
 **Act when:** [996 (player avatars)](prompts/996.00.00.prompt%20-%20player%20avatars.md) is planned. Give mouse-feet a
 drawn avatar there, and let player effects act on it.
 
+**Planned in:** [002.03.18 (mouse-feet avatar)](prompts/002.03.18.prompt%20-%20mouse-feet%20avatar.md), which decides whether player effects act on the mouse-feet avatar there or wait for 996.
+
 ## Mouse-feet feet are a point
 
 `MouseFeet` (`src/components/core/layout/MouseFeetHook.ts`) treats the feet as the pointer's single point, so a rule's
@@ -339,6 +345,8 @@ drawn avatar there, and let player effects act on it.
 
 **Act when:** an author reports a threshold behaving differently by mouse than by camera. Give the feet a small
 area (a foot-sized box under the pointer) and measure coverage against it.
+
+**Planned in:** [002.03.18 (mouse-feet avatar)](prompts/002.03.18.prompt%20-%20mouse-feet%20avatar.md), which gives the feet the avatar's area.
 
 ## The vision model sees the whole camera picture in 2.5D scenes
 
@@ -427,9 +435,9 @@ reading its layout and writing only what changed. It is O(items), and the games 
 **Act when:** profiling shows placement taking more than about 1 ms a frame, or a scene has more than about 50 floor
 items. Then place on resize, scene change and template mutation instead.
 
-## Spectators count as players (002.03.14)
+## Spectators count as players (002.03.16)
 
-Everyone the camera sees is a player, including people standing off the floor. 002.03.14 is to ignore spectators:
+Everyone the camera sees is a player, including people standing off the floor. [002.03.16 (spectators)](prompts/002.03.16.prompt%20-%20spectators.md) is to ignore spectators:
 
 - A spectator is a person whose held position (`PlayerPositions`, which already holds through jumps) falls outside the
   floor (x or y outside 0–100) by more than a margin, about 5 units, for longer than a short hold, so stepping over
@@ -441,7 +449,7 @@ Everyone the camera sees is a player, including people standing off the floor. 0
 - Tests: someone off the floor is ignored, walking on makes them a player, and a jump at the front edge doesn't drop
   them.
 
-**Act when:** prompt 002.03.14 is planned.
+**Act when:** prompt 002.03.16 is planned.
 
 ## No `spawn` or `despawn` actions
 
@@ -454,6 +462,8 @@ and duck sends a fixed pool of four obstacles across instead, each restarted on 
 **Act when:** a game needs more obstacles on screen than a fixed pool gives, or an obstacle whose kind (eg. high or
 low) is picked at random each time. Then add both actions, with copies marked so a reset removes them, and effects
 and rules that find them by selector as usual.
+
+**Planned in:** [002.03.14 (spawn and moving targets)](prompts/002.03.14.prompt%20-%20spawn%20and%20moving%20targets.md).
 
 ## Jump and duck's thresholds aren't proven on a real camera
 
@@ -474,6 +484,8 @@ lanes loses a life or two and then goes untouched. Moving the pointer, as a play
 **Act when:** mouse players report getting through Jump and duck untouched. Then hit-test the last pointer position
 (`lastPointer` in `src/util/PointerPosition.ts`) each animation frame while a scene has `mouse-enter` rules on moving
 elements, and fire `mouse-enter` and `mouse-exit` from it.
+
+**Planned in:** [002.03.14 (spawn and moving targets)](prompts/002.03.14.prompt%20-%20spawn%20and%20moving%20targets.md).
 
 ## Overview and stage dialogs sit behind players
 
