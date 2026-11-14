@@ -6,7 +6,8 @@ What happens to players is covered by the player effects below, and how players 
 
 ## Coordinate system
 
-The game uses one system for positions and distances.
+The game uses one system for positions and distances. In a 2.5D scene, "the whole scene" is the
+[scene box](positions-sizes-units.md), not the whole screen.
 
 | Measure                                 | Unit                                        | CSS equivalent |
 | --------------------------------------- | ------------------------------------------- | -------------- |
