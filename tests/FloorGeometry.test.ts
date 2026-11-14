@@ -9,6 +9,7 @@ import {
   floorToViewport,
   floorWidthRatio,
   placeOnFloor,
+  sceneBox,
   screenFloorForImage,
   viewportToFloor,
   type FloorView,
@@ -366,5 +367,40 @@ describe("floor and viewport", () => {
     expect(back.scale).toBeCloseTo(0.5 / 0.84);
     // 10 units of a row that is 0.5 / 0.84 of the 1240 px front edge
     expect(ground.translate.y - back.translate.y).toBeCloseTo(0.1 * 1240 * (0.5 / 0.84));
+  });
+});
+
+describe("sceneBox", () => {
+  const sceneAspect = cropAspect(floorCrop(DEFAULT_CORNERS), 4 / 3);
+
+  it("centres a scene on a wide screen, filling its height", () => {
+    const box = sceneBox(21 / 9, sceneAspect);
+    expect(box.top).toBe(0);
+    expect(box.bottom).toBe(1);
+    expect(box.left).toBeCloseTo(1 - box.right);
+    expect(((box.right - box.left) * 21) / 9).toBeCloseTo(sceneAspect);
+  });
+
+  it("stands a scene on a tall screen's bottom edge, filling its width", () => {
+    const box = sceneBox(9 / 16, sceneAspect);
+    expect([box.left, box.right, box.bottom]).toEqual([0, 1, 1]);
+    expect(9 / 16 / (box.bottom - box.top)).toBeCloseTo(sceneAspect);
+  });
+
+  it.each([false, true])("puts the floor's front corners on the box's bottom corners (mirrored: %s)", (mirrored) => {
+    const box = sceneBox(21 / 9, sceneAspect);
+    const view: FloorView = {
+      corners: DEFAULT_CORNERS,
+      crop: cropPlacement(floorCrop(DEFAULT_CORNERS), mirrored, box),
+      mirrored,
+    };
+    const frontLeft = floorToViewport(view, { x: 0, y: 100 });
+    const frontRight = floorToViewport(view, { x: 100, y: 100 });
+    expect(frontLeft.x).toBeCloseTo(box.left);
+    expect(frontRight.x).toBeCloseTo(box.right);
+    expect(frontLeft.y).toBeCloseTo(box.bottom);
+    const back = viewportToFloor(view, floorToViewport(view, { x: 30, y: 20 }));
+    expect(back.x).toBeCloseTo(30);
+    expect(back.y).toBeCloseTo(20);
   });
 });

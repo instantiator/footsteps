@@ -112,7 +112,12 @@ export const CharacterCameraLayerWrapper = ({
 /** The box the whole camera image fills: the viewport, or a larger box when a 2.5D scene crops the image to its floor. */
 const imageBoxStyle = (crop: CropPlacement | undefined): CSSProperties | undefined =>
   isDefined(crop)
-    ? { width: `${crop.width * 100}%`, height: `${crop.height * 100}%`, left: `${crop.left * 100}%`, top: 0 }
+    ? {
+        width: `${crop.width * 100}%`,
+        height: `${crop.height * 100}%`,
+        left: `${crop.left * 100}%`,
+        top: `${crop.top * 100}%`,
+      }
     : undefined;
 
 /**

@@ -179,30 +179,56 @@ export const cropAspect = ({ left, right, bottom }: FloorCrop, imageAspect: numb
 /** The camera image's width over its height when there is no camera: a typical webcam's. */
 export const ASSUMED_IMAGE_ASPECT = 4 / 3;
 
-/** Where the whole camera image sits so that the crop fills the viewport, as fractions of the viewport's size. */
+/**
+ * The scene box: where a 2.5D scene's floor crop shows on the screen, in screen fractions. It is as large as fits,
+ * centred, and stands on the screen's bottom edge, so spare height goes to the sky.
+ */
+export const sceneBox = (screenAspect: number, sceneAspect: number): Rect => {
+  if (screenAspect >= sceneAspect) {
+    const width = sceneAspect / screenAspect;
+    return { left: (1 - width) / 2, top: 0, right: (1 + width) / 2, bottom: 1 };
+  }
+  return { left: 0, top: 1 - screenAspect / sceneAspect, right: 1, bottom: 1 };
+};
+
+/** A scene box that is the whole screen. */
+export const WHOLE_SCREEN: Rect = { left: 0, top: 0, right: 1, bottom: 1 };
+
+/** Where the whole camera image sits so that the crop fills the scene box, as fractions of the screen's size. */
 export interface CropPlacement {
   /** The image's width. */
   width: number;
   /** The image's height. */
   height: number;
-  /** The image's left edge, from the viewport's: zero or less. */
+  /** The image's left edge, from the screen's. */
   left: number;
+  /** The image's top edge, from the screen's. */
+  top: number;
 }
 
 /**
- * Places the camera image so the crop fills the viewport: the floor spans its width, and its lowest point sits on the
- * bottom edge. A mirrored image is flipped about its own centre, so the crop's right edge lands on the viewport's left.
+ * Places the camera image so the crop fills the scene box: the floor spans its width, and its lowest point sits on its
+ * bottom edge. A mirrored image is flipped about its own centre, so the crop's right edge lands on the box's left.
  */
-export const cropPlacement = ({ left, right, bottom }: FloorCrop, mirrored: boolean): CropPlacement => {
-  const width = 1 / (right - left);
-  return { width, height: 1 / bottom, left: -(mirrored ? 1 - right : left) * width };
+export const cropPlacement = (
+  { left, right, bottom }: FloorCrop,
+  mirrored: boolean,
+  scene: Rect = WHOLE_SCREEN,
+): CropPlacement => {
+  const width = (scene.right - scene.left) / (right - left);
+  return {
+    width,
+    height: (scene.bottom - scene.top) / bottom,
+    left: scene.left - (mirrored ? 1 - right : left) * width,
+    top: scene.top,
+  };
 };
 
-/** The floor a 2.5D scene shows, and how the camera image is placed so the floor's crop fills the viewport. */
+/** The floor a 2.5D scene shows, and how the camera image is placed so the floor's crop fills the scene box. */
 export interface FloorView {
   /** The floor's corners, in image fractions. */
   corners: Corners;
-  /** Where the camera image sits in the viewport. */
+  /** Where the camera image sits on the screen. */
   crop: CropPlacement;
   /** Whether the image is shown flipped like a mirror. */
   mirrored: boolean;
@@ -222,21 +248,21 @@ export const imageForScreenFloor = (corners: Corners, floor: Point, mirrored: bo
 /** Where an image point appears in the viewport, in viewport fractions. */
 export const viewportPointForImage = (
   { x, y }: Point,
-  { width, height, left }: CropPlacement,
+  { width, height, left, top }: CropPlacement,
   mirrored: boolean,
 ): Point => ({
   x: left + (mirrored ? 1 - x : x) * width,
-  y: y * height,
+  y: top + y * height,
 });
 
 /** Which image point a viewport point shows: the inverse of {@link viewportPointForImage}. */
 export const imagePointForViewport = (
   { x, y }: Point,
-  { width, height, left }: CropPlacement,
+  { width, height, left, top }: CropPlacement,
   mirrored: boolean,
 ): Point => {
   const across = (x - left) / width;
-  return { x: mirrored ? 1 - across : across, y: y / height };
+  return { x: mirrored ? 1 - across : across, y: (y - top) / height };
 };
 
 /** Where a screen floor point appears in the viewport, in viewport fractions. */
