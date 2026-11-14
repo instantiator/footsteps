@@ -240,6 +240,10 @@ Run these on Nanny's Magic Trifle's stepping stones (the river, bank, forest and
       back corner down, then the other one), and they follow the new floor, the horizon slanting with it.
 - [ ] **Standing on a floor area:** stand on the lit tile in "Walk around": it lights. Stand just off its corner,
       inside the box it would have on screen but not on the tile itself: it doesn't.
+- [ ] **Any screen shape:** play on a wide screen, then a narrow window (or a portrait screen). The scene stays at the
+      floor's shape, standing on the bottom edge, with the river, bank, forest and sky (or the demo's grass and sky)
+      filling the rest of the screen, and no blank space. Your silhouette still lines up with the floor, and stays
+      visible when you step off the floor's sides.
 
 ## Player effects
 

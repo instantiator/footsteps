@@ -385,20 +385,31 @@ camera](testing/manual-testing.md#floor-placed-items-on-a-real-camera).
 ## Floor surfaces aren't proven on a real camera
 
 The browser suite proves floor surfaces are drawn onto the floor and that a floor area only counts where it is drawn,
-with the default floor and the mouse. It can't show that they line up with a real, recalibrated floor, or that standing
-on a tile feels right. The checks are in [Floor surfaces, on a real
+with the default floor and the mouse, and that both games fill wide and tall screens. It can't show that they line up
+with a real, recalibrated floor, that the silhouette lines up on any screen shape, or that standing on a tile feels
+right. The checks are in [Floor surfaces, on a real
 camera](testing/manual-testing.md#floor-surfaces-on-a-real-camera).
 
 **Act when:** before either 2.5D game is played with the camera. Run the checks on both.
 
-## The ground stops a fixed distance short of the horizon
+## Large surface boxes are drawn at a smaller scale
 
-`ground-background` runs back to a fixed 20,000 floor units behind the floor (`GROUND_CUTOFF` in `FloorSurfaces.ts`),
-so it stays in front of the camera, and `horizon-background` reaches 2% of the viewport below the horizon to cover the
-gap. On a steep camera the gap could be wider than the overlap and show as a thin line below the horizon.
+The engine caps a box it sizes at 4096 pixels across or down (`MAX_BOX_PIXELS` in `FloorSurfacePlacement.ts`), and
+draws a larger surface at a smaller scale, given by `--floor-unit`. The floor background always hits the cap, as it
+reaches back to the horizon, so its texture is drawn at about a pixel a floor unit and magnified near the camera. The
+browser rasterises it at screen resolution, so it looked sharp in testing, but a detailed texture could blur.
 
-**Act when:** a line shows between the ground and the horizon on some calibration. Then work out the cut-off from how
-many pixels short of the horizon it lands, rather than a fixed distance.
+**Act when:** a floor background's texture looks blurred near the front of the screen. Then draw the floor background
+in two parts, a near one at the floor's scale and a far one at a smaller scale.
+
+## 2.5D challenges side by side share one scene box
+
+In a 2.5D scene, each layer's grid of challenges is the scene box, so two challenges shown side by side each get half
+of it, and their `backgroundStyle` only fills their half. Their surfaces still reach the screen's edges. Nanny's Magic
+Trifle's stage 3 shows two dialogs this way, which is fine as they have no floor.
+
+**Act when:** a game shows two 2.5D challenges side by side that each want their own floor or background across the
+screen.
 
 ## Floor items inside a transformed wrapper are misplaced
 

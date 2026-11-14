@@ -6,6 +6,7 @@ Published as HTML at <https://instantiator.dev/footsteps/docs/>, with the API re
 - [Playing a game](game-play.md): routes, the landing page, permissions, saved progress, and keep-awake.
 - [Deployment](deployment.md): deployment details.
 - [Game data](game-data.md): how a game's data, scenes, resources, and templates fit together.
+- [Positions, sizes and units](positions-sizes-units.md): how a 2.5D scene measures positions and sizes, and the classes and attributes of its elements.
 - [Game repository data](game-repository-data.md): the repository file that holds games, and where it's loaded from.
 - [Special effects](special-effects.md): effects, animations and rewards, and the coordinate system for positions and distances.
 - [Player tracking](player-tracking.md): how players are followed and numbered, what can happen to them, and how they are restored.

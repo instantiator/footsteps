@@ -150,12 +150,15 @@ needs calibrating: a back edge at a third of the height would be 7.6 m away.
 ### Fitting the view to the floor
 
 A 2.5D scene crops the camera picture, not the scene: to the floor's width (its bounding box, as the front edge can
-slant), from the top of the picture down to the floor's lowest point. The game view takes the crop's shape, with side
-bars around it, so the floor spans the view's width, its lowest point sits on the bottom edge, and players at the back
-keep their heads in view. Scenes laid out in `cqw` and `cqh` reflow to the new shape. A change between a 2D and a
-2.5D scene reshapes the view as turning the camera on does. 2D scenes show the whole picture.
+slant), from the top of the picture down to the floor's lowest point. That crop is the **scene box**: as large as fits
+on the screen, centred, and standing on its bottom edge, so the floor spans the box's width, its lowest point sits on
+the screen's bottom edge, and players at the back keep their heads in view. The game view fills the screen; the
+scene's HTML lays out in the scene box, and its [surfaces](game-data.md#floor-surfaces) fill the rest. The camera
+picture beyond the crop shows at the sides too, so players stepping off the floor's sides stay visible. A change
+between a 2D and a 2.5D scene reshapes the view as turning the camera on does. 2D scenes show the whole picture.
 
-The default floor on a 4:3 camera gives a view of about 1.24:1, a little squarer than the camera's. All the
+The default floor on a 4:3 camera gives a scene box of about 1.24:1, a little squarer than the camera's; without a
+camera, the scene box takes the same shape. All the
 conversions between the camera picture, the screen and the floor (the floor's perspective transform, the crop, and
 screen-to-mask rectangles) are in `src/components/camera/FloorGeometry.ts`, and nothing else does this maths beyond
 `FloorSurfaces.ts`, which builds the floor surfaces on it.
@@ -187,9 +190,9 @@ The game is a stack of layers. A larger `zIndex` paints later, so it covers the 
 `GameLayersLayout` builds the stack and `GameLayerWrappers` makes each layer.
 
 Without the camera, the stack fills the game container. With the camera, it is fitted to the
-camera's aspect ratio and centred, so the whole game is inside what the camera can see. A 2.5D scene fits it to the
-[floor's crop](#fitting-the-view-to-the-floor) of the camera instead. The
-container's background shows in the space around it. The game view is a size container, so game
+camera's aspect ratio and centred, so the whole game is inside what the camera can see. A 2.5D scene fills the
+container instead, with each layer's grid of challenges as the [scene box](#fitting-the-view-to-the-floor). The
+container's background shows in any space around the view. The game view is a size container, so game
 templates can use `cqw` and `cqh` to follow it; `vw` and `vh` still follow the browser window. See the
 [coordinate system](special-effects.md#coordinate-system).
 
@@ -251,10 +254,12 @@ by its floor y, and each player by theirs. Items that aren't floor-placed stay i
 ### Floor surfaces and the horizon
 
 A 2.5D scene can draw [floor surfaces](game-data.md#floor-surfaces) in the floor's perspective: tiles, walls,
-backgrounds, the ground and the horizon. Each is the floor's homography carried on past its edges (walls are raised
-from it by the same scaling as floor items), so they move with the calibration. The horizon is where the floor's
-parallel edges meet: the image of the floor's line at infinity. With the default corners it is level, about 4% below
-the viewport's top. `FloorSurfaces.ts` works out every surface's corners on screen.
+backgrounds, the floor background and the horizon. Each is the floor's homography carried on past its edges (walls are
+raised from it by the same scaling as floor items), so they move with the calibration and reach the screen's edges. The
+horizon line is where the floor's parallel edges meet: the image of the floor's line at infinity. With the default
+corners it is level, near the screen's top. The horizon background stands at a finite distance just short of it, and
+the floor background reaches back to the same distance, so nothing shows between them. `FloorSurfaces.ts` works out
+every surface's corners on screen.
 
 ### The back of the floor
 
