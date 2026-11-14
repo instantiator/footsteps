@@ -74,7 +74,7 @@ A game with any `2.5D` scene asks a player using the camera to calibrate the flo
 items can be [placed on the floor](#floor-placed-items), and players pass in front of and behind them. The scene mode
 resolves most specific first: `2.5D` if any active challenge sets it, else `2D` if one does, then the open stage's
 `shared` scene, the overview scene, the game's `modules`, and finally `2D`. A reset scene's setting is over its
-parent's. Nanny's Magic Trifle and the demo are `2.5D` games.
+parent's. Nanny's Magic Trifle and Demo scenes (2.5D) are `2.5D` games; Demo (no camera) and Jump and duck (2D) are `2D`.
 
 #### Floor-placed items
 
@@ -182,8 +182,8 @@ element holds (colour, images, text) is drawn in perspective.
 
 Nanny's Magic Trifle's stepping stones cross a river that runs across the screen, with its far bank and a forest just
 beyond, and the sky behind. Its title has a blurred copy of its picture as a screen background. The demo's "Walk
-around" stage has a tiled floor (one tile lights underfoot), low walls, hills across the screen, and the sky. Its lava
-and stone hop stages lay their pools and stones on the floor.
+around" stage has a tiled floor (with a spring in it), low walls, hills across the screen, and the sky. Its "Avoid the
+pits" and "The floor is lava" stages lay their pits and stones on the floor.
 
 **`avatar`** is what stands in for the player:
 
@@ -255,7 +255,7 @@ templates only render the state, and no game script ever runs. The `rules-demo` 
 #### Reset scenes
 
 A scene can have a `resetScene`, shown in its place until one of the reset scene's rules runs
-`{ "finishReset": true }`. Use it to get players ready, eg. "return to the start" before a lava floor appears, or
+`{ "finishReset": true }`. Use it to get players ready, eg. "return to the start" before a floor of pits appears, or
 a countdown before balloons fall. Until then, the scene's own rules, timers and `start` wait.
 
 ```json
@@ -280,8 +280,8 @@ a countdown before balloons fall. Until then, the scene's own rules, timers and 
 - A reset scene's state starts from its `initialState` each time it is shown.
 - It inherits the scene's `scene` and `avatar` settings, and may override them with its own.
 - A reset scene can have a reset scene of its own, shown first.
-- Revealing the scene fades, like any scene change. Camera interactions pause during the fade, so a player
-  already standing on something doesn't trigger it on the revealed scene.
+- Revealing the scene fades, like any scene change. Camera interactions pause during the fade. Once it is over, a
+  player (or the mouse) already on one of the revealed scene's elements enters it, as if they had just arrived.
 
 #### Rules
 
@@ -315,10 +315,12 @@ open.
 
 Every action can have a [`delayMs`](special-effects.md#delay).
 
-- Selectors are any CSS selector (`#door`, `.lava`, `.door:not(.open)`), matched inside the scene's own
+- Selectors are any CSS selector (`#door`, `.pit`, `.door:not(.open)`), matched inside the scene's own
   templates. A click fires the rules whose selector matches the clicked element or its nearest matching ancestor.
-- `when` doesn't fire for an expression that is already true when the scene is shown: it records it, and fires
-  the next time it turns true. Use `start` with an `if` for "when shown, if…".
+- What already holds when a scene is shown, or starts again after a reset, counts. A `when` already true fires
+  then (a `forMs` counts from then), and a player, the mouse-feet or a resting mouse pointer already on an element
+  enters it. So a scene that resets itself on an `-enter` needs a reset scene to move the player away first, or the
+  loop guard stops it.
 - A `set` can make a `when` fire, which can `set` again. A chain of more than 10 rounds is logged, naming the
   rules, and stopped.
 - `every` waits at least 50 ms between firings.
@@ -337,9 +339,10 @@ Every action can have a [`delayMs`](special-effects.md#delay).
 
 #### Expressions
 
-Conditions, `set` values, answers and durations are short [filtrex](filtrex.md) expressions, eg.
+Conditions, `set` values, answers and times are short [filtrex](filtrex.md) expressions, eg.
 `state.score + 1`, `state.score >= data.target`, `if state.position == 1 then 2 else 1`, `not state.popping`.
-They see:
+Times are `every`, `after`, and any action's `delayMs`, and an effect's `durationMs` and `cycleMs` (see
+[special effects](special-effects.md#common-properties)). They see:
 
 | Name    | What it is                                                                                                                            |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -347,6 +350,12 @@ They see:
 | `data`  | The component's `data`, as authored                                                                                                   |
 | `game`  | The game's progress: `id`, `title`, `config`, `stages` (each with `id`, `availability`, `completion` and `challenges`), and `current` |
 | `event` | For element triggers: the matched element's `id` (empty if it has none) and the `interaction`                                         |
+
+Besides filtrex's own functions (`abs`, `ceil`, `floor`, `log`, `max`, `min`, `round`, `sqrt`, `exists`, `empty`),
+an expression can call `random(min, max)`: a number picked evenly from `min` up to (not including) `max`, different
+each time it is worked out. `floor(random(0, 3))` is a whole number from 0 to 2. Bounds that aren't two numbers in
+order are logged, and the expression has no value. Validation only checks that expressions parse, so it allows
+`random` anywhere, though in a `when` it makes the rule fire unpredictably.
 
 See [how filtrex works](filtrex.md) for the syntax and why it is safe.
 
@@ -370,8 +379,8 @@ See [how filtrex works](filtrex.md) for the syntax and why it is safe.
 | `near-exit`                                                    | Leaves that range, or the camera's view while in it                           |
 
 `interact` takes one interaction or a list. Moving the mouse between an element's own parts neither enters nor leaves
-it. `mouse-enter` is a good mouse stand-in for walking onto something with the camera (the lava demo uses it with
-`foot-enter`); pair it with `click` where keyboard players need a way in too. `threshold` is the fraction of the body part that must be inside the
+it. `mouse-enter` is a good mouse stand-in for walking onto something with the camera (Jump and duck pairs it with
+`body-enter` and `head-enter`), though a `mouse-feet` fallback, as in the demo's floor stages, needs only `foot-enter`; pair it with `click` where keyboard players need a way in too. `threshold` is the fraction of the body part that must be inside the
 element (0–1, default `1`). Interactions fire once per approach, and re-arm when the player moves away. An `-exit`
 fires only after its `-enter` has fired, so pair them (eg. `["hand-exit", "mouse-exit"]` to undo
 `["hand-enter", "mouse-enter"]`, as the demo's bulb does). The monitor
@@ -381,7 +390,7 @@ is described under [how interactions work](camera-mode.md#how-interactions-work)
 `near-enter` and `near-exit` need `within`: how close counts as near, from the centre of the element to the closest
 part of the player's silhouette, as a % of the scene's width. So it is a circle on screen whatever the scene's
 shape, and it works from behind, where key points may not be found. It follows `visionStableFrames`, and a player
-already in range when a scene appears must leave and come back. `holdMs` works with `near-enter`, and `threshold` and
+already in range when a scene appears enters it. `holdMs` works with `near-enter`, and `threshold` and
 `includeCovered` don't apply. There's no mouse equivalent, though a rule can use `mouse-enter` as well.
 
 A rule whose interactions no avatar mode the scene can have would fire is an error: a `hand-enter` rule on a scene
@@ -416,6 +425,11 @@ The screen is a stack of layers, and each scene renders into two of them: backgr
 6. the HUD
 
 The active challenges are the first chunk of `challengeChunking` challenges that still has one unsolved. They sit side by side.
+
+A dialog or scroll draws its image and its text together in its scene's foreground, with nothing between them: its
+background templates and styles go on the image, and its background layer is empty. A challenge's dialog therefore
+sits in front of the camera silhouette, as dialogs are made for the mouse. An overview or stage dialog is still behind
+it.
 
 ### Components
 

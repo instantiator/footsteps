@@ -58,12 +58,12 @@ without a camera, as a stand-in while designing, or as a camera mode's `fallback
   off leaves everything, and landing fires `jump-from` for A, `jump-onto` for B, and `jump` for an element under both
   (and for a `jump` rule with no target), then enters B. The browser's click at the end of a drag is dropped.
 - **A press and release** that moves no more than 8 pixels (`DRAG_PX`) is still a `click`.
-- Leaving the game viewport leaves everything. As with the camera, what is already under the feet when a scene starts
-  or resets must be left and entered again.
+- Leaving the game viewport leaves everything. As with the camera, what is already under the feet when a scene starts,
+  resets or is revealed is entered then, without the pointer having to move.
 
 Hand, head, body and near interactions never fire in `mouse-feet`, and nor do effects that act on players. Mouse
 interactions (`click`, `mouse-enter`, `mouse-exit`) work as usual. The code is `MouseFeet` and `useMouseFeet` in
-`src/components/core/layout/MouseFeetHook.ts`. The rules demo's stone hop stage uses it: the player drags between three stones over lava, each stone falling behind them.
+`src/components/core/layout/MouseFeetHook.ts`. The rules demo's floor stages fall back to it without a camera: in "The floor is lava", the player drags between three stones over lava, each stone falling behind them.
 
 ## Permission
 
@@ -338,8 +338,8 @@ pixel. `hand-enter`, `foot-enter` and `any-enter` fire when any one of their par
 Interactions are **edge-triggered**: one fires when the player has met the condition for
 `visionStableFrames` frames in a row (2 by default, so a one-frame flicker doesn't count), not on every frame
 they hold it. Moving away re-arms it, so a second approach fires again. A player who already
-meets the condition when their monitor starts (when camera mode starts, after a scene change, or on
-coming back into view) must move away and back first.
+meets the condition when their monitor starts (when camera mode starts, after a scene change or reset, or on
+coming back into view) enters once they have held it for those frames.
 
 With `holdMs` on the trigger, an `-enter` fires only once the player has also held it that long; moving away
 before then starts the wait again. An **`-exit`** fires when an `-enter` that fired stops holding for

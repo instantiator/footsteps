@@ -53,7 +53,7 @@ Values are not converted between types: `1 + true` is an error, not `2`.
 ## Errors
 
 - **When the game loads**, every expression is compiled. A syntax mistake stops the game from loading,
-  and the message names the scene and rule, eg. `stages[1] (lava) › … › rules[2].if: Parse error …`.
+  and the message names the scene and rule, eg. `stages[1] (pits) › … › rules[2].if: Parse error …`.
 - **While playing**, a value of the wrong type (eg. adding a number to text) is logged to the console,
   naming the rule, and the expression's result is treated as `undefined`. A condition that fails this way
   counts as false, and a `set` that fails leaves the value unchanged.

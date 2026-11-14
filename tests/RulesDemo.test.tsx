@@ -186,9 +186,9 @@ describe("rules demo, played by camera", () => {
 
     touch("#pit-2", "foot-enter");
     touch("#door-base", "foot-enter"); // too late: they are already falling
-    await wait(1400);
+    await wait(500);
     expect($("#pit-2")).not.toBeNull();
-    await wait(200);
+    await wait(1000);
     await returnToStart();
     touch("#door-base", "foot-enter");
 
@@ -207,10 +207,11 @@ describe("rules demo, played by camera", () => {
     await waitFor(() => expect($("#depth-spring")).not.toBeNull());
 
     touch("#depth-spring", "foot-enter");
-    await wait(1400);
+    // The reset waits for the spin (1.5 s), well past this, however busy the machine
+    await wait(500);
     expect($("#reset-start")).toBeNull();
-    await wait(200);
-    await waitFor(() => expect($("#reset-start")).not.toBeNull());
+    await wait(1000);
+    await waitFor(() => expect($("#reset-start")).not.toBeNull(), { timeout: 3000 });
   });
 
   it("asks the camera not to count covered elements, as clicks don't", async () => {

@@ -37,18 +37,36 @@ Two limits:
 
 ## Common properties
 
-| Property     | Type                     | Meaning                                                                                |
-| ------------ | ------------------------ | -------------------------------------------------------------------------------------- |
-| `effect`     | string                   | Which effect to run.                                                                   |
-| `target`     | CSS selector             | The elements to apply it to. See [Targets](#targets).                                  |
-| `durationMs` | `number \| "indefinite"` | How long it runs. See [Duration](#duration).                                           |
-| `cycleMs`    | number                   | The length of one loop, when `durationMs` is `"indefinite"`.                           |
-| `easing`     | CSS easing function      | How it speeds up and slows down.                                                       |
-| `delayMs`    | number                   | How long to wait before starting, on any action. Defaults to `0`. See [Delay](#delay). |
+| Property     | Type                   | Meaning                                                                                |
+| ------------ | ---------------------- | -------------------------------------------------------------------------------------- |
+| `effect`     | string                 | Which effect to run.                                                                   |
+| `target`     | CSS selector           | The elements to apply it to. See [Targets](#targets).                                  |
+| `durationMs` | `time \| "indefinite"` | How long it runs. See [Duration](#duration).                                           |
+| `cycleMs`    | time                   | The length of one loop, when `durationMs` is `"indefinite"`.                           |
+| `easing`     | CSS easing function    | How it speeds up and slows down.                                                       |
+| `delayMs`    | time                   | How long to wait before starting, on any action. Defaults to `0`. See [Delay](#delay). |
+
+A **time** is a number of milliseconds, or an [expression](game-data.md#expressions) worked out from the scene's
+state: `delayMs` when the rule fires, and `durationMs` and `cycleMs` as the effect starts. This sends an obstacle
+across in a random time, faster as the score rises:
+
+```json
+{
+  "effect": "item-move",
+  "target": "#snowball",
+  "start": { "left": 110, "top": 80 },
+  "end": { "left": -10, "top": 80 },
+  "durationMs": "max(1500, 4000 - state.score * 50)",
+  "delayMs": "random(500, 2500)"
+}
+```
+
+An expression that doesn't work out to a number of at least 0 is logged, naming the rule, and that action is
+skipped; the rule's other actions still apply.
 
 These apply to every effect:
 
-- **Bad values** are an error when the game loads, naming the rule: a negative time, an `easing` or `target` the browser can't parse, an effect that doesn't exist, or one of the mistakes listed under each effect.
+- **Bad values** are an error when the game loads, naming the rule: a negative number for a time, an expression that doesn't parse, an `easing` or `target` the browser can't parse, an effect that doesn't exist, or one of the mistakes listed under each effect.
 - **Firing again:** an effect fired on an element or player already running the same effect restarts it. Different effects run together. A player already leaving ignores another `player-fall` or `player-spin-away`.
 - **Reduced motion:** for players who prefer reduced motion, nothing moves. `quake` doesn't play. `item-fall`, `item-move`, `player-fall` and `player-spin-away` jump straight to their end. `player-static` shows, but doesn't flicker. Game state changes as it would otherwise, and `effectEnd` still fires, so these players can still finish the game.
 - **Not saved:** effects and player states last for the session, like rewards. Reloading shows items where their templates put them.
@@ -57,7 +75,7 @@ These apply to every effect:
 
 Every effect and animation ends when its scene closes or resets, except sounds and rewards: those playing or waiting on a `delayMs` carry on, as rules usually play them in the same step that closes the scene. Items return to where the template puts them, and delays still waiting are cancelled.
 
-A scene resets when `resetState` or `resetChallenge` runs, a reset scene shows, or a scene with `resetStateOnShow` shows again. It then starts afresh: its template is rebuilt, so its CSS animations restart; its `every` and `after` timers restart; its `start` rules fire again; and its `when` rules begin again. A player already over one of its elements must move away and back. A `start` rule can't itself reset the scene, which is an error when the game loads, as it would never stop. A scene that resets itself more than 10 times in a second by some other route is logged and stopped.
+A scene resets when `resetState` or `resetChallenge` runs, a reset scene shows, or a scene with `resetStateOnShow` shows again. It then starts afresh: its template is rebuilt, so its CSS animations restart; its `every` and `after` timers restart; its `start` rules fire again; and its `when` rules begin again. A player (or the mouse) already over one of its elements enters it again. A `start` rule can't itself reset the scene, which is an error when the game loads, as it would never stop. A scene that resets itself more than 10 times in a second by some other route is logged and stopped.
 
 A fallen item stays off-screen during the scene's fade as its scene closes, rather than snapping back into view: it goes when the scene does.
 
@@ -95,7 +113,7 @@ Every action takes an optional `delayMs`.
 - Later actions don't wait for a delayed one: each counts from when the rule fired.
 - A delayed action's expressions are worked out when it runs, from the state at that time, using the `event` from when the rule fired.
 - A delayed action is cancelled if its scene closes or resets first, so a late `completeChallenge` or `set` can't change a scene that has moved on. Sounds and rewards are the exception, as above.
-- `delayMs` is a number, not an expression.
+- `delayMs` can be an expression, worked out when the rule fires, from the state and event at that time.
 
 ## Targets
 
@@ -110,7 +128,7 @@ A `target` looks inside the scene whose rule fired, so two challenges side by si
 
 - **Items move, not layers.** An effect on `.scene-foreground` or `.scene-background`, or with no `target`, applies to each top-level item (`.templateBody > *`), never to a container. Moving a container would make it a stacking context, so items inside it could no longer sit between players.
 - **Wrappers around floor items.** A top-level item holding [floor-placed](game-data.md#floor-placed-items) items gives its children instead, recursively, for the same reason. A `target` that names one directly logs a warning, and those items can't sort among players during the effect.
-- **Dialogs and scrolls** give their whole frame, keeping the image, text and controls together. A dialog's layers always share one motion, even with `consistentMotion: false`.
+- **Dialogs and scrolls** give their whole frame, keeping the image, text and controls together, as one motion even with `consistentMotion: false`.
 - **Missing elements:** a `target` matching nothing logs a warning. Effects wait up to 5 s for their scene's elements to reach the screen first, as a scene's state changes before its fade is over.
 - **Give items an `id`.** An effect stays on its element through template re-renders, but an element without an `id` may be replaced by one.
 
@@ -290,7 +308,7 @@ Fires when an effect finishes, so a game can follow one thing with another witho
 These use `players` rather than `target`, as a rule usually means "whoever did this": see [choosing players](player-tracking.md#choosing-players). They need the camera, and `visionSmoothing` on. With a camera refused or failed in play, they do nothing and the game plays on. On a scene whose [avatar mode](game-data.md#scene-and-avatar-modes) can never be `camera`, they are an error on load:
 
 ```text
-stages[0] (lava) › challenges[0] (floor) › scenes[0] (challenge-in-progress) › rules[2].do[0]:
+stages[0] (pits) › challenges[0] (floor) › scenes[0] (challenge-in-progress) › rules[2].do[0]:
 player-fall needs a player, but this scene's avatar mode is never "camera"
 ```
 
@@ -368,7 +386,7 @@ This freezes whoever touches the ice for 3 seconds:
 
 A frozen player can't fire rules, so `player-unfreeze` needs `"players": "all"`, or a delay from the rule that froze them, as above.
 
-Both apply at once. The player's silhouette and picture stop updating, and they fire the `-exit` of whatever they were over. They are still active, and count in `game.players.frozen`. Once unfrozen, they return to the live camera, so may appear to jump, and must leave and come back to anything they are already over. A frozen player can still fall or spin away, but `player-unfreeze` does nothing to one leaving or removed.
+Both apply at once. The player's silhouette and picture stop updating, and they fire the `-exit` of whatever they were over. They are still active, and count in `game.players.frozen`. Once unfrozen, they return to the live camera, so may appear to jump, and enter anything they are already over. A frozen player can still fall or spin away, but `player-unfreeze` does nothing to one leaving or removed.
 
 ### Static
 

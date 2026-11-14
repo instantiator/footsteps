@@ -36,6 +36,26 @@ been granted. For a game with [2.5D scenes](game-data.md#scene-and-avatar-modes)
 stay disabled until the chosen camera's floor is [calibrated](camera-mode.md#calibrating-the-floor). The camera
 preview shows the floor, says whether it has been saved, and links to the calibration page.
 
+A game whose camera is optional also offers **Play without the camera**. Ticked, the game starts at
+`/game/:id/play?noCamera=true` (the [`noCamera`](configuration.md) setting): the camera stays off even where it is
+available, each scene plays in its [fallback mode](game-data.md#scene-and-avatar-modes), and the floor needn't be
+calibrated. It's for playing, or testing, by mouse.
+
+### Badges
+
+Each game's tile on the home page, and its landing page, show badges worked out from its data and saved progress, so
+authors never write them:
+
+| Badge       | Shows                                                                                                                                         |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scene modes | `2D`, `2.5D`, or both: every scene's `scene` and the game's own, or `2D` if none says                                                         |
+| Camera      | **Camera** if a scene needs it (`camera` with no `fallback`), **Camera optional** if one uses it with a fallback, or **No camera**            |
+| Size        | Its number of stages and challenges, eg. "3 stages · 4 challenges"                                                                            |
+| Progress    | "% complete": the share of its challenges solved, only when there is a saved game                                                             |
+| Sound       | **Music** (an opening or closing music resource), **Sound effects** (a stage sound resource, or a rule's `sound` action), both, or **Silent** |
+
+The code is `gameBadges` in `src/components/core/logic/GameBadgeUtils.ts`, shown by `GameBadges`.
+
 ## Permissions
 
 A game uses the camera when `modules.avatar`, or the `avatar` of any overview, stage `shared`, challenge or reset
@@ -117,6 +137,8 @@ unlocked.
 | -------------------------------------------------- | ------------------------------------------------------------ |
 | `src/pages/LocalGameLanding.tsx`                   | Loads the local repository and game for the landing route    |
 | `src/components/landing/GameLanding.tsx`           | Landing layout, background, and New/Continue controls        |
+| `src/components/landing/GameBadges.tsx`            | A game's badges, on its tile and landing page                |
+| `src/components/core/logic/GameBadgeUtils.ts`      | Works out the badges from the game's data and saved progress |
 | `src/components/landing/GamePermissionPanel.tsx`   | Permission list, states, and Grant buttons                   |
 | `src/components/landing/CameraPicker.tsx`          | Camera dropdown, mirror checkbox, and live preview           |
 | `src/components/landing/useGamePermissions.ts`     | Checks, grants, and gates the landing controls               |

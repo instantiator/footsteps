@@ -442,3 +442,51 @@ Everyone the camera sees is a player, including people standing off the floor. 0
   them.
 
 **Act when:** prompt 002.03.14 is planned.
+
+## No `spawn` or `despawn` actions
+
+A game can't add copies of a `<template>` while it runs, so any number of obstacles can't be on screen at once. Jump
+and duck sends a fixed pool of four obstacles across instead, each restarted on its `effectEnd` with a random
+`delayMs`, and that was enough for a simple runner (prompt 002.03.10). The planned actions were
+`{ "spawn": "<template selector>", "into": "<selector>" }`, adding a copy that goes when the scene resets, and
+`{ "despawn": "<selector>" }`, removing copies (eg. on an obstacle's `animationEnd` once it has left the scene).
+
+**Act when:** a game needs more obstacles on screen than a fixed pool gives, or an obstacle whose kind (eg. high or
+low) is picked at random each time. Then add both actions, with copies marked so a reset removes them, and effects
+and rules that find them by selector as usual.
+
+## Jump and duck's thresholds aren't proven on a real camera
+
+Jump and duck counts a hit as `body-enter` on a snowball (threshold 0.1) or `head-enter` on a bat (0.3), with the
+snowballs at 82% of the scene's height and the bats at 22%. These are first guesses from the photos the browser suite
+uses; it plays the game by mouse.
+
+**Act when:** the first real-camera session. Note whether jumps clear the snowballs and ducks clear the bats (see
+[Landing, progress, and keep-awake](testing/manual-testing.md#landing-progress-and-keep-awake)), and tune the
+thresholds, the lanes' heights and the obstacles' sizes.
+
+## A still mouse pointer misses later obstacles
+
+In mouse mode, `mouse-enter` comes from the browser's own `mouseover`. Chrome reports an obstacle moving under a
+pointer that isn't moving, but only on each obstacle's first pass, so a perfectly still pointer in Jump and duck's
+lanes loses a life or two and then goes untouched. Moving the pointer, as a player does, counts every pass.
+
+**Act when:** mouse players report getting through Jump and duck untouched. Then hit-test the last pointer position
+(`lastPointer` in `src/util/PointerPosition.ts`) each animation frame while a scene has `mouse-enter` rules on moving
+elements, and fire `mouse-enter` and `mouse-exit` from it.
+
+## Overview and stage dialogs sit behind players
+
+A dialog or scroll draws its image and text together in its scene's foreground (prompt 002.03.10). For a challenge
+that puts it in front of every player, but an overview's or stage's foreground is still beneath the camera silhouette.
+No game has one.
+
+**Act when:** a game puts a dialog or scroll in an overview or stage scene with the camera on. Then raise that
+layer above the depth stack while it shows a dialog, or give dialogs a layer of their own above it.
+
+## Camera players can't use dialogs
+
+Dialogs and scrolls are for the mouse: their pages turn with buttons, and some ask for typed answers.
+
+**Act when:** prompt [994 (virtual pointer mode)](prompts/994.00.00.prompt%20-%20virtual%20pointer%20mode.md) is
+planned.
