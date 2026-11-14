@@ -11,17 +11,17 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 
 ## Layout
 
-| Path                         | What it is                                                                  |
-| ---------------------------- | --------------------------------------------------------------------------- |
-| `react-router.config.ts`     | Static build settings: no server, the routes to prerender, the base path    |
-| `src/root.tsx`               | The HTML document every page renders into (head tags, security policy)      |
-| `src/routes.ts`              | Route config: `/`, `/game/:id`, `/game/:id/play`, `/game/:id/json`          |
-| `src/pages/`, `src/Home.tsx` | Route modules (one page each)                                               |
-| `src/components/`            | Game engine UI: layers, scenes, camera, and the game logic in `core/logic/` |
-| `src/config/`                | App config; see [Configuration](configuration.md)                           |
-| `src/vision/`                | Vision models behind one interface, body-part queries, tracking, the worker |
-| `src/providers/`             | React contexts: repository, game data, game state, music, app config        |
-| `tests/`                     | Vitest unit and component tests                                             |
+| Path                         | What it is                                                                                                   |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `react-router.config.ts`     | Static build settings: no server, the routes to prerender, the base path                                     |
+| `src/root.tsx`               | The HTML document every page renders into (head tags, security policy)                                       |
+| `src/routes.ts`              | Route config: `/`, `/game/:id`, `/game/:id/play`, `/game/:id/calibrate`, `/game/:id/json`, `/scene-renderer` |
+| `src/pages/`, `src/Home.tsx` | Route modules (one page each)                                                                                |
+| `src/components/`            | Game engine UI: layers, scenes, camera, and the game logic in `core/logic/`                                  |
+| `src/config/`                | App config; see [Configuration](configuration.md)                                                            |
+| `src/vision/`                | Vision models behind one interface, body-part queries, tracking, the worker                                  |
+| `src/providers/`             | React contexts: repository, game data, game state, music, app config                                         |
+| `tests/`                     | Vitest unit and component tests                                                                              |
 
 ## Invocations
 
@@ -79,9 +79,12 @@ the checks it does not replace.
 
 Every game in the local repository, `public/game-repository.json`, is prerendered at its own URL:
 
-| Game           | Landing page                              | Play page                                      | Game data URL                                  |
-| -------------- | ----------------------------------------- | ---------------------------------------------- | ---------------------------------------------- |
-| `magic-trifle` | <http://localhost:5173/game/magic-trifle> | <http://localhost:5173/game/magic-trifle/play> | <http://localhost:5173/game/magic-trifle/json> |
+| Game             | Landing page                                | Play page                                        | Game data URL                                    |
+| ---------------- | ------------------------------------------- | ------------------------------------------------ | ------------------------------------------------ |
+| `magic-trifle`   | <http://localhost:5173/game/magic-trifle>   | <http://localhost:5173/game/magic-trifle/play>   | <http://localhost:5173/game/magic-trifle/json>   |
+| `rules-demo`     | <http://localhost:5173/game/rules-demo>     | <http://localhost:5173/game/rules-demo/play>     | <http://localhost:5173/game/rules-demo/json>     |
+| `demo-no-camera` | <http://localhost:5173/game/demo-no-camera> | <http://localhost:5173/game/demo-no-camera/play> | <http://localhost:5173/game/demo-no-camera/json> |
+| `jump-and-duck`  | <http://localhost:5173/game/jump-and-duck>  | <http://localhost:5173/game/jump-and-duck/play>  | <http://localhost:5173/game/jump-and-duck/json>  |
 
 `public/test-repository.json` holds `test-game`, which isn't in the local repository, so
 `/game/test-game` shows "not found".
