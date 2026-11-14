@@ -1,3 +1,4 @@
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { templateMessages } from "../src/components/core/logic/TemplateChecks";
 
@@ -23,6 +24,11 @@ describe("templateMessages", () => {
   it("finds nothing wrong with a clean 2.5D template", () => {
     const text =
       '<div class="floor-background"></div><div class="rear-wall" data-fill-width></div><div data-floor-y="50"></div>';
+    expect(templateMessages(text, true)).toEqual({ problems: [], warnings: [] });
+  });
+
+  it.each(readdirSync("docs/tutorials/samples"))("finds nothing wrong with the sample %s", (name) => {
+    const text = readFileSync(`docs/tutorials/samples/${name}`, "utf8");
     expect(templateMessages(text, true)).toEqual({ problems: [], warnings: [] });
   });
 });
