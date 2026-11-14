@@ -621,6 +621,801 @@
       ],
       "gameContainerStyle": { "fontFamily": "system-ui, sans-serif" }
     },
+    "jump-and-duck": {
+      "id": "jump-and-duck",
+      "title": "Jump and duck (2D)",
+      "description": "Snowballs roll along the ground and bats swoop at head height: jump the snowballs and duck the bats until the score is reached. Best with a camera; with the mouse, keep your pointer clear of them.",
+      "tileGraphic": "tile",
+      "modules": {
+        "scene": "2D",
+        "avatar": {
+          "mode": "camera",
+          "fallback": "mouse",
+          "preview": false
+        }
+      },
+      "config": {
+        "sequential": true,
+        "autoAdvanceStages": false
+      },
+      "stylesheets": ["jd-css"],
+      "resources": {
+        "jd-css": {
+          "type": "local",
+          "target": "games/jump-and-duck/jump-and-duck.css"
+        },
+        "tile": {
+          "type": "local",
+          "target": "games/jump-and-duck/tile.svg"
+        },
+        "pop": {
+          "type": "local",
+          "target": "games/rules-demo/pop.wav"
+        },
+        "tick": {
+          "type": "local",
+          "target": "games/rules-demo/tick.wav"
+        },
+        "fanfare": {
+          "type": "local",
+          "target": "games/rules-demo/fanfare.wav"
+        }
+      },
+      "scenes": [
+        {
+          "purpose": "game-overview-title",
+          "component": {
+            "type": "template",
+            "data": {},
+            "foregroundTemplate": {
+              "sourceType": "relative",
+              "templateSource": "games/jump-and-duck/title.hbs"
+            },
+            "foregroundTemplateStyle": {
+              "width": "100%",
+              "height": "100%"
+            }
+          }
+        },
+        {
+          "purpose": "game-overview-stages",
+          "component": {
+            "type": "template",
+            "data": {
+              "names": {
+                "warm-up": "Warm-up",
+                "long-run": "Long run"
+              }
+            },
+            "rules": [
+              {
+                "on": {
+                  "interact": ["click", "hand-enter"],
+                  "target": "#stage-link-warm-up",
+                  "threshold": 0.5
+                },
+                "do": [
+                  {
+                    "enterStage": "warm-up"
+                  }
+                ]
+              },
+              {
+                "on": {
+                  "interact": ["click", "hand-enter"],
+                  "target": "#stage-link-long-run",
+                  "threshold": 0.5
+                },
+                "do": [
+                  {
+                    "enterStage": "long-run"
+                  }
+                ]
+              }
+            ],
+            "foregroundTemplate": {
+              "sourceType": "relative",
+              "templateSource": "games/jump-and-duck/stages.hbs"
+            },
+            "foregroundTemplateStyle": {
+              "width": "100%",
+              "height": "100%"
+            }
+          }
+        }
+      ],
+      "stages": [
+        {
+          "id": "warm-up",
+          "challenges": [
+            {
+              "id": "warm-up-run",
+              "solution": {
+                "answers": []
+              },
+              "scenes": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "component": {
+                    "type": "template",
+                    "data": {
+                      "target": 15,
+                      "baseMs": 4000,
+                      "minMs": 2500,
+                      "speedUp": 50
+                    },
+                    "initialState": {
+                      "score": 0,
+                      "lives": 3,
+                      "over": false,
+                      "won": false
+                    },
+                    "resetStateOnShow": true,
+                    "rules": [
+                      {
+                        "on": {
+                          "start": true
+                        },
+                        "do": [
+                          {
+                            "effect": "item-move",
+                            "target": "#low-1",
+                            "start": {
+                              "left": 110,
+                              "top": 82
+                            },
+                            "end": {
+                              "left": -10,
+                              "top": 82
+                            },
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
+                            "delayMs": "random(0, 1500)"
+                          },
+                          {
+                            "effect": "item-move",
+                            "target": "#high-1",
+                            "start": {
+                              "left": 110,
+                              "top": 22
+                            },
+                            "end": {
+                              "left": -10,
+                              "top": 22
+                            },
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
+                            "delayMs": "random(1500, 3500)"
+                          },
+                          {
+                            "effect": "item-move",
+                            "target": "#low-2",
+                            "start": {
+                              "left": 110,
+                              "top": 82
+                            },
+                            "end": {
+                              "left": -10,
+                              "top": 82
+                            },
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
+                            "delayMs": "random(3000, 5000)"
+                          },
+                          {
+                            "effect": "item-move",
+                            "target": "#high-2",
+                            "start": {
+                              "left": 110,
+                              "top": 22
+                            },
+                            "end": {
+                              "left": -10,
+                              "top": 22
+                            },
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
+                            "delayMs": "random(4500, 6500)"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "effectEnd": "item-move",
+                          "target": "#low-1"
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "effect": "item-move",
+                            "target": "#low-1",
+                            "start": {
+                              "left": 110,
+                              "top": 82
+                            },
+                            "end": {
+                              "left": -10,
+                              "top": 82
+                            },
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
+                            "delayMs": "random(300, 2500)"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "effectEnd": "item-move",
+                          "target": "#high-1"
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "effect": "item-move",
+                            "target": "#high-1",
+                            "start": {
+                              "left": 110,
+                              "top": 22
+                            },
+                            "end": {
+                              "left": -10,
+                              "top": 22
+                            },
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
+                            "delayMs": "random(300, 2500)"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "effectEnd": "item-move",
+                          "target": "#low-2"
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "effect": "item-move",
+                            "target": "#low-2",
+                            "start": {
+                              "left": 110,
+                              "top": 82
+                            },
+                            "end": {
+                              "left": -10,
+                              "top": 82
+                            },
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
+                            "delayMs": "random(300, 2500)"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "effectEnd": "item-move",
+                          "target": "#high-2"
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "effect": "item-move",
+                            "target": "#high-2",
+                            "start": {
+                              "left": 110,
+                              "top": 22
+                            },
+                            "end": {
+                              "left": -10,
+                              "top": 22
+                            },
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
+                            "delayMs": "random(300, 2500)"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "every": 1000
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "set": {
+                              "score": "state.score + 1"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "interact": ["body-enter", "mouse-enter"],
+                          "target": ".jd-snowball",
+                          "threshold": 0.1
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "set": {
+                              "lives": "state.lives - 1"
+                            }
+                          },
+                          {
+                            "sound": "pop"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "interact": ["head-enter", "mouse-enter"],
+                          "target": ".jd-bat",
+                          "threshold": 0.3
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "set": {
+                              "lives": "state.lives - 1"
+                            }
+                          },
+                          {
+                            "sound": "pop"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "when": "state.score >= data.target and not state.over"
+                        },
+                        "do": [
+                          {
+                            "set": {
+                              "over": "true",
+                              "won": "true"
+                            }
+                          },
+                          {
+                            "effect": "stop",
+                            "target": ".jd-obstacle",
+                            "stop": "item-move"
+                          },
+                          {
+                            "completeChallenge": true,
+                            "delayMs": 1500
+                          },
+                          {
+                            "sound": "fanfare"
+                          },
+                          {
+                            "reward": {
+                              "animation": "fireworks",
+                              "particleCount": 150
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "when": "state.lives <= 0 and not state.over"
+                        },
+                        "do": [
+                          {
+                            "set": {
+                              "over": "true"
+                            }
+                          },
+                          {
+                            "effect": "stop",
+                            "target": ".jd-obstacle",
+                            "stop": "item-move"
+                          },
+                          {
+                            "resetChallenge": true,
+                            "delayMs": 1500
+                          }
+                        ]
+                      }
+                    ],
+                    "foregroundTemplate": {
+                      "sourceType": "relative",
+                      "templateSource": "games/jump-and-duck/run.hbs"
+                    },
+                    "foregroundTemplateStyle": {
+                      "width": "100%",
+                      "height": "100%"
+                    }
+                  },
+                  "resetScene": {
+                    "showOn": "every-show",
+                    "component": {
+                      "type": "template",
+                      "data": {},
+                      "initialState": {
+                        "count": 3
+                      },
+                      "rules": [
+                        {
+                          "on": {
+                            "every": 1000
+                          },
+                          "do": [
+                            {
+                              "set": {
+                                "count": "state.count - 1"
+                              }
+                            },
+                            {
+                              "sound": "tick"
+                            }
+                          ]
+                        },
+                        {
+                          "on": {
+                            "after": 3500
+                          },
+                          "do": [
+                            {
+                              "finishReset": true
+                            }
+                          ]
+                        }
+                      ],
+                      "foregroundTemplate": {
+                        "sourceType": "relative",
+                        "templateSource": "games/jump-and-duck/ready.hbs"
+                      },
+                      "foregroundTemplateStyle": {
+                        "width": "100%",
+                        "height": "100%"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "long-run",
+          "challenges": [
+            {
+              "id": "long-run-run",
+              "solution": {
+                "answers": []
+              },
+              "scenes": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "component": {
+                    "type": "template",
+                    "data": {
+                      "target": 40,
+                      "baseMs": 3500,
+                      "minMs": 1600,
+                      "speedUp": 40
+                    },
+                    "initialState": {
+                      "score": 0,
+                      "lives": 3,
+                      "over": false,
+                      "won": false
+                    },
+                    "resetStateOnShow": true,
+                    "rules": [
+                      {
+                        "on": {
+                          "start": true
+                        },
+                        "do": [
+                          {
+                            "effect": "item-move",
+                            "target": "#low-1",
+                            "start": {
+                              "left": 110,
+                              "top": 82
+                            },
+                            "end": {
+                              "left": -10,
+                              "top": 82
+                            },
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
+                            "delayMs": "random(0, 1500)"
+                          },
+                          {
+                            "effect": "item-move",
+                            "target": "#high-1",
+                            "start": {
+                              "left": 110,
+                              "top": 22
+                            },
+                            "end": {
+                              "left": -10,
+                              "top": 22
+                            },
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
+                            "delayMs": "random(1500, 3500)"
+                          },
+                          {
+                            "effect": "item-move",
+                            "target": "#low-2",
+                            "start": {
+                              "left": 110,
+                              "top": 82
+                            },
+                            "end": {
+                              "left": -10,
+                              "top": 82
+                            },
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
+                            "delayMs": "random(3000, 5000)"
+                          },
+                          {
+                            "effect": "item-move",
+                            "target": "#high-2",
+                            "start": {
+                              "left": 110,
+                              "top": 22
+                            },
+                            "end": {
+                              "left": -10,
+                              "top": 22
+                            },
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
+                            "delayMs": "random(4500, 6500)"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "effectEnd": "item-move",
+                          "target": "#low-1"
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "effect": "item-move",
+                            "target": "#low-1",
+                            "start": {
+                              "left": 110,
+                              "top": 82
+                            },
+                            "end": {
+                              "left": -10,
+                              "top": 82
+                            },
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
+                            "delayMs": "random(300, 2500)"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "effectEnd": "item-move",
+                          "target": "#high-1"
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "effect": "item-move",
+                            "target": "#high-1",
+                            "start": {
+                              "left": 110,
+                              "top": 22
+                            },
+                            "end": {
+                              "left": -10,
+                              "top": 22
+                            },
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
+                            "delayMs": "random(300, 2500)"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "effectEnd": "item-move",
+                          "target": "#low-2"
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "effect": "item-move",
+                            "target": "#low-2",
+                            "start": {
+                              "left": 110,
+                              "top": 82
+                            },
+                            "end": {
+                              "left": -10,
+                              "top": 82
+                            },
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
+                            "delayMs": "random(300, 2500)"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "effectEnd": "item-move",
+                          "target": "#high-2"
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "effect": "item-move",
+                            "target": "#high-2",
+                            "start": {
+                              "left": 110,
+                              "top": 22
+                            },
+                            "end": {
+                              "left": -10,
+                              "top": 22
+                            },
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
+                            "delayMs": "random(300, 2500)"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "every": 1000
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "set": {
+                              "score": "state.score + 1"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "interact": ["body-enter", "mouse-enter"],
+                          "target": ".jd-snowball",
+                          "threshold": 0.1
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "set": {
+                              "lives": "state.lives - 1"
+                            }
+                          },
+                          {
+                            "sound": "pop"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "interact": ["head-enter", "mouse-enter"],
+                          "target": ".jd-bat",
+                          "threshold": 0.3
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "set": {
+                              "lives": "state.lives - 1"
+                            }
+                          },
+                          {
+                            "sound": "pop"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "when": "state.score >= data.target and not state.over"
+                        },
+                        "do": [
+                          {
+                            "set": {
+                              "over": "true",
+                              "won": "true"
+                            }
+                          },
+                          {
+                            "effect": "stop",
+                            "target": ".jd-obstacle",
+                            "stop": "item-move"
+                          },
+                          {
+                            "completeChallenge": true,
+                            "delayMs": 1500
+                          },
+                          {
+                            "sound": "fanfare"
+                          },
+                          {
+                            "reward": {
+                              "animation": "fireworks",
+                              "particleCount": 150
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "when": "state.lives <= 0 and not state.over"
+                        },
+                        "do": [
+                          {
+                            "set": {
+                              "over": "true"
+                            }
+                          },
+                          {
+                            "effect": "stop",
+                            "target": ".jd-obstacle",
+                            "stop": "item-move"
+                          },
+                          {
+                            "resetChallenge": true,
+                            "delayMs": 1500
+                          }
+                        ]
+                      }
+                    ],
+                    "foregroundTemplate": {
+                      "sourceType": "relative",
+                      "templateSource": "games/jump-and-duck/run.hbs"
+                    },
+                    "foregroundTemplateStyle": {
+                      "width": "100%",
+                      "height": "100%"
+                    }
+                  },
+                  "resetScene": {
+                    "showOn": "every-show",
+                    "component": {
+                      "type": "template",
+                      "data": {},
+                      "initialState": {
+                        "count": 3
+                      },
+                      "rules": [
+                        {
+                          "on": {
+                            "every": 1000
+                          },
+                          "do": [
+                            {
+                              "set": {
+                                "count": "state.count - 1"
+                              }
+                            },
+                            {
+                              "sound": "tick"
+                            }
+                          ]
+                        },
+                        {
+                          "on": {
+                            "after": 3500
+                          },
+                          "do": [
+                            {
+                              "finishReset": true
+                            }
+                          ]
+                        }
+                      ],
+                      "foregroundTemplate": {
+                        "sourceType": "relative",
+                        "templateSource": "games/jump-and-duck/ready.hbs"
+                      },
+                      "foregroundTemplateStyle": {
+                        "width": "100%",
+                        "height": "100%"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "gameContainerStyle": {
+        "fontFamily": "system-ui, sans-serif"
+      }
+    },
     "rules-demo": {
       "id": "rules-demo",
       "title": "Demo scenes (2.5D)",

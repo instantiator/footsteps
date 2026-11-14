@@ -440,6 +440,20 @@ describe("rule engine", () => {
       expect(error).toHaveBeenCalledWith(expect.stringContaining("rules[0].do[0].durationMs"));
     });
 
+    it("sends Jump and duck's obstacles at random times, at a speed worked out from the score", () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      const [run] = (localRepository as GameRepository).games["jump-and-duck"].stages[0].challenges[0].scenes;
+      const state = playing(run.component.rules!, { ...run.component.initialState, score: 10 });
+      Object.assign(state.stages[0].stage.challenges[0].scenes[0].component, { data: run.component.data });
+      const started = fireRules(env, state, SCOPE, (trigger) => ("start" in trigger ? NO_EVENT : undefined));
+
+      // At the lowest random draw, the first goes at once and the rest at the bottom of their ranges
+      expect(started.session.visualEffects.map(({ effect }) => effect)).toEqual([
+        expect.objectContaining({ target: "#low-1", durationMs: 3500 }),
+      ]);
+      expect(started.session.delayedActions.map(({ delayMs }) => delayMs)).toEqual([1500, 3000, 4500]);
+    });
+
     it("sets every key from the state before the action", () => {
       const state = playing([{ on: { start: true }, do: [{ set: { a: "state.b", b: "state.a" } }] }], {
         a: 1,

@@ -1,0 +1,108 @@
+/* Jump and duck: a winter evening, with snowballs rolling along the ground and bats swooping at head height */
+.jd-screen {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: system-ui, sans-serif;
+  color: white;
+  text-align: center;
+}
+
+.jd-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3vmin;
+  background: linear-gradient(#14213d, #3a506b);
+  cursor: pointer;
+}
+
+.jd-hint {
+  opacity: 0.85;
+}
+
+.jd-stages {
+  display: flex;
+  gap: 4vmin;
+}
+
+.jd-stage-link {
+  padding: 3vmin 6vmin;
+  border-radius: 2vmin;
+  background: #fca311;
+  color: #14213d;
+  font-size: 5vmin;
+  cursor: pointer;
+}
+
+.jd-stage-link.completed {
+  background: #8ecae6;
+}
+
+.jd-countdown {
+  font-size: 20vmin;
+  margin: 0;
+}
+
+/* The run: see-through, so the player's camera image shows behind the obstacles */
+.jd-run {
+  background: linear-gradient(#14213d33, #3a506b33);
+}
+
+.jd-ground {
+  position: absolute;
+  inset: 92% 0 0;
+  background: #f1faee;
+  pointer-events: none;
+}
+
+.jd-status,
+.jd-message {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin: 0;
+  font-size: 4vmin;
+  text-shadow: 0 0 1vmin #000;
+  pointer-events: none;
+}
+
+.jd-status {
+  top: 2%;
+}
+
+.jd-message {
+  top: 45%;
+  font-size: 8vmin;
+}
+
+/* Obstacles wait off the right edge until they are sent across */
+.jd-obstacle {
+  position: absolute;
+  left: 110%;
+  transform: translate(-50%, -50%);
+}
+
+/* A snowball: low, where only a jump clears it */
+.jd-snowball {
+  top: 82%;
+  width: 9%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #caf0f8 60%, #90a4ae);
+}
+
+/* A bat: high, where only a duck clears it */
+.jd-bat {
+  top: 22%;
+  width: 14%;
+  height: 8%;
+  border-radius: 50% 50% 40% 40%;
+  background:
+    radial-gradient(circle at 50% 40%, #ffd166 0 6%, transparent 7%),
+    linear-gradient(90deg, transparent 0 5%, #1b1b2f 5% 95%, transparent 95%);
+  clip-path: polygon(0 20%, 30% 50%, 50% 0, 70% 50%, 100% 20%, 80% 100%, 50% 70%, 20% 100%);
+}
