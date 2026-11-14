@@ -11,6 +11,7 @@ import { GameRepositoryContext } from "../src/providers/GameRepositoryContext";
 import { LOADING_REPOSITORY } from "../src/entities/GameRepository";
 import { getBaseURL } from "../src/util/ObjectUtils";
 import { server } from "./mocks/server";
+import { SCENE_RENDERED_EVENT, trackPointer } from "../src/util/PointerPosition";
 
 const localSource: GameSource = { type: "LocalRepository", path: "game-repository.json" };
 
@@ -307,6 +308,34 @@ describe("GameSceneTemplateComponent", () => {
       const root = container.querySelector('[data-scene-scope="overview:game-overview-stages"]')!;
       return { onSceneEvent, root, knob: container.querySelector("#knob")!, door: container.querySelector("#door")! };
     };
+
+    it("enters what a resting pointer is over when a new body renders, and announces the render", async () => {
+      trackPointer();
+      fireEvent.pointerMove(window, { clientX: 5, clientY: 5 });
+      Object.defineProperty(document, "elementFromPoint", {
+        configurable: true,
+        value: () => document.getElementById("knob"),
+      });
+      const rendered = vi.fn();
+      window.addEventListener(SCENE_RENDERED_EVENT, rendered);
+      const { onSceneEvent, root, knob } = await renderEvents();
+      await waitFor(() => expect(rendered).toHaveBeenCalledOnce());
+      expect(onSceneEvent).toHaveBeenCalledExactlyOnceWith({ kind: "mouseOver", target: knob, root, related: null });
+      window.removeEventListener(SCENE_RENDERED_EVENT, rendered);
+      Reflect.deleteProperty(document, "elementFromPoint");
+      fireEvent.pointerOut(window, { relatedTarget: null });
+    });
+
+    it("enters nothing when the pointer isn't over the page", async () => {
+      trackPointer();
+      fireEvent.pointerOut(window, { relatedTarget: null });
+      const rendered = vi.fn();
+      window.addEventListener(SCENE_RENDERED_EVENT, rendered);
+      const { onSceneEvent } = await renderEvents();
+      await waitFor(() => expect(rendered).toHaveBeenCalledOnce());
+      expect(onSceneEvent).not.toHaveBeenCalled();
+      window.removeEventListener(SCENE_RENDERED_EVENT, rendered);
+    });
 
     it("passes on clicks, with the element and the container matching stops at", async () => {
       const { onSceneEvent, root, knob } = await renderEvents();

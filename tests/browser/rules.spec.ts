@@ -58,24 +58,14 @@ const returnToStart = async (page: Page) => {
   await expect(page.locator("#door-base")).toBeVisible({ timeout: 6000 });
 };
 
-/** Moves the mouse just inside the scene box's top left, on the sky. */
-const moveToSceneCorner = async (page: Page) => {
-  const viewport = (await page.locator(".floorScene .sceneBox").first().boundingBox())!;
-  await page.mouse.move(viewport.x + 5, viewport.y + 5);
-};
-
 /** Moves the mouse just inside the floor's front right corner, which is the scene box's bottom right: on the lava. */
 const moveToFrontCorner = async (page: Page) => {
   const viewport = (await page.locator(".floorScene .sceneBox").first().boundingBox())!;
   await page.mouse.move(viewport.x + viewport.width - 5, viewport.y + viewport.height - 5);
 };
 
-/**
- * Puts the mouse on stone hop's first stone in its reset scene. The feet start afresh when a scene changes, and what
- * they first find under them counts as already there, so the mouse moves off and back on.
- */
+/** Puts the mouse on stone hop's first stone in its reset scene. */
 const standOnFirstStoneOf = (page: Page) => async () => {
-  await moveToSceneCorner(page);
   await moveTo(page, "#reset-start");
 };
 
@@ -237,6 +227,34 @@ test.describe("rules demo", () => {
 
     await page.locator("#door-base").hover();
     await expect(page.locator("#stage-link-lava")).toHaveClass(/completed/);
+  });
+
+  test("finishes the reset for mouse-feet already resting where the start appears, without them moving", async ({
+    page,
+  }) => {
+    // A jump on the spot on the first stone resets the challenge, leaving the feet where the reset scene's start appears
+    await openDemo(page, (game) =>
+      challengeOf(game, "stone-hop").rules!.push({
+        on: { interact: "jump", target: "#stone-1" },
+        do: [{ resetChallenge: true }],
+      }),
+    );
+    await page.locator("#stage-link-stone-hop").click();
+    await standOnFirstStoneOf(page)();
+    const run = () =>
+      page.locator("[data-scene-scope^='challenge:'] .templateBody").first().getAttribute("data-scene-run");
+    await expect(page.locator("#stone-1")).toBeVisible();
+    const before = await run();
+
+    const stone = (await page.locator("#stone-1").boundingBox())!;
+    await page.mouse.move(stone.x + stone.width / 2, stone.y + stone.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(stone.x + stone.width / 2 + 15, stone.y + stone.height / 2, { steps: 3 });
+    await page.mouse.up();
+
+    await expect.poll(run).not.toBe(before);
+    await expect(page.locator("#reset-message")).toHaveCount(0);
+    await expect(page.locator("#stone-1")).toBeVisible();
   });
 
   test("takes a pool laid on the floor only where it is drawn, not anywhere in its box", async ({ page }) => {

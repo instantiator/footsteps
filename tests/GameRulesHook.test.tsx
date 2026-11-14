@@ -258,10 +258,12 @@ describe("useGameRules", () => {
       expect(done()).toBe(0);
     });
 
-    it("doesn't count an expression that is already true when the scene is shown", () => {
+    it("counts an expression already true when the scene is shown from then, firing once", () => {
       const { done } = waiting({ ready: true, done: 0 });
-      advance(5000);
+      advance(999);
       expect(done()).toBe(0);
+      advance(5000);
+      expect(done()).toBe(1);
     });
   });
 
@@ -476,7 +478,7 @@ describe("useGameRules", () => {
         expect(rules.sceneState(TITLE)).toEqual({ n: 1 });
       });
 
-      it("cancels a forMs wait, and an expression already true after it only records", () => {
+      it("cancels a forMs wait, and starts one afresh for an expression already true after it", () => {
         const rules = renderRules(
           rulesGame({
             [TITLE]: {
@@ -488,8 +490,10 @@ describe("useGameRules", () => {
         rules.set((state) => ({ ...state, sceneStates: { [TITLE]: { go: true } } }));
         advance(600);
         rules.set((state) => startSceneRuns(state, [TITLE]));
-        advance(5000);
+        advance(999);
         expect(rules.sceneState(TITLE)).toEqual({ go: true });
+        advance(1);
+        expect(rules.sceneState(TITLE)).toEqual({ go: true, done: true });
       });
 
       it("stops and logs a scene that keeps resetting itself through other rules", () => {

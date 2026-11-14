@@ -451,14 +451,22 @@ describe("rule engine", () => {
       sceneStates: { ...state.sceneStates, [SCOPE]: { ...(stateOf(state) ?? { fired: 0 }), n } },
     });
 
-    it("records a when rule seen for the first time without firing it, even if true", () => {
+    it("fires a when rule seen for the first time if it is already true, once", () => {
       const state = withN(counting(), 5);
       const result = runWhens(env, state, new Map());
-      expect(result.state).toBe(state);
+      expect(stateOf(result.state)).toMatchObject({ fired: 1 });
       expect(result.edges.get(whenKey(state, SCOPE, 0))).toBe(true);
+      expect(runWhens(env, result.state, result.edges).state).toBe(result.state);
     });
 
-    it("begins again after a reset: already true only records, and a later change fires", () => {
+    it("records a when rule seen for the first time without firing it while false", () => {
+      const state = counting();
+      const result = runWhens(env, state, new Map());
+      expect(result.state).toBe(state);
+      expect(result.edges.get(whenKey(state, SCOPE, 0))).toBe(false);
+    });
+
+    it("begins again after a reset: a rule already true then fires again", () => {
       const rules: GameRule[] = [
         { on: { when: "state.n >= 5" }, do: [{ set: { fired: "true" } }] },
         { on: { start: true }, do: [{ resetState: true }] },
@@ -470,8 +478,9 @@ describe("rule engine", () => {
         () => undefined,
       );
       const { edges } = runWhens(env, before, new Map());
+      expect(stateOf(before)).not.toHaveProperty("fired");
       const reset = fireRules(env, before, SCOPE, (trigger) => ("start" in trigger ? NO_EVENT : undefined));
-      expect(runWhens(env, reset, edges).state).toBe(reset);
+      expect(stateOf(runWhens(env, reset, edges).state)).toMatchObject({ fired: true });
     });
 
     it("fires on false to true, not while it stays true, and again after it has been false", () => {
@@ -485,13 +494,13 @@ describe("rule engine", () => {
       expect(stateOf(state)).toMatchObject({ fired: 2 });
     });
 
-    it("forgets a hidden scene's rules, so they record afresh when it is shown again", () => {
+    it("forgets a hidden scene's rules, so one already true fires when it is shown again", () => {
       const { edges } = runWhens(env, counting(), new Map());
       const hidden = { ...counting(), current: { ...counting().current, stageId: null } };
       const { edges: afterHide } = runWhens(env, hidden, edges);
       expect(afterHide.has(`${SCOPE}#0`)).toBe(false);
       const { state } = runWhens(env, withN(counting(), 2), afterHide);
-      expect(stateOf(state)).toMatchObject({ fired: 0 });
+      expect(stateOf(state)).toMatchObject({ fired: 1 });
     });
 
     it("follows a chain of when rules that set state", () => {
@@ -510,10 +519,7 @@ describe("rule engine", () => {
         { on: { when: "state.x" }, do: [{ set: { x: "false", n: "state.n + 1" } }] },
         { on: { when: "not state.x" }, do: [{ set: { x: "true", n: "state.n + 1" } }] },
       ];
-      const { edges } = runWhens(env, playing(rules, { x: false, n: 0 }), new Map());
-      const kicked = { ...playing(rules), sceneStates: { [SCOPE]: { x: true, n: 0 } } };
-
-      const looped = runWhens(env, kicked, edges);
+      const looped = runWhens(env, playing(rules, { x: false, n: 0 }), new Map());
       expect(error).toHaveBeenCalledWith(expect.stringContaining(`${SCOPE}#`));
       expect(stateOf(looped.state)).toMatchObject({ n: MAX_WHEN_CHAIN });
 

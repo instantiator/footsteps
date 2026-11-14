@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { SceneScope } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
+import { lastPointer, SCENE_RENDERED_EVENT, trackPointer, type ClientPoint } from "../../../util/PointerPosition";
 import type { CameraInteraction } from "../../camera/PlayerMonitor";
 import { MOUSE_FEET_INTERACTIONS } from "../logic/AvatarModeUtils";
 import { FLOOR_AREA_ATTRIBUTE } from "./FloorSurfaceClasses";
@@ -21,12 +22,6 @@ interface FeetTarget {
   interactions: readonly CameraInteraction[];
   /** How long the feet must stay over it before they enter. */
   holdMs: number;
-}
-
-/** A point on the screen. */
-interface ClientPoint {
-  x: number;
-  y: number;
 }
 
 /**
@@ -83,20 +78,14 @@ const landingInteractions = (interactions: readonly CameraInteraction[], from: b
 
 /**
  * The pointer as player 1's feet: what they are over, entering after a target's hold, and jumps by dragging.
- * Like the camera's monitor, what is already under the feet when it starts, or when a scene resets, must be left
- * and entered again before it fires.
+ * Like the camera's monitor, what is already under the feet when a scene starts or resets enters it then
+ * ({@link restand}), without the pointer having to move.
  */
 export class MouseFeet {
   /** Targets the feet have entered. */
   private entered = new Map<string, FeetTarget>();
   /** Targets the feet are over, waiting out their hold, with the timer that enters them. */
   private pending = new Map<string, ReturnType<typeof setTimeout>>();
-  /** Targets the feet were already over when they started, which can't fire until left. */
-  private held = new Set<string>();
-  /** Whether a position has been seen since starting. */
-  private armed = false;
-  /** The starts of target keys to treat as already held at the next position; see {@link rearm}. */
-  private rearming: string[] = [];
   /** Where the button went down, and the jump targets under it, while it is down. */
   private press: { at: ClientPoint; takeoff: Map<string, FeetTarget>; airborne: boolean } | undefined;
 
@@ -129,6 +118,12 @@ export class MouseFeet {
       return;
     }
     this.standOn(targetsAt(this.rules, point));
+  }
+
+  /** The feet stand again where the pointer rests, as when a scene has just rendered under it. */
+  restand(): void {
+    const point = lastPointer();
+    if (isDefined(point) && this.press?.airborne !== true) this.standOn(targetsAt(this.rules, point));
   }
 
   /** The button went down: a jump may be starting. */
@@ -166,11 +161,10 @@ export class MouseFeet {
     return true;
   }
 
-  /** The feet left the game: exits fire for everything entered, and the next position starts afresh. */
+  /** The feet left the game: exits fire for everything entered. */
   leave(): void {
     this.press = undefined;
     this.leaveAll();
-    this.armed = false;
   }
 
   /** Stops, without firing anything, as when interactions pause. */
@@ -179,11 +173,9 @@ export class MouseFeet {
     this.pending.forEach(clearTimeout);
     this.pending.clear();
     this.entered.clear();
-    this.held.clear();
-    this.armed = false;
   }
 
-  /** Starts afresh with a scene's targets: their exits won't fire, and what is under the feet must be entered again. */
+  /** Starts afresh with a scene's targets: their exits won't fire, and what is under the feet enters them again. */
   rearm(scope: SceneScope): void {
     const prefix = `${scope}#`;
     for (const key of this.entered.keys()) if (key.startsWith(prefix)) this.entered.delete(key);
@@ -192,24 +184,20 @@ export class MouseFeet {
       clearTimeout(timer);
       this.pending.delete(key);
     }
-    this.rearming.push(prefix);
   }
 
   /** The feet stand on these targets now: entering new ones (after their hold) and leaving the rest. */
   private standOn(under: Map<string, FeetTarget>): void {
     this.forgetAllBut(under);
     for (const [key, target] of under) {
-      if (this.entered.has(key) || this.pending.has(key) || this.held.has(key)) continue;
-      if (!this.armed || this.rearming.some((prefix) => key.startsWith(prefix))) this.held.add(key);
-      else if (target.holdMs > 0)
+      if (this.entered.has(key) || this.pending.has(key)) continue;
+      if (target.holdMs > 0)
         this.pending.set(
           key,
           setTimeout(() => this.enter(key, target), target.holdMs),
         );
       else this.enter(key, target);
     }
-    this.armed = true;
-    this.rearming = [];
   }
 
   /** Leaves the targets the feet are no longer on, and stops waiting on their holds. */
@@ -220,7 +208,6 @@ export class MouseFeet {
       clearTimeout(timer);
       this.pending.delete(key);
     }
-    for (const key of this.held) if (!under.has(key)) this.held.delete(key);
   }
 
   /** Leaves everything, as when the feet leave the ground or the game. */
@@ -228,7 +215,6 @@ export class MouseFeet {
     for (const [key, target] of this.entered) this.exit(key, target);
     this.pending.forEach(clearTimeout);
     this.pending.clear();
-    this.held.clear();
   }
 
   private enter(key: string, target: FeetTarget): void {
@@ -258,6 +244,43 @@ const swallowNextClick = (): void => {
   window.addEventListener("click", swallow, { capture: true, once: true });
   // No click follows when the press and release were over different elements with no shared ancestor that listens
   setTimeout(() => window.removeEventListener("click", swallow, { capture: true }), 0);
+};
+
+/**
+ * The viewport's pointer listeners that drive the feet: moving, pressing, releasing and leaving.
+ * @param onPosition hears where the feet stand, held through a jump, and null as they leave
+ */
+const pointerListeners = (
+  feet: MouseFeet,
+  onPosition: ((point: ClientPoint | null) => void) | undefined,
+): [string, (event: PointerEvent) => void][] => {
+  const at = (event: PointerEvent) => ({ x: event.clientX, y: event.clientY });
+  const stand = (point: ClientPoint | null) => {
+    if (point === null || !feet.airborne) onPosition?.(point);
+  };
+  const leave = () => {
+    feet.leave();
+    stand(null);
+  };
+  return [
+    [
+      "pointermove",
+      (event) => {
+        feet.move(at(event));
+        stand(at(event));
+      },
+    ],
+    ["pointerdown", (event) => event.button === 0 && feet.down(at(event))],
+    [
+      "pointerup",
+      (event) => {
+        if (feet.up(at(event))) swallowNextClick();
+        stand(at(event));
+      },
+    ],
+    ["pointerleave", leave],
+    ["pointercancel", leave],
+  ];
 };
 
 /**
@@ -294,42 +317,22 @@ export function useMouseFeet(
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!enabled || paused || !viewport) return;
-    const at = (event: PointerEvent) => ({ x: event.clientX, y: event.clientY });
-    const stand = (point: ClientPoint | null) => {
-      if (point === null || !feet.airborne) onPosition?.(point);
-    };
-    const leave = () => {
-      feet.leave();
-      stand(null);
-    };
-    const listeners: [string, (event: PointerEvent) => void][] = [
-      [
-        "pointermove",
-        (event) => {
-          feet.move(at(event));
-          stand(at(event));
-        },
-      ],
-      ["pointerdown", (event) => event.button === 0 && feet.down(at(event))],
-      [
-        "pointerup",
-        (event) => {
-          if (feet.up(at(event))) swallowNextClick();
-          stand(at(event));
-        },
-      ],
-      ["pointerleave", leave],
-      ["pointercancel", leave],
-    ];
+    const listeners = pointerListeners(feet, onPosition);
     const preventDefault = (event: Event) => event.preventDefault();
+    const restand = () => feet.restand();
     listeners.forEach(([type, listener]) => viewport.addEventListener(type, listener as EventListener));
+    viewport.addEventListener(SCENE_RENDERED_EVENT, restand);
     // A drag is a jump, not a dragged image or a text selection
     viewport.addEventListener("dragstart", preventDefault);
     viewport.addEventListener("selectstart", preventDefault);
+    // Stands where the pointer rests as the feet start, or start again after a pause
+    trackPointer();
+    restand();
     return () => {
       listeners.forEach(([type, listener]) => viewport.removeEventListener(type, listener as EventListener));
       viewport.removeEventListener("dragstart", preventDefault);
       viewport.removeEventListener("selectstart", preventDefault);
+      viewport.removeEventListener(SCENE_RENDERED_EVENT, restand);
       feet.stop();
     };
   }, [enabled, paused, viewportRef, feet, onPosition]);

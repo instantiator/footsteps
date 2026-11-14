@@ -14,10 +14,12 @@ import {
   type TransitionEvent,
   type PropsWithChildren,
   type SyntheticEvent,
+  type RefObject,
 } from "react";
 import type { GameSceneTemplateSourceData as GameSceneTemplateData } from "../../../entities/data/scenes/GameSceneTemplateComponentData";
 import useContentCache from "../../../providers/GameContentCacheHook";
 import { isDefined } from "../../../util/ObjectUtils";
+import { lastPointer, SCENE_RENDERED_EVENT, trackPointer } from "../../../util/PointerPosition";
 import { summariseTemplateSource, type SceneDomEvent } from "../logic/TemplateUtils";
 import { keepPlacement } from "../layout/FloorPlacement";
 
@@ -111,6 +113,38 @@ const sceneEventHandlers = (onSceneEvent: GameSceneTemplateProps["onSceneEvent"]
 };
 
 /**
+ * Once a new body has rendered (and been laid out, a frame later): enters what is under a pointer that is already
+ * resting on it, as if the pointer had just moved there, and tells the page (for the mouse's feet) with
+ * {@link SCENE_RENDERED_EVENT}.
+ */
+function useAnnounceNewBody(
+  bodyRef: RefObject<HTMLDivElement | null>,
+  bodyKey: string,
+  rendered: boolean,
+  onSceneEvent: GameSceneTemplateProps["onSceneEvent"],
+) {
+  const onSceneEventRef = useRef(onSceneEvent);
+  useEffect(() => {
+    onSceneEventRef.current = onSceneEvent;
+  }, [onSceneEvent]);
+  useEffect(trackPointer, []);
+  useEffect(() => {
+    if (!rendered) return;
+    const frame = requestAnimationFrame(() => {
+      const body = bodyRef.current;
+      const root = body?.parentElement;
+      if (!body || !root) return;
+      const point = lastPointer();
+      const target = isDefined(point) ? document.elementFromPoint(point.x, point.y) : null;
+      if (target !== null && body.contains(target))
+        onSceneEventRef.current?.({ kind: "mouseOver", target, root, related: null });
+      root.dispatchEvent(new Event(SCENE_RENDERED_EVENT, { bubbles: true }));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [bodyRef, bodyKey, rendered]);
+}
+
+/**
  * Fetches a Handlebars template (via the content cache) and renders it with the template data,
  * inside a container. Both styles' string values are rendered too. Children follow the rendered template.
  *
@@ -146,6 +180,7 @@ export default function GameSceneTemplateComponent({
   );
   const bodyRef = useRef<HTMLDivElement>(null);
   const bodyKey = `${scope}#${run}`;
+  useAnnounceNewBody(bodyRef, bodyKey, isDefined(html), onSceneEvent);
 
   // Patches the template's DOM in place, matching elements by id, so CSS transitions run between renders
   useLayoutEffect(() => {

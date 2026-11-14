@@ -274,7 +274,7 @@ export interface WhenRound {
 
 /**
  * Evaluates the `when` rules of the shown scenes against one state, then fires those that changed from false to
- * true, in order. A rule seen for the first time (its scene has just been shown) only records its value.
+ * true, in order. A rule seen for the first time (its scene has just been shown or reset) fires if it is already true.
  * @param fire false to only record values
  */
 const whenRound = (env: RuleEnvironment, state: GameState, edges: WhenEdges, fire = true): WhenRound => {
@@ -288,7 +288,7 @@ const whenRound = (env: RuleEnvironment, state: GameState, edges: WhenEdges, fir
       const value = Boolean(evaluate({ env, scene, event: NO_EVENT }, state, rule.on.when, where));
       // A rule held for a while is fired by the game's timers, once it has stayed true
       const immediate = !isDefined(rule.on.forMs);
-      if (fire && immediate && edges.get(key) === false && value) firing.push([scene, ruleIndex, key]);
+      if (fire && immediate && edges.get(key) !== true && value) firing.push([scene, ruleIndex, key]);
       values.set(key, value);
     });
   }

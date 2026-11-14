@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useMouseFeet } from "../src/components/core/layout/MouseFeetHook";
 import type { CameraRuleEvent, CameraRuleTarget } from "../src/components/core/layout/PlayerInteractionHook";
 import type { CameraInteraction } from "../src/components/camera/PlayerMonitor";
+import { SCENE_RENDERED_EVENT, trackPointer } from "../src/util/PointerPosition";
 
 const SCOPE = "challenge:lava/floor/challenge-in-progress";
 
@@ -62,6 +63,9 @@ const topmostAt = (x: number, y: number): Element | null => {
   return top ? document.getElementById(top[0]) : null;
 };
 
+/** Moves the pointer over the page without the feet seeing it, as while they wait. */
+const restAt = (x: number, y = 50) => fireEvent.pointerMove(window, { clientX: x, clientY: y });
+
 /** The interactions fired, as `interaction@id`. */
 const fired = (onEvent: ReturnType<typeof vi.fn<(event: CameraRuleEvent) => void>>) =>
   onEvent.mock.calls.map(([event]) => `${event.interaction}@${event.element?.id ?? "anywhere"}`);
@@ -94,6 +98,8 @@ const setup = (rules: CameraRuleTarget[], props: Partial<HarnessProps> = {}) => 
 
 beforeEach(() => {
   Object.defineProperty(document, "elementFromPoint", { configurable: true, value: topmostAt });
+  trackPointer();
+  fireEvent.pointerOut(window, { relatedTarget: null });
 });
 
 afterEach(() => {
@@ -135,15 +141,25 @@ describe("useMouseFeet", () => {
     expect(fired(onEvent)).toEqual(["any-enter@a", "any-exit@a"]);
   });
 
-  it("doesn't fire for what is already under the feet when they start", () => {
-    const onEvent = vi.fn<(event: CameraRuleEvent) => void>();
-    const { getByTestId } = render(<Harness rules={[rule(["foot-enter"], "#a")]} onEvent={onEvent} />);
-    vi.spyOn(document.getElementById("a")!, "getBoundingClientRect").mockReturnValue(
-      DOMRect.fromRect({ width: 100, height: 100 }),
-    );
-    fireEvent.pointerMove(getByTestId("viewport"), { clientX: 10, clientY: 50 });
-    fireEvent.pointerMove(getByTestId("viewport"), { clientX: 20, clientY: 50 });
+  it("enters what is under a resting pointer when a scene renders, once", () => {
+    const { onEvent, viewport } = setup([rule(["foot-enter"], "#a")]);
+    restAt(10);
     expect(onEvent).not.toHaveBeenCalled();
+    fireEvent(viewport, new Event(SCENE_RENDERED_EVENT, { bubbles: true }));
+    expect(fired(onEvent)).toEqual(["foot-enter@a"]);
+    fireEvent(viewport, new Event(SCENE_RENDERED_EVENT, { bubbles: true }));
+    expect(fired(onEvent)).toEqual(["foot-enter@a"]);
+  });
+
+  it("enters what is under the pointer as the feet start", () => {
+    restAt(10);
+    const onEvent = vi.fn<(event: CameraRuleEvent) => void>();
+    const rect = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockReturnValue(DOMRect.fromRect({ width: 100, height: 100 }));
+    render(<Harness rules={[rule(["foot-enter"], "#a")]} onEvent={onEvent} />);
+    rect.mockRestore();
+    expect(fired(onEvent)).toEqual(["foot-enter@a"]);
   });
 
   it("ignores a covered element, unless the rule includes covered ones", () => {
@@ -233,14 +249,14 @@ describe("useMouseFeet", () => {
     expect(fired(onEvent)).toEqual(["foot-exit@a"]);
   });
 
-  it("starts a scene's targets afresh when it resets, without firing exits", () => {
+  it("starts a scene's targets afresh when it resets, without firing exits, and enters again where the feet rest", () => {
     const rules = [rule(["foot-enter", "foot-exit"], "#a")];
-    const { onEvent, move, view } = setup(rules);
+    const { onEvent, move, view, viewport } = setup(rules);
     move(10);
     onEvent.mockClear();
     view.rerender(<Harness rules={[{ ...rules[0], run: 1 }]} onEvent={onEvent} />);
-    move(20);
-    move(150);
     expect(onEvent).not.toHaveBeenCalled();
+    fireEvent(viewport, new Event(SCENE_RENDERED_EVENT, { bubbles: true }));
+    expect(fired(onEvent)).toEqual(["foot-enter@a"]);
   });
 });

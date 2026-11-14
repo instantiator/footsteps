@@ -691,7 +691,7 @@ describe("GameLayersLayout camera interactions", () => {
     );
   });
 
-  it("makes a player already over an element move in again after its scene resets, without an exit", async () => {
+  it("enters an element a player is already over again after its scene resets, without an exit", async () => {
     const onPlayerInteraction = vi.fn();
     const rules = [handRule({ interactions: ["hand-enter", "hand-exit"] })];
     const { container, canvas, rerender } = await renderWithCamera({ cameraRules: rules, onPlayerInteraction });
@@ -710,12 +710,7 @@ describe("GameLayersLayout camera interactions", () => {
     );
     sendPlayers([playerWithHandAt(6, 1)], 1100);
     sendPlayers([playerWithHandAt(6, 1)], 1200);
-    expect(onPlayerInteraction).toHaveBeenCalledTimes(1);
-
-    sendPlayers([playerWithHandAt(0, 7)], 1300);
-    expect(onPlayerInteraction).toHaveBeenCalledTimes(1);
-    sendPlayers([playerWithHandAt(6, 1)], 1400);
-    expect(onPlayerInteraction).toHaveBeenCalledTimes(2);
+    expect(onPlayerInteraction.mock.calls.map(([event]) => event.interaction)).toEqual(["hand-enter", "hand-enter"]);
   });
 
   it("reports the interaction on the same side of the mask when the camera isn't mirrored", async () => {
@@ -764,7 +759,7 @@ describe("GameLayersLayout camera interactions", () => {
     expect(onPlayerInteraction).toHaveBeenCalledExactlyOnceWith(handOnThing(container));
   });
 
-  it("ignores a hand that is already inside the element when the camera starts", async () => {
+  it("enters for a hand that is already inside the element when the camera starts, once", async () => {
     const onPlayerInteraction = vi.fn();
     const { container, canvas } = await renderWithCamera({
       cameraRules: [handRule()],
@@ -776,7 +771,7 @@ describe("GameLayersLayout camera interactions", () => {
     sendPlayers([playerWithHandAt(6, 1)]);
     sendPlayers([playerWithHandAt(6, 1)], 1100);
 
-    expect(onPlayerInteraction).not.toHaveBeenCalled();
+    expect(onPlayerInteraction).toHaveBeenCalledOnce();
   });
 
   it("reports nothing when the target's element is not in the document", async () => {
