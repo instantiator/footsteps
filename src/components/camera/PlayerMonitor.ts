@@ -19,6 +19,11 @@ export interface PlayerFrame extends VisionPerson {
   height: number;
   /** Where the player's feet are, or null when they are not visible. */
   feet: FootPosition | null;
+  /**
+   * Where the player stands: screen floor coordinates in a 2.5D scene, or % of the scene in a 2D one, held through
+   * jumps. Null until their ground has been seen.
+   */
+  position: Point | null;
 }
 
 /** Something a player did to an element. */

@@ -33,10 +33,14 @@ export interface AppConfig {
   cameraFadeMs: number;
   /** Fills parts of a player the model missed for a frame (eg. their legs) from the frame before (needs smoothing). */
   cameraFillGaps: boolean;
-  /** How long a player's lowest ground point is kept, in milliseconds, so a jump doesn't change their depth. */
+  /** How long a player's lowest ground point is kept, in milliseconds, so a jump doesn't change their position. */
   cameraDepthWindowMs: number;
-  /** How far a player's ground point must move to change their depth, in % of the scene's height. */
+  /** How far a player's ground point must move to change their position, in % of the camera frame. */
   cameraDepthDeadband: number;
+  /** The grid players' positions are rounded to for rules and templates: the size of a cell, in position units. */
+  positionCellSize: number;
+  /** The most times a second players' positions reach rules and templates. */
+  positionUpdatesPerSecond: number;
   /** How far the feet must rise for a jump, as a fraction of the player's height. */
   jumpMinRise: number;
   /** How far the feet may wander while standing, as a fraction of the player's height. */
@@ -84,6 +88,8 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   cameraFillGaps: false,
   cameraDepthWindowMs: 700,
   cameraDepthDeadband: 2,
+  positionCellSize: 5,
+  positionUpdatesPerSecond: 10,
   jumpMinRise: 0.04,
   jumpStill: 0.02,
   jumpMinGroundedMs: 100,
@@ -144,6 +150,8 @@ const PARSERS: { [K in keyof AppConfig]: Parser<AppConfig[K]> } = {
   cameraFillGaps: bool,
   cameraDepthWindowMs: int(0),
   cameraDepthDeadband: int(0),
+  positionCellSize: int(1),
+  positionUpdatesPerSecond: int(1),
   jumpMinRise: fraction,
   jumpStill: fraction,
   jumpMinGroundedMs: int(0),

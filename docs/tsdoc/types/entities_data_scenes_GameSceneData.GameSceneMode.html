@@ -12,12 +12,13 @@
 <li><a href="" aria-current="page">GameSceneMode</a></li></ul>
 <h1>Type Alias GameSceneMode</h1></div>
 <div class="tsd-signature"><span class="tsd-kind-type-alias">GameSceneMode</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">&quot;2D&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;2.5D&quot;</span></div>
-<div class="tsd-comment tsd-typography"><p>How a scene is laid out. <code>2D</code>: a full-screen background, the players, and a foreground, with elements' <code>data-depth</code>
-deciding which pass in front of players. <code>2.5D</code>: as <code>2D</code>, but fitted to the floor the player calibrated: the camera
-is cropped to the floor, and the view takes the crop's shape, so players' feet stay in view all over the floor.</p>
+<div class="tsd-comment tsd-typography"><p>How a scene is laid out. <code>2D</code>: a full-screen background, the players, and a foreground. <code>2.5D</code>: as <code>2D</code>, but fitted
+to the floor the player calibrated: the camera is cropped to the floor, and the view takes the crop's shape, so
+players' feet stay in view all over the floor. Items with <code>data-floor-y</code> are placed and scaled on the floor, and the
+challenge foreground's sort among the players by depth.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameSceneData.ts#L71">entities/data/scenes/GameSceneData.ts:71</a></li></ul></aside></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameSceneData.ts#L72">entities/data/scenes/GameSceneData.ts:72</a></li></ul></aside></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

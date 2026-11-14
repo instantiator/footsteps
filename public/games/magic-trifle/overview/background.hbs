@@ -1,0 +1,5 @@
+<!-- The river scene, in the floor's perspective: the river as the floor background, up to the far bank, with the forest just beyond it, and the sky behind the forest as the horizon, which is where the river stops. Each tile is mirrored, so it repeats without a seam, and is sized in floor units so it keeps the floor's scale. -->
+<div class="horizon-background" data-wall-distance="4" style="background: url('{{resources.river-sky}}') center / 100% 100%;"></div>
+<div class="floor-background" style="background: url('{{resources.river-water}}') 0 0 / calc(var(--floor-unit) * 100) repeat;"></div>
+<div class="rear-background" data-wall-distance="3" data-fill-width style="aspect-ratio: 100 / 22; background: url('{{resources.river-forest}}') left bottom / calc(var(--floor-unit) * 100) 100% repeat-x;"></div>
+<div class="rear-wall" data-fill-width style="aspect-ratio: 100 / 13; background: url('{{resources.river-bank}}') left bottom / calc(var(--floor-unit) * 200) 100% repeat-x;"></div>

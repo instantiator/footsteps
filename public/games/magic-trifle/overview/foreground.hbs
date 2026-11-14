@@ -11,7 +11,7 @@
   id="horizontal-stepping-stones"
   style="width: 100%; height: 20cqh; margin-top: 70cqh; display: flex; flex-direction: row; align-items: end; justify-content: space-evenly;">
   {{#gameState.stages}}
-  <div id="stepping-stone-stage-{{stage.id}}" style="display: flex; flex-direction: column; align-items: center; justify-content: end;">
+  <div id="stepping-stone-stage-{{stage.id}}" data-floor-y="80" style="display: flex; flex-direction: column; align-items: center; justify-content: end;">
 
     {{#showCompleted}}
     <img src="{{@root.resources.star}}" alt="" style="width: calc( 40cqw / {{@root.gameState.totalStages}} ); height: auto;" />

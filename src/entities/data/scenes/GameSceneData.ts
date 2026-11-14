@@ -64,9 +64,10 @@ export type PointerInteraction = (typeof POINTER_INTERACTIONS)[number];
 export const DEFAULT_INTERACTION_THRESHOLD = 1;
 
 /**
- * How a scene is laid out. `2D`: a full-screen background, the players, and a foreground, with elements' `data-depth`
- * deciding which pass in front of players. `2.5D`: as `2D`, but fitted to the floor the player calibrated: the camera
- * is cropped to the floor, and the view takes the crop's shape, so players' feet stay in view all over the floor.
+ * How a scene is laid out. `2D`: a full-screen background, the players, and a foreground. `2.5D`: as `2D`, but fitted
+ * to the floor the player calibrated: the camera is cropped to the floor, and the view takes the crop's shape, so
+ * players' feet stay in view all over the floor. Items with `data-floor-y` are placed and scaled on the floor, and the
+ * challenge foreground's sort among the players by depth.
  */
 export type GameSceneMode = "2D" | "2.5D";
 

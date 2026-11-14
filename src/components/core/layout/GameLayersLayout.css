@@ -1,3 +1,4 @@
+/* Lets the pointer through an element, such as a wrapper, to whatever is beneath it; its children still take it */
 .noClicks {
   pointer-events: none;
 }
@@ -67,8 +68,69 @@
 }
 
 /* z-index only applies to positioned elements; :where() keeps this from overriding an author's own position */
-:where([data-depth]) {
+:where([data-floor-y]) {
   position: relative;
+}
+
+/*
+ * Floor surfaces are boxes the engine draws onto their place on screen, from their top left. Walls and backgrounds are
+ * as wide as their container and as high as their content, so their shape sets their height; the rest fill their
+ * container. The engine sizes a box itself where it works out the size. :where() lets an author size the box.
+ */
+:where(
+  [data-floor-area],
+  .screen-background,
+  .horizon-background,
+  .floor-background,
+  .rear-background,
+  .left-background,
+  .right-background,
+  .rear-wall,
+  .left-wall,
+  .right-wall,
+  .front-wall
+) {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 0 0;
+}
+
+:where(.rear-background, .left-background, .right-background, .rear-wall, .left-wall, .right-wall, .front-wall) {
+  height: auto;
+}
+
+/*
+ * A 2.5D scene fills the screen. Each layer's grid of challenges is the scene box, where the floor's crop shows and the
+ * author's HTML, %, cqw and cqh are laid out; surfaces reach past it to the screen's edges.
+ */
+.floorScene .sceneBox {
+  position: absolute;
+  left: var(--scene-left);
+  top: var(--scene-top);
+  width: var(--scene-width);
+  height: var(--scene-height);
+  container-type: size;
+  overflow: visible;
+}
+
+/* Each challenge's column clips its scene, except in a 2.5D scene, whose surfaces reach the screen's edges */
+.challengeColumn {
+  overflow: hidden;
+}
+
+.floorScene .challengeColumn {
+  overflow: visible;
+}
+
+/*
+ * Surfaces paint beneath the rest of their template. Each template outside the depth stack is its own stacking
+ * context, so they still paint above the scene's own background style.
+ */
+.templateContent:not(.depthStack .templateContent) {
+  isolation: isolate;
 }
 
 /* One canvas per player, each in a wrapper, laid over each other; the bare canvas is only there to measure against */

@@ -49,6 +49,29 @@ Check `removed` too, as `active` is also 0 before anyone has walked into shot, o
 
 The counts are in `GameState.session`, so aren't saved, and change only when they need to, as a game state update re-renders the game.
 
+## Where players stand
+
+`game.players.N.x` and `game.players.N.y` are where player number `N` stands: [floor
+coordinates](game-data.md#floor-placed-items) in a 2.5D scene, or percentages of the scene in a 2D one (see [player
+positions](camera-mode.md#player-positions)). With `mouse-feet`, the pointer is player 1. A player with no position,
+such as one who hasn't been seen yet, has no entry, so test for one with `exists(game.players.1)` in rules or
+`{{#if game.players.[1]}}` in templates.
+
+```json
+{
+  "on": { "when": "game.players.1.y > 80" },
+  "do": [{ "set": { "nearTheFront": "true" } }]
+}
+```
+
+These are coarser than the positions the engine uses, so templates don't re-render every frame:
+
+- **Quantised** to a grid of `positionCellSize` units (5 by default, so 20 × 20 cells), and given as each cell's centre.
+- **With hysteresis**: a position only moves cell once it is a quarter of a cell past the edge, so standing on a
+  boundary doesn't flicker.
+- **Rate-limited** to `positionUpdatesPerSecond` (10 by default), always with the latest positions.
+- **Batched**: every player's position changes at once, so `when` rules see a consistent picture and fire once.
+
 ## Restoring
 
 Everyone is restored, whatever has happened to them, when the game moves to another scene, so nobody misses the next challenge. That is true even when a stage's shared scene stays showing.

@@ -36,8 +36,8 @@ export default function GameChallengeGrid({
         <div
           id={`${layer}-${layerHint}-grid-child-${index}`}
           key={`${layer}-${layerHint}-grid-child-${index}`}
-          style={{ flexGrow: 1, flexShrink: 1, flexBasis: 0, overflow: "hidden" }}
-          className="noClicks"
+          style={{ flexGrow: 1, flexShrink: 1, flexBasis: 0 }}
+          className="noClicks challengeColumn"
         >
           {child}
         </div>

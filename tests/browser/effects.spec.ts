@@ -57,10 +57,12 @@ const openWith = async (page: Page, rules: GameRule[], change: (game: GameData) 
   await expect(page.locator("#bridge")).toBeVisible();
 };
 
-/** Where an element's centre is, as a % of the scene's width and height. */
+/** Where an element's centre is, as a % of the scene's width and height: a 2.5D scene's box, else the viewport. */
 const centreOf = (page: Page, selector: string) =>
   page.locator(selector).evaluate((element) => {
-    const scene = document.querySelector("#game-viewport")!.getBoundingClientRect();
+    const scene = (
+      element.closest(".floorScene .sceneBox") ?? document.querySelector("#game-viewport")!
+    ).getBoundingClientRect();
     const { left, top, width, height } = element.getBoundingClientRect();
     return {
       left: ((left + width / 2 - scene.left) / scene.width) * 100,
@@ -71,7 +73,9 @@ const centreOf = (page: Page, selector: string) =>
 /** Whether an element's top is below the scene. */
 const isOffScreen = (page: Page, selector: string) =>
   page.locator(selector).evaluate((element) => {
-    const scene = document.querySelector("#game-viewport")!.getBoundingClientRect();
+    const scene = (
+      element.closest(".floorScene .sceneBox") ?? document.querySelector("#game-viewport")!
+    ).getBoundingClientRect();
     return element.getBoundingClientRect().top >= scene.bottom - 1;
   });
 
@@ -124,7 +128,7 @@ test("a move in a second column still places its centre by the whole scene", asy
             foregroundTemplate: {
               sourceType: "embedded" as const,
               content:
-                '<div id="right" style="position: absolute; left: 60cqw; top: 40cqh; width: 5cqw; height: 5cqh; background: pink"></div><button id="right-go" style="position: absolute; left: 60cqw; top: 1cqh">Go</button>',
+                '<div id="right" style="position: absolute; left: 60cqw; top: 40cqh; width: 5cqw; height: 5cqh; background: pink"></div><button id="right-go" style="position: absolute; left: 60cqw; top: 30cqh">Go</button>',
             },
             rules: [
               {

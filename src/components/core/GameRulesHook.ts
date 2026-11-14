@@ -24,6 +24,7 @@ import { sceneRoots, matchTarget, type SceneDomEvent } from "./logic/TemplateUti
 import type { CameraRuleEvent, CameraRuleTarget } from "./layout/PlayerInteractionHook";
 import type { CameraInteraction } from "../camera/PlayerMonitor";
 import { PlayerRegistry } from "../camera/PlayerRegistry";
+import type { PublishedPositions } from "../camera/PositionPublisher";
 import {
   DEFAULT_INTERACTION_THRESHOLD,
   POINTER_INTERACTIONS,
@@ -283,6 +284,8 @@ export interface GameRules {
   players: PlayerRegistry;
   /** Plays effects on players, and knows where their bodies are. */
   playerEffects: PlayerEffects;
+  /** Gives rules and templates every player's position, in one change. */
+  onPlayerPositions: (positions: PublishedPositions) => void;
 }
 
 /**
@@ -305,6 +308,11 @@ export function useGameRules(): GameRules {
         setGameState((state) => ({ ...state, session: { ...state.session, players: counts } })),
       ),
     [players, setGameState],
+  );
+  const onPlayerPositions = useCallback(
+    (positions: PublishedPositions) =>
+      setGameState((state) => ({ ...state, session: { ...state.session, playerPositions: positions } })),
+    [setGameState],
   );
   const stateRef = useRef(gameState);
   useEffect(() => {
@@ -349,5 +357,5 @@ export function useGameRules(): GameRules {
   );
 
   const cameraRules = useMemo(() => getCameraRules(gameState), [gameState]);
-  return { onSceneEvent, cameraRules, onPlayerInteraction, players, playerEffects };
+  return { onSceneEvent, cameraRules, onPlayerInteraction, players, playerEffects, onPlayerPositions };
 }

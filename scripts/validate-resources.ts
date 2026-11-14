@@ -115,11 +115,13 @@ const count = (value: number, noun: string): string => `${value} ${noun}${value 
 /** Prints every problem, then a summary of what was examined. */
 function report(result: CheckResult, options: CheckOptions): void {
   result.problems.forEach((problem) => console.error(`${problem.path}: ${problem.message}`));
+  result.warnings.forEach((warning) => console.warn(`${warning.path}: warning: ${warning.message}`));
 
   const { files, urls, names } = result.checked;
   const examined = [count(files, "file target"), count(urls, "URL"), count(names, "resource name")].join(", ");
   const skipped = options.skipUrls ? " (URL checks skipped)" : "";
-  console.log(`${count(result.problems.length, "problem")} found (examined ${examined})${skipped}.`);
+  const warnings = result.warnings.length > 0 ? ` and ${count(result.warnings.length, "warning")}` : "";
+  console.log(`${count(result.problems.length, "problem")}${warnings} found (examined ${examined})${skipped}.`);
 }
 
 async function main(): Promise<number> {
@@ -130,6 +132,7 @@ async function main(): Promise<number> {
     skipUrls: args.skipUrls,
     fileExists,
     request,
+    readText: (path) => readFile(path, "utf8"),
   };
 
   const data = await readJson(args.file);

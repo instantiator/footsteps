@@ -92,7 +92,16 @@ const playerWithHandAt = (x: number, y: number): PlayerFrame => {
   const height = 8;
   const mask = new Uint8Array(width * height);
   mask[y * width + x] = 1;
-  return { id: 0, mask, keyPoints: { ...noKeyPoints(), leftHand: { x, y } }, scale: 0, width, height, feet: null };
+  return {
+    id: 0,
+    mask,
+    keyPoints: { ...noKeyPoints(), leftHand: { x, y } },
+    scale: 0,
+    width,
+    height,
+    feet: null,
+    position: null,
+  };
 };
 
 /** A camera rule watching the overview's element for hands, ignoring covering (jsdom can't hit-test). */
@@ -223,17 +232,35 @@ describe("GameLayersLayout in 2.5D scenes", () => {
   const viewportOf = (container: HTMLElement) => container.querySelector<HTMLElement>("#game-viewport")!;
   const stackOf = (container: HTMLElement) => container.querySelector<HTMLElement>("#character-canvas-container")!;
 
-  afterEach(() => localStorage.clear());
+  let screenSpy: { mockRestore: () => void } | undefined;
+  afterEach(() => {
+    localStorage.clear();
+    screenSpy?.mockRestore();
+    screenSpy = undefined;
+  });
 
-  it("fits the viewport to the default floor's crop of the camera, and crops the camera to it", async () => {
+  /** Makes every element measure 300 × 100, a screen three times as wide as it is high. */
+  const wideScreen = () => {
+    screenSpy = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 300, 100));
+  };
+  const percentOf = (viewport: HTMLElement, name: string) => parseFloat(viewport.style.getPropertyValue(name));
+
+  it("fills the screen, with the default floor's crop of the camera in a scene box, and the camera fitted to it", async () => {
+    wideScreen();
     const { container } = renderLayout({ avatar: CAMERA, sceneMode: "2.5D" });
     await screen.findByTestId("canvas");
-    // The default floor spans 8–92% of a 1.5 camera image, down to 90%
-    expect(ratioOf(viewportOf(container))).toBeCloseTo((0.84 * 1.5) / 0.9, 6);
+    const viewport = viewportOf(container);
+    expect(viewport.style.aspectRatio).toBe("");
+    expect(viewport).toHaveClass("floorScene");
+    // The default floor spans 8–92% of a 1.5 camera image, down to 90%: a 1.4 box, centred on a 3:1 screen
+    const width = 1.4 / 3;
+    expect(percentOf(viewport, "--scene-width")).toBeCloseTo(100 * width, 2);
+    expect(percentOf(viewport, "--scene-left")).toBeCloseTo((100 * (1 - width)) / 2, 2);
+    expect(percentOf(viewport, "--scene-height")).toBeCloseTo(100, 2);
     const stack = stackOf(container).style;
-    expect(parseFloat(stack.width)).toBeCloseTo(100 / 0.84, 4);
-    expect(parseFloat(stack.height)).toBeCloseTo(100 / 0.9, 4);
-    expect(parseFloat(stack.left)).toBeCloseTo((-100 * 0.08) / 0.84, 4);
+    expect(parseFloat(stack.width)).toBeCloseTo((100 * width) / 0.84, 2);
+    expect(parseFloat(stack.height)).toBeCloseTo(100 / 0.9, 2);
+    expect(parseFloat(stack.left)).toBeCloseTo((100 * (1 - width)) / 2 - (100 * 0.08 * width) / 0.84, 2);
   });
 
   it("uses the chosen camera's calibration, and crops from the right of a mirrored image", async () => {
@@ -246,13 +273,13 @@ describe("GameLayersLayout in 2.5D scenes", () => {
     });
     const { container } = renderLayout({ avatar: CAMERA, sceneMode: "2.5D" });
     await screen.findByTestId("canvas");
-    expect(ratioOf(viewportOf(container))).toBeCloseTo((0.85 * 1.5) / 0.95, 6);
     expect(parseFloat(stackOf(container).style.left)).toBeCloseTo((-100 * 0.03) / 0.85, 4);
   });
 
   it("uses the default floor on a 4:3 image without a camera", () => {
+    wideScreen();
     const { container } = renderLayout({ sceneMode: "2.5D" });
-    expect(ratioOf(viewportOf(container))).toBeCloseTo((0.84 * 4) / 3 / 0.9, 6);
+    expect(percentOf(viewportOf(container), "--scene-width")).toBeCloseTo((100 * (0.84 * 4)) / 3 / 0.9 / 3, 2);
   });
 
   it("leaves a 2D scene's camera uncropped", async () => {
@@ -262,24 +289,25 @@ describe("GameLayersLayout in 2.5D scenes", () => {
     expect(stackOf(container).style.width).toBe("");
   });
 
-  it("reshapes, rather than fading, between a 2D and a 2.5D scene with the camera on throughout", async () => {
+  it("reshapes, rather than fading, from a 2D scene's camera shape to a 2.5D scene filling the screen", async () => {
     setReducedMotion(false);
     const { container, rerender } = renderLayout({ avatar: CAMERA, sceneKey: "flat" });
     await screen.findByTestId("canvas");
     vi.useFakeTimers();
     const viewport = viewportOf(container);
     stubRect(viewport, new DOMRect(0, 0, 150, 100));
+    stubRect(viewport.parentElement!, new DOMRect(0, 0, 300, 100));
 
     rerender(layout({ avatar: CAMERA, sceneMode: "2.5D", sceneKey: "floor" }));
 
     expect(viewport).toHaveClass("gameViewportReshaping");
     expect(viewport.style.getPropertyValue("--reshape-from")).toBe("1.5 / 1");
-    expect(parseFloat(viewport.style.getPropertyValue("--reshape-to"))).toBeCloseTo(1.4, 6);
+    expect(viewport.style.getPropertyValue("--reshape-to")).toBe("3 / 1");
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3000);
     });
     expect(viewport).not.toHaveClass("gameViewportReshaping");
-    expect(ratioOf(viewport)).toBeCloseTo(1.4, 6);
+    expect(viewport.style.aspectRatio).toBe("");
     expect(stackOf(container).style.width).not.toBe("");
   });
 });

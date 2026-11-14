@@ -3,7 +3,6 @@
   position: relative;
   width: 100%;
   height: 100%;
-  overflow: hidden;
   font-family: system-ui, sans-serif;
   color: white;
   text-align: center;
@@ -13,7 +12,6 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  background: linear-gradient(#1d3557, #457b9d);
   cursor: pointer;
 }
 
@@ -60,8 +58,12 @@
   top: 70cqh;
 }
 
-.demo-sky {
-  background: linear-gradient(#a8dadc, #f1faee);
+/* The scenery every screen shares, drawn in the floor's perspective: sky above the horizon, and grass out to it */
+.demo-horizon {
+  background: linear-gradient(#457b9d, #a8dadc 90%, #f1faee);
+}
+.demo-ground {
+  background: #52796f;
 }
 
 .demo-score {
@@ -157,14 +159,12 @@
   }
 }
 
-.demo-floor {
+.demo-lava-floor {
   background: #3d405b;
 }
 
+/* Pools laid on the floor; the box is drawn onto each pool's rectangle */
 .lava {
-  position: absolute;
-  width: 20cqw;
-  height: 12cqh;
   border-radius: 40%;
   background: radial-gradient(#ffd166, #ef476f);
 }
@@ -183,10 +183,11 @@
   font-size: 3cqh;
 }
 
+/* Stands at the back of the floor, where the engine places it */
 .lava-door {
   position: absolute;
-  right: 6cqw;
-  top: 8cqh;
+  left: 0;
+  top: 0;
   width: 10cqw;
   height: 30cqh;
   border-radius: 1cqh 1cqh 0 0;
@@ -201,8 +202,9 @@
   pointer-events: auto;
 }
 
-/* Reset scenes: a dark floor with the start picked out, and a countdown before the balloons */
-.demo-reset {
+/* Reset scenes: a dark screen with the start picked out, and a countdown before the balloons */
+.demo-reset,
+.demo-reset-backdrop {
   background: #1b1b2f;
 }
 .lava-start-bright {
@@ -237,9 +239,11 @@
   box-shadow: 0 0 6cqh #ffd166;
 }
 
-/* Posts for a player to walk behind and in front of; each one's foot is on the floor line its data-depth names */
+/* Posts for a player to walk behind and in front of, sized as at the front of the floor, where the engine stands them */
 .demo-depth-item {
   position: absolute;
+  left: 0;
+  top: 0;
   display: flex;
   align-items: end;
   justify-content: center;
@@ -250,6 +254,34 @@
   background: #5b7c99;
   color: #fff;
   font-weight: bold;
+}
+
+.demo-depth-lit {
+  background: #ffd166;
+  color: #333;
+}
+
+/* A ring on the floor under player 1, following their position */
+.demo-depth-ring {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 14cqw;
+  height: 5cqw;
+  border: 0.4rem solid #ffd166;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+
+.demo-depth-position {
+  position: absolute;
+  bottom: 4rem;
+  left: 0;
+  right: 0;
+  margin: 0;
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 0 4px #000;
 }
 
 .demo-depth-hint {
@@ -297,45 +329,23 @@
   background: #99615b;
 }
 
-/* Stone hop: everything is lava but three stones, jumped between by dragging */
+/* Stone hop: everything is lava but three stones, jumped between by dragging; its glow repeats every 40 floor units */
 .stones-lava {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 30% 70%, #ffd166, #ef476f 60%, #9d0208);
+  background: radial-gradient(circle, #ffd166, #ef476f 60%, #9d0208) 0 0 / calc(var(--floor-unit) * 40) repeat;
 }
 
+/* Stones laid on the floor; the box is drawn onto each stone's rectangle */
 .stone {
-  position: absolute;
-  width: 18cqw;
-  height: 20cqh;
   border-radius: 45%;
   background: #6c757d;
   box-shadow: inset 0 -1cqh 0 #495057;
 }
 
-#stone-1,
-#reset-start.stone {
-  left: 6cqw;
-  top: 62cqh;
-}
-
-#stone-2 {
-  left: 41cqw;
-  top: 40cqh;
-}
-
-#stone-3 {
-  left: 74cqw;
-  top: 18cqh;
-}
-
+/* A hatch in the last stone, lying flat with it */
 .stones-door {
   position: absolute;
-  left: 30%;
-  bottom: 40%;
-  width: 40%;
-  height: 120%;
-  border-radius: 1cqh 1cqh 0 0;
+  inset: 25%;
+  border-radius: 1cqh;
   background: #5c3d2e;
   cursor: pointer;
 }
@@ -348,4 +358,29 @@
 /* Text over the lava is not somewhere to stand */
 .stones-message {
   pointer-events: none;
+}
+
+/*
+ * Walk around's room: a chequered floor that shows the camera through it, low brick walls, and hills beyond. The walls
+ * and hills stand as high as their shape makes them; the rear hills reach across the screen, repeating every 200 units.
+ */
+.demo-tile {
+  background: rgba(241, 250, 238, 0.45);
+}
+.demo-tile-dark {
+  background: rgba(29, 53, 87, 0.45);
+}
+.demo-tile-lit {
+  background: rgba(255, 209, 102, 0.9);
+}
+.demo-wall {
+  aspect-ratio: 100 / 12;
+  background: repeating-linear-gradient(90deg, #bc6c25 0 9%, #8f4d1c 9% 10%);
+}
+.demo-hills {
+  aspect-ratio: 4;
+  background:
+    radial-gradient(ellipse 30% 35% at 25% 100%, #2d6a4f 98%, transparent),
+    radial-gradient(ellipse 40% 25% at 70% 100%, #40916c 98%, transparent);
+  background-size: calc(var(--floor-unit, 1cqw) * 200) 100%;
 }

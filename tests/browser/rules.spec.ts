@@ -58,12 +58,24 @@ const returnToStart = async (page: Page) => {
   await expect(page.locator("#door-base")).toBeVisible({ timeout: 6000 });
 };
 
+/** Moves the mouse just inside the scene box's top left, on the sky. */
+const moveToSceneCorner = async (page: Page) => {
+  const viewport = (await page.locator(".floorScene .sceneBox").first().boundingBox())!;
+  await page.mouse.move(viewport.x + 5, viewport.y + 5);
+};
+
+/** Moves the mouse just inside the floor's front right corner, which is the scene box's bottom right: on the lava. */
+const moveToFrontCorner = async (page: Page) => {
+  const viewport = (await page.locator(".floorScene .sceneBox").first().boundingBox())!;
+  await page.mouse.move(viewport.x + viewport.width - 5, viewport.y + viewport.height - 5);
+};
+
 /**
  * Puts the mouse on stone hop's first stone in its reset scene. The feet start afresh when a scene changes, and what
  * they first find under them counts as already there, so the mouse moves off and back on.
  */
 const standOnFirstStoneOf = (page: Page) => async () => {
-  await page.mouse.move(5, 5);
+  await moveToSceneCorner(page);
   await moveTo(page, "#reset-start");
 };
 
@@ -227,6 +239,21 @@ test.describe("rules demo", () => {
     await expect(page.locator("#stage-link-lava")).toHaveClass(/completed/);
   });
 
+  test("takes a pool laid on the floor only where it is drawn, not anywhere in its box", async ({ page }) => {
+    await openDemo(page);
+    await page.locator("#stage-link-lava").click();
+    await returnToStart(page);
+
+    // The pool narrows to the back, so its box's top left corner is off the pool
+    const pool = (await page.locator("#lava-1").boundingBox())!;
+    await page.mouse.move(pool.x + 3, pool.y + 3);
+    await page.waitForTimeout(500);
+    await expect(page.locator("#reset-message")).toHaveCount(0);
+
+    await moveTo(page, "#lava-1");
+    await expect(page.locator("#reset-message")).toBeVisible();
+  });
+
   test("hops the stones in mouse-feet by dragging over the lava, then clicks the open door", async ({ page }) => {
     const standOnFirstStone = standOnFirstStoneOf(page);
     /** Drags the mouse from one element to another, through the moves between, as a jump. */
@@ -259,7 +286,7 @@ test.describe("rules demo", () => {
     await page.locator("#stage-link-stone-hop").click();
     await standOnFirstStone();
     await expect(page.locator("#stone-1")).toBeVisible();
-    await page.mouse.move(5, 5);
+    await moveToFrontCorner(page);
     await expect(page.locator("#reset-message")).toHaveText("Put your mouse on the first stone");
   });
 
@@ -286,12 +313,12 @@ test.describe("rules demo", () => {
     page,
   }) => {
     await openDemo(page, (game) => {
-      // A cover over the first lava pool, in the foreground; the rest of the foreground is empty
+      // A cover laid over the first lava pool, in the foreground; the rest of the foreground is empty
       challengeOf(game, "lava").foregroundTemplate = {
         sourceType: "embedded",
         content:
           '<div class="demo-screen" style="pointer-events: none">' +
-          '<div id="cover" style="position: absolute; left: 15%; top: 50%; width: 30%; height: 22%; background: #0008; pointer-events: auto"></div>' +
+          '<div id="cover" data-floor-area="18 52 42 68" style="background: #0008; pointer-events: auto"></div>' +
           "</div>",
       };
       challengeOf(game, "lava").foregroundTemplateStyle = { width: "100%", height: "100%" };

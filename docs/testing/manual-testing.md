@@ -146,8 +146,8 @@ the landing page, with "Mirror picture" off. Record the results in
 Play the rules demo with `?debug=true`:
 
 - [ ] **Direction:** step right. You move right on screen.
-- [ ] **Depth:** open "Walk around". Walk from the back of the area to the front, past each post. You pass behind a
-      post while the green line across you is above its foot, and in front when it is below.
+- [ ] **Depth:** open "Walk around". Walk from the back of the floor to the front, past each post. You pass behind a
+      post while you stand further back than its foot, and in front of it once you are nearer.
 - [ ] **Jumps:** jump beside a post. You stay on the same side of it.
 - [ ] **Standing on a line:** stand with your feet level with a post's foot. You don't flicker in front of and behind it.
       If you do, raise `cameraDepthDeadband`. If walking away feels slow to show, lower `cameraDepthWindowMs`.
@@ -181,12 +181,13 @@ Play it once with the mouse and once with the camera (`?debug=true` shows where 
       again. The same works by walking the mouse over them.
 - [ ] **Stone hop** (mouse-feet, no camera): you are asked to put the mouse on the first stone. Drag from the first
       stone to the second, passing over the lava: a chime, and the first stone falls. Drag from the second to the
-      third: the second falls, and the door opens. Click the door: fireworks and a fanfare, and the stage completes.
+      third: the second falls, and the hatch in it opens. Click the hatch: fireworks and a fanfare, and the stage completes.
       Each of these sends you back to the first stone, with both stones back and the door shut: moving the mouse onto
       the lava without a drag, a drag that lands in the lava, and a drag from the first stone straight to the third.
       The door doesn't open to a click before then. Nothing gets selected or dragged while you drag.
-- [ ] **Walk around:** a 2.5D stage, so see [The floor and 2.5D scenes](#the-floor-and-25d-scenes) first, then
-      [From behind](#from-behind). "Done" completes the stage.
+- [ ] **Walk around:** see [The floor and 2.5D scenes](#the-floor-and-25d-scenes) first, then
+      [From behind](#from-behind). Its scroll opens first: page on, type "walk", and the posts appear. "Done"
+      completes the stage.
 - [ ] **Effects:** see [Player effects](#player-effects). The top row also works by mouse. "Done" completes the stage.
 - [ ] **Reduced motion:** with the system's reduce-motion setting on, the sounds still play but there are no
       sparkles or fireworks.
@@ -194,7 +195,7 @@ Play it once with the mouse and once with the camera (`?debug=true` shows where 
 
 ## The floor and 2.5D scenes
 
-Use `rules-demo`, whose "Walk around" stage is 2.5D, with the camera granted on its landing page. Start with no saved
+Use the demo (`rules-demo`, "Demo scenes (2.5D)"), a 2.5D game, with the camera granted on its landing page. Start with no saved
 floor: on the calibration page, **Forget all saved areas**.
 
 - [ ] The landing page outlines the default floor on the preview, says the camera has no saved floor area, and New
@@ -208,11 +209,41 @@ floor: on the calibration page, **Forget all saved areas**.
 - [ ] **A second person:** someone else stepping into view shows "Only one person should be in view", the feet
       stop turning green or red, and Save is disabled, until they step out again.
 - [ ] Save, then go back: the landing page says the camera has a saved floor, and New game is enabled.
-- [ ] **The fitted view:** open "Walk around". The view eases into the crop's shape: your feet reach the bottom edge
-      at the floor's front, and your head stays in view at the back. Leaving the stage eases back to the camera's shape.
+- [ ] **The fitted view:** open "Walk around". The view has the crop's shape: your feet reach the bottom edge at the
+      floor's front, and your head stays in view at the back.
 - [ ] **A small calibration:** calibrate a small floor, about a metre square, and play "Walk around" again. The view
       is narrower, with wide side bars, and nothing important is cut off: the posts, "Done" and your head at the back.
-- [ ] With `?debug=true`, "Walk around" outlines the floor over the scene, and your feet are green on it.
+- [ ] With `?debug=true`, "Walk around" outlines the floor over the scene, shades what is off it, and your feet are
+      green on it.
+
+### Floor-placed items, on a real camera
+
+Run these on both 2.5D games: the demo's "Walk around", and Nanny's Magic Trifle's stepping stones (its overview
+turns the camera on).
+
+- [ ] **Under your feet:** stand where a floor item stands (the near post's foot, the far post's, a stepping stone),
+      at the front and at the back of the floor. The item appears under your feet.
+- [ ] **Sorting:** walk past the posts. You go behind each one, then in front, without flickering where you cross.
+- [ ] **Thickness:** the near post lights only while you stand beside it, not from further forward or back, even with
+      a hand or foot over it. Jump beside it: it stays lit, as a jump doesn't change your floor position.
+- [ ] **Following:** walk around. The ring under you and the position at the bottom follow you without noticeable
+      lag or jitter, and stand still when you do.
+- [ ] **Trifle by mouse:** with the camera off, the stepping stones stand in a row on the floor, scaled for its depth,
+      and still float, glow and take clicks. Each stage's scroll opens, takes an answer and closes.
+
+### Floor surfaces, on a real camera
+
+Run these on Nanny's Magic Trifle's stepping stones (the river, bank, forest and sky) and the demo's "Walk around"
+(the tiles, walls, hills and horizon).
+
+- [ ] **Lining up:** the floor surfaces, walls and backgrounds line up with the calibrated floor. Recalibrate (drag a
+      back corner down, then the other one), and they follow the new floor, the horizon slanting with it.
+- [ ] **Standing on a floor area:** stand on the lit tile in "Walk around": it lights. Stand just off its corner,
+      inside the box it would have on screen but not on the tile itself: it doesn't.
+- [ ] **Any screen shape:** play on a wide screen, then a narrow window (or a portrait screen). The scene stays at the
+      floor's shape, standing on the bottom edge, with the river, bank, forest and sky (or the demo's grass and sky)
+      filling the rest of the screen, and no blank space. Your silhouette still lines up with the floor, and stays
+      visible when you step off the floor's sides.
 
 ## Player effects
 
@@ -226,7 +257,7 @@ The rules demo's Effects stage has one thing to touch for each effect, and shows
 - [ ] **Near at the boundary:** stand at the edge of the lamp's range and sway. It doesn't flicker on and off.
 - [ ] **Static at distance:** touch the static square near the camera and far from it. The blocks are the same size on screen, and it flickers, unless reduced motion is on.
 - [ ] **Invisible:** touch the ghost: you fade out, and can still set off other things, and return after 3 s.
-- [ ] **Quake on a jump:** jump. Everything shakes, and you can still walk behind and in front of depth items while it does.
+- [ ] **Quake on a jump:** jump. Everything shakes, and you can still walk behind and in front of floor items while it does.
 - [ ] **Speed:** with `?showFps=true` (the readout without the debug aids), quake a player's image, or give them a filter highlight, in a large window. Look for stutter that the frame rate readout doesn't show, as a filter's cost falls on the browser's drawing rather than on the vision loop.
 - [ ] **Reduced motion:** with the system's reduce-motion setting on, falls and spins jump to their end, nothing shakes, static holds still, and the stage can still be finished.
 
@@ -275,16 +306,17 @@ scripts/run-browser-tests.sh
 
 What the suite proves:
 
-| Test                                                | Proves                                                                                                                                                                                                                                                             |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Landing page starts the game at `/play`             | The landing page and route split work in a real browser                                                                                                                                                                                                            |
-| Shows the preview and runs the silhouette loop      | The fake camera reaches the preview, and segmentation draws frames                                                                                                                                                                                                 |
-| Debug changes the mask type                         | The loop survives the mask-type change with no model errors                                                                                                                                                                                                        |
-| Preview off keeps the camera running                | Hiding the preview does not stop segmentation                                                                                                                                                                                                                      |
-| Camera-off scene stops, returning reacquires        | The track ends on the camera-off scene, and a live stream returns                                                                                                                                                                                                  |
-| Switching the fake camera image changes the preview | The harness controls the image the app receives                                                                                                                                                                                                                    |
-| Effects (`effects.spec.ts`)                         | Item effects at two sizes, in a second column, through re-renders, resets and fades, with reduced motion; a fake camera for falling, spinning, freezing, static, rewards, and a removed player staying removed                                                     |
-| Rules demo (`rules.spec.ts`)                        | The toggle, bulb, balloons and lava play by mouse; the balloons count down and the lava asks for the start first, again after lava and a reload; scene state is kept, and resets on show; the mouse passes through empty foreground but not through drawn elements |
+| Test                                                | Proves                                                                                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Landing page starts the game at `/play`             | The landing page and route split work in a real browser                                                                                                                                                                                                                                                                                                                                                  |
+| Shows the preview and runs the silhouette loop      | The fake camera reaches the preview, and segmentation draws frames                                                                                                                                                                                                                                                                                                                                       |
+| Debug changes the mask type                         | The loop survives the mask-type change with no model errors                                                                                                                                                                                                                                                                                                                                              |
+| Preview off keeps the camera running                | Hiding the preview does not stop segmentation                                                                                                                                                                                                                                                                                                                                                            |
+| Camera-off scene stops, returning reacquires        | The track ends on the camera-off scene, and a live stream returns                                                                                                                                                                                                                                                                                                                                        |
+| Switching the fake camera image changes the preview | The harness controls the image the app receives                                                                                                                                                                                                                                                                                                                                                          |
+| Effects (`effects.spec.ts`)                         | Item effects at two sizes, in a second column, through re-renders, resets and fades, with reduced motion; a fake camera for falling, spinning, freezing, static, rewards, and a removed player staying removed                                                                                                                                                                                           |
+| Rules demo (`rules.spec.ts`)                        | The toggle, bulb, balloons and lava play by mouse; the balloons count down and the lava asks for the start first, again after lava and a reload; scene state is kept, and resets on show; the mouse passes through empty foreground but not through drawn elements; a pool laid on the floor counts only where it is drawn                                                                               |
+| Floor (`floor.spec.ts`)                             | Floor items stand on their floor spots, scaled for depth; the player sorts among them in one stacking context; items off the floor stay in front and clickable; player 1's position reaches the template; the debug view outlines and shades the floor; Walk around's tiles cover the floor and light underfoot; the trifle's river, bank and forest stand on the floor in its overview and shared scene |
 
 The suite does not prove that a physical camera works, that a real player's body is segmented
 accurately, or that the model download succeeds on every network. Cover those with the manual

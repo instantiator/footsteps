@@ -37,12 +37,13 @@ interface HarnessProps {
   onEvent: (event: CameraRuleEvent) => void;
   enabled?: boolean;
   onClick?: () => void;
+  onPosition?: (point: { x: number; y: number } | null) => void;
 }
 
 /** A viewport holding one scene with #a, #b and the #cover over #b, fed to the hook. */
-function Harness({ rules, onEvent, enabled = true, onClick }: HarnessProps) {
+function Harness({ rules, onEvent, enabled = true, onClick, onPosition }: HarnessProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
-  useMouseFeet(viewportRef, rules, onEvent, { enabled });
+  useMouseFeet(viewportRef, rules, onEvent, { enabled, onPosition });
   return (
     <div ref={viewportRef} data-testid="viewport" onClick={onClick}>
       <div data-scene-scope={SCOPE}>
@@ -101,6 +102,23 @@ afterEach(() => {
 });
 
 describe("useMouseFeet", () => {
+  it("reports where the feet stand, holds it through a jump, and reports nothing as they leave", () => {
+    const onPosition = vi.fn();
+    const { viewport, move, down, up } = setup([], { onPosition });
+    move(20, 30);
+    expect(onPosition).toHaveBeenLastCalledWith({ x: 20, y: 30 });
+
+    onPosition.mockClear();
+    down(20, 30);
+    move(60, 30, 1);
+    expect(onPosition).not.toHaveBeenCalled();
+    up(60, 30);
+    expect(onPosition).toHaveBeenLastCalledWith({ x: 60, y: 30 });
+
+    fireEvent.pointerLeave(viewport);
+    expect(onPosition).toHaveBeenLastCalledWith(null);
+  });
+
   it("fires foot-enter and foot-exit once each as the pointer moves over and off", () => {
     const { onEvent, move } = setup([rule(["foot-enter", "foot-exit"], "#a")]);
     move(10);
@@ -137,6 +155,21 @@ describe("useMouseFeet", () => {
     const included = setup([rule(["foot-enter"], "#b", { includeCovered: true })]);
     included.move(260);
     expect(fired(included.onEvent)).toEqual(["foot-enter@b"]);
+  });
+
+  it("stands on a floor area only where it is drawn, not anywhere in its wider box", () => {
+    // #a is drawn in perspective over the left half of its box
+    Object.defineProperty(document, "elementsFromPoint", {
+      configurable: true,
+      value: (x: number) => (x < 50 ? [document.getElementById("a")] : []),
+    });
+    const { onEvent, move, view } = setup([rule(["foot-enter"], "#a", { includeCovered: true })]);
+    view.container.querySelector("#a")!.setAttribute("data-floor-area", "0 0 50 50");
+    move(75);
+    expect(onEvent).not.toHaveBeenCalled();
+    move(25);
+    expect(fired(onEvent)).toEqual(["foot-enter@a"]);
+    Reflect.deleteProperty(document, "elementsFromPoint");
   });
 
   it("waits out a rule's hold before entering, and forgets it if the feet move off first", () => {

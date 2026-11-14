@@ -388,6 +388,22 @@ describe("useGameRules", () => {
         expect(rules.state().session.players).toEqual({ active: 0, removed: 1, frozen: 0 });
         expect(rules.sceneState(TITLE)).toEqual({ over: true });
       });
+
+      it("fires a when rule on players' positions, set together in one change", () => {
+        const atTheFront: GameRule = {
+          on: { when: "game.players.1.y > 80 and game.players.2.x < 20" },
+          do: [{ set: { ready: "game.players.1.x" } }],
+        };
+        const rules = renderRules(rulesGame({ [TITLE]: { rules: [atTheFront], initialState: {} } }));
+        act(() =>
+          rules.hook().onPlayerPositions({
+            1: { x: 42.5, y: 82.5 },
+            2: { x: 12.5, y: 50 },
+          }),
+        );
+        expect(rules.state().session.playerPositions[1]).toEqual({ x: 42.5, y: 82.5 });
+        expect(rules.sceneState(TITLE)).toEqual({ ready: 42.5 });
+      });
     });
 
     describe("delayed actions", () => {

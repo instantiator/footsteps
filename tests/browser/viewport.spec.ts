@@ -1,10 +1,18 @@
 import { expect, test } from "@playwright/test";
 import { openCameraGame } from "./fixtures/cameraGame";
 import { installFakeCamera } from "./fixtures/fakeCamera";
+import type { GameRepository } from "../../src/entities/GameRepository";
 
 test("eases the game viewport into the camera's shape, then fades the overview in", async ({ page }) => {
   await page.context().grantPermissions(["camera"]);
   await installFakeCamera(page);
+  // A 2D scene takes the camera's shape; the game is 2.5D, which takes its floor's
+  await page.route("**/game-repository.json", async (route) => {
+    const response = await route.fetch();
+    const repository = (await response.json()) as GameRepository;
+    repository.games["magic-trifle"].modules = { ...repository.games["magic-trifle"].modules, scene: "2D" };
+    await route.fulfill({ response, json: repository });
+  });
   await page.goto("/game/magic-trifle/play");
 
   const viewport = page.locator("#game-viewport");
@@ -72,7 +80,7 @@ test("eases the game viewport into the camera's shape, then fades the overview i
   }
 });
 
-test("fits a 2.5D scene's viewport to the floor, cropping the camera, and its elements still take clicks", async ({
+test("fits a 2.5D scene's box to the floor, cropping the camera, and its elements still take clicks", async ({
   page,
 }) => {
   await openCameraGame(page, { sceneMode: "2.5D" });
@@ -86,7 +94,7 @@ test("fits a 2.5D scene's viewport to the floor, cropping the camera, and its el
       const { width, height } = document.querySelector(selector)!.getBoundingClientRect();
       return { width, height };
     };
-    return { viewport: size("#game-viewport"), stack: size("#character-canvas-container") };
+    return { viewport: size(".floorScene .sceneBox"), stack: size("#character-canvas-container") };
   });
   // The default floor spans 8–92% of the fake camera's 4:3 image, down to 90%
   expect(measured.viewport.width / measured.viewport.height).toBeCloseTo((0.84 * 4) / 3 / 0.9, 2);

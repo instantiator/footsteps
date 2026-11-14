@@ -371,3 +371,74 @@ screen (`maskRectForElement`), which a 2.5D crop only moves and enlarges, so dia
 
 **Act when:** a game puts a camera interaction in a dialog scene. Add a browser check that a hand on a dialog's
 element fires in a 2.5D scene.
+
+## Floor placement isn't proven on a real camera
+
+The browser suite proves floor items are placed, scaled and sorted, and that positions reach templates, with a fake
+camera and the default floor. It can't show that items appear under a real player's feet, that sorting and position
+variables don't flicker or lag, or that thickness feels right. The checks are in [Floor-placed items, on a real
+camera](testing/manual-testing.md#floor-placed-items-on-a-real-camera).
+
+**Act when:** before either 2.5D game is played with the camera. Run the checks on both, and tune `positionCellSize`,
+`positionUpdatesPerSecond` and `cameraDepthDeadband` if positions jitter or lag.
+
+## Floor surfaces aren't proven on a real camera
+
+The browser suite proves floor surfaces are drawn onto the floor and that a floor area only counts where it is drawn,
+with the default floor and the mouse, and that both games fill wide and tall screens. It can't show that they line up
+with a real, recalibrated floor, that the silhouette lines up on any screen shape, or that standing on a tile feels
+right. The checks are in [Floor surfaces, on a real
+camera](testing/manual-testing.md#floor-surfaces-on-a-real-camera).
+
+**Act when:** before either 2.5D game is played with the camera. Run the checks on both.
+
+## Large surface boxes are drawn at a smaller scale
+
+The engine caps a box it sizes at 4096 pixels across or down (`MAX_BOX_PIXELS` in `FloorSurfacePlacement.ts`), and
+draws a larger surface at a smaller scale, given by `--floor-unit`. The floor background always hits the cap, as it
+reaches back to the horizon, so its texture is drawn at about a pixel a floor unit and magnified near the camera. The
+browser rasterises it at screen resolution, so it looked sharp in testing, but a detailed texture could blur.
+
+**Act when:** a floor background's texture looks blurred near the front of the screen. Then draw the floor background
+in two parts, a near one at the floor's scale and a far one at a smaller scale.
+
+## 2.5D challenges side by side share one scene box
+
+In a 2.5D scene, each layer's grid of challenges is the scene box, so two challenges shown side by side each get half
+of it, and their `backgroundStyle` only fills their half. Their surfaces still reach the screen's edges. Nanny's Magic
+Trifle's stage 3 shows two dialogs this way, which is fine as they have no floor.
+
+**Act when:** a game shows two 2.5D challenges side by side that each want their own floor or background across the
+screen.
+
+## Floor items inside a transformed wrapper are misplaced
+
+Placement reads an item's layout position from `offsetLeft`/`offsetTop`, which ignore transforms, so a wrapper with its
+own `transform` (or `translate`, `scale`) throws its floor items off. No game does this.
+
+**Act when:** a game puts floor items inside a transformed wrapper. Measure the item through its wrapper instead, for
+example by placing it relative to its offset parent's on-screen box.
+
+## Floor placement checks every item every frame
+
+`useFloorPlacement` visits every `[data-floor-y]` item and floor surface on each animation frame in a 2.5D scene,
+reading its layout and writing only what changed. It is O(items), and the games have a few dozen at most.
+
+**Act when:** profiling shows placement taking more than about 1 ms a frame, or a scene has more than about 50 floor
+items. Then place on resize, scene change and template mutation instead.
+
+## Spectators count as players (002.03.14)
+
+Everyone the camera sees is a player, including people standing off the floor. 002.03.14 is to ignore spectators:
+
+- A spectator is a person whose held position (`PlayerPositions`, which already holds through jumps) falls outside the
+  floor (x or y outside 0–100) by more than a margin, about 5 units, for longer than a short hold, so stepping over
+  an edge doesn't drop someone at once.
+- The filter goes between `PlayerPositions` and the registry and interactions, in `CharacterCanvas`'s loop. Spectators
+  get no number, interactions, position variables or count. Whether they are drawn (dimmed, or not at all) is a
+  choice for that prompt.
+- 2D scenes have no floor, so nobody is a spectator there.
+- Tests: someone off the floor is ignored, walking on makes them a player, and a jump at the front edge doesn't drop
+  them.
+
+**Act when:** prompt 002.03.14 is planned.

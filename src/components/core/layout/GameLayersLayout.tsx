@@ -1,6 +1,8 @@
 import { useMediaQuery } from "@uidotdev/usehooks";
 import {
   useCallback,
+  useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -20,10 +22,13 @@ import {
   cropPlacement,
   DEFAULT_CORNERS,
   floorCrop,
+  sceneBox,
+  sceneBoxOf,
+  viewportToFloor,
   type Corners,
-  type CropPlacement,
+  type FloorView,
 } from "../../camera/FloorGeometry";
-import { DEPTH_STACK_CLASS, UNSORTED_PLAYER_Z_INDEX } from "../../camera/PlayerDepth";
+import { DEPTH_STACK_CLASS, SCENE_25D_CLASS, UNSORTED_PLAYER_Z_INDEX } from "../../camera/PlayerPosition";
 import type { PlayerFrame } from "../../camera/PlayerMonitor";
 import { cameraModeOf, type ResolvedAvatarMode, type ResolvedCameraMode } from "../logic/AvatarModeUtils";
 import "./GameLayersLayout.css";
@@ -36,6 +41,11 @@ import {
 } from "./GameLayerWrappers";
 import { usePlayerInteractions, type CameraRuleEvent, type CameraRuleTarget } from "./PlayerInteractionHook";
 import { useMouseFeet } from "./MouseFeetHook";
+import { useFloorPlacement, useUnreachableWarnings } from "./FloorPlacement";
+import { usePositionVariables, type PublishedPositions } from "../../camera/PositionPublisher";
+import { PlayerRegistryContext } from "../../../providers/PlayerRegistryContext";
+import type { PlayerRegistry } from "../../camera/PlayerRegistry";
+import type { Point } from "../../../vision/VisionTypes";
 import useSceneTransition, { type SceneTransition, type ViewportTarget } from "./useSceneTransition";
 
 /** Props for {@link GameLayersLayout}. */
@@ -56,6 +66,8 @@ interface GameLayersLayoutProps {
   cameraRules?: CameraRuleTarget[];
   /** Called when a player interacts with an element a camera rule watches. */
   onPlayerInteraction?: (event: CameraRuleEvent) => void;
+  /** Gives rules and templates every player's position; keep it stable. */
+  onPlayerPositions?: (positions: PublishedPositions) => void;
 }
 
 /** The nodes for the background and foreground of the overview, the stage, and its challenges. */
@@ -90,21 +102,14 @@ const aspectRatioOf = (element: Element | null | undefined): number | undefined 
 };
 
 /**
- * The shape the viewport takes: a 2.5D scene's is the floor's crop of the camera image (the default floor on a
- * typical webcam's image without a camera); a 2D scene's is the camera's, or the container's without one.
+ * The shape the viewport takes: a 2.5D scene fills the screen, with its scene box inside; a 2D scene's is the camera's,
+ * or the container's without one.
  */
 const viewportShapeOf = (
   sceneMode: GameSceneMode,
   camera: ResolvedCameraMode,
   cameraAspectRatio: number | undefined,
-  calibrated: Corners,
-): ViewportTarget => {
-  if (sceneMode === "2.5D") {
-    if (!camera.enabled) return cropAspect(floorCrop(DEFAULT_CORNERS), ASSUMED_IMAGE_ASPECT);
-    return isDefined(cameraAspectRatio) ? cropAspect(floorCrop(calibrated), cameraAspectRatio) : undefined;
-  }
-  return camera.enabled ? cameraAspectRatio : "fill";
-};
+): ViewportTarget => (sceneMode === "2D" && camera.enabled ? cameraAspectRatio : "fill");
 
 /** Props for the groups of scene layers. */
 interface SceneLayersProps {
@@ -170,24 +175,53 @@ interface SceneProps {
   /** Receives the video's shape from the camera. */
   setAspectRatio: Dispatch<SetStateAction<number | undefined>>;
   /** The floor a 2.5D scene is fitted to; undefined in a 2D scene. */
-  floor: ShownFloor | undefined;
+  floor: FloorView | undefined;
 }
 
-/** The floor a 2.5D scene shows, and where the camera image sits so that the floor's crop of it fills the viewport. */
-interface ShownFloor {
-  corners: Corners;
-  crop: CropPlacement;
+/** The given element's width-to-height ratio, kept up to date as it resizes. */
+const useAspectRatioOf = (ref: RefObject<HTMLElement | null>): number | undefined => {
+  const [aspect, setAspect] = useState<number>();
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const measure = () => setAspect(aspectRatioOf(element));
+    measure();
+    // ponytail: jsdom has no ResizeObserver; tests measure once
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref]);
+  return aspect;
+};
+
+/** What a 2.5D scene's floor is fitted between: the screen, and the camera image's shape. */
+interface FloorShapes {
+  /** The viewport, which fills the screen in a 2.5D scene. */
+  screen: RefObject<HTMLElement | null>;
+  /** The camera image's, once the camera reports it. */
+  camera: number | undefined;
 }
 
-/** The shown scene's floor: the calibrated one with a camera, else the default one. */
-const shownFloorOf = (
+/**
+ * The shown scene's floor: the calibrated one with a camera, else the default one; none in a 2D scene. Its crop fills
+ * the scene box, which takes the crop's shape within the screen.
+ */
+const useShownFloor = (
   scene: SceneTransition<GameLayers>,
-  calibrated: Corners,
-  mirror: boolean,
-): ShownFloor | undefined => {
-  if (scene.sceneMode !== "2.5D") return undefined;
+  { corners: calibrated, mirror }: { corners: Corners; mirror: boolean },
+  shapes: FloorShapes,
+) => {
+  const is25D = scene.sceneMode === "2.5D";
   const corners = scene.camera.enabled ? calibrated : DEFAULT_CORNERS;
-  return { corners, crop: cropPlacement(floorCrop(corners), mirror) };
+  const imageAspect = (scene.camera.enabled ? shapes.camera : undefined) ?? ASSUMED_IMAGE_ASPECT;
+  const screen = useAspectRatioOf(shapes.screen);
+  return useMemo((): FloorView | undefined => {
+    if (!is25D) return undefined;
+    const crop = floorCrop(corners);
+    const box = isDefined(screen) ? sceneBox(screen, cropAspect(crop, imageAspect)) : undefined;
+    return { corners, crop: cropPlacement(crop, mirror, box), mirrored: mirror };
+  }, [is25D, corners, mirror, screen, imageAspect]);
 };
 
 /** The players and the challenge foreground, in one stacking context so they can be sorted among each other by depth. */
@@ -213,6 +247,7 @@ function DepthStack({
           onPlayersChange={handlePlayers}
           mirror={mirror}
           debug={debug}
+          corners={floor?.corners}
           crop={floor?.crop}
         />
       )}
@@ -280,6 +315,92 @@ function useDebugPlayers(handlePlayers: SceneProps["handlePlayers"], debug: bool
   return { debugPlayers, onPlayers };
 }
 
+/** Each camera player's position, by their number; players with no number or position have none. */
+const numberedPositions = (players: PlayerFrame[], registry: PlayerRegistry): Map<number, Point> =>
+  new Map(
+    players.flatMap(({ id, position }) => {
+      const number = registry.numberOf(id);
+      return isDefined(number) && position !== null ? [[number, position] as const] : [];
+    }),
+  );
+
+/**
+ * Publishes players' positions to rules and templates: the camera's players from each frame, or the mouse as
+ * player 1's feet, in floor coordinates in a 2.5D scene and % of the viewport in a 2D one.
+ * @returns the camera frame handler, which also publishes, and the feet's position handler
+ */
+function usePositionReports(
+  viewportRef: RefObject<HTMLElement | null>,
+  {
+    handlePlayers,
+    floor,
+    publish,
+  }: Pick<SceneProps, "handlePlayers" | "floor"> & {
+    publish: GameLayersLayoutProps["onPlayerPositions"];
+  },
+) {
+  const report = usePositionVariables(publish);
+  const registry = useContext(PlayerRegistryContext);
+  const floorRef = useRef(floor);
+  useEffect(() => {
+    floorRef.current = floor;
+  }, [floor]);
+
+  const onCameraPlayers = useCallback(
+    (players: PlayerFrame[], timestamp: number) => {
+      handlePlayers(players, timestamp);
+      report(numberedPositions(players, registry));
+    },
+    [handlePlayers, report, registry],
+  );
+  const onFeet = useCallback(
+    (point: Point | null) => {
+      const rect = viewportRef.current?.getBoundingClientRect();
+      if (point === null || !rect || rect.width === 0 || rect.height === 0) return report(new Map());
+      const at = { x: (point.x - rect.left) / rect.width, y: (point.y - rect.top) / rect.height };
+      const view = floorRef.current;
+      report(new Map([[1, view ? viewportToFloor(view, at) : { x: 100 * at.x, y: 100 * at.y }]]));
+    },
+    [viewportRef, report],
+  );
+  return { onCameraPlayers, onFeet, clear: useCallback(() => report(new Map()), [report]) };
+}
+
+/** What players do and where they are, for {@link usePlayerInput}. */
+interface PlayerInputProps extends Pick<SceneProps, "scene" | "mirror" | "floor" | "debug"> {
+  /** Whether the mouse is player 1's feet. */
+  mouseFeet: boolean;
+  /** The rules players can fire, and where their positions go. */
+  rules: Pick<GameLayersLayoutProps, "cameraRules" | "onPlayerInteraction" | "onPlayerPositions">;
+}
+
+/**
+ * Turns what players do into interactions, and where they are into positions for rules and templates: the camera's
+ * players, or the mouse as player 1's feet. While debugging, it also warns of targets no player can stand on.
+ * @returns the character canvas's ref, the frame handler to give it, and the players for the debug overlay
+ */
+function usePlayerInput(viewportRef: RefObject<HTMLElement | null>, props: PlayerInputProps) {
+  const { scene, mirror, mouseFeet, floor, debug, rules } = props;
+  const { canvasRef, handlePlayers } = usePlayerInteractions(
+    rules.cameraRules,
+    rules.onPlayerInteraction,
+    scene.camera.enabled && !scene.transitioning,
+    { mirrored: mirror, onFloor: scene.sceneMode === "2.5D" },
+  );
+  const positions = usePositionReports(viewportRef, { handlePlayers, floor, publish: rules.onPlayerPositions });
+  const { debugPlayers, onPlayers } = useDebugPlayers(positions.onCameraPlayers, debug);
+  useMouseFeet(viewportRef, rules.cameraRules, rules.onPlayerInteraction, {
+    enabled: mouseFeet,
+    paused: scene.transitioning,
+    onPosition: positions.onFeet,
+  });
+  // Whoever stood somewhere before has gone when the way players are followed changes
+  const { clear } = positions;
+  useEffect(() => clear(), [mouseFeet, scene.camera.enabled, clear]);
+  useUnreachableWarnings(viewportRef, { view: floor, rules: rules.cameraRules, debug: debug === true });
+  return { canvasRef, debugPlayers, onPlayers };
+}
+
 /** The game viewport's ref, and ways to measure it and its container. */
 function useViewportMeasurements() {
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -315,10 +436,28 @@ const cameraLayersOf = (
   show: !scene.camera.enabled || isDefined(cameraAspectRatio),
 });
 
-/** The viewport's target shape, and the shape a reshape starts from while one is running. */
-const viewportStyle = (scene: SceneTransition<GameLayers>): CSSProperties => {
+/** The viewport's classes: reshaping while it changes shape, and marked as showing a 2.5D scene. */
+const viewportClasses = (scene: SceneTransition<GameLayers>, floor: FloorView | undefined): string =>
+  ["gameViewport", scene.reshaping && "gameViewportReshaping", floor && SCENE_25D_CLASS].filter(Boolean).join(" ");
+
+/** Where a 2.5D scene's box sits in the viewport, for the template bodies to take. */
+const sceneBoxStyle = (floor: FloorView | undefined): Record<string, string> => {
+  if (!floor) return {};
+  const { left, top, right, bottom } = sceneBoxOf(floor);
+  const percent = (fraction: number) => `${(fraction * 100).toFixed(3)}%`;
+  return {
+    "--scene-left": percent(left),
+    "--scene-top": percent(top),
+    "--scene-width": percent(right - left),
+    "--scene-height": percent(bottom - top),
+  };
+};
+
+/** The viewport's target shape, the shape a reshape starts from while one is running, and a 2.5D scene's box. */
+const viewportStyle = (scene: SceneTransition<GameLayers>, floor: FloorView | undefined): CSSProperties => {
   const style: CSSProperties & { "--reshape-from"?: string; "--reshape-to"?: string } = {
     aspectRatio: scene.viewport.ratio,
+    ...sceneBoxStyle(floor),
   };
   if (scene.reshaping && isDefined(scene.viewport.from) && isDefined(scene.viewport.ratio)) {
     style["--reshape-from"] = `${scene.viewport.from} / 1`;
@@ -341,6 +480,7 @@ export default function GameLayersLayout({
   sceneMode = "2D",
   cameraRules,
   onPlayerInteraction,
+  onPlayerPositions,
   ...aids
 }: GameLayersLayoutProps) {
   const [cameraAspectRatio, setCameraAspectRatio] = useState<number>();
@@ -354,7 +494,7 @@ export default function GameLayersLayout({
     sceneKey,
     camera,
     sceneMode,
-    shape: viewportShapeOf(sceneMode, camera, cameraAspectRatio, corners),
+    shape: viewportShapeOf(sceneMode, camera, cameraAspectRatio),
     reducedMotion,
     measureViewport,
     measureContainer,
@@ -362,21 +502,23 @@ export default function GameLayersLayout({
   // Keep the media until the shown camera goes too, so a camera-off reshape keeps its preview alive
   const media = useCameraMedia(camera.enabled || scene.camera.enabled);
 
-  const { canvasRef, handlePlayers } = usePlayerInteractions(
-    cameraRules,
-    onPlayerInteraction,
-    scene.camera.enabled && !scene.transitioning,
+  const floor = useShownFloor(scene, { corners, mirror }, { screen: viewportRef, camera: cameraAspectRatio });
+  const { canvasRef, debugPlayers, onPlayers } = usePlayerInput(viewportRef, {
+    scene,
     mirror,
-  );
-  const { debugPlayers, onPlayers } = useDebugPlayers(handlePlayers, aids.debug);
-  useMouseFeet(viewportRef, cameraRules, onPlayerInteraction, { enabled: mouseFeet, paused: scene.transitioning });
+    mouseFeet,
+    floor,
+    debug: aids.debug,
+    rules: { cameraRules, onPlayerInteraction, onPlayerPositions },
+  });
+  useFloorPlacement(viewportRef, floor);
 
   return (
     <div
       ref={viewportRef}
       id="game-viewport"
-      className={`gameViewport${scene.reshaping ? " gameViewportReshaping" : ""}`}
-      style={viewportStyle(scene)}
+      className={viewportClasses(scene, floor)}
+      style={viewportStyle(scene, floor)}
     >
       <Scene
         scene={scene}
@@ -389,7 +531,7 @@ export default function GameLayersLayout({
         canvasRef={canvasRef}
         handlePlayers={onPlayers}
         setAspectRatio={setCameraAspectRatio}
-        floor={shownFloorOf(scene, corners, mirror)}
+        floor={floor}
       />
       <HudLayerWrapper zIndex={10} {...aids} />
     </div>

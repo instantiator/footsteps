@@ -9,6 +9,7 @@ import type { PlayerFrame } from "../../camera/PlayerMonitor";
 import HeadsUpDisplay from "../HeadsUpDisplay";
 import type { LayerHint } from "../scene/GameSceneComponent";
 import GameChallengeGrid from "./GameChallengeGrid";
+import { SCENE_BOX_CLASS } from "../../camera/PlayerPosition";
 
 /**
  * Props shared by the layer wrappers. Each wrapper uses only the subset it needs, and
@@ -70,7 +71,7 @@ export const GameLayerWrapper = ({ nodes, style, zIndex, layer, layerHint }: Lay
     style={{ ...style, zIndex: zIndex }}
   >
     {isDefined(nodes) && (
-      <GameChallengeGrid layer={layer!} layerHint={layerHint!} className="innerStyle noClicks">
+      <GameChallengeGrid layer={layer!} layerHint={layerHint!} className={`innerStyle noClicks ${SCENE_BOX_CLASS}`}>
         {nodes.map((node, index) => (
           <Fragment key={`${layer!}-${layerHint!}-grid-content-${index}`}>{node}</Fragment>
         ))}
@@ -112,7 +113,12 @@ export const CharacterCameraLayerWrapper = ({
 /** The box the whole camera image fills: the viewport, or a larger box when a 2.5D scene crops the image to its floor. */
 const imageBoxStyle = (crop: CropPlacement | undefined): CSSProperties | undefined =>
   isDefined(crop)
-    ? { width: `${crop.width * 100}%`, height: `${crop.height * 100}%`, left: `${crop.left * 100}%`, top: 0 }
+    ? {
+        width: `${crop.width * 100}%`,
+        height: `${crop.height * 100}%`,
+        left: `${crop.left * 100}%`,
+        top: `${crop.top * 100}%`,
+      }
     : undefined;
 
 /**
@@ -125,7 +131,7 @@ export const DebugLayerWrapper = ({ style, zIndex, players, corners, crop, mirro
     className="outerStyle noClicks"
     style={{ ...style, ...imageBoxStyle(crop), zIndex: zIndex, transform: mirror ? "scaleX(-1)" : undefined }}
   >
-    <FloorOverlay className="innerStyle" corners={corners} players={players} />
+    <FloorOverlay className="innerStyle" corners={corners} players={players} shadeOffFloor />
   </div>
 );
 
@@ -140,6 +146,7 @@ export const CharacterCanvasLayerWrapper = ({
   onPlayersChange,
   mirror,
   debug,
+  corners,
   crop,
 }: LayerNodeProps) => {
   const { showFps } = useAppConfig();
@@ -159,6 +166,8 @@ export const CharacterCanvasLayerWrapper = ({
         canvasRef={canvasRef}
         maskType={debug ? "colored" : "binary"}
         showStats={debug || showFps}
+        floor={corners}
+        mirrored={mirror}
       />
     </div>
   );

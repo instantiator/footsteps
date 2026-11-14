@@ -1,12 +1,15 @@
 /**
- * Every conversion between the camera image, the screen and the floor. Nothing else in the code does this maths.
+ * Every conversion between the camera image, the screen and the floor. Nothing else in the code does this maths, beyond
+ * `FloorSurfaces.ts`, which builds the floor's tiles, walls and backgrounds on it.
  *
  * - **Image fractions** run 0–1 across and down the camera's own, unmirrored image, whatever its resolution.
  * - **Mask pixels** are the vision model's, from the top left.
  * - **Screen pixels** are the browser viewport's. They reach the image through the camera canvas's on-screen
  *   rectangle, so cropping or mirroring the canvas changes nothing here.
  * - **Floor coordinates** run 0–100: x from the floor's left edge to its right at that depth, y from its back edge
- *   to its front.
+ *   to its front. **Screen floor coordinates** are the same, but x runs from the floor's left edge as seen on screen,
+ *   which is the image's right when the camera is mirrored. Games, players and items all use these.
+ * - **Viewport fractions** run 0–1 across and down the game viewport.
  */
 import type { Point } from "../../vision/VisionTypes";
 
@@ -50,7 +53,7 @@ const project = ([a, b, c, d, e, f, g, h, i]: Matrix, { x, y }: Point): Point =>
 };
 
 /** The matrix taking the unit square's corners (0,0), (1,0), (1,1), (0,1) to the floor's corners, in that order. */
-const squareToQuad = ({ backLeft: p0, backRight: p1, frontRight: p2, frontLeft: p3 }: Corners): Matrix => {
+export const squareToQuad = ({ backLeft: p0, backRight: p1, frontRight: p2, frontLeft: p3 }: Corners): Matrix => {
   const [dx1, dx2, dx3] = [p1.x - p2.x, p3.x - p2.x, p0.x - p1.x + p2.x - p3.x];
   const [dy1, dy2, dy3] = [p1.y - p2.y, p3.y - p2.y, p0.y - p1.y + p2.y - p3.y];
   const det = dx1 * dy2 - dx2 * dy1;
@@ -70,7 +73,7 @@ const squareToQuad = ({ backLeft: p0, backRight: p1, frontRight: p2, frontLeft: 
 };
 
 /** A projective matrix's inverse, up to scale, which is all a projective matrix needs. */
-const adjugate = ([a, b, c, d, e, f, g, h, i]: Matrix): Matrix => [
+export const adjugate = ([a, b, c, d, e, f, g, h, i]: Matrix): Matrix => [
   e * i - f * h,
   c * h - b * i,
   b * f - c * e,
@@ -176,23 +179,153 @@ export const cropAspect = ({ left, right, bottom }: FloorCrop, imageAspect: numb
 /** The camera image's width over its height when there is no camera: a typical webcam's. */
 export const ASSUMED_IMAGE_ASPECT = 4 / 3;
 
-/** Where the whole camera image sits so that the crop fills the viewport, as fractions of the viewport's size. */
+/**
+ * The scene box: where a 2.5D scene's floor crop shows on the screen, in screen fractions. It is as large as fits,
+ * centred, and stands on the screen's bottom edge, so spare height goes to the sky.
+ */
+export const sceneBox = (screenAspect: number, sceneAspect: number): Rect => {
+  if (screenAspect >= sceneAspect) {
+    const width = sceneAspect / screenAspect;
+    return { left: (1 - width) / 2, top: 0, right: (1 + width) / 2, bottom: 1 };
+  }
+  return { left: 0, top: 1 - screenAspect / sceneAspect, right: 1, bottom: 1 };
+};
+
+/** A scene box that is the whole screen. */
+export const WHOLE_SCREEN: Rect = { left: 0, top: 0, right: 1, bottom: 1 };
+
+/** Where the whole camera image sits so that the crop fills the scene box, as fractions of the screen's size. */
 export interface CropPlacement {
   /** The image's width. */
   width: number;
   /** The image's height. */
   height: number;
-  /** The image's left edge, from the viewport's: zero or less. */
+  /** The image's left edge, from the screen's. */
   left: number;
+  /** The image's top edge, from the screen's. */
+  top: number;
 }
 
 /**
- * Places the camera image so the crop fills the viewport: the floor spans its width, and its lowest point sits on the
- * bottom edge. A mirrored image is flipped about its own centre, so the crop's right edge lands on the viewport's left.
+ * Places the camera image so the crop fills the scene box: the floor spans its width, and its lowest point sits on its
+ * bottom edge. A mirrored image is flipped about its own centre, so the crop's right edge lands on the box's left.
  */
-export const cropPlacement = ({ left, right, bottom }: FloorCrop, mirrored: boolean): CropPlacement => {
-  const width = 1 / (right - left);
-  return { width, height: 1 / bottom, left: -(mirrored ? 1 - right : left) * width };
+export const cropPlacement = (
+  { left, right, bottom }: FloorCrop,
+  mirrored: boolean,
+  scene: Rect = WHOLE_SCREEN,
+): CropPlacement => {
+  const width = (scene.right - scene.left) / (right - left);
+  return {
+    width,
+    height: (scene.bottom - scene.top) / bottom,
+    left: scene.left - (mirrored ? 1 - right : left) * width,
+    top: scene.top,
+  };
+};
+
+/** The floor a 2.5D scene shows, and how the camera image is placed so the floor's crop fills the scene box. */
+export interface FloorView {
+  /** The floor's corners, in image fractions. */
+  corners: Corners;
+  /** Where the camera image sits on the screen. */
+  crop: CropPlacement;
+  /** Whether the image is shown flipped like a mirror. */
+  mirrored: boolean;
+}
+
+/** The scene box a view's crop fills, in screen fractions: the inverse of {@link cropPlacement}. */
+export const sceneBoxOf = ({ corners, crop, mirrored }: FloorView): Rect => {
+  const { left, right, bottom } = floorCrop(corners);
+  const x = crop.left + (mirrored ? 1 - right : left) * crop.width;
+  return { left: x, top: crop.top, right: x + (right - left) * crop.width, bottom: crop.top + bottom * crop.height };
+};
+
+/** Flips a floor x to or from the screen's side when mirrored; flipping is its own inverse. */
+const onScreenSide = ({ x, y }: Point, mirrored: boolean): Point => ({ x: mirrored ? 100 - x : x, y });
+
+/** Which screen floor point an image point shows. */
+export const screenFloorForImage = (corners: Corners, image: Point, mirrored: boolean): Point =>
+  onScreenSide(floorHomography(corners).toFloor(image), mirrored);
+
+/** Where a screen floor point appears in the image. */
+export const imageForScreenFloor = (corners: Corners, floor: Point, mirrored: boolean): Point =>
+  floorHomography(corners).toImage(onScreenSide(floor, mirrored));
+
+/** Where an image point appears in the viewport, in viewport fractions. */
+export const viewportPointForImage = (
+  { x, y }: Point,
+  { width, height, left, top }: CropPlacement,
+  mirrored: boolean,
+): Point => ({
+  x: left + (mirrored ? 1 - x : x) * width,
+  y: top + y * height,
+});
+
+/** Which image point a viewport point shows: the inverse of {@link viewportPointForImage}. */
+export const imagePointForViewport = (
+  { x, y }: Point,
+  { width, height, left, top }: CropPlacement,
+  mirrored: boolean,
+): Point => {
+  const across = (x - left) / width;
+  return { x: mirrored ? 1 - across : across, y: (y - top) / height };
+};
+
+/** Where a screen floor point appears in the viewport, in viewport fractions. */
+export const floorToViewport = ({ corners, crop, mirrored }: FloorView, floor: Point): Point =>
+  viewportPointForImage(imageForScreenFloor(corners, floor, mirrored), crop, mirrored);
+
+/** Which screen floor point a viewport point (in fractions) shows, even off the floor. */
+export const viewportToFloor = ({ corners, crop, mirrored }: FloorView, point: Point): Point =>
+  screenFloorForImage(corners, imagePointForViewport(point, crop, mirrored), mirrored);
+
+/** The length of the floor's row at depth `y` on screen, in pixels of a viewport of the given size. */
+export const rowLength = (view: FloorView, { width, height }: MaskSize, y: number): number => {
+  const left = floorToViewport(view, { x: 0, y });
+  const right = floorToViewport(view, { x: 100, y });
+  return Math.hypot((right.x - left.x) * width, (right.y - left.y) * height);
+};
+
+/** How wide the floor is on screen at depth `y`, compared with its front edge: what an item there is scaled by. */
+export const floorWidthRatio = (view: FloorView, viewport: MaskSize, y: number): number =>
+  rowLength(view, viewport, y) / rowLength(view, viewport, 100);
+
+/** Where an item goes on the floor, and how far its anchor sits above it. */
+export interface FloorSpot {
+  /** Its screen floor point. */
+  floor: Point;
+  /** How high its anchor is above the floor, in floor x units at its depth. */
+  height: number;
+}
+
+/** How to move and scale an item, in pixels, so its anchor stands on its floor spot. */
+export interface FloorPlacement {
+  /** Moves the anchor from where the layout put it. */
+  translate: Point;
+  /** Applied about the anchor, so it doesn't move it. */
+  scale: number;
+}
+
+/**
+ * Places an item on the floor. Its author sized it as it would appear at the front edge, so it is scaled by the floor's
+ * width at its depth relative to the front's, about its anchor, and moved so the anchor stands on its floor spot.
+ * @param anchor where the layout put the item's anchor, in viewport pixels
+ * @param viewport the viewport's size, in pixels
+ */
+export const placeOnFloor = (
+  view: FloorView,
+  viewport: MaskSize,
+  anchor: Point,
+  { floor, height }: FloorSpot,
+): FloorPlacement => {
+  const row = rowLength(view, viewport, floor.y);
+  const spot = floorToViewport(view, floor);
+  const rise = (height / 100) * row;
+  return {
+    translate: { x: spot.x * viewport.width - anchor.x, y: spot.y * viewport.height - rise - anchor.y },
+    scale: row / rowLength(view, viewport, 100),
+  };
 };
 
 /** Whether an image point is on the floor. */

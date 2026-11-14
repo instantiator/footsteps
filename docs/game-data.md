@@ -65,17 +65,125 @@ takes moves on to the stages overview. Clicks remain the keyboard-accessible rou
 
 **`scene`** is how a scene is laid out:
 
-| `scene` | Layout                                                                                                                                                                                                                 |
-| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `2D`    | A full-screen background, the players, and a foreground. The default.                                                                                                                                                  |
-| `2.5D`  | As `2D`, fitted to the floor the player [calibrated](camera-mode.md#calibrating-the-floor): the camera is cropped to the floor, and the view takes the crop's shape, so players' feet stay in view all over the floor. |
+| `scene` | Layout                                                                                                                                                                                                                                                 |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `2D`    | A full-screen background, the players, and a foreground. The default.                                                                                                                                                                                  |
+| `2.5D`  | As `2D`, fitted to the floor the player [calibrated](camera-mode.md#calibrating-the-floor): the scene is laid out in a scene box at the floor's shape, so players' feet stay in view all over the floor, and its surfaces fill the rest of the screen. |
 
-A game with any `2.5D` scene asks a player using the camera to calibrate the floor before starting. In both modes,
-elements in a challenge's foreground can have a `data-depth`, so that players pass in front of and behind them: see
-[player depth](camera-mode.md#player-depth). The scene mode resolves most specific first: `2.5D` if any active
-challenge sets it, else `2D` if one does, then the open stage's `shared` scene, the overview scene, the game's
-`modules`, and finally `2D`. A reset scene's setting is over its parent's. The rules demo's "Walk around" stage is
-`2.5D`.
+A game with any `2.5D` scene asks a player using the camera to calibrate the floor before starting. In a `2.5D` scene,
+items can be [placed on the floor](#floor-placed-items), and players pass in front of and behind them. The scene mode
+resolves most specific first: `2.5D` if any active challenge sets it, else `2D` if one does, then the open stage's
+`shared` scene, the overview scene, the game's `modules`, and finally `2D`. A reset scene's setting is over its
+parent's. Nanny's Magic Trifle and the demo are `2.5D` games.
+
+#### Floor-placed items
+
+Every room's calibration differs, so items can't be hand-placed on the floor. Instead, give an item in a template
+floor coordinates, and the engine places it and scales it for its distance. Floor coordinates run 0–100 across the
+floor at the item's depth, and 0–100 from back to front, so every floor point can be reached in any room.
+
+| Attribute              | Meaning                                                                                                                              | Default                                                        |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| `data-floor-y`         | How far forward the item stands: 0 at the back edge, 100 at the front. Its presence makes the item floor-placed.                     | required                                                       |
+| `data-floor-x`         | Where across the floor it stands: 0 at the left edge on screen, 100 at the right, at that depth.                                     | where the layout puts it across the scene box, read as floor x |
+| `data-floor-height`    | How high above the floor its anchor sits, in the same units as x, so it shrinks with distance.                                       | `0`                                                            |
+| `data-floor-anchor`    | The point on the item that sits at those coordinates, in CSS `transform-origin` syntax: `center bottom`, `left center`, `40% 70%`, … | `center bottom`, the point that touches the floor              |
+| `data-floor-thickness` | The band of floor y, centred on the item, that a player must stand in for their camera interactions with it to count.                | none: interactions count from anywhere                         |
+
+```html
+<div id="tree" data-floor-x="20" data-floor-y="40" style="position: absolute; width: 15cqw; height: 40cqh">…</div>
+```
+
+- **Size an item as it would appear at the front edge.** The engine scales it by the floor's width at its depth,
+  relative to the front edge's, and moves its anchor onto its floor point. It uses the CSS `translate` and `scale`
+  properties, not `transform`, so the layout is untouched, and animations and effects that use `transform` still
+  work. The anchor becomes the item's `transform-origin`, so such an animation pivots on it. Effects that `replace`
+  rather than add to an item's motion override its placement while they run.
+- **Layering.** Floor items in a challenge's foreground sort among the players by depth. Elsewhere, they are placed and
+  scaled, but stay behind the players (overview and stage foregrounds) or in front of them (anything in a challenge's
+  foreground that isn't floor-placed, like a dialog or a HUD).
+- **Not inside a transformed wrapper.** An item is placed from where the layout puts it, which ignores transforms, so a
+  wrapper with its own `transform` throws it off.
+- **The back corners.** The floor narrows towards the back, so the back corners of a scene may be out of reach. Put
+  anything a player must stand on onto the floor. In debug mode, what is off the floor is shaded.
+- **Thickness only counts for the camera's players.** The mouse, even as feet, points at an item rather than
+  standing by it.
+- **In a 2D scene** the attributes do nothing, and validation warns of them. `data-depth`, which came before them,
+  fails validation, naming `data-floor-y`.
+- A scene's `backgroundStyle` fills the scene box, not the whole screen, so a background picture stays lined up with
+  what is placed on it. Fill the rest of the screen with [surfaces](#floor-surfaces).
+
+The demo's "Walk around" stage shows floor items, thickness, and an item following a player's position.
+
+#### Floor surfaces
+
+A 2.5D scene fills the whole screen, whatever its shape. The scene's HTML is laid out in a **scene box** at the floor's
+shape, standing on the screen's bottom edge and centred; `%`, `cqw` and `cqh` measure the scene box. Around it,
+**surfaces** are drawn in the floor's perspective and reach to the screen's edges: tiles on the floor, walls around it,
+backgrounds behind them, the floor background out to the horizon, and the sky. The engine works out where each
+surface's four corners are on screen and draws the element's box onto them with a CSS `matrix3d`, so whatever the
+element holds (colour, images, text) is drawn in perspective.
+
+[Positions, sizes and units](positions-sizes-units.md) lists every class and attribute, and how they are measured.
+
+```html
+<div
+  class="horizon-background"
+  data-wall-distance="4"
+  style="background: url('{{resources.sky}}') center / 100% 100%"
+></div>
+<div class="floor-background" style="background: url('{{resources.water}}') 0 0 / calc(var(--floor-unit) * 100)"></div>
+<div class="rear-background" data-wall-distance="3" data-fill-width style="aspect-ratio: 100 / 22; …"></div>
+<div class="rear-wall" data-fill-width style="aspect-ratio: 100 / 13; …"></div>
+<div id="stepping-stone" data-floor-area="40 40 60 60" style="background: grey; border-radius: 45%"></div>
+```
+
+- **All optional.** Use whichever surfaces the scene needs. For a plain screen around the scene box, with no floor or
+  sky, use `screen-background`. Indoors, a full-height rear wall hides the horizon, as a real room's would.
+- **Height.** A wall or background stands as high as its box's shape makes it, so give it content or an `aspect-ratio`:
+  a box a tenth as high as it is wide makes a wall a tenth as high as it is long. `data-floor-height` sets the height
+  instead, in floor units, and `data-fill-height` stretches it up to the screen's top. A side wall's top slants, so
+  `data-fill-edge` says which end reaches the top: `far` (the default) never leaves a gap, and `near` cuts off at the
+  near end.
+- **Width.** `data-fill-width` stretches a rear or front wall, or the rear background, to the screen's sides. Walls run
+  along the floor's whole edge; a background at a distance runs to meet the others at the same distance.
+- **The box.** Where the height comes from the box's shape, the box is the author's, stretched onto the surface. Where
+  the engine works out the size (a set height, a fill, the floor background), it sizes the box itself and sets
+  `--floor-unit` to the pixels a floor unit takes in it. Size textures with it, and repeat them, so they keep the
+  floor's scale; content that overflows a set height is clipped or repeated as the box's CSS says.
+- **The horizon and the floor background.** `horizon-background` stands at `data-wall-distance` (1000 by default), and
+  always fills the screen above it. The floor background reaches back to the horizon in the same template, so nothing
+  shows between them. Bring the horizon close, as Nanny's Magic Trifle does, to stand the sky just behind a forest.
+  `data-floor-depth` lowers the floor background below the floor.
+- **Distance.** `data-wall-distance` is how far beyond the floor's edge an upright surface stands, in floor units: y
+  units for the rear and front, x units for the sides. Walls default to `0`, on the edge; backgrounds to `50`.
+- **Painting order**, back to front: `screen-background`, `horizon-background`, `floor-background`, the rear, left and
+  right backgrounds, floor areas, then walls. Transparent parts of a surface show what's behind it.
+- **Surfaces paint beneath the rest of their template.** An element wrapped around them is above them, and takes the
+  pointer first, so give the wrapper the `noClicks` class if anything should react to the surfaces. What's inside it
+  still takes the pointer. A wrapper mustn't clip with `overflow: hidden`, or the surfaces stop at the scene box. Each
+  template outside a challenge's foreground is its own stacking context, so surfaces still paint above the scene's
+  `backgroundStyle`.
+- **Walls among players.** In a challenge's foreground, the rear and side walls stand behind every player and the front
+  wall in front of them all. A front wall stands between the players and the camera and hides their legs, so it only
+  really works as a low fence. Floor areas and backgrounds there are behind the players too, and a background in the
+  foreground hides the challenge's background layer.
+- **Upright means upright on screen.** That assumes the camera isn't rolled; a rolled camera makes walls lean slightly.
+- **The horizon line** is where the floor's side edges meet: with the default corners it is level, near the screen's
+  top. It slants if the calibration isn't symmetrical, and every upright surface and the floor background slant with
+  it.
+- **Standing on a floor area.** Feet interactions with a floor area (camera players and mouse-feet) count only where
+  the area is drawn, as its box on screen is wider than the area. A floor area is hit-tested where it is drawn, so
+  mouse moves and clicks on it are too.
+- **Effects** that move or drop an item use the CSS `translate` property, which applies on top of a surface's
+  `matrix3d`, so a floor area falls down the screen as other items do.
+- **Validation** warns of these attributes and classes in a 2D scene, where they do nothing, and of a fill or depth
+  attribute on a surface it doesn't shape.
+
+Nanny's Magic Trifle's stepping stones cross a river that runs across the screen, with its far bank and a forest just
+beyond, and the sky behind. Its title has a blurred copy of its picture as a screen background. The demo's "Walk
+around" stage has a tiled floor (one tile lights underfoot), low walls, hills across the screen, and the sky. Its lava
+and stone hop stages lay their pools and stones on the floor.
 
 **`avatar`** is what stands in for the player:
 
@@ -286,7 +394,8 @@ camera rules for when there is a camera. In `mouse-feet` the pointer fires `foot
 Only elements a template draws take clicks: empty space in a layer lets them through to whatever is beneath,
 including background layers. An element drawn over another covers it, so the one beneath gets neither the click
 nor the camera's touch, unless its rule sets `"includeCovered": true` (camera and mouse-feet interactions only). Give decorative
-elements `pointer-events: none` so they don't cover what's beneath them.
+elements, and wrappers around other elements, the `noClicks` class so they don't cover what's beneath them; what's
+inside a `noClicks` wrapper still takes clicks.
 
 #### Elements that animate or keep state
 

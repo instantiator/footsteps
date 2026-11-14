@@ -2,6 +2,8 @@ import { act, render, waitFor } from "@testing-library/react";
 import type { ComponentProps, ReactNode } from "react";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_CORNERS } from "../src/components/camera/FloorGeometry";
+import { positionMapping } from "../src/components/camera/PlayerPosition";
 import CharacterCanvas from "../src/components/camera/CharacterCanvas";
 import type { PlayerFrame } from "../src/components/camera/PlayerMonitor";
 import { PlayerRegistry } from "../src/components/camera/PlayerRegistry";
@@ -105,6 +107,27 @@ describe("CharacterCanvas", () => {
     expect(players[0].feet?.percent.y).toBeCloseTo(87.5); // the lowest of eight rows
     expect(typeof timestamp).toBe("number");
     expect(model.detect).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports where each player stands: % of the scene in 2D, and floor coordinates on a floor", async () => {
+    const onPlayersChange = vi.fn<(players: PlayerFrame[], timestamp: number) => void>();
+    const { rerender } = renderCanvas({ onPlayersChange });
+    await waitFor(() => expect(onPlayersChange).toHaveBeenCalled());
+    // The fake mask fills the bottom row: its ground point is the middle of the frame's bottom edge
+    expect(onPlayersChange.mock.calls[0][0][0].position).toEqual({ x: 50, y: 100 });
+
+    rerender(
+      <CharacterCanvas
+        video={video}
+        mediaStream={mediaStream}
+        onPlayersChange={onPlayersChange}
+        floor={DEFAULT_CORNERS}
+      />,
+    );
+    await act(async () => runNextFrame());
+    await waitFor(() => expect(onPlayersChange).toHaveBeenCalledTimes(2));
+    const expected = positionMapping(DEFAULT_CORNERS, false)({ x: 0.5, y: 1 });
+    expect(onPlayersChange.mock.calls[1][0][0].position).toEqual(expected);
   });
 
   it.each([true, false])("shows the frame-rate readout only when asked (%s)", async (showStats) => {
