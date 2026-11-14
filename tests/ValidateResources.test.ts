@@ -380,6 +380,7 @@ describe("template text", () => {
     "<div class='rear-wall'></div>",
     '<div data-floor-area="0 0 50 50"></div>',
     '<div class="fence" data-wall-distance="10"></div>',
+    "<div data-fill-height></div>",
   ])("warns of floor surfaces in a scene that never shows in 2.5D: %s", async (content) => {
     const result = await checkGame(gameWith({ scenes: [templateScene(embedded(content))] }), optionsWith());
     expect(result.problems).toEqual([]);
@@ -394,6 +395,34 @@ describe("template text", () => {
     expect((await checkGame(inGame, optionsWith())).warnings).toEqual([]);
     const lookalike = gameWith({ scenes: [templateScene(embedded('<div class="my-rear-wall-x"></div>'))] });
     expect((await checkGame(lookalike, optionsWith())).warnings).toEqual([]);
+  });
+
+  /** The warnings a 2.5D game's template gives. */
+  const warningsIn25D = async (content: string) =>
+    (
+      await checkGame(
+        gameWith({ modules: { scene: "2.5D" }, scenes: [templateScene(embedded(content))] }),
+        optionsWith(),
+      )
+    ).warnings;
+
+  it.each([
+    ['<div class="left-wall" data-fill-width></div>', "data-fill-width"],
+    ['<div class="rear-wall" data-fill-edge="near"></div>', "data-fill-edge"],
+    ['<div class="rear-wall" data-floor-depth="5"></div>', "data-floor-depth"],
+    ['<div class="horizon-background" data-fill-height></div>', "data-fill-height"],
+  ])("warns of a surface attribute on an element it does nothing for: %s", async (content, name) => {
+    expect(await warningsIn25D(content)).toEqual([
+      { path: "scenes[0].component.foregroundTemplate", message: expect.stringContaining(`${name} does nothing`) },
+    ]);
+  });
+
+  it("takes each surface attribute on an element it shapes", async () => {
+    const content = `<div class="rear-background hills" data-fill-height data-fill-width></div>
+      <div class='left-wall' data-fill-height data-fill-edge="near"></div>
+      <div class="floor-background" data-floor-depth="5"></div>
+      <div class="note" data-fill-heights="no"></div>`;
+    expect(await warningsIn25D(content)).toEqual([]);
   });
 
   it("takes floor items in a 2.5D scene, and in a stage's scene that a 2.5D challenge shows with", async () => {
