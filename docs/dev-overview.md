@@ -86,6 +86,19 @@ Every game in the local repository, `public/game-repository.json`, is prerendere
 `public/test-repository.json` holds `test-game`, which isn't in the local repository, so
 `/game/test-game` shows "not found".
 
+## Scene renderer
+
+`/scene-renderer` (<http://localhost:5173/scene-renderer>) is a page for game authors. Paste a scene's HTML on the
+left, and the right shows it as it would play: in 2.5D, with the mouse as the player's feet (`mouse-feet`), on the
+floor saved for the chosen camera or the default floor. It lists, under the HTML, the template problems and warnings
+that the validator would report for a 2.5D scene (`src/components/core/logic/TemplateChecks.ts`, shared with
+`scripts/resource-checks.ts`).
+
+It takes HTML only, with no rules, so it shows how a scene looks rather than how it plays. Its game
+(`src/pages/SceneRendererGame.ts`) opens on its stages overview, which is the pasted HTML. The
+[sample elements](tutorials/sample-elements.md) are captured in it by `CAPTURE_SAMPLES=1 scripts/run-browser-tests.sh
+sample-screenshots`, which rewrites `docs/tutorials/images/`.
+
 ## Schemas
 
 `pre-build.sh` generates JSON schemas from the TypeScript types:

@@ -5,6 +5,8 @@ Published as HTML at <https://instantiator.dev/footsteps/docs/>, with the API re
 - [Developer overview](dev-overview.md): running locally, schemas, and validating game data.
 - [Playing a game](game-play.md): routes, the landing page, permissions, saved progress, and keep-awake.
 - [Deployment](deployment.md): deployment details.
+- [Tutorials](tutorials/index.md): building games and scenes, step by step, with sample elements and the scene
+  renderer.
 - [Game data](game-data.md): how a game's data, scenes, resources, and templates fit together.
 - [Positions, sizes and units](positions-sizes-units.md): how a 2.5D scene measures positions and sizes, and the classes and attributes of its elements.
 - [Game repository data](game-repository-data.md): the repository file that holds games, and where it's loaded from.
