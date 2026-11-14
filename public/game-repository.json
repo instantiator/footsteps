@@ -454,6 +454,173 @@
         "boxShadow": "rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px"
       }
     },
+    "demo-no-camera": {
+      "id": "demo-no-camera",
+      "title": "Demo (no camera)",
+      "description": "Light the lamps, answer a riddle on a scroll, and pick the right door: a demonstration of 2D scenes, played with the mouse alone.",
+      "tileGraphic": "tile",
+      "modules": { "scene": "2D", "avatar": { "mode": "mouse" } },
+      "config": { "sequential": false, "autoAdvanceStages": false },
+      "stylesheets": ["ndc-css"],
+      "resources": {
+        "ndc-css": { "type": "local", "target": "games/demo-no-camera/demo-no-camera.css" },
+        "tile": { "type": "local", "target": "games/demo-no-camera/tile.svg" },
+        "chime": { "type": "local", "target": "games/rules-demo/chime.wav" },
+        "fanfare": { "type": "local", "target": "games/rules-demo/fanfare.wav" }
+      },
+      "scenes": [
+        {
+          "purpose": "game-overview-title",
+          "component": {
+            "type": "template",
+            "data": {},
+            "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/demo-no-camera/title.hbs" },
+            "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+          }
+        },
+        {
+          "purpose": "game-overview-stages",
+          "component": {
+            "type": "template",
+            "data": { "names": { "lamps": "Light the lamps", "riddle": "A riddle", "doors": "Pick a door" } },
+            "rules": [
+              { "on": { "interact": "click", "target": "#stage-link-lamps" }, "do": [{ "enterStage": "lamps" }] },
+              { "on": { "interact": "click", "target": "#stage-link-riddle" }, "do": [{ "enterStage": "riddle" }] },
+              { "on": { "interact": "click", "target": "#stage-link-doors" }, "do": [{ "enterStage": "doors" }] }
+            ],
+            "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/demo-no-camera/stages.hbs" },
+            "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+          }
+        }
+      ],
+      "stages": [
+        {
+          "id": "lamps",
+          "challenges": [
+            {
+              "id": "light-the-lamps",
+              "solution": { "answers": [] },
+              "scenes": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "component": {
+                    "type": "template",
+                    "data": {},
+                    "initialState": { "lamp1": false, "lamp2": false, "lamp3": false, "done": false },
+                    "resetStateOnShow": true,
+                    "rules": [
+                      {
+                        "on": { "interact": "click", "target": "#lamp-1" },
+                        "if": "not state.done",
+                        "do": [{ "set": { "lamp1": "not state.lamp1" } }, { "sound": "chime" }]
+                      },
+                      {
+                        "on": { "interact": "click", "target": "#lamp-2" },
+                        "if": "not state.done",
+                        "do": [{ "set": { "lamp2": "not state.lamp2" } }, { "sound": "chime" }]
+                      },
+                      {
+                        "on": { "interact": "click", "target": "#lamp-3" },
+                        "if": "not state.done",
+                        "do": [{ "set": { "lamp3": "not state.lamp3" } }, { "sound": "chime" }]
+                      },
+                      {
+                        "on": { "when": "state.lamp1 and state.lamp2 and state.lamp3" },
+                        "do": [
+                          { "set": { "done": "true" } },
+                          { "completeChallenge": true, "delayMs": 1000 },
+                          { "sound": "fanfare" },
+                          { "reward": { "animation": "sparkles", "particleCount": 80 } }
+                        ]
+                      }
+                    ],
+                    "foregroundTemplate": {
+                      "sourceType": "relative",
+                      "templateSource": "games/demo-no-camera/lamps.hbs"
+                    },
+                    "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "riddle",
+          "challenges": [
+            {
+              "id": "answer-the-riddle",
+              "solution": { "answers": ["keyboard", "a keyboard"] },
+              "scenes": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "component": {
+                    "type": "scroll",
+                    "data": {},
+                    "contents": [
+                      {
+                        "text": "I have keys, but open no locks.\nI have space, but no room.\nYou can enter, but you can't go in."
+                      },
+                      { "text": "What am I?", "showInput": true, "label": "Your answer" }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "doors",
+          "challenges": [
+            {
+              "id": "pick-a-door",
+              "solution": { "answers": [] },
+              "scenes": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "component": {
+                    "type": "template",
+                    "data": {},
+                    "initialState": { "wrong": false },
+                    "resetStateOnShow": true,
+                    "rules": [
+                      {
+                        "on": { "interact": "click", "target": "#door-1" },
+                        "do": [
+                          { "set": { "wrong": "true" } },
+                          { "effect": "quake", "target": "#door-1", "dx": 1, "durationMs": 400 }
+                        ]
+                      },
+                      {
+                        "on": { "interact": "click", "target": "#door-3" },
+                        "do": [
+                          { "set": { "wrong": "true" } },
+                          { "effect": "quake", "target": "#door-3", "dx": 1, "durationMs": 400 }
+                        ]
+                      },
+                      {
+                        "on": { "interact": "click", "target": "#door-2" },
+                        "do": [
+                          { "completeChallenge": true },
+                          { "sound": "fanfare" },
+                          { "reward": { "animation": "fireworks", "particleCount": 150 } }
+                        ]
+                      }
+                    ],
+                    "foregroundTemplate": {
+                      "sourceType": "relative",
+                      "templateSource": "games/demo-no-camera/doors.hbs"
+                    },
+                    "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "gameContainerStyle": { "fontFamily": "system-ui, sans-serif" }
+    },
     "rules-demo": {
       "id": "rules-demo",
       "title": "Demo scenes (2.5D)",
