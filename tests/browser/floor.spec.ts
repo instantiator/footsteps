@@ -11,6 +11,7 @@ import { MODEL_TIMEOUT, seedCalibration } from "./fixtures/cameraGame";
 import { installCameraDrawCounter } from "./fixtures/cameraDraws";
 import { installFakeCamera } from "./fixtures/fakeCamera";
 import { peoplePhotoUrls } from "./fixtures/people/people";
+import type { GameRepository } from "../../src/entities/GameRepository";
 
 /** The floor the demo shows with the default calibration, unmirrored, as a new camera choice is, in its scene box. */
 const VIEW: FloorView = {
@@ -19,7 +20,29 @@ const VIEW: FloorView = {
   mirrored: false,
 };
 
-/** Opens the demo's "Walk around" stage, past its scroll; with a camera, a fake one showing a person. */
+/**
+ * Leaves out Walk around's start and its spring, which the fake camera's person can't step on or off: they would
+ * hold the room back, or reset it again and again.
+ */
+const withoutStartOrSpring = async (page: Page) => {
+  await page.route("**/game-repository.json", async (route) => {
+    const response = await route.fetch();
+    const repository = (await response.json()) as GameRepository;
+    const scene = repository.games["rules-demo"].stages
+      .find((stage) => stage.id === "depth")!
+      .challenges.find((challenge) => challenge.id === "walk-around")!.scenes[0];
+    delete scene.resetScene;
+    scene.component.rules = scene.component.rules!.filter(
+      ({ on }) => !("target" in on) || on.target !== "#depth-spring",
+    );
+    await route.fulfill({ response, json: repository });
+  });
+};
+
+/**
+ * Opens the demo's "Walk around" stage, past its scroll: with a camera, a fake one showing a person; without one, by
+ * mouse-feet, standing on the start.
+ */
 const openWalkAround = async (page: Page, { camera = true, query = "" } = {}) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   if (camera) {
@@ -27,12 +50,16 @@ const openWalkAround = async (page: Page, { camera = true, query = "" } = {}) =>
     await installFakeCamera(page, peoplePhotoUrls());
     await installCameraDrawCounter(page);
     await seedCalibration(page);
+    await withoutStartOrSpring(page);
   }
-  await page.goto(`/game/rules-demo/play${query}`);
+  const params = new URLSearchParams(query);
+  if (!camera) params.set("noCamera", "true");
+  await page.goto(`/game/rules-demo/play?${params.toString()}`);
   await page.locator("#demo-title").click({ force: true });
   await page.locator("#stage-link-depth").click();
   await page.getByLabel("Next page").click();
   await page.locator('input[name="answer"]').fill("walk");
+  if (!camera) await page.locator("#reset-start").hover({ force: true });
   await expect(page.locator("#depth-far")).toBeVisible();
   if (camera) await page.evaluate(() => window.__fakeCamera.setImage("photo:jumping-side-on"));
 };
@@ -205,8 +232,8 @@ for (const screen of [
         return Math.abs(x - spot.x * size.width) < 2 && Math.abs(y - spot.y * size.height) < 2;
       })
       .toBe(true);
-    await page.locator("#depth-tile").hover({ force: true });
-    await expect(page.locator("#depth-tile")).toHaveClass(/demo-tile-lit/);
+    await page.locator("#depth-near").hover({ force: true });
+    await expect(page.locator("#depth-near")).toHaveClass(/demo-depth-lit/);
   });
 }
 
@@ -245,7 +272,7 @@ const surfaceBox = (page: Page, selector: string) =>
       };
     });
 
-test("tiles Walk around's floor, and lights the tile underfoot", async ({ page }) => {
+test("tiles Walk around's floor, and springs the player off its spring, back to the start", async ({ page }) => {
   await openWalkAround(page, { camera: false });
   const tilesBox = () =>
     page.locator("[data-floor-area]").evaluateAll((elements) => {
@@ -273,8 +300,9 @@ test("tiles Walk around's floor, and lights the tile underfoot", async ({ page }
   expect(tiles.right).toBeCloseTo(tiles.width, 0);
   expect(tiles.bottom).toBeCloseTo(tiles.height, 0);
 
-  await page.locator("#depth-tile").hover({ force: true });
-  await expect(page.locator("#depth-tile")).toHaveClass(/demo-tile-lit/);
+  await page.locator("#depth-spring").hover({ force: true });
+  await expect(page.locator("#reset-start")).toBeVisible();
+  await expect(page.locator("#depth-far")).toHaveCount(0);
 });
 
 test("lays Nanny's Magic Trifle's river on the floor, in the overview and in a stage's shared scene", async ({

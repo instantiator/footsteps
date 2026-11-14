@@ -457,7 +457,7 @@
     "rules-demo": {
       "id": "rules-demo",
       "title": "Demo scenes (2.5D)",
-      "description": "Pop balloons, cross a floor of lava, and walk around a room with a tiled floor, walls and hills: a demonstration of 2.5D scenes, rules and state, by mouse or camera.",
+      "description": "Pop balloons, dodge the pits, walk around a room with a tiled floor, walls and hills, and hop the stones over a floor of lava: a demonstration of 2.5D scenes, rules and state, by camera, or by mouse without one.",
       "modules": { "scene": "2.5D", "avatar": { "mode": "mouse" } },
       "config": { "sequential": false, "autoAdvanceStages": false },
       "stylesheets": ["demo-css"],
@@ -486,10 +486,10 @@
             "data": {
               "names": {
                 "balloons": "Balloons",
-                "lava": "The floor is lava",
+                "pits": "Avoid the pits",
                 "depth": "Walk around",
                 "effects": "Effects",
-                "stone-hop": "Stone hop"
+                "floor-is-lava": "The floor is lava"
               }
             },
             "initialState": { "position": 1, "lit": false },
@@ -507,8 +507,8 @@
                 "do": [{ "enterStage": "balloons" }]
               },
               {
-                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-lava", "threshold": 0.5 },
-                "do": [{ "enterStage": "lava" }]
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-pits", "threshold": 0.5 },
+                "do": [{ "enterStage": "pits" }]
               },
               {
                 "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-depth", "threshold": 0.5 },
@@ -521,10 +521,10 @@
               {
                 "on": {
                   "interact": ["click", "hand-enter"],
-                  "target": "#stage-link-stone-hop",
+                  "target": "#stage-link-floor-is-lava",
                   "threshold": 0.5
                 },
-                "do": [{ "enterStage": "stone-hop" }]
+                "do": [{ "enterStage": "floor-is-lava" }]
               },
               {
                 "on": { "interact": ["click", "hand-enter"], "target": "#switch", "threshold": 0.5 },
@@ -617,7 +617,7 @@
           ]
         },
         {
-          "id": "lava",
+          "id": "pits",
           "challenges": [
             {
               "id": "cross-the-floor",
@@ -625,21 +625,25 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "avatar": { "mode": "camera", "fallback": "mouse" },
+                  "avatar": { "mode": "camera", "fallback": "mouse-feet" },
                   "component": {
                     "type": "template",
                     "data": {},
-                    "initialState": { "done": false },
+                    "initialState": { "done": false, "falling": false },
                     "resetStateOnShow": true,
                     "rules": [
                       {
-                        "on": { "interact": ["foot-enter", "mouse-enter"], "target": ".lava", "threshold": 0.3 },
-                        "if": "not state.done",
-                        "do": [{ "resetChallenge": true }]
+                        "on": { "interact": ["foot-enter"], "target": ".pit", "threshold": 0.3 },
+                        "if": "not state.done and not state.falling",
+                        "do": [
+                          { "set": { "falling": "true" } },
+                          { "effect": "player-fall", "durationMs": 1000, "easing": "ease-in" },
+                          { "resetChallenge": true, "delayMs": 1500 }
+                        ]
                       },
                       {
-                        "on": { "interact": ["foot-enter", "mouse-enter"], "target": "#door-base", "threshold": 0.3 },
-                        "if": "not state.done",
+                        "on": { "interact": ["foot-enter"], "target": "#door-base", "threshold": 0.3 },
+                        "if": "not state.done and not state.falling",
                         "do": [
                           { "set": { "done": "true" } },
                           { "completeChallenge": true },
@@ -648,7 +652,7 @@
                         ]
                       }
                     ],
-                    "backgroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/lava.hbs" },
+                    "backgroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/pits.hbs" },
                     "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
                   },
                   "resetScene": {
@@ -658,11 +662,7 @@
                       "initialState": { "ready": false },
                       "rules": [
                         {
-                          "on": {
-                            "interact": ["foot-enter", "mouse-enter"],
-                            "target": "#reset-start",
-                            "threshold": 0.3
-                          },
+                          "on": { "interact": ["foot-enter"], "target": "#reset-start", "threshold": 0.3 },
                           "if": "not state.ready",
                           "do": [
                             { "set": { "ready": "true" } },
@@ -674,7 +674,7 @@
                       ],
                       "backgroundTemplate": {
                         "sourceType": "relative",
-                        "templateSource": "games/rules-demo/lava-reset.hbs"
+                        "templateSource": "games/rules-demo/pits-reset.hbs"
                       },
                       "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
                     }
@@ -716,35 +716,54 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "avatar": { "mode": "camera", "fallback": "mouse" },
+                  "avatar": { "mode": "camera", "fallback": "mouse-feet" },
                   "component": {
                     "type": "template",
                     "data": {},
-                    "initialState": { "lit": false, "tile": false },
+                    "initialState": { "lit": false, "sprung": false },
+                    "resetStateOnShow": true,
                     "rules": [
                       {
                         "on": { "interact": ["click"], "target": "#depth-done" },
                         "do": [{ "completeChallenge": true }]
                       },
                       {
-                        "on": { "interact": ["foot-enter", "mouse-enter"], "target": "#depth-tile" },
-                        "do": [{ "set": { "tile": "true" } }]
+                        "on": { "interact": ["foot-enter"], "target": "#depth-spring" },
+                        "if": "not state.sprung",
+                        "do": [
+                          { "set": { "sprung": "true" } },
+                          { "effect": "player-spin-away", "durationMs": 1000 },
+                          { "resetChallenge": true, "delayMs": 1500 }
+                        ]
                       },
                       {
-                        "on": { "interact": ["foot-exit", "mouse-exit"], "target": "#depth-tile" },
-                        "do": [{ "set": { "tile": "false" } }]
-                      },
-                      {
-                        "on": { "interact": ["foot-enter", "mouse-enter"], "target": "#depth-near" },
+                        "on": { "interact": ["foot-enter"], "target": "#depth-near" },
                         "do": [{ "set": { "lit": "true" } }]
                       },
                       {
-                        "on": { "interact": ["foot-exit", "mouse-exit"], "target": "#depth-near" },
+                        "on": { "interact": ["foot-exit"], "target": "#depth-near" },
                         "do": [{ "set": { "lit": "false" } }]
                       }
                     ],
                     "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/depth.hbs" },
                     "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+                  },
+                  "resetScene": {
+                    "component": {
+                      "type": "template",
+                      "data": {},
+                      "rules": [
+                        {
+                          "on": { "interact": ["foot-enter"], "target": "#reset-start" },
+                          "do": [{ "sound": "chime" }, { "finishReset": true }]
+                        }
+                      ],
+                      "foregroundTemplate": {
+                        "sourceType": "relative",
+                        "templateSource": "games/rules-demo/depth-reset.hbs"
+                      },
+                      "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+                    }
                   }
                 }
               ]
@@ -896,7 +915,7 @@
           ]
         },
         {
-          "id": "stone-hop",
+          "id": "floor-is-lava",
           "challenges": [
             {
               "id": "hop-the-stones",
@@ -904,14 +923,22 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "avatar": { "mode": "mouse-feet" },
+                  "avatar": { "mode": "camera", "fallback": "mouse-feet" },
                   "component": {
                     "type": "template",
                     "data": {},
-                    "initialState": { "on": 1, "doorOpen": false },
+                    "initialState": { "on": 1, "doorOpen": false, "burning": false, "done": false },
                     "resetStateOnShow": true,
                     "rules": [
-                      { "on": { "interact": ["foot-enter"], "target": "#lava" }, "do": [{ "resetChallenge": true }] },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": "#lava" },
+                        "if": "not state.burning",
+                        "do": [
+                          { "set": { "burning": "true" } },
+                          { "effect": "player-static", "pixelSize": 2, "proportion": 1, "easeMs": 800 },
+                          { "resetChallenge": true, "delayMs": 1200 }
+                        ]
+                      },
                       {
                         "on": { "interact": ["jump-onto"], "target": "#stone-2" },
                         "if": "state.on == 1",
@@ -932,13 +959,28 @@
                       },
                       {
                         "on": { "interact": ["jump-onto"], "target": "#stone-3" },
-                        "if": "state.on == 1",
-                        "do": [{ "resetChallenge": true }]
+                        "if": "state.on == 1 and not state.burning",
+                        "do": [
+                          { "set": { "burning": "true" } },
+                          { "effect": "player-static", "pixelSize": 2, "proportion": 1, "easeMs": 800 },
+                          { "resetChallenge": true, "delayMs": 1200 }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": "#door", "holdMs": 1000 },
+                        "if": "state.doorOpen and not state.done",
+                        "do": [
+                          { "set": { "done": "true" } },
+                          { "completeChallenge": true },
+                          { "sound": "fanfare" },
+                          { "reward": { "animation": "fireworks", "particleCount": 150 } }
+                        ]
                       },
                       {
                         "on": { "interact": ["click"], "target": "#door" },
-                        "if": "state.doorOpen",
+                        "if": "state.doorOpen and not state.done",
                         "do": [
+                          { "set": { "done": "true" } },
                           { "completeChallenge": true },
                           { "sound": "fanfare" },
                           { "reward": { "animation": "fireworks", "particleCount": 150 } }
