@@ -14,11 +14,20 @@ import type { GameTemplateData } from "../logic/RenderDataUtils";
 import { parseLines } from "../logic/TemplateUtils";
 import GameAudioComponent from "./GameAudioComponent";
 import type { SceneDomEvent } from "../logic/TemplateUtils";
-import type { LayerHint } from "./GameSceneComponent";
 import GameSceneTemplateComponent from "./GameSceneTemplateComponent";
 import GameTextInputComponent, { type GameTextInputComponentProps } from "./GameTextInputComponent";
 import { DIALOG_CONTAINER_CLASS, SCENE_FRAME_CLASS } from "../effects/EffectTargets";
 import useImageAspectRatio from "./ImageAspectRatioHook";
+
+/** One of a dialog's two templates: the paper (its scene's background) or the text (its foreground). */
+export interface DialogPart {
+  /** Overrides the default template: nothing on the paper, and the page's text one paragraph per line. */
+  templateSource?: GameSceneTemplateSourceData;
+  /** Style for the template's container: the image, or the text column. */
+  containerStyle?: CSSProperties;
+  /** Style for the rendered template. */
+  templateStyle?: CSSProperties;
+}
 
 /** Props for {@link GameSceneDialogComponent}. */
 export interface GameSceneDialogComponentProps {
@@ -26,18 +35,14 @@ export interface GameSceneDialogComponentProps {
   image?: string;
   /** Where the text sits on the image. */
   margins?: GameSceneDialogMargins;
-  /** Overrides the default template, which shows the page's text one paragraph per line. */
-  templateSource?: GameSceneTemplateSourceData;
-  /** Style for the layer's container: the image (background) or the text column (foreground). */
-  containerStyle?: CSSProperties;
-  /** Style for the rendered template. */
-  templateStyle?: CSSProperties;
+  /** The paper: the image, under the scene's background template and styles. */
+  paper?: DialogPart;
+  /** The text column: the scene's foreground template and styles, over the paper. */
+  text?: DialogPart;
   /** Extra template data, which takes precedence over the page's `text` and `lines`. */
   templateData?: GameTemplateData;
   /** The pages of text, with their optional audio and answer input. */
   contents: GameScenePageData[];
-  /** Whether to render the image (background) or the text and controls (foreground). */
-  layerHint: LayerHint;
   /** Stage of the challenge that answers are submitted to. */
   stageId?: GameStageId;
   /** Challenge that answers are submitted to. */
@@ -52,11 +57,12 @@ export interface GameSceneDialogComponentProps {
   onSceneEvent?: (event: SceneDomEvent) => void;
 }
 
-/** The default template: the text, line by line, in the foreground; nothing (the image) behind it. */
-const defaultTemplate = (layerHint: LayerHint): GameSceneTemplateSourceData => ({
+/** The default templates: nothing on the paper (just the image), and the text line by line. */
+const DEFAULT_PAPER: GameSceneTemplateSourceData = { sourceType: "embedded", content: "<!-- dialog -->" };
+const DEFAULT_TEXT: GameSceneTemplateSourceData = {
   sourceType: "embedded",
-  content: layerHint === "foreground" ? "{{#lines}}<p>{{.}}</p>{{/lines}}" : "<!-- dialog -->",
-});
+  content: "{{#lines}}<p>{{.}}</p>{{/lines}}",
+};
 
 /** Fills the scene, and centres the frame in it. The scene's size is the container for `cq*` units. */
 const OUTER_STYLE: CSSProperties = {
@@ -99,16 +105,9 @@ const textColumnStyle = ({
 /** The page text takes the column's spare height and scrolls within it, so the page controls stay in view below it. */
 const SCROLLING_TEXT_STYLE: CSSProperties = { flex: "1 1 auto", minHeight: 0, width: "100%", overflowY: "auto" };
 
-/** Foreground: the text column. Background: the image itself, stretched over the frame it sized. */
-const layerStyle = (
-  layerHint: LayerHint,
-  image: string | undefined,
-  margins: GameSceneDialogMargins | undefined,
-  containerStyle: CSSProperties | undefined,
-): CSSProperties => ({
-  ...(layerHint === "foreground" && textColumnStyle(margins)),
-  ...(layerHint === "background" &&
-    isDefined(image) && { backgroundImage: `url(${image})`, backgroundSize: "100% 100%" }),
+/** The paper: the image itself, stretched over the frame it sized. */
+const paperStyle = (image: string | undefined, containerStyle: CSSProperties | undefined): CSSProperties => ({
+  ...(isDefined(image) && { backgroundImage: `url(${image})`, backgroundSize: "100% 100%" }),
   ...containerStyle,
 });
 
@@ -175,18 +174,16 @@ function PageControls({ content, input, onRetreat, onAdvance }: PageControlsProp
 
 /**
  * Pages of text on a background image, optionally with audio and an answer input on each page. The image
- * scales to fit the scene, and the text stays within its margins. The background and foreground layers
- * size themselves from the image independently, so they line up without knowing each other.
+ * scales to fit the scene, and the text stays within its margins. The paper and the text are drawn together, in the
+ * scene's foreground, so nothing (such as a player) comes between them.
  */
 export default function GameSceneDialogComponent({
   image,
   margins,
-  templateSource,
-  containerStyle,
-  templateStyle,
+  paper = {},
+  text = {},
   templateData,
   contents,
-  layerHint,
   stageId,
   challengeId,
   onAnswer,
@@ -198,27 +195,34 @@ export default function GameSceneDialogComponent({
   const [contentIndex, setContentIndex] = useState<number>(0);
   const ratio = useImageAspectRatio(image);
   const content: GameScenePageData | undefined = contents[contentIndex];
+  const shared = {
+    templateData: { text: content?.text, lines: parseLines(content?.text), ...templateData },
+    scope,
+    run,
+    onSceneEvent,
+  };
 
   return (
     <div className={DIALOG_CONTAINER_CLASS} style={OUTER_STYLE}>
       <div className={SCENE_FRAME_CLASS} style={frameStyle(ratio)}>
         <GameSceneTemplateComponent
-          templateSource={templateSource ?? defaultTemplate(layerHint)}
-          containerStyle={layerStyle(layerHint, image, margins, containerStyle)}
-          templateStyle={{ ...(layerHint === "foreground" && SCROLLING_TEXT_STYLE), ...templateStyle }}
-          templateData={{ text: content?.text, lines: parseLines(content?.text), ...templateData }}
-          scope={scope}
-          run={run}
-          onSceneEvent={onSceneEvent}
+          templateSource={paper.templateSource ?? DEFAULT_PAPER}
+          containerStyle={paperStyle(image, paper.containerStyle)}
+          templateStyle={paper.templateStyle}
+          {...shared}
+        />
+        <GameSceneTemplateComponent
+          templateSource={text.templateSource ?? DEFAULT_TEXT}
+          containerStyle={{ ...textColumnStyle(margins), ...text.containerStyle }}
+          templateStyle={{ ...SCROLLING_TEXT_STYLE, ...text.templateStyle }}
+          {...shared}
         >
-          {layerHint === "foreground" && (
-            <PageControls
-              content={content}
-              input={{ stageId, challengeId, solved, setSolved, onAnswer }}
-              onRetreat={contentIndex > 0 ? () => setContentIndex(contentIndex - 1) : undefined}
-              onAdvance={contentIndex < contents.length - 1 ? () => setContentIndex(contentIndex + 1) : undefined}
-            />
-          )}
+          <PageControls
+            content={content}
+            input={{ stageId, challengeId, solved, setSolved, onAnswer }}
+            onRetreat={contentIndex > 0 ? () => setContentIndex(contentIndex - 1) : undefined}
+            onAdvance={contentIndex < contents.length - 1 ? () => setContentIndex(contentIndex + 1) : undefined}
+          />
         </GameSceneTemplateComponent>
       </div>
     </div>

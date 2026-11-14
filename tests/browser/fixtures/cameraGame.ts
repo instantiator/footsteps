@@ -25,6 +25,8 @@ export interface CameraGameOptions {
   cameraSize?: { width: number; height: number };
   /** How the game's scenes are laid out; the game's own setting if omitted. */
   sceneMode?: GameSceneMode;
+  /** Turns the camera on in the challenges' scenes too, such as its scrolls. */
+  cameraOnChallenges?: boolean;
 }
 
 /**
@@ -47,6 +49,12 @@ const patchRepository = async (page: Page, options: CameraGameOptions): Promise<
     const game = repository.games[GAME_ID];
     game.modules = { ...game.modules, avatar: { mode: "camera", fallback: "mouse", preview: options.preview ?? true } };
     if (options.sceneMode) game.modules.scene = options.sceneMode;
+
+    if (options.cameraOnChallenges) {
+      for (const scene of game.stages.flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes))) {
+        scene.avatar = { mode: "camera", fallback: "mouse" };
+      }
+    }
 
     if (options.cameraOffStage) {
       const stage = game.stages.find(({ id }) => id === options.cameraOffStage);

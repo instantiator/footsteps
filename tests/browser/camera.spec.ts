@@ -77,6 +77,33 @@ test("stops the camera on a camera-off scene, and reacquires it on return", asyn
   expect(await trackState(page, 1)).toBe("live");
 });
 
+test("draws a challenge's scroll, paper and text, in front of the players", async ({ page }) => {
+  await openCameraGame(page, { cameraOnChallenges: true });
+  await page.locator("#magic-trifle-title").click({ force: true });
+  const stageLink = page.locator("#stages-link-stage-1");
+  await expect(stageLink).toBeVisible();
+  await stageLink.click({ force: true });
+  await expect(characterLayer(page)).toBeAttached();
+
+  const text = page.locator(".scene-foreground p").first();
+  await expect(text).toBeVisible();
+  const box = (await text.boundingBox())!;
+  // Top first: the text, then the paper, and only then the players' canvas. Hit-testing skips what takes no pointer
+  // events, so everything takes them while it looks.
+  await page.addStyleTag({ content: "* { pointer-events: auto !important; }" });
+  const order = await page.evaluate(
+    ({ x, y }) =>
+      document.elementsFromPoint(x, y).map((element) => {
+        if (element.closest("#character-canvas-container")) return "players";
+        if (element instanceof HTMLElement && element.style.backgroundImage.includes("old-paper")) return "paper";
+        return element.tagName === "P" ? "text" : "";
+      }),
+    { x: box.x + box.width / 2, y: box.y + box.height / 2 },
+  );
+  const seen = order.filter((name, index) => name !== "" && order.indexOf(name) === index);
+  expect(seen).toEqual(["text", "paper", "players"]);
+});
+
 test("switching the fake camera image changes the preview, proving the harness", async ({ page }) => {
   await openCameraGame(page);
 
