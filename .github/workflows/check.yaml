@@ -26,6 +26,8 @@ jobs:
         uses: actions/checkout@v7
         with:
           submodules: true
+          # The tutorials quote files as they were at earlier commits, which the quote check reads with git show
+          fetch-depth: 0
       - name: Set up Node
         uses: actions/setup-node@v7
         with:
