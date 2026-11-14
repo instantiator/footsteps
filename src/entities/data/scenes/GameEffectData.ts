@@ -1,7 +1,10 @@
-import type { GameActionBase } from "./GameSceneData";
+import type { GameActionBase, GameTime } from "./GameSceneData";
 
-/** How long an effect runs: milliseconds, or `"indefinite"` to carry on until stopped or its scene ends. */
-export type GameEffectDuration = number | "indefinite";
+/**
+ * How long an effect runs: milliseconds (a number, or an expression worked out as the effect starts), or
+ * `"indefinite"` to carry on until stopped or its scene ends.
+ */
+export type GameEffectDuration = GameTime | "indefinite";
 
 /** Who a player effect applies to: the player who fired the rule, or every active player. */
 export type GamePlayerChoice = "triggering" | "all";
@@ -12,12 +15,8 @@ export interface GameItemEffectBase extends GameActionBase {
   target?: string;
   /** How long it runs. */
   durationMs?: GameEffectDuration;
-  /**
-   * The length of one loop, when `durationMs` is `"indefinite"`.
-   *
-   * @minimum 0
-   */
-  cycleMs?: number;
+  /** The length of one loop, when `durationMs` is `"indefinite"`: milliseconds, or an expression. */
+  cycleMs?: GameTime;
   /** A CSS easing function: how it speeds up and slows down. */
   easing?: string;
 }
@@ -225,6 +224,18 @@ export type GameEffect =
   | GamePlayerUnfreezeEffect
   | GamePlayerRestoreEffect
   | GameStopEffect;
+
+/** The times an effect runs to, once worked out from any expressions. */
+interface ResolvedTimes {
+  durationMs: number | "indefinite";
+  cycleMs: number;
+}
+
+/** An effect as it plays: its times worked out from any expressions, as numbers. */
+export type Resolved<E> = E extends unknown ? Omit<E, keyof ResolvedTimes> & Partial<ResolvedTimes> : never;
+
+/** Any effect, as it plays. */
+export type ResolvedEffect = Resolved<GameEffect>;
 
 /** The name of an effect. */
 export type GameEffectName = GameEffect["effect"];

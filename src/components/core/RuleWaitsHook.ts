@@ -99,7 +99,7 @@ export function useDelayedActions(
       const timer = setTimeout(() => {
         timersRef.current.delete(timer);
         setGameState((state) => applyDelayedAction(env, state, delayed));
-      }, delayed.action.delayMs);
+      }, delayed.delayMs);
       timersRef.current.add(timer);
     },
     [env, setGameState],

@@ -1,5 +1,6 @@
 import type {
-  GameEffect,
+  ResolvedEffect,
+  Resolved,
   GamePlayerChoice,
   GamePlayerFallEffect,
   GamePlayerOpacityEffect,
@@ -100,7 +101,7 @@ export class PlayerEffects {
   }
 
   /** Starts an effect on the players it chooses. */
-  play(effect: GameEffect, run: PlayerEffectRun): void {
+  play(effect: ResolvedEffect, run: PlayerEffectRun): void {
     const choice = "players" in effect ? effect.players : undefined;
     for (const id of chosenIds(choice, run.event, this.players, run.where)) this.playOn(id, effect, run);
   }
@@ -136,7 +137,7 @@ export class PlayerEffects {
   }
 
   /** Starts an effect on one player. */
-  private playOn(id: number, effect: GameEffect, run: PlayerEffectRun): void {
+  private playOn(id: number, effect: ResolvedEffect, run: PlayerEffectRun): void {
     const wrapper = wrapperOfNumber(this.players.numberOf(id));
     this.players.touch(id, run.scope);
     if (effect.effect === "player-fall") this.leave(id, wrapper, run, (leaving) => this.fall(leaving, id, effect, run));
@@ -152,12 +153,17 @@ export class PlayerEffects {
   }
 
   /** Starts an effect that only changes how a player is drawn. */
-  private playOnWrapper(wrapper: HTMLElement, effect: GameEffect, run: EffectRun): void {
+  private playOnWrapper(wrapper: HTMLElement, effect: ResolvedEffect, run: EffectRun): void {
     if (effect.effect === "player-invisible" || effect.effect === "player-visible") this.fade(wrapper, effect, run);
   }
 
   /** Puts static on a player, in place of any they have. It ends by itself after a set duration, or when stopped. */
-  private startStatic(id: number, wrapper: HTMLElement | null, effect: GamePlayerStaticEffect, run: EffectRun): void {
+  private startStatic(
+    id: number,
+    wrapper: HTMLElement | null,
+    effect: Resolved<GamePlayerStaticEffect>,
+    run: EffectRun,
+  ): void {
     const { pixelSize = 0.5, proportion = 0.5, easeMs = 500, durationMs = "indefinite", easing = "linear" } = effect;
     const settings = {
       pixelSize,
@@ -210,7 +216,7 @@ export class PlayerEffects {
   }
 
   /** Drops a player off the scene. */
-  private fall(wrapper: HTMLElement, id: number, effect: GamePlayerFallEffect, run: EffectRun): void {
+  private fall(wrapper: HTMLElement, id: number, effect: Resolved<GamePlayerFallEffect>, run: EffectRun): void {
     const person = this.players.lastOf(id);
     const { width, height } = this.players.frameSize();
     const top = person === undefined ? 0 : silhouetteTop(person.mask, width, height);
@@ -220,7 +226,7 @@ export class PlayerEffects {
   }
 
   /** Knocks a player off the scene, turning about the centre of their body. */
-  private spin(wrapper: HTMLElement, id: number, effect: GamePlayerSpinAwayEffect, run: EffectRun): void {
+  private spin(wrapper: HTMLElement, id: number, effect: Resolved<GamePlayerSpinAwayEffect>, run: EffectRun): void {
     const { angle, zoom = 1, opacity = 1, rotations = 2, easing = "ease-out", durationMs = 1000 } = effect;
     const { min, max } = angle ?? { min: -60, max: 60 };
     const degrees = min + Math.random() * (max - min);
@@ -279,7 +285,7 @@ export class PlayerEffects {
   /** Fades a player out or in, where they stay. */
   private fade(
     wrapper: HTMLElement,
-    { effect, durationMs = 0, easing = "linear" }: GamePlayerOpacityEffect,
+    { effect, durationMs = 0, easing = "linear" }: Resolved<GamePlayerOpacityEffect>,
     run: EffectRun,
   ): void {
     const from = getComputedStyle(wrapper).opacity;
@@ -289,7 +295,12 @@ export class PlayerEffects {
   }
 
   /** Returns a player to normal, fading them back in if anything had happened to them. */
-  private restore(id: number, wrapper: HTMLElement | null, effect?: GamePlayerRestoreEffect, run?: EffectRun): void {
+  private restore(
+    id: number,
+    wrapper: HTMLElement | null,
+    effect?: Resolved<GamePlayerRestoreEffect>,
+    run?: EffectRun,
+  ): void {
     const wasAffected =
       this.players.stateOf(id) !== "active" ||
       this.players.staticOf(id) !== undefined ||

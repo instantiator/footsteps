@@ -1,11 +1,11 @@
 import type {
-  GameEffectDuration,
   GameEffectPosition,
   GameHighlightEffect,
   GameHighlightStep,
   GameItemFallEffect,
   GameItemMoveEffect,
   GameQuakeEffect,
+  Resolved,
 } from "../../../entities/data/scenes/GameEffectData";
 import { easingFunction } from "./EasingProbe";
 import { SCENE_FRAME_CLASS, centreOnScreen, sceneDistance, sceneRect, type ScreenPoint } from "./EffectTargets";
@@ -171,11 +171,11 @@ const highlightProperties = (sequence: GameHighlightStep[]): string[] =>
     .map(([, property]) => property);
 
 /** The duration of one play of an effect, and how many times it plays. */
-const timing = (durationMs: GameEffectDuration, cycleMs: number): Pick<EffectTiming, "duration" | "iterations"> =>
+const timing = (durationMs: number | "indefinite", cycleMs: number): Pick<EffectTiming, "duration" | "iterations"> =>
   durationMs === "indefinite" ? { duration: cycleMs, iterations: Infinity } : { duration: durationMs };
 
 /** What a quake's motion is worked out from: makes the steps of it, differently each time. */
-const quakeMotion = ({ dx = 0, dy = 0, durationMs = 1000, cycleMs = 100, easing }: GameQuakeEffect) => {
+const quakeMotion = ({ dx = 0, dy = 0, durationMs = 1000, cycleMs = 100, easing }: Resolved<GameQuakeEffect>) => {
   const indefinite = durationMs === "indefinite";
   const cycles = indefinite || cycleMs <= 0 ? 1 : Math.max(1, Math.round(durationMs / cycleMs));
   const eased = !indefinite && easing !== undefined ? easingFunction(easing) : undefined;
@@ -204,7 +204,7 @@ export interface EffectRun {
 type EffectAnimation = Pick<Animation, "onfinish" | "cancel" | "persist" | "finish">;
 
 /** How long an effect with a lasting end takes. */
-type LastingTiming = Pick<GameItemFallEffect, "durationMs" | "cycleMs" | "easing"> & {
+type LastingTiming = Pick<Resolved<GameItemFallEffect>, "durationMs" | "cycleMs" | "easing"> & {
   /** How it combines with other effects: `add` unless it needs to set a value outright, eg. an opacity. */
   composite?: CompositeOperation;
 };
@@ -232,7 +232,7 @@ export class ItemEffects {
   private readonly shaking = new WeakMap<Element, number>();
 
   /** Shakes the elements. A dialog's frames always share one motion, to keep their layers lined up. */
-  quake(effect: GameQuakeEffect, elements: Element[], run: EffectRun): void {
+  quake(effect: Resolved<GameQuakeEffect>, elements: Element[], run: EffectRun): void {
     if (run.reducedMotion) {
       elements.forEach(run.onEnd);
       return;
@@ -254,7 +254,7 @@ export class ItemEffects {
   }
 
   /** Plays a series of styles on the elements, after which they return to their own. */
-  highlight({ sequence, durationMs }: GameHighlightEffect, elements: Element[], run: EffectRun): void {
+  highlight({ sequence, durationMs }: Resolved<GameHighlightEffect>, elements: Element[], run: EffectRun): void {
     const total = sequenceLength(sequence);
     if (total <= 0) return;
     const iterations = durationMs === "indefinite" ? Infinity : durationMs === undefined ? 1 : durationMs / total;
@@ -279,7 +279,7 @@ export class ItemEffects {
   }
 
   /** Drops the elements off the bottom of the scene. */
-  fall(effect: GameItemFallEffect, elements: Element[], run: EffectRun): void {
+  fall(effect: Resolved<GameItemFallEffect>, elements: Element[], run: EffectRun): void {
     for (const element of elements) {
       this.cancel(element, "item-fall");
       // A shake may have it part way up as it is measured, which mustn't leave it short of the edge once that ends
@@ -294,7 +294,7 @@ export class ItemEffects {
   }
 
   /** Moves the elements. */
-  move(effect: GameItemMoveEffect, elements: Element[], run: EffectRun): void {
+  move(effect: Resolved<GameItemMoveEffect>, elements: Element[], run: EffectRun): void {
     const centreOf = (selector: string) => {
       const other = run.find(selector);
       return other === undefined ? undefined : centreOnScreen(other);

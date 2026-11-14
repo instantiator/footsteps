@@ -56,6 +56,9 @@ describe("effects when the game loads", () => {
       { effect: "player-restore", players: "all", durationMs: 500 },
       { effect: "stop", target: "#a", stop: "highlight" },
       { effect: "stop", players: "all", stop: "player-static" },
+      { effect: "item-move", target: "#a", end: { left: 0, top: 0 }, durationMs: "3000 - state.score * 10" },
+      { effect: "quake", target: "#a", durationMs: "indefinite", cycleMs: "random(50, 150)" },
+      { effect: "player-fall", durationMs: "state.ms", delayMs: "random(0, 500)" },
     ];
     for (const effect of effects) expect(compilingEffect(effect)).not.toThrow();
   });

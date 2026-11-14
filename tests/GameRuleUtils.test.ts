@@ -56,6 +56,17 @@ describe("compileGameRules", () => {
     ["when", { on: { when: "1 +" }, do: [] }, `${OVERVIEW}.on.when`],
     ["every", { on: { every: "(" }, do: [] }, `${OVERVIEW}.on`],
     ["set", { on: { start: true }, do: [{ set: { a: "1 +" } }] }, `${OVERVIEW}.do[0].set.a`],
+    ["delayMs", { on: { start: true }, do: [{ set: { a: "1" }, delayMs: "1 +" }] }, `${OVERVIEW}.do[0].delayMs`],
+    [
+      "durationMs",
+      { on: { start: true }, do: [{ effect: "quake", target: "#a", durationMs: "(" }] },
+      `${OVERVIEW}.do[0].durationMs`,
+    ],
+    [
+      "cycleMs",
+      { on: { start: true }, do: [{ effect: "quake", target: "#a", durationMs: "indefinite", cycleMs: ")" }] },
+      `${OVERVIEW}.do[0].cycleMs`,
+    ],
   ] satisfies [string, GameRule, string][])("names the path of a bad %s expression", (_, rule, where) => {
     expect(() => compileGameRules(gameWithRules([rule]))).toThrow(`${where}: `);
   });
@@ -66,6 +77,21 @@ describe("compileGameRules", () => {
   ] satisfies [string, GameAction][])("rejects a start rule that does %s, as it would loop", (_, action) => {
     expect(() => compileGameRules(gameWithRules([], [{ on: { start: true }, do: [action] }]))).toThrow(
       `${CHALLENGE}.do[0]: a start rule can't reset`,
+    );
+  });
+
+  it("compiles expression timings and random() at load, leaving their values to play", () => {
+    const rule: GameRule = {
+      on: { when: "random(0, 1) > 0.5" },
+      do: [
+        { set: { n: "1" }, delayMs: "random(500, 2500)" },
+        { effect: "item-move", target: "#a", end: { left: 0, top: 0 }, durationMs: "max(800, 3000 - state.n)" },
+        { effect: "quake", target: "#a", durationMs: "indefinite", cycleMs: "state.n" },
+      ],
+    };
+    const expressions = compileGameRules(gameWithRules([rule]));
+    expect([...expressions.keys()]).toEqual(
+      expect.arrayContaining(["random(0, 1) > 0.5", "random(500, 2500)", "max(800, 3000 - state.n)", "state.n"]),
     );
   });
 
@@ -241,6 +267,39 @@ describe("rule engine", () => {
       ]);
     });
 
+    it("works out an expression delay from the state when the rule fires", () => {
+      const rule: GameRule = {
+        on: { start: true },
+        do: [
+          { set: { done: "true" }, delayMs: "state.n * 100" },
+          { sound: "pop", delayMs: "state.n * 10" },
+        ],
+      };
+      const state = fireAll(playing([rule], { n: 3 }));
+      expect(state.session.delayedActions).toEqual([expect.objectContaining({ delayMs: 300 })]);
+      expect(state.session.effects).toEqual([expect.objectContaining({ delayMs: 30 })]);
+    });
+
+    it("applies an action at once when its expression delay works out to 0", () => {
+      const state = fireAll(
+        playing([{ on: { start: true }, do: [{ set: { done: "true" }, delayMs: "state.n" }] }], { n: 0 }),
+      );
+      expect(state.session.delayedActions).toEqual([]);
+      expect(stateOf(state)).toMatchObject({ done: true });
+    });
+
+    it("logs and skips an action whose delay isn't a usable number, carrying on with the rest", () => {
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      const rule: GameRule = {
+        on: { start: true },
+        do: [{ set: { a: "1" }, delayMs: "0 - 5" }, { set: { b: "1" } }],
+      };
+      const state = fireAll(playing([rule]));
+      expect(stateOf(state)).toEqual({ b: 1 });
+      expect(state.session.delayedActions).toEqual([]);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining("rules[0].do[0].delayMs"));
+    });
+
     it("leaves sounds and rewards to the game's own queue", () => {
       const state = fireAll(playing([{ on: { start: true }, do: [{ sound: "pop", delayMs: 500 }] }]));
       expect(state.session.delayedActions).toEqual([]);
@@ -338,13 +397,47 @@ describe("rule engine", () => {
       };
       const state = fireAll(fireAll(playing([rule])));
       expect(state.session.effects).toEqual([
-        { id: 1, effect: { sound: "pop" }, scope: SCOPE, event: NO_EVENT },
-        { id: 2, effect: { reward: { animation: "stars" }, delayMs: 500 }, scope: SCOPE, event: NO_EVENT },
-        { id: 3, effect: { sound: "pop" }, scope: SCOPE, event: NO_EVENT },
-        { id: 4, effect: { reward: { animation: "stars" }, delayMs: 500 }, scope: SCOPE, event: NO_EVENT },
+        { id: 1, effect: { sound: "pop" }, delayMs: 0, scope: SCOPE, event: NO_EVENT },
+        {
+          id: 2,
+          effect: { reward: { animation: "stars" }, delayMs: 500 },
+          delayMs: 500,
+          scope: SCOPE,
+          event: NO_EVENT,
+        },
+        { id: 3, effect: { sound: "pop" }, delayMs: 0, scope: SCOPE, event: NO_EVENT },
+        {
+          id: 4,
+          effect: { reward: { animation: "stars" }, delayMs: 500 },
+          delayMs: 500,
+          scope: SCOPE,
+          event: NO_EVENT,
+        },
       ]);
       expect(state.session.nextEffectId).toBe(5);
       expect(state.sceneStates).toEqual({});
+    });
+
+    it("queues an effect with its duration and loop worked out as numbers from the state", () => {
+      const rule: GameRule = {
+        on: { start: true },
+        do: [
+          { effect: "item-move", target: "#a", end: { left: 0, top: 0 }, durationMs: "5000 - state.score * 100" },
+          { effect: "quake", target: "#a", durationMs: "indefinite", cycleMs: "state.score" },
+        ],
+      };
+      const state = fireAll(playing([rule], { score: 10 }));
+      expect(state.session.visualEffects.map(({ effect }) => effect)).toEqual([
+        expect.objectContaining({ effect: "item-move", durationMs: 4000 }),
+        expect.objectContaining({ effect: "quake", durationMs: "indefinite", cycleMs: 10 }),
+      ]);
+    });
+
+    it("logs and skips an effect whose duration isn't a usable number", () => {
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      const rule: GameRule = { on: { start: true }, do: [{ effect: "item-fall", target: "#a", durationMs: '"soon"' }] };
+      expect(fireAll(playing([rule])).session.visualEffects).toEqual([]);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining("rules[0].do[0].durationMs"));
     });
 
     it("sets every key from the state before the action", () => {

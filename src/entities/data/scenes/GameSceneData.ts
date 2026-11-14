@@ -254,14 +254,16 @@ export type GameTrigger =
   | GameAfterTrigger
   | GameStartTrigger;
 
+/** A time in milliseconds: a number, or an expression worked out when it is needed. */
+export type GameTime = number | GameExpressionSource;
+
 /** What every action can have. */
 export interface GameActionBase {
   /**
-   * Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.
-   *
-   * @minimum 0
+   * Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later
+   * actions don't wait for it.
    */
-  delayMs?: number;
+  delayMs?: GameTime;
 }
 
 /** Sets state keys to the values of expressions, all evaluated against the state before the action. */
