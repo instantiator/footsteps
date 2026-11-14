@@ -7,6 +7,8 @@ export interface AppConfig {
   debug: boolean;
   /** Shows the vision stats readout alone, without the other debugging aids, while a camera is being tracked. */
   showFps: boolean;
+  /** Plays without the camera, even where it is available, in each scene's fallback mode. */
+  noCamera: boolean;
   /** Which vision model tracks the players. */
   visionModel: (typeof VISION_MODELS)[number];
   /** The tfjs backend for tfjs models (BodyPix, MoveNet); WebGPU falls back to WebGL where unsupported. */
@@ -73,6 +75,7 @@ export interface AppConfig {
 export const DEFAULT_APP_CONFIG: AppConfig = {
   debug: false,
   showFps: false,
+  noCamera: false,
   visionModel: "bodypix",
   visionBackend: "webgpu",
   visionWorker: true,
@@ -135,6 +138,7 @@ const oneOf =
 const PARSERS: { [K in keyof AppConfig]: Parser<AppConfig[K]> } = {
   debug: bool,
   showFps: bool,
+  noCamera: bool,
   visionModel: oneOf(...VISION_MODELS),
   visionBackend: oneOf("webgl", "webgpu"),
   visionWorker: bool,

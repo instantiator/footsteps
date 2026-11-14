@@ -13,6 +13,7 @@ import {
   type SetStateAction,
 } from "react";
 import { isDefined } from "../../../util/ObjectUtils";
+import useAppConfig from "../../../providers/AppConfigHook";
 import type { GameSceneMode } from "../../../entities/data/scenes/GameSceneData";
 import { loadCameraChoice } from "../../camera/CameraChoice";
 import { calibrationOrDefault, cameraKeyOf } from "../../camera/FloorCalibration";
@@ -410,13 +411,16 @@ function useViewportMeasurements() {
 }
 
 /**
- * The avatar mode to use: as requested, until the camera fails to start. A camera that can't start
- * would hold the scene waiting for its shape, so the game plays on without it, in the fallback mode (or by mouse).
+ * The avatar mode to use: as requested, until the camera fails to start, or throughout when the player chose to play
+ * without it (`noCamera`). A camera that can't start would hold the scene waiting for its shape, so the game plays on
+ * without it, in the fallback mode (or by mouse).
  */
 function useCameraFallback(requested: ResolvedAvatarMode) {
+  const { noCamera } = useAppConfig();
   const [failed, setFailed] = useState(false);
   const onCameraError = useCallback(() => setFailed(true), []);
-  const mode = failed && requested.mode === "camera" ? (requested.fallback ?? "mouse") : requested.mode;
+  const off = failed || noCamera;
+  const mode = off && requested.mode === "camera" ? (requested.fallback ?? "mouse") : requested.mode;
   const camera = useMemo(() => cameraModeOf({ mode, preview: requested.preview }), [mode, requested.preview]);
   return { mouseFeet: mode === "mouse-feet", camera, onCameraError };
 }

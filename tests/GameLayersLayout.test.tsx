@@ -322,6 +322,34 @@ describe("GameLayersLayout without a working camera", () => {
     expect(screen.queryByTestId("canvas")).toBeNull();
   });
 
+  it("never starts the camera when the player chose to play without it, using the fallback mode", async () => {
+    const onPlayerInteraction = vi.fn();
+    const footRule: CameraRuleTarget = {
+      scope: SCOPE,
+      run: 0,
+      ruleIndex: 0,
+      selector: "#overview-thing",
+      interactions: ["foot-enter"],
+      threshold: 1,
+      includeCovered: true,
+      holdMs: 0,
+    };
+    const { container } = renderLayout(
+      {
+        avatar: { mode: "camera", fallback: "mouse-feet", preview: true },
+        cameraRules: [footRule],
+        onPlayerInteraction,
+      },
+      { noCamera: true },
+    );
+    await vi.waitFor(() => expect(container.querySelector("#overview-thing")).not.toBeNull());
+    expect(container.querySelector("#character-camera-layer")).toBeNull();
+    expect(screen.queryByTestId("canvas")).toBeNull();
+    stubRect(container.querySelector("#overview-thing")!, DOMRect.fromRect({ width: 10, height: 10 }));
+    fireEvent.pointerMove(container.querySelector("#game-viewport")!, { clientX: 5, clientY: 5 });
+    expect(onPlayerInteraction).toHaveBeenCalledWith(expect.objectContaining({ interaction: "foot-enter", player: 1 }));
+  });
+
   it("switches to a mouse-feet fallback, so the pointer fires foot rules", async () => {
     settings.fail = true;
     const onPlayerInteraction = vi.fn();

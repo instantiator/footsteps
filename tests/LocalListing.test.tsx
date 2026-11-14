@@ -59,7 +59,7 @@ describe("LocalListing", () => {
     expect(screen.getByText("Another game for tests.")).toBeInTheDocument();
   });
 
-  it("keeps the listing free of nested lists, now that credits live under Attributions", () => {
+  it("keeps the listing free of nested lists other than each game's badges, now that credits live under Attributions", () => {
     render(
       <MemoryRouter>
         <GameRepositoryProvider source={{ type: "RawRepository", repository: simpleRepository }}>
@@ -67,6 +67,6 @@ describe("LocalListing", () => {
         </GameRepositoryProvider>
       </MemoryRouter>,
     );
-    expect(screen.queryByRole("list")).toBeNull();
+    expect(screen.queryAllByRole("list").filter((list) => !list.classList.contains("game-badges"))).toEqual([]);
   });
 });

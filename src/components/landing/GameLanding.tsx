@@ -6,14 +6,25 @@ import { isDefined } from "../../util/ObjectUtils";
 import { loadCameraChoice } from "../camera/CameraChoice";
 import { cameraKeyOf } from "../camera/FloorCalibration";
 import GameStylesheets from "../core/GameStylesheets";
-import { calibrationNeeded, gameUsesFloor } from "../core/logic/GamePermissionUtils";
+import { calibrationNeeded, gameCameraRequirement, gameUsesFloor } from "../core/logic/GamePermissionUtils";
 import "./GamePanel.css";
 import "./GameLanding.css";
 import CameraPicker from "./CameraPicker";
+import GameBadges from "./GameBadges";
 import GamePermissionPanel from "./GamePermissionPanel";
 import { useGamePermissions } from "./useGamePermissions";
 
-/** The game's landing page: its tile graphic behind the game's title, description and controls. */
+/** A choice to play a game that can do without the camera by mouse, even where a camera is available. */
+function NoCameraChoice({ checked, onChange }: { checked: boolean; onChange: (checked: boolean) => void }) {
+  return (
+    <label className="game-panel">
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} /> Play without the
+      camera
+    </label>
+  );
+}
+
+/** The game's landing page: its tile graphic behind the game's title, description, badges and controls. */
 export default function GameLanding() {
   const { gameId, gameData, resources } = useGameData();
   const navigate = useNavigate();
@@ -24,12 +35,15 @@ export default function GameLanding() {
   const { permissions, states, granting, grant, canStart } = useGamePermissions(gameData);
   const savedState = useMemo(() => loadGameState(gameId, gameData), [gameId, gameData]);
   const [cameraKey, setCameraKey] = useState(() => cameraKeyOf(loadCameraChoice()));
-  const needsCalibration = calibrationNeeded(gameData, states.camera === "granted", cameraKey);
+  const cameraOptional = gameCameraRequirement(gameData) === "enabled";
+  const [noCamera, setNoCamera] = useState(false);
+  const needsCalibration = !noCamera && calibrationNeeded(gameData, states.camera === "granted", cameraKey);
   const ready = canStart && !needsCalibration;
+  const playPath = `/game/${gameId}/play${noCamera ? "?noCamera=true" : ""}`;
 
   const startNewGame = () => {
     clearGameState(gameId);
-    navigate(`/game/${gameId}/play`);
+    navigate(playPath);
   };
 
   const pageStyle: CSSProperties = {
@@ -44,6 +58,7 @@ export default function GameLanding() {
         <div className="game-panel game-landing-panel">
           <h1>{gameData.title}</h1>
           <p>{gameData.description}</p>
+          <GameBadges gameData={gameData} saved={savedState} />
         </div>
         <GamePermissionPanel permissions={permissions} states={states} granting={granting} onGrant={grant}>
           {states.camera === "granted" && (
@@ -55,9 +70,10 @@ export default function GameLanding() {
         </GamePermissionPanel>
       </div>
       <div className="game-landing-actions">
+        {cameraOptional && <NoCameraChoice checked={noCamera} onChange={setNoCamera} />}
         {needsCalibration && <p className="game-panel">Calibrate the floor before you start.</p>}
         {isDefined(savedState) && (
-          <button type="button" disabled={!ready} onClick={() => navigate(`/game/${gameId}/play`)}>
+          <button type="button" disabled={!ready} onClick={() => navigate(playPath)}>
             Continue
           </button>
         )}
