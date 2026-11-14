@@ -3,7 +3,6 @@
   position: relative;
   width: 100%;
   height: 100%;
-  overflow: hidden;
   font-family: system-ui, sans-serif;
   color: white;
   text-align: center;
@@ -59,7 +58,7 @@
   top: 70cqh;
 }
 
-/* The scenery every screen shares, drawn in the floor's perspective: sky above the horizon, and grass to it */
+/* The scenery every screen shares, drawn in the floor's perspective: sky above the horizon, and grass out to it */
 .demo-horizon {
   background: linear-gradient(#457b9d, #a8dadc 90%, #f1faee);
 }
@@ -203,8 +202,9 @@
   pointer-events: auto;
 }
 
-/* Reset scenes: a dark floor with the start picked out, and a countdown before the balloons */
-.demo-reset {
+/* Reset scenes: a dark screen with the start picked out, and a countdown before the balloons */
+.demo-reset,
+.demo-reset-backdrop {
   background: #1b1b2f;
 }
 .lava-start-bright {
@@ -329,9 +329,9 @@
   background: #99615b;
 }
 
-/* Stone hop: everything is lava but three stones, jumped between by dragging */
+/* Stone hop: everything is lava but three stones, jumped between by dragging; its glow repeats every 40 floor units */
 .stones-lava {
-  background: radial-gradient(circle at 30% 70%, #ffd166, #ef476f 60%, #9d0208);
+  background: radial-gradient(circle, #ffd166, #ef476f 60%, #9d0208) 0 0 / calc(var(--floor-unit) * 40) repeat;
 }
 
 /* Stones laid on the floor; the box is drawn onto each stone's rectangle */
@@ -360,7 +360,10 @@
   pointer-events: none;
 }
 
-/* Walk around's room: a chequered floor that shows the camera through it, low brick walls, and hills beyond */
+/*
+ * Walk around's room: a chequered floor that shows the camera through it, low brick walls, and hills beyond. The walls
+ * and hills stand as high as their shape makes them; the rear hills reach across the screen, repeating every 200 units.
+ */
 .demo-tile {
   background: rgba(241, 250, 238, 0.45);
 }
@@ -371,10 +374,13 @@
   background: rgba(255, 209, 102, 0.9);
 }
 .demo-wall {
+  aspect-ratio: 100 / 12;
   background: repeating-linear-gradient(90deg, #bc6c25 0 9%, #8f4d1c 9% 10%);
 }
 .demo-hills {
+  aspect-ratio: 4;
   background:
     radial-gradient(ellipse 30% 35% at 25% 100%, #2d6a4f 98%, transparent),
     radial-gradient(ellipse 40% 25% at 70% 100%, #40916c 98%, transparent);
+  background-size: calc(var(--floor-unit, 1cqw) * 200) 100%;
 }

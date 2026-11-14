@@ -4,6 +4,7 @@
 
 /** The surface classes, in the order they paint, back to front, with floor areas between the backgrounds and walls. */
 export const SURFACE_CLASSES = [
+  "screen-background",
   "horizon-background",
   "floor-background",
   "rear-background",

@@ -79,6 +79,7 @@
  */
 :where(
   [data-floor-area],
+  .screen-background,
   .horizon-background,
   .floor-background,
   .rear-background,

@@ -6,6 +6,7 @@ import {
   HORIZON_DISTANCE,
   horizonSurface,
   matrix3dFor,
+  screenSurface,
   uprightSurface,
   type Drawn,
   type FloorArea,
@@ -87,7 +88,11 @@ export const parseSurface = (element: Element): Surface | null => {
 };
 
 /** Every surface kind, back to front. */
-const PAINT_ORDER: readonly SurfaceKind[] = [...SURFACE_CLASSES.slice(0, 5), "floor-area", ...SURFACE_CLASSES.slice(5)];
+const PAINT_ORDER: readonly SurfaceKind[] = [
+  ...SURFACE_CLASSES.filter((kind) => kind.endsWith("-background")),
+  "floor-area",
+  ...SURFACE_CLASSES.filter((kind) => kind.endsWith("-wall")),
+];
 
 /** The z-index of the furthest surface: below the depth stack's players and items. */
 const PAINT_BASE = depthZIndex(0) - 100;
@@ -116,6 +121,8 @@ const drawSurface = (
 ): Drawn | undefined => {
   const { kind, area, distance, depth } = surface;
   switch (kind) {
+    case "screen-background":
+      return screenSurface(size);
     case "floor-area":
       return area && { quad: floorAreaQuad(view, size, area) };
     case "floor-background":
@@ -160,26 +167,37 @@ const horizonNear = (element: Element): number | undefined => {
   return horizon ? parseSurface(horizon)?.distance : undefined;
 };
 
-/** The surfaces whose boxes the engine has sized, so it can let go of a box whose content sets its size again. */
-const sizedBoxes = new WeakSet<HTMLElement>();
+/**
+ * The surfaces whose boxes the engine has sized, each with its box's own height over width from before, which still
+ * sets the height of a surface the engine only widens. It lets go of a box whose content sets its size again.
+ */
+const sizedBoxes = new WeakMap<HTMLElement, number>();
+
+/** A surface's box's own height over width, as it was before the engine sized it. */
+const ownAspect = (element: HTMLElement): number =>
+  sizedBoxes.get(element) ?? (element.offsetWidth > 0 ? element.offsetHeight / element.offsetWidth : 0);
 
 /**
- * Sizes a box the engine works out, at the floor's scale at its front edge, or smaller if that would be too large,
- * and gives that scale as `--floor-unit`. A box the engine doesn't size keeps its own.
+ * Sizes a box the engine works out: one in floor units at the floor's scale at its front edge, or smaller if that
+ * would be too large, giving that scale as `--floor-unit`; or one in pixels as it is. A box the engine doesn't size
+ * keeps its own.
  * @returns the box's size, in pixels
  */
-const sizeBox = (element: HTMLElement, view: FloorView, size: MaskSize, extent: Drawn["extent"]): MaskSize => {
-  if (!extent) {
+const sizeBox = (element: HTMLElement, view: FloorView, size: MaskSize, drawn: Drawn | undefined): MaskSize => {
+  const { extent, pixels } = drawn ?? {};
+  if (!extent && !pixels) {
     if (sizedBoxes.delete(element)) BOX_PROPERTIES.forEach((property) => element.style.removeProperty(property));
     return { width: element.offsetWidth, height: element.offsetHeight };
   }
-  const unit = Math.min(rowLength(view, size, 100) / 100, MAX_BOX_PIXELS / Math.max(extent.width, extent.height));
-  const box = { width: extent.width * unit, height: extent.height * unit };
-  sizedBoxes.add(element);
+  const unit = extent
+    ? Math.min(rowLength(view, size, 100) / 100, MAX_BOX_PIXELS / Math.max(extent.width, extent.height))
+    : 1;
+  const box = extent ? { width: extent.width * unit, height: extent.height * unit } : pixels!;
+  if (!sizedBoxes.has(element)) sizedBoxes.set(element, ownAspect(element));
   // Written as the browser normalises them, so an unchanged box isn't rewritten every frame
   setStyle(element, "width", `${Number(box.width.toFixed(1))}px`);
   setStyle(element, "height", `${Number(box.height.toFixed(1))}px`);
-  setStyle(element, "--floor-unit", `${unit.toFixed(4)}px`);
+  if (extent) setStyle(element, "--floor-unit", `${unit.toFixed(4)}px`);
   return box;
 };
 
@@ -193,9 +211,8 @@ const sizeBox = (element: HTMLElement, view: FloorView, size: MaskSize, extent: 
 export const placeSurface = (element: HTMLElement, view: FloorView, size: MaskSize, offset: Point): boolean => {
   const surface = parseSurface(element);
   if (!surface) return false;
-  const aspect = element.offsetWidth > 0 ? element.offsetHeight / element.offsetWidth : 0;
-  const drawn = drawSurface(surface, view, size, { aspect, horizon: horizonNear(element) });
-  const box = sizeBox(element, view, size, drawn?.extent);
+  const drawn = drawSurface(surface, view, size, { aspect: ownAspect(element), horizon: horizonNear(element) });
+  const box = sizeBox(element, view, size, drawn);
   const quad = drawn?.quad;
   const shift = ({ x, y }: Point): Point => ({ x: x - offset.x, y: y - offset.y });
   const matrix =

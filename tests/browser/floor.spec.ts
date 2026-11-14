@@ -285,18 +285,20 @@ test("lays Nanny's Magic Trifle's river on the floor, in the overview and in a s
   await page.locator("#magic-trifle-title").click({ force: true });
   await expect(page.locator("#stages-link-stage-1")).toBeVisible();
 
-  // The floor's front corners are the scene box's bottom corners, and its back edge is level, part way down
-  const river = await surfaceBox(page, "#overview-background-container .floor-background");
-  expect(river.left).toBeCloseTo(0, 0);
-  expect(river.right).toBeCloseTo(river.width, 0);
-  expect(river.bottom).toBeCloseTo(river.height, 0);
-  expect(river.top / river.height).toBeCloseTo(floorToViewport(VIEW, { x: 0, y: 0 }).y, 2);
-
-  // The far bank stands on the floor's back edge, with the forest further back, higher up the screen
+  // The far bank stands on the floor's back edge, across the whole screen, with the forest just behind it, higher up
   const bank = await surfaceBox(page, "#overview-background-container .rear-wall");
   const forest = await surfaceBox(page, "#overview-background-container .rear-background");
-  expect(bank.bottom).toBeCloseTo(river.top, 0);
+  expect(bank.bottom / bank.height).toBeCloseTo(floorToViewport(VIEW, { x: 0, y: 0 }).y, 2);
+  expect(bank.left).toBeLessThan(0);
+  expect(bank.right).toBeGreaterThan(bank.width);
   expect(forest.bottom).toBeLessThan(bank.bottom);
+
+  // The river runs from the bottom of the screen back to the horizon, just behind the bank
+  const river = await surfaceBox(page, "#overview-background-container .floor-background");
+  expect(river.bottom).toBeGreaterThan(river.height);
+  expect(river.left).toBeLessThan(0);
+  expect(river.top).toBeLessThan(bank.bottom);
+  expect(river.top).toBeGreaterThan(forest.bottom - 20);
   await expect(page.locator("#overview-background-container .horizon-background")).toBeVisible();
 
   // The open stone floats, so it never holds still for a normal click
@@ -306,3 +308,36 @@ test("lays Nanny's Magic Trifle's river on the floor, in the overview and in a s
   const stageRiver = await surfaceBox(page, "[id^='stage'][id$='-background-container'] .floor-background");
   expect(stageRiver.top).toBeCloseTo(river.top, 0);
 });
+
+/** Whether something a scene draws covers each of the screen's corners and the middles of its edges, inside its rounding. */
+const screenCovered = (page: Page) =>
+  page.locator("#game-viewport").evaluate((viewport) => {
+    const { left, top, right, bottom } = viewport.getBoundingClientRect();
+    const [xs, ys] = [
+      [left + 16, (left + right) / 2, right - 16],
+      [top + 16, (top + bottom) / 2, bottom - 16],
+    ];
+    const drawn = ".screen-background, .horizon-background, .floor-background, .rear-background, .rear-wall";
+    return xs.flatMap((x) => ys.map((y) => document.elementsFromPoint(x, y).some((element) => element.matches(drawn))));
+  });
+
+for (const screen of [
+  { width: 2100, height: 900 },
+  { width: 900, height: 1200 },
+]) {
+  test(`leaves no blank space around either game's scenes on a ${screen.width}×${screen.height} screen`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(screen);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    const allCovered = Array<boolean>(9).fill(true);
+    await page.goto("/game/magic-trifle/play");
+    await expect.poll(() => screenCovered(page)).toEqual(allCovered);
+    await page.locator("#magic-trifle-title").click({ force: true });
+    await expect(page.locator("#stages-link-stage-1")).toBeVisible();
+    await expect.poll(() => screenCovered(page)).toEqual(allCovered);
+
+    await openWalkAround(page, { camera: false });
+    await expect.poll(() => screenCovered(page)).toEqual(allCovered);
+  });
+}

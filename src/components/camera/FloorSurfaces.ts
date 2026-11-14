@@ -179,13 +179,24 @@ export interface Extent {
   height: number;
 }
 
-/** Where a surface appears, and its size in floor units when that, rather than its own box, sets its box's size. */
+/** Where a surface appears, and its size when that, rather than its own box, sets its box's size. */
 export interface Drawn {
   /** Where it appears. */
   quad: Quad;
-  /** Its width and height in floor units, when the engine sizes its box. */
+  /** Its width and height in floor units, when the engine sizes its box at the floor's scale. */
   extent?: Extent;
+  /** Its width and height in pixels, when the engine sizes its box to the viewport. */
+  pixels?: MaskSize;
 }
+
+/** Where the screen background appears: over the whole viewport, square on, with its box the viewport's size. */
+export const screenSurface = ({ width, height }: MaskSize): Drawn => {
+  const [left, top, right, bottom] = [0, 0, width, height];
+  return {
+    quad: quadOf({ x: left, y: top }, { x: right, y: top }, { x: right, y: bottom }, { x: left, y: bottom }),
+    pixels: { width, height },
+  };
+};
 
 /** A ground line's length, in floor units. */
 const lengthOf = ([a, b]: [Point, Point]): number => Math.hypot(b.x - a.x, b.y - a.y);

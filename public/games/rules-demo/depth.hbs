@@ -1,10 +1,8 @@
 <div class="demo-depth">
-  <!-- The room: sky and grass to the horizon, hills beyond low walls, and a chequered floor; one tile lights underfoot -->
+  <!-- The room: sky and grass to the horizon, hills across the screen beyond low walls, and a chequered floor; one tile lights underfoot -->
   <div class="horizon-background demo-horizon"></div>
-  <div class="ground-background demo-ground"></div>
-  <div class="rear-background demo-hills"></div>
-  <div class="left-background demo-hills"></div>
-  <div class="right-background demo-hills"></div>
+  <div class="floor-background demo-ground"></div>
+  <div class="rear-background demo-hills" data-fill-width></div>
   <div class="demo-tile" data-floor-area="0 0 25 25"></div>
   <div class="demo-tile demo-tile-dark" data-floor-area="25 0 50 25"></div>
   <div class="demo-tile" data-floor-area="50 0 75 25"></div>
@@ -21,9 +19,9 @@
   <div class="demo-tile" data-floor-area="25 75 50 100"></div>
   <div class="demo-tile demo-tile-dark" data-floor-area="50 75 75 100"></div>
   <div class="demo-tile" data-floor-area="75 75 100 100"></div>
-  <div class="rear-wall demo-wall" data-floor-height="12"></div>
-  <div class="left-wall demo-wall" data-floor-height="12"></div>
-  <div class="right-wall demo-wall" data-floor-height="12"></div>
+  <div class="rear-wall demo-wall"></div>
+  <div class="left-wall demo-wall"></div>
+  <div class="right-wall demo-wall"></div>
   <div id="depth-far" class="demo-depth-item" data-floor-x="20" data-floor-y="30">Far</div>
   <div id="depth-near" class="demo-depth-item{{#if state.lit}} demo-depth-lit{{/if}}" data-floor-x="75" data-floor-y="80" data-floor-thickness="20">Near</div>
   {{#if game.players.[1]}}

@@ -71,7 +71,7 @@
             "foregroundTemplateStyle": { "width": "100%", "height": "100%" },
             "backgroundTemplate": {
               "sourceType": "embedded",
-              "content": ""
+              "content": "<div class=\"screen-background\" style=\"background: url('{{resources.title-background}}') center / cover; filter: blur(24px) brightness(0.5);\"></div>"
             },
             "backgroundStyle": {
               "background": "black",

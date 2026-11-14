@@ -79,8 +79,9 @@ describe("parseSurface", () => {
 });
 
 describe("surfaceZIndex", () => {
-  it("paints back to front: horizon, the floor background, backgrounds, floor areas, then walls", () => {
+  it("paints back to front: the screen, the horizon, the floor background, backgrounds, floor areas, then walls", () => {
     const order = [
+      "screen-background",
       "horizon-background",
       "floor-background",
       "rear-background",
@@ -148,6 +149,31 @@ describe("placeSurface", () => {
     placeSurface(wall, VIEW, size, { x: 0, y: 0 });
     expect(wall.style.width).toBe("");
     expect(wall.style.getPropertyValue("--floor-unit")).toBe("");
+  });
+
+  it("keeps a widened wall as high as its own box's shape made it, frame after frame", () => {
+    const holder = document.createElement("div");
+    holder.innerHTML = `<div class="rear-wall" data-fill-width></div>`;
+    const wall = holder.firstElementChild as HTMLElement;
+    // Its box is a tenth as high as it is wide, until the engine sizes it
+    const sized = (property: "width" | "height", own: number) => () => parseFloat(wall.style[property]) || own;
+    Object.defineProperty(wall, "offsetWidth", { get: sized("width", 1240) });
+    Object.defineProperty(wall, "offsetHeight", { get: sized("height", 124) });
+    const heights = [1, 2, 3].map(() => {
+      placeSurface(wall, VIEW, size, { x: 0, y: 0 });
+      return wall.style.height;
+    });
+    // 10 floor units high, at 12.4 pixels a unit
+    expect(heights).toEqual(["124px", "124px", "124px"]);
+  });
+
+  it("stretches the screen background over the whole viewport, with a box its size", () => {
+    const backdrop = element(`<div class="screen-background"></div>`);
+    placeSurface(backdrop, VIEW, size, { x: 100, y: 0 });
+    expect(backdrop.style.width).toBe("1240px");
+    expect(backdrop.style.height).toBe("1000px");
+    // Drawn from its own top left, which the layout put 100 pixels in, back to the viewport's
+    expect(backdrop.style.transform).toBe("matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -100, 0, 0, 1)");
   });
 
   it("draws a large floor background at a smaller scale, so its box stays a manageable size", () => {
