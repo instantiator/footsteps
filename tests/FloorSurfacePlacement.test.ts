@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import { cropPlacement, DEFAULT_CORNERS, floorCrop, type FloorView } from "../src/components/camera/FloorGeometry";
 import { depthZIndex } from "../src/components/camera/PlayerPosition";
 import { useFloorPlacement } from "../src/components/core/layout/FloorPlacement";
+import { HORIZON_DISTANCE } from "../src/components/camera/FloorSurfaces";
 import {
   BACKGROUND_DISTANCE,
-  DEFAULT_WALL_HEIGHT,
   parseFloorArea,
   parseSurface,
   placeSurface,
@@ -41,24 +41,35 @@ describe("parseFloorArea", () => {
 });
 
 describe("parseSurface", () => {
-  it("knows every surface class, with walls on the edge and backgrounds set back", () => {
+  it("knows every surface class: walls on the edge, backgrounds set back, and the horizon far away", () => {
+    const far = ["horizon-background", "floor-background"];
     for (const kind of SURFACE_CLASSES) {
       const surface = parseSurface(element(`<div class="scenery ${kind}"></div>`));
       expect(surface?.kind).toBe(kind);
-      expect(surface?.distance).toBe(kind.endsWith("-background") ? BACKGROUND_DISTANCE : 0);
-      expect(surface?.height).toBe(DEFAULT_WALL_HEIGHT);
+      const distance = far.includes(kind) ? HORIZON_DISTANCE : kind.endsWith("-background") ? BACKGROUND_DISTANCE : 0;
+      expect(surface?.distance).toBe(distance);
+      expect(surface?.height).toBeUndefined();
     }
   });
 
-  it("reads a floor area, a wall's height and a distance", () => {
+  it("reads a floor area, a height, a distance, a depth and how a surface fills the screen", () => {
     expect(parseSurface(element(`<div data-floor-area="0 0 50 50"></div>`))).toEqual({
       kind: "floor-area",
       area: { left: 0, back: 0, right: 50, front: 50 },
-      height: DEFAULT_WALL_HEIGHT,
+      height: undefined,
       distance: 0,
+      depth: 0,
+      fillHeight: false,
+      fillWidth: false,
+      fillEdge: "far",
     });
-    const wall = parseSurface(element(`<div class="rear-wall" data-floor-height="20" data-wall-distance="5"></div>`));
-    expect(wall).toMatchObject({ height: 20, distance: 5 });
+    const wall = parseSurface(
+      element(
+        `<div class="rear-wall" data-floor-height="20" data-wall-distance="5" data-fill-height data-fill-width data-fill-edge="near"></div>`,
+      ),
+    );
+    expect(wall).toMatchObject({ height: 20, distance: 5, fillHeight: true, fillWidth: true, fillEdge: "near" });
+    expect(parseSurface(element(`<div class="floor-background" data-floor-depth="4"></div>`))?.depth).toBe(4);
   });
 
   it("isn't a surface without a class, or with a malformed floor area", () => {
@@ -68,12 +79,11 @@ describe("parseSurface", () => {
 });
 
 describe("surfaceZIndex", () => {
-  it("paints back to front: horizon, ground, backgrounds, the floor, its areas, then walls", () => {
+  it("paints back to front: horizon, the floor background, backgrounds, floor areas, then walls", () => {
     const order = [
       "horizon-background",
-      "ground-background",
-      "rear-background",
       "floor-background",
+      "rear-background",
       "floor-area",
       "rear-wall",
       "front-wall",
@@ -121,9 +131,30 @@ describe("placeSurface", () => {
     const horizon = element(`<div class="horizon-background"></div>`);
     placeSurface(horizon, flat, size, { x: 0, y: 0 });
     expect(horizon.style.visibility).toBe("hidden");
-    const empty = element(`<div class="floor-background"></div>`, { width: 0, height: 0 });
+    const empty = element(`<div class="rear-wall"></div>`, { width: 0, height: 0 });
     placeSurface(empty, VIEW, size, { x: 0, y: 0 });
     expect(empty.style.visibility).toBe("hidden");
+  });
+
+  it("sizes the box of a surface it works out the size of, at the floor's scale, and lets go when it stops", () => {
+    const wall = element(`<div class="rear-wall" data-floor-height="20"></div>`, { width: 1240, height: 50 });
+    placeSurface(wall, VIEW, size, { x: 0, y: 0 });
+    // The floor's front edge spans the 1240 pixel viewport: 12.4 pixels a floor unit, for a 100 by 20 wall
+    expect(wall.style.width).toBe("1240px");
+    expect(wall.style.height).toBe("248px");
+    expect(wall.style.getPropertyValue("--floor-unit")).toBe("12.4000px");
+
+    wall.removeAttribute("data-floor-height");
+    placeSurface(wall, VIEW, size, { x: 0, y: 0 });
+    expect(wall.style.width).toBe("");
+    expect(wall.style.getPropertyValue("--floor-unit")).toBe("");
+  });
+
+  it("draws a large floor background at a smaller scale, so its box stays a manageable size", () => {
+    const water = element(`<div class="floor-background"></div>`);
+    placeSurface(water, VIEW, size, { x: 0, y: 0 });
+    expect(Math.max(parseFloat(water.style.width), parseFloat(water.style.height))).toBeCloseTo(4096, 0);
+    expect(parseFloat(water.style.getPropertyValue("--floor-unit"))).toBeLessThan(12.4);
   });
 });
 

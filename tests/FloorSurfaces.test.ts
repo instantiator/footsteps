@@ -9,14 +9,15 @@ import {
   type FloorView,
 } from "../src/components/camera/FloorGeometry";
 import {
-  backgroundQuad,
   floorAreaQuad,
-  groundQuad,
+  floorBackgroundSurface,
+  HORIZON_DISTANCE,
   horizonLine,
-  horizonQuad,
+  horizonSurface,
   matrix3dFor,
-  wallQuad,
+  uprightSurface,
   type Quad,
+  type Upright,
 } from "../src/components/camera/FloorSurfaces";
 import type { Point } from "../src/vision/VisionTypes";
 
@@ -130,94 +131,109 @@ describe("horizonLine", () => {
       frontLeft: { x: 0.1, y: 0.9 },
     };
     expect(horizonLine(view(false, flat))).toBeUndefined();
-    expect(horizonQuad(view(false, flat), viewport)).toBeUndefined();
+    expect(horizonSurface(view(false, flat), viewport, HORIZON_DISTANCE)).toBeUndefined();
   });
 });
 
-describe("horizonQuad", () => {
-  it("reaches from just below the horizon to above the viewport, slanting with it", () => {
-    const tilted = view(false, LOPSIDED);
-    const quad = horizonQuad(tilted, viewport)!;
-    const line = horizonLine(tilted)!.map(({ x, y }) => ({ x: x * viewport.width, y: y * viewport.height })) as [
-      Point,
-      Point,
-    ];
-    expect(quad.frontLeft.y).toBeGreaterThan(lineY(line, quad.frontLeft.x));
-    expect(quad.frontRight.y).toBeGreaterThan(lineY(line, quad.frontRight.x));
-    expect(Math.max(quad.backLeft.y, quad.backRight.y)).toBeLessThan(0);
-    expect(quad.backLeft.x).toBeLessThan(0);
-    expect(quad.backRight.x).toBeGreaterThan(viewport.width);
-    const slope = ({ x: ax, y: ay }: Point, { x: bx, y: by }: Point) => (by - ay) / (bx - ax);
-    expect(slope(quad.backLeft, quad.backRight)).toBeCloseTo(slope(quad.frontLeft, quad.frontRight), 6);
-    expect(slope(quad.frontLeft, quad.frontRight)).not.toBeCloseTo(0, 2);
-  });
-});
+/** A wall with nothing set: its box's shape sets its height. */
+const WALL: Upright = { side: "rear", distance: 0, aspect: 0.1, fillHeight: false, fillWidth: false, fillEdge: "far" };
 
-describe("wallQuad", () => {
-  it("stands the rear wall on the back edge, raised by its height at that depth", () => {
-    const quad = wallQuad(view(false), viewport, "rear", { height: 10, distance: 0 });
+/** How far a quad's top edge is above the viewport's top at its left and right ends, in pixels. */
+const topsOf = ({ backLeft, backRight }: Quad) => [backLeft.y, backRight.y];
+
+describe("uprightSurface", () => {
+  it("stands a rear wall on the back edge, as high as its box's shape makes it, leaving its box alone", () => {
+    const { quad, extent } = uprightSurface(view(false), viewport, WALL);
+    // A box a tenth as high as it is wide, along the floor's 100 wide back edge: 10 high
     const rise = 0.1 * rowLength(view(false), viewport, 0);
     close(quad.frontLeft, pixels(DEFAULT_CORNERS, { x: 0, y: 0 }));
     close(quad.frontRight, pixels(DEFAULT_CORNERS, { x: 100, y: 0 }));
     close(quad.backLeft, { x: quad.frontLeft.x, y: quad.frontLeft.y - rise });
-    close(quad.backRight, { x: quad.frontRight.x, y: quad.frontRight.y - rise });
+    expect(extent).toBeUndefined();
   });
 
-  it("stands a side wall taller at the front than the back", () => {
-    const quad = wallQuad(view(false), viewport, "left", { height: 10, distance: 0 });
-    close(quad.frontLeft, pixels(DEFAULT_CORNERS, { x: 0, y: 100 }));
-    close(quad.frontRight, pixels(DEFAULT_CORNERS, { x: 0, y: 0 }));
-    expect(quad.frontLeft.y - quad.backLeft.y).toBeGreaterThan(quad.frontRight.y - quad.backRight.y);
+  it("stands a wall at a set height instead, with a box the engine sizes to match", () => {
+    const { quad, extent } = uprightSurface(view(false), viewport, { ...WALL, height: 25 });
+    expect(quad.frontLeft.y - quad.backLeft.y).toBeCloseTo(0.25 * rowLength(view(false), viewport, 0), 4);
+    expect(extent).toEqual({ width: 100, height: 25 });
+  });
+
+  it("runs a background further out, meeting the side backgrounds at the corners", () => {
+    const rear = uprightSurface(view(false), viewport, { ...WALL, distance: 50 }).quad;
+    const left = uprightSurface(view(false), viewport, { ...WALL, side: "left", distance: 50 }).quad;
+    close(rear.frontLeft, pixels(DEFAULT_CORNERS, { x: -50, y: -50 }));
+    close(left.frontRight, rear.frontLeft);
+    close(left.frontLeft, pixels(DEFAULT_CORNERS, { x: -50, y: 100 }));
+  });
+
+  it.each([DEFAULT_CORNERS, LOPSIDED])("fills a rear surface up to the top and out to the sides", (corners) => {
+    const { quad, extent } = uprightSurface(view(false, corners), viewport, {
+      ...WALL,
+      distance: 50,
+      fillHeight: true,
+      fillWidth: true,
+    });
+    expect(Math.max(...topsOf(quad))).toBeLessThan(0);
+    expect(quad.frontLeft.x).toBeLessThan(0);
+    expect(quad.frontRight.x).toBeGreaterThan(viewport.width);
+    expect(extent!.width).toBeGreaterThan(200);
+  });
+
+  it("fills a side wall's height from its far end by default, so its top never shows, or from its near end", () => {
+    const far = uprightSurface(view(false), viewport, { ...WALL, side: "left", fillHeight: true }).quad;
+    // The far end is on the right of a left wall, as seen on screen
+    expect(far.backRight.y).toBeCloseTo(-0.01 * viewport.height, 4);
+    expect(far.backLeft.y).toBeLessThan(0);
+    const near = uprightSurface(view(false), viewport, { ...WALL, side: "left", fillHeight: true, fillEdge: "near" });
+    expect(near.quad.backLeft.y).toBeCloseTo(-0.01 * viewport.height, 4);
+    expect(near.quad.backRight.y).toBeGreaterThan(0);
   });
 
   it.each([false, true])("keeps the left wall on the screen's left (mirrored: %s)", (mirrored) => {
-    const left = wallQuad(view(mirrored, LOPSIDED), viewport, "left", { height: 10, distance: 0 });
-    const right = wallQuad(view(mirrored, LOPSIDED), viewport, "right", { height: 10, distance: 0 });
+    const left = uprightSurface(view(mirrored, LOPSIDED), viewport, { ...WALL, side: "left" }).quad;
+    const right = uprightSurface(view(mirrored, LOPSIDED), viewport, { ...WALL, side: "right" }).quad;
     expect(Math.max(left.frontLeft.x, left.frontRight.x)).toBeLessThan(Math.min(right.frontLeft.x, right.frontRight.x));
   });
 });
 
-describe("backgroundQuad", () => {
-  it.each([DEFAULT_CORNERS, LOPSIDED])(
-    "stands the rear background behind the wall, covering the top and sides",
-    (corners) => {
-      const quad = backgroundQuad(view(false, corners), viewport, "rear", 50);
-      const wall = wallQuad(view(false, corners), viewport, "rear", { height: 10, distance: 0 });
-      expect(quad.frontLeft.x).toBeLessThan(0);
-      expect(quad.frontRight.x).toBeGreaterThan(viewport.width);
-      expect(Math.max(quad.backLeft.y, quad.backRight.y)).toBeLessThan(0);
-      expect((quad.frontLeft.y + quad.frontRight.y) / 2).toBeLessThan((wall.frontLeft.y + wall.frontRight.y) / 2);
-    },
-  );
-
-  it("runs a side background from below the viewport back to the rear background, reaching above the top", () => {
-    const quad = backgroundQuad(view(false), viewport, "left", 50);
-    expect(quad.frontLeft.y).toBeGreaterThan(viewport.height);
-    close(quad.frontRight, pixels(DEFAULT_CORNERS, { x: -50, y: -50 }));
-    expect(Math.max(quad.backLeft.y, quad.backRight.y)).toBeLessThan(0);
+describe("horizonSurface", () => {
+  it.each([DEFAULT_CORNERS, LOPSIDED])("fills the viewport above its base, slanting with the floor", (corners) => {
+    const quad = horizonSurface(view(false, corners), viewport, HORIZON_DISTANCE)!;
+    expect(Math.max(...topsOf(quad))).toBeLessThan(0);
+    expect(quad.frontLeft.x).toBeLessThan(0);
+    expect(quad.frontRight.x).toBeGreaterThan(viewport.width);
+    const line = horizonLine(view(false, corners))!.map(({ x, y }) => ({
+      x: x * viewport.width,
+      y: y * viewport.height,
+    }));
+    // Its base is just below the horizon, as far back as it stands
+    expect(quad.frontLeft.y).toBeGreaterThan(lineY([line[0], line[1]], quad.frontLeft.x));
   });
 });
 
-describe("groundQuad", () => {
-  it.each([false, true])(
-    "covers the viewport below the horizon, and stops just short of it (mirrored: %s)",
-    (mirrored) => {
-      for (const corners of [DEFAULT_CORNERS, LOPSIDED]) {
-        const quad = groundQuad(view(mirrored, corners), viewport);
-        const line = horizonLine(view(mirrored, corners))!.map(({ x, y }) => ({
-          x: x * viewport.width,
-          y: y * viewport.height,
-        })) as [Point, Point];
-        expect(quad.frontLeft.y).toBeGreaterThan(viewport.height);
-        expect(quad.frontRight.y).toBeGreaterThan(viewport.height);
-        expect(Math.min(quad.backLeft.x, quad.frontLeft.x)).toBeLessThan(0);
-        expect(Math.max(quad.backRight.x, quad.frontRight.x)).toBeGreaterThan(viewport.width);
-        for (const far of [quad.backLeft, quad.backRight]) {
-          // Below the horizon (so in front of the camera), and within the horizon background's overlap of it
-          expect(far.y).toBeGreaterThan(lineY(line, far.x));
-          expect(far.y - lineY(line, far.x)).toBeLessThan(0.02 * viewport.height);
-        }
-      }
-    },
-  );
+describe("floorBackgroundSurface", () => {
+  it.each([false, true])("covers the viewport from the horizon background down (mirrored: %s)", (mirrored) => {
+    for (const corners of [DEFAULT_CORNERS, LOPSIDED]) {
+      const shown = view(mirrored, corners);
+      const { quad, extent } = floorBackgroundSurface(shown, viewport, { depth: 0, distance: HORIZON_DISTANCE });
+      const horizon = horizonSurface(shown, viewport, HORIZON_DISTANCE)!;
+      expect(quad.frontLeft.y).toBeGreaterThan(viewport.height);
+      expect(quad.frontRight.y).toBeGreaterThan(viewport.height);
+      expect(Math.min(quad.backLeft.x, quad.frontLeft.x)).toBeLessThan(0);
+      expect(Math.max(quad.backRight.x, quad.frontRight.x)).toBeGreaterThan(viewport.width);
+      // Its far edge is the horizon background's base, which reaches below it so no gap shows
+      const base = [horizon.frontLeft, horizon.frontRight] as [Point, Point];
+      for (const far of [quad.backLeft, quad.backRight]) expect(lineY(base, far.x)).toBeGreaterThan(far.y);
+      // It reaches from the horizon background past the floor's front, and the camera sees every corner of it
+      expect(extent!.height).toBeGreaterThanOrEqual(HORIZON_DISTANCE + 100);
+      expect(matrix3dFor({ width: extent!.width, height: extent!.height }, quad)).toBeDefined();
+    }
+  });
+
+  it("lies below the floor by its depth", () => {
+    const flat = floorBackgroundSurface(view(false), viewport, { depth: 0, distance: HORIZON_DISTANCE }).quad;
+    const lowered = floorBackgroundSurface(view(false), viewport, { depth: 10, distance: HORIZON_DISTANCE }).quad;
+    expect(lowered.frontLeft.y).toBeGreaterThan(flat.frontLeft.y);
+    expect(lowered.backLeft.y).toBeGreaterThan(flat.backLeft.y);
+  });
 });

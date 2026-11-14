@@ -2,14 +2,13 @@
  * The names that make an element a floor surface. This module imports nothing, so the resource validator can read it.
  */
 
-/** The surface classes, in the order they paint, back to front, with floor areas between the floor and the walls. */
+/** The surface classes, in the order they paint, back to front, with floor areas between the backgrounds and walls. */
 export const SURFACE_CLASSES = [
   "horizon-background",
-  "ground-background",
+  "floor-background",
   "rear-background",
   "left-background",
   "right-background",
-  "floor-background",
   "rear-wall",
   "left-wall",
   "right-wall",

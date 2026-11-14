@@ -73,17 +73,17 @@
 }
 
 /*
- * Floor surfaces fill their container by default; the engine draws that box onto the surface's place on screen from
- * its top left. :where() lets an author size or position the box.
+ * Floor surfaces are boxes the engine draws onto their place on screen, from their top left. Walls and backgrounds are
+ * as wide as their container and as high as their content, so their shape sets their height; the rest fill their
+ * container. The engine sizes a box itself where it works out the size. :where() lets an author size the box.
  */
 :where(
   [data-floor-area],
   .horizon-background,
-  .ground-background,
+  .floor-background,
   .rear-background,
   .left-background,
   .right-background,
-  .floor-background,
   .rear-wall,
   .left-wall,
   .right-wall,
@@ -95,6 +95,10 @@
   width: 100%;
   height: 100%;
   transform-origin: 0 0;
+}
+
+:where(.rear-background, .left-background, .right-background, .rear-wall, .left-wall, .right-wall, .front-wall) {
+  height: auto;
 }
 
 /*

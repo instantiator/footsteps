@@ -1,15 +1,15 @@
 import type { Point } from "../../../vision/VisionTypes";
-import type { FloorView, MaskSize } from "../../camera/FloorGeometry";
+import { rowLength, type FloorView, type MaskSize } from "../../camera/FloorGeometry";
 import {
-  backgroundQuad,
   floorAreaQuad,
-  groundQuad,
-  horizonQuad,
+  floorBackgroundSurface,
+  HORIZON_DISTANCE,
+  horizonSurface,
   matrix3dFor,
-  wallQuad,
+  uprightSurface,
+  type Drawn,
   type FloorArea,
   type FloorSide,
-  type Quad,
 } from "../../camera/FloorSurfaces";
 import { DEPTH_STACK_CLASS, depthZIndex } from "../../camera/PlayerPosition";
 import { FLOOR_AREA_ATTRIBUTE, SURFACE_CLASSES } from "./FloorSurfaceClasses";
@@ -20,22 +20,27 @@ export type SurfaceKind = (typeof SURFACE_CLASSES)[number] | "floor-area";
 /** The selector for every floor surface. */
 export const SURFACE_SELECTOR = [`[${FLOOR_AREA_ATTRIBUTE}]`, ...SURFACE_CLASSES.map((name) => `.${name}`)].join(", ");
 
-/** How high a wall stands when its height isn't given, in floor x units: as high as the floor is wide. */
-export const DEFAULT_WALL_HEIGHT = 100;
-
 /** How far beyond the floor's edge a background stands when its distance isn't given, in floor units. */
 export const BACKGROUND_DISTANCE = 50;
 
-/** A floor surface, from its class or `data-floor-area`, and its `data-floor-height` and `data-wall-distance`. */
+/** A floor surface, from its class or `data-floor-area`, and the attributes that shape it. */
 export interface Surface {
   /** Which surface it is. */
   kind: SurfaceKind;
   /** The rectangle a floor area covers. */
   area?: FloorArea;
-  /** How high a wall stands, in floor x units. */
-  height: number;
-  /** How far beyond the floor's edge an upright surface stands, in floor units. */
+  /** How high an upright surface stands, in floor x units (`data-floor-height`); its box's shape sets it otherwise. */
+  height?: number;
+  /** How far beyond the floor's edge an upright surface stands, in floor units (`data-wall-distance`). */
   distance: number;
+  /** How far below the floor the floor background lies, in floor x units (`data-floor-depth`). */
+  depth: number;
+  /** Whether an upright surface reaches the screen's top (`data-fill-height`). */
+  fillHeight: boolean;
+  /** Whether a rear or front surface reaches the screen's sides (`data-fill-width`). */
+  fillWidth: boolean;
+  /** Which end of a side surface reaches the top when it fills the height (`data-fill-edge`). */
+  fillEdge: "near" | "far";
 }
 
 /** A finite number from game content, or undefined. */
@@ -57,21 +62,32 @@ export const parseFloorArea = (value: string | null): FloorArea | undefined => {
   };
 };
 
+/** How far out a surface stands when its distance isn't given. */
+const defaultDistance = (kind: SurfaceKind): number => {
+  if (kind === "horizon-background" || kind === "floor-background") return HORIZON_DISTANCE;
+  return kind.endsWith("-background") ? BACKGROUND_DISTANCE : 0;
+};
+
 /** An element's surface, which comes from game content; null if it isn't one, or its floor area is malformed. */
 export const parseSurface = (element: Element): Surface | null => {
-  const height = numberOf(element.getAttribute("data-floor-height")) ?? DEFAULT_WALL_HEIGHT;
-  const distance = numberOf(element.getAttribute("data-wall-distance"));
+  const shape = {
+    height: numberOf(element.getAttribute("data-floor-height")),
+    depth: numberOf(element.getAttribute("data-floor-depth")) ?? 0,
+    fillHeight: element.hasAttribute("data-fill-height"),
+    fillWidth: element.hasAttribute("data-fill-width"),
+    fillEdge: element.getAttribute("data-fill-edge") === "near" ? ("near" as const) : ("far" as const),
+  };
   if (element.hasAttribute(FLOOR_AREA_ATTRIBUTE)) {
     const area = parseFloorArea(element.getAttribute(FLOOR_AREA_ATTRIBUTE));
-    return area ? { kind: "floor-area", area, height, distance: 0 } : null;
+    return area ? { kind: "floor-area", area, distance: 0, ...shape } : null;
   }
   const kind = SURFACE_CLASSES.find((name) => element.classList.contains(name));
   if (!kind) return null;
-  return { kind, height, distance: distance ?? (kind.endsWith("-background") ? BACKGROUND_DISTANCE : 0) };
+  return { kind, distance: numberOf(element.getAttribute("data-wall-distance")) ?? defaultDistance(kind), ...shape };
 };
 
 /** Every surface kind, back to front. */
-const PAINT_ORDER: readonly SurfaceKind[] = [...SURFACE_CLASSES.slice(0, 6), "floor-area", ...SURFACE_CLASSES.slice(6)];
+const PAINT_ORDER: readonly SurfaceKind[] = [...SURFACE_CLASSES.slice(0, 5), "floor-area", ...SURFACE_CLASSES.slice(5)];
 
 /** The z-index of the furthest surface: below the depth stack's players and items. */
 const PAINT_BASE = depthZIndex(0) - 100;
@@ -87,24 +103,29 @@ export const surfaceZIndex = (kind: SurfaceKind, inDepthStack: boolean): number 
   return PAINT_BASE + PAINT_ORDER.indexOf(kind);
 };
 
-/** Where a surface appears on screen, if it can be seen. */
-const surfaceQuad = ({ kind, area, height, distance }: Surface, view: FloorView, size: MaskSize): Quad | undefined => {
-  const side = kind.split("-")[0] as FloorSide;
+/**
+ * Where a surface appears on screen, if it can be seen.
+ * @param aspect the surface's box's height over its width
+ * @param horizon how far back the horizon background in the surface's template stands, if it has one
+ */
+const drawSurface = (
+  surface: Surface,
+  view: FloorView,
+  size: MaskSize,
+  { aspect, horizon }: { aspect: number; horizon: number | undefined },
+): Drawn | undefined => {
+  const { kind, area, distance, depth } = surface;
   switch (kind) {
     case "floor-area":
-      return area && floorAreaQuad(view, size, area);
+      return area && { quad: floorAreaQuad(view, size, area) };
     case "floor-background":
-      return floorAreaQuad(view, size, { left: 0, back: 0, right: 100, front: 100 });
-    case "ground-background":
-      return groundQuad(view, size);
-    case "horizon-background":
-      return horizonQuad(view, size);
-    case "rear-background":
-    case "left-background":
-    case "right-background":
-      return backgroundQuad(view, size, side as Exclude<FloorSide, "front">, distance);
+      return floorBackgroundSurface(view, size, { depth, distance: horizon ?? distance });
+    case "horizon-background": {
+      const quad = horizonSurface(view, size, distance);
+      return quad && { quad };
+    }
     default:
-      return wallQuad(view, size, side, { height, distance });
+      return uprightSurface(view, size, { ...surface, side: kind.split("-")[0] as FloorSide, aspect });
   }
 };
 
@@ -113,8 +134,54 @@ export const setStyle = (element: HTMLElement, property: string, value: string) 
   if (element.style.getPropertyValue(property) !== value) element.style.setProperty(property, value);
 };
 
+/** The box properties the engine sets where it works out a surface's size. */
+const BOX_PROPERTIES = ["width", "height", "--floor-unit"];
+
 /** The properties surface placement sets, which it takes off again when it stops. */
-export const SURFACE_PROPERTIES = ["transform-origin", "transform", "z-index", "visibility"];
+export const SURFACE_PROPERTIES = [
+  "transform-origin",
+  "transform",
+  "z-index",
+  "visibility",
+  "width",
+  "height",
+  "--floor-unit",
+];
+
+/**
+ * The most pixels a box the engine sizes reaches across or down. `ponytail:` a box that would be larger is drawn at a
+ * smaller scale, given by `--floor-unit`; a texture that blurs near the camera would want the floor background split.
+ */
+const MAX_BOX_PIXELS = 4096;
+
+/** How far back the horizon background stands in the same template as an element, if there is one. */
+const horizonNear = (element: Element): number | undefined => {
+  const horizon = element.closest(".templateBody")?.querySelector(".horizon-background");
+  return horizon ? parseSurface(horizon)?.distance : undefined;
+};
+
+/** The surfaces whose boxes the engine has sized, so it can let go of a box whose content sets its size again. */
+const sizedBoxes = new WeakSet<HTMLElement>();
+
+/**
+ * Sizes a box the engine works out, at the floor's scale at its front edge, or smaller if that would be too large,
+ * and gives that scale as `--floor-unit`. A box the engine doesn't size keeps its own.
+ * @returns the box's size, in pixels
+ */
+const sizeBox = (element: HTMLElement, view: FloorView, size: MaskSize, extent: Drawn["extent"]): MaskSize => {
+  if (!extent) {
+    if (sizedBoxes.delete(element)) BOX_PROPERTIES.forEach((property) => element.style.removeProperty(property));
+    return { width: element.offsetWidth, height: element.offsetHeight };
+  }
+  const unit = Math.min(rowLength(view, size, 100) / 100, MAX_BOX_PIXELS / Math.max(extent.width, extent.height));
+  const box = { width: extent.width * unit, height: extent.height * unit };
+  sizedBoxes.add(element);
+  // Written as the browser normalises them, so an unchanged box isn't rewritten every frame
+  setStyle(element, "width", `${Number(box.width.toFixed(1))}px`);
+  setStyle(element, "height", `${Number(box.height.toFixed(1))}px`);
+  setStyle(element, "--floor-unit", `${unit.toFixed(4)}px`);
+  return box;
+};
 
 /**
  * Draws one surface onto its place on screen with a `matrix3d`, from its box's top left. A surface that can't be seen
@@ -126,8 +193,10 @@ export const SURFACE_PROPERTIES = ["transform-origin", "transform", "z-index", "
 export const placeSurface = (element: HTMLElement, view: FloorView, size: MaskSize, offset: Point): boolean => {
   const surface = parseSurface(element);
   if (!surface) return false;
-  const quad = surfaceQuad(surface, view, size);
-  const box = { width: element.offsetWidth, height: element.offsetHeight };
+  const aspect = element.offsetWidth > 0 ? element.offsetHeight / element.offsetWidth : 0;
+  const drawn = drawSurface(surface, view, size, { aspect, horizon: horizonNear(element) });
+  const box = sizeBox(element, view, size, drawn?.extent);
+  const quad = drawn?.quad;
   const shift = ({ x, y }: Point): Point => ({ x: x - offset.x, y: y - offset.y });
   const matrix =
     quad && box.width > 0 && box.height > 0
