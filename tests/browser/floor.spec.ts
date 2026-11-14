@@ -12,7 +12,7 @@ import { installCameraDrawCounter } from "./fixtures/cameraDraws";
 import { installFakeCamera } from "./fixtures/fakeCamera";
 import { peoplePhotoUrls } from "./fixtures/people/people";
 
-/** The floor the demo shows with the default calibration, unmirrored, as a new camera choice is. */
+/** The floor the demo shows with the default calibration, unmirrored, as a new camera choice is, in its scene box. */
 const VIEW: FloorView = {
   corners: DEFAULT_CORNERS,
   crop: cropPlacement(floorCrop(DEFAULT_CORNERS), false),
@@ -44,10 +44,10 @@ const zIndexOf = (page: Page, selector: string) =>
     .first()
     .evaluate((element) => Number(getComputedStyle(element).zIndex));
 
-/** Where an item's bottom centre is drawn, and how much it is scaled, relative to the viewport. */
+/** Where an item's bottom centre is drawn, and how much it is scaled, relative to the scene box. */
 const drawnAt = (page: Page, selector: string) =>
   page.locator(selector).evaluate((element: HTMLElement) => {
-    const viewport = document.querySelector("#game-viewport")!.getBoundingClientRect();
+    const viewport = document.querySelector(".floorScene .sceneBox")!.getBoundingClientRect();
     const drawn = element.getBoundingClientRect();
     return {
       x: drawn.left + drawn.width / 2 - viewport.left,
@@ -179,6 +179,37 @@ test("draws the height of each player's ground point as a line when debugging", 
   await expect.poll(hasDepthLine).toBe(true);
 });
 
+for (const screen of [
+  { width: 1600, height: 600 },
+  { width: 600, height: 900 },
+]) {
+  test(`fits the scene box to the floor on a ${screen.width}×${screen.height} screen, and plays in it`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(screen);
+    await openWalkAround(page, { camera: false });
+    const { box, viewport } = await page.evaluate(() => ({
+      box: document.querySelector(".floorScene .sceneBox")!.getBoundingClientRect().toJSON() as DOMRect,
+      viewport: document.querySelector("#game-viewport")!.getBoundingClientRect().toJSON() as DOMRect,
+    }));
+    // The box takes the default floor's crop of a 4:3 image, as large as fits, centred on the screen's bottom edge
+    expect(box.width / box.height).toBeCloseTo((0.84 * 4) / 3 / 0.9, 2);
+    expect(box.bottom).toBeCloseTo(viewport.bottom, 0);
+    expect(box.left - viewport.left).toBeCloseTo(viewport.right - box.right, 0);
+    expect(Math.max(box.width / viewport.width, box.height / viewport.height)).toBeCloseTo(1, 2);
+
+    await expect
+      .poll(async () => {
+        const { x, y, viewport: size } = await drawnAt(page, "#depth-near");
+        const spot = floorToViewport(VIEW, { x: 75, y: 80 });
+        return Math.abs(x - spot.x * size.width) < 2 && Math.abs(y - spot.y * size.height) < 2;
+      })
+      .toBe(true);
+    await page.locator("#depth-tile").hover({ force: true });
+    await expect(page.locator("#depth-tile")).toHaveClass(/demo-tile-lit/);
+  });
+}
+
 test("outlines the floor, shades what's off it, and marks the player's feet when debugging", async ({ page }) => {
   await openWalkAround(page, { query: "?debug=true" });
   const overlay = page.locator("#debug-overlay-container");
@@ -186,9 +217,9 @@ test("outlines the floor, shades what's off it, and marks the player's feet when
   await expect(overlay.locator("path.floorOffFloor")).toBeAttached();
   await expect(overlay.locator(".floorMarkerOn, .floorMarkerOff").first()).toBeAttached({ timeout: MODEL_TIMEOUT });
 
-  // The overlay covers the whole camera image, which a 2.5D scene crops: wider than the viewport
+  // The overlay covers the whole camera image, which a 2.5D scene crops: wider than the scene box
   const widths = await page.evaluate(() =>
-    ["#game-viewport", "#debug-overlay-container", "#character-canvas-container"].map(
+    [".floorScene .sceneBox", "#debug-overlay-container", "#character-canvas-container"].map(
       (selector) => document.querySelector(selector)!.getBoundingClientRect().width,
     ),
   );
@@ -196,13 +227,13 @@ test("outlines the floor, shades what's off it, and marks the player's feet when
   expect(widths[1]).toBeCloseTo(widths[2], 0);
 });
 
-/** Where a surface is drawn, as a box around it, relative to the viewport. */
+/** Where a surface is drawn, as a box around it, relative to the scene box. */
 const surfaceBox = (page: Page, selector: string) =>
   page
     .locator(selector)
     .first()
     .evaluate((element) => {
-      const viewport = document.querySelector("#game-viewport")!.getBoundingClientRect();
+      const viewport = document.querySelector(".floorScene .sceneBox")!.getBoundingClientRect();
       const drawn = element.getBoundingClientRect();
       return {
         left: drawn.left - viewport.left,
@@ -218,7 +249,7 @@ test("tiles Walk around's floor, and lights the tile underfoot", async ({ page }
   await openWalkAround(page, { camera: false });
   const tilesBox = () =>
     page.locator("[data-floor-area]").evaluateAll((elements) => {
-      const viewport = document.querySelector("#game-viewport")!.getBoundingClientRect();
+      const viewport = document.querySelector(".floorScene .sceneBox")!.getBoundingClientRect();
       const boxes = elements.map((element) => element.getBoundingClientRect());
       return {
         count: boxes.length,
@@ -231,14 +262,16 @@ test("tiles Walk around's floor, and lights the tile underfoot", async ({ page }
       };
     });
   // Every tile is placed within a frame or two of appearing
-  await expect.poll(async () => (await tilesBox()).top).toBeGreaterThan(0);
+  const back = floorToViewport(VIEW, { x: 0, y: 0 }).y;
+  await expect
+    .poll(async () => Math.abs((await tilesBox()).top / (await tilesBox()).height - back))
+    .toBeLessThan(0.005);
   const tiles = await tilesBox();
-  // Together the tiles cover the floor: its front corners are the viewport's bottom corners
+  // Together the tiles cover the floor: its front corners are the scene box's bottom corners
   expect(tiles.count).toBe(16);
   expect(tiles.left).toBeCloseTo(0, 0);
   expect(tiles.right).toBeCloseTo(tiles.width, 0);
   expect(tiles.bottom).toBeCloseTo(tiles.height, 0);
-  expect(tiles.top / tiles.height).toBeCloseTo(floorToViewport(VIEW, { x: 0, y: 0 }).y, 2);
 
   await page.locator("#depth-tile").hover({ force: true });
   await expect(page.locator("#depth-tile")).toHaveClass(/demo-tile-lit/);
@@ -252,7 +285,7 @@ test("lays Nanny's Magic Trifle's river on the floor, in the overview and in a s
   await page.locator("#magic-trifle-title").click({ force: true });
   await expect(page.locator("#stages-link-stage-1")).toBeVisible();
 
-  // The floor's front corners are the viewport's bottom corners, and its back edge is level, part way down
+  // The floor's front corners are the scene box's bottom corners, and its back edge is level, part way down
   const river = await surfaceBox(page, "#overview-background-container .floor-background");
   expect(river.left).toBeCloseTo(0, 0);
   expect(river.right).toBeCloseTo(river.width, 0);

@@ -1,6 +1,6 @@
 import { useEffect, type RefObject } from "react";
 import { isDefined } from "../../../util/ObjectUtils";
-import { placeOnFloor, viewportToFloor, type FloorView, type Rect } from "../../camera/FloorGeometry";
+import { placeOnFloor, sceneBoxOf, viewportToFloor, type FloorView, type Rect } from "../../camera/FloorGeometry";
 import type { FloorArea } from "../../camera/FloorSurfaces";
 import { sceneRoots } from "../logic/TemplateUtils";
 import type { CameraRuleTarget } from "./PlayerInteractionHook";
@@ -107,12 +107,52 @@ const placeItem = (element: HTMLElement, view: FloorView, viewport: HTMLElement)
 
   const at = offsetIn(element, viewport);
   const anchor = { x: at.x + originX, y: at.y + originY };
-  const floor = { x: item.x ?? (100 * anchor.x) / size.width, y: item.y };
+  const scene = sceneBoxOf(view);
+  const across = (anchor.x / size.width - scene.left) / (scene.right - scene.left);
+  const floor = { x: item.x ?? 100 * across, y: item.y };
   const { translate, scale } = placeOnFloor(view, size, anchor, { floor, height: item.height });
   setStyle(element, "translate", `${translate.x.toFixed(1)}px ${translate.y.toFixed(1)}px`);
   setStyle(element, "scale", scale.toFixed(4));
   if (element.closest(`.${DEPTH_STACK_CLASS}`)) setStyle(element, "z-index", String(depthZIndex(item.y)));
   return true;
+};
+
+/** The properties placement sets on an element, if it places it at all. */
+const placedPropertiesOf = (element: Element): string[] => {
+  if (element.matches(SURFACE_SELECTOR)) return SURFACE_PROPERTIES;
+  return element.matches(FLOOR_ITEM_SELECTOR) ? PLACEMENT_PROPERTIES : [];
+};
+
+/**
+ * Callbacks for a template re-render's morph that keep each floor item and surface where placement put it. A morph
+ * rewrites the `style` attribute, which would drop an item back to where the layout put it until the next frame, long
+ * enough for the pointer to enter or leave it. Only an element that is placed the same way after the morph keeps them,
+ * as a morph can reuse an element for a different one, and a property the template now sets itself is left as it says.
+ */
+export const keepPlacement = () => {
+  const kept = new Map<Node, { properties: string[]; values: string[] }>();
+  return {
+    /**
+     * Notes an element's placement before the morph rewrites it.
+     * @returns true, so the morph goes ahead
+     */
+    beforeNodeMorphed: (node: Node): boolean => {
+      if (node instanceof HTMLElement) {
+        const properties = placedPropertiesOf(node);
+        kept.set(node, { properties, values: properties.map((property) => node.style.getPropertyValue(property)) });
+      }
+      return true;
+    },
+    /** Puts an element's placement back, if it is still placed the same way. */
+    afterNodeMorphed: (node: Node) => {
+      const before = kept.get(node);
+      if (!(node instanceof HTMLElement) || before?.properties !== placedPropertiesOf(node)) return;
+      before.properties.forEach((property, index) => {
+        const value = before.values[index];
+        if (value !== "" && node.style.getPropertyValue(property) === "") node.style.setProperty(property, value);
+      });
+    },
+  };
 };
 
 /** Places every floor item and draws every surface, remembering which so their styles can be taken off again. */

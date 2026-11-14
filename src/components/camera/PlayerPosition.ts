@@ -19,6 +19,15 @@ export const UNSORTED_PLAYER_Z_INDEX = DEPTH_Z_INDEX_BASE;
 /** The class of the element that players and foreground items are sorted within. */
 export const DEPTH_STACK_CLASS = "depthStack";
 
+/** The class of a viewport showing a 2.5D scene. */
+export const SCENE_25D_CLASS = "floorScene";
+
+/** The class of each layer's grid of challenges, which is the scene box in a 2.5D scene. */
+export const SCENE_BOX_CLASS = "sceneBox";
+
+/** Selects the scene box an element is in, in a 2.5D scene. */
+export const SCENE_BOX_SELECTOR = `.${SCENE_25D_CLASS} .${SCENE_BOX_CLASS}`;
+
 /** How a player's position follows their silhouette. */
 export interface PositionSettings {
   /** How long the lowest ground point is kept, in milliseconds, so a jump doesn't look like moving away. */

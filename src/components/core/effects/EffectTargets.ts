@@ -1,6 +1,7 @@
 import type { SceneScope } from "../../../entities/state/GameState";
 import { sceneRoots } from "../logic/TemplateUtils";
 import { FLOOR_ITEM_SELECTOR } from "../layout/FloorPlacement";
+import { SCENE_BOX_SELECTOR } from "../../camera/PlayerPosition";
 
 /** A point on screen, or a distance on it. */
 export interface ScreenPoint {
@@ -73,8 +74,9 @@ export const warnIfTrappingFloorItems = (elements: Element[], selector: string |
   console.warn(`${where}: "${selector}" holds floor items, which can't sort among players during this effect`);
 };
 
-/** The whole scene an element is in. */
-const viewportOf = (element: Element): Element | null => element.closest(".gameViewport");
+/** The whole scene an element is in: a 2.5D scene's box, or else the viewport. */
+const viewportOf = (element: Element): Element | null =>
+  element.closest(SCENE_BOX_SELECTOR) ?? element.closest(".gameViewport");
 
 /** The whole scene's bounds around an element, or the element's own if it isn't in one (eg. in tests). */
 export const sceneRect = (element: Element): DOMRect => (viewportOf(element) ?? element).getBoundingClientRect();

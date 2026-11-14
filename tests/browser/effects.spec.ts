@@ -57,10 +57,12 @@ const openWith = async (page: Page, rules: GameRule[], change: (game: GameData) 
   await expect(page.locator("#bridge")).toBeVisible();
 };
 
-/** Where an element's centre is, as a % of the scene's width and height. */
+/** Where an element's centre is, as a % of the scene's width and height: a 2.5D scene's box, else the viewport. */
 const centreOf = (page: Page, selector: string) =>
   page.locator(selector).evaluate((element) => {
-    const scene = document.querySelector("#game-viewport")!.getBoundingClientRect();
+    const scene = (
+      element.closest(".floorScene .sceneBox") ?? document.querySelector("#game-viewport")!
+    ).getBoundingClientRect();
     const { left, top, width, height } = element.getBoundingClientRect();
     return {
       left: ((left + width / 2 - scene.left) / scene.width) * 100,
@@ -71,7 +73,9 @@ const centreOf = (page: Page, selector: string) =>
 /** Whether an element's top is below the scene. */
 const isOffScreen = (page: Page, selector: string) =>
   page.locator(selector).evaluate((element) => {
-    const scene = document.querySelector("#game-viewport")!.getBoundingClientRect();
+    const scene = (
+      element.closest(".floorScene .sceneBox") ?? document.querySelector("#game-viewport")!
+    ).getBoundingClientRect();
     return element.getBoundingClientRect().top >= scene.bottom - 1;
   });
 

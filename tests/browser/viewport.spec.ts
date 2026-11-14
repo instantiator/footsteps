@@ -80,7 +80,7 @@ test("eases the game viewport into the camera's shape, then fades the overview i
   }
 });
 
-test("fits a 2.5D scene's viewport to the floor, cropping the camera, and its elements still take clicks", async ({
+test("fits a 2.5D scene's box to the floor, cropping the camera, and its elements still take clicks", async ({
   page,
 }) => {
   await openCameraGame(page, { sceneMode: "2.5D" });
@@ -94,7 +94,7 @@ test("fits a 2.5D scene's viewport to the floor, cropping the camera, and its el
       const { width, height } = document.querySelector(selector)!.getBoundingClientRect();
       return { width, height };
     };
-    return { viewport: size("#game-viewport"), stack: size("#character-canvas-container") };
+    return { viewport: size(".floorScene .sceneBox"), stack: size("#character-canvas-container") };
   });
   // The default floor spans 8–92% of the fake camera's 4:3 image, down to 90%
   expect(measured.viewport.width / measured.viewport.height).toBeCloseTo((0.84 * 4) / 3 / 0.9, 2);

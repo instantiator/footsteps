@@ -58,15 +58,15 @@ const returnToStart = async (page: Page) => {
   await expect(page.locator("#door-base")).toBeVisible({ timeout: 6000 });
 };
 
-/** Moves the mouse just inside the game viewport's top left, on the sky; the viewport may not fill the page. */
-const moveToViewportCorner = async (page: Page) => {
-  const viewport = (await page.locator("#game-viewport").boundingBox())!;
+/** Moves the mouse just inside the scene box's top left, on the sky. */
+const moveToSceneCorner = async (page: Page) => {
+  const viewport = (await page.locator(".floorScene .sceneBox").first().boundingBox())!;
   await page.mouse.move(viewport.x + 5, viewport.y + 5);
 };
 
-/** Moves the mouse just inside the floor's front right corner, which is the viewport's bottom right: on the lava. */
+/** Moves the mouse just inside the floor's front right corner, which is the scene box's bottom right: on the lava. */
 const moveToFrontCorner = async (page: Page) => {
-  const viewport = (await page.locator("#game-viewport").boundingBox())!;
+  const viewport = (await page.locator(".floorScene .sceneBox").first().boundingBox())!;
   await page.mouse.move(viewport.x + viewport.width - 5, viewport.y + viewport.height - 5);
 };
 
@@ -75,7 +75,7 @@ const moveToFrontCorner = async (page: Page) => {
  * they first find under them counts as already there, so the mouse moves off and back on.
  */
 const standOnFirstStoneOf = (page: Page) => async () => {
-  await moveToViewportCorner(page);
+  await moveToSceneCorner(page);
   await moveTo(page, "#reset-start");
 };
 

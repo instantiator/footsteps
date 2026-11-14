@@ -22,11 +22,13 @@ import {
   cropPlacement,
   DEFAULT_CORNERS,
   floorCrop,
+  sceneBox,
+  sceneBoxOf,
   viewportToFloor,
   type Corners,
   type FloorView,
 } from "../../camera/FloorGeometry";
-import { DEPTH_STACK_CLASS, UNSORTED_PLAYER_Z_INDEX } from "../../camera/PlayerPosition";
+import { DEPTH_STACK_CLASS, SCENE_25D_CLASS, UNSORTED_PLAYER_Z_INDEX } from "../../camera/PlayerPosition";
 import type { PlayerFrame } from "../../camera/PlayerMonitor";
 import { cameraModeOf, type ResolvedAvatarMode, type ResolvedCameraMode } from "../logic/AvatarModeUtils";
 import "./GameLayersLayout.css";
@@ -100,21 +102,14 @@ const aspectRatioOf = (element: Element | null | undefined): number | undefined 
 };
 
 /**
- * The shape the viewport takes: a 2.5D scene's is the floor's crop of the camera image (the default floor on a
- * typical webcam's image without a camera); a 2D scene's is the camera's, or the container's without one.
+ * The shape the viewport takes: a 2.5D scene fills the screen, with its scene box inside; a 2D scene's is the camera's,
+ * or the container's without one.
  */
 const viewportShapeOf = (
   sceneMode: GameSceneMode,
   camera: ResolvedCameraMode,
   cameraAspectRatio: number | undefined,
-  calibrated: Corners,
-): ViewportTarget => {
-  if (sceneMode === "2.5D") {
-    if (!camera.enabled) return cropAspect(floorCrop(DEFAULT_CORNERS), ASSUMED_IMAGE_ASPECT);
-    return isDefined(cameraAspectRatio) ? cropAspect(floorCrop(calibrated), cameraAspectRatio) : undefined;
-  }
-  return camera.enabled ? cameraAspectRatio : "fill";
-};
+): ViewportTarget => (sceneMode === "2D" && camera.enabled ? cameraAspectRatio : "fill");
 
 /** Props for the groups of scene layers. */
 interface SceneLayersProps {
@@ -183,15 +178,50 @@ interface SceneProps {
   floor: FloorView | undefined;
 }
 
-/** The shown scene's floor: the calibrated one with a camera, else the default one; none in a 2D scene. */
-const useShownFloor = (scene: SceneTransition<GameLayers>, calibrated: Corners, mirror: boolean) => {
+/** The given element's width-to-height ratio, kept up to date as it resizes. */
+const useAspectRatioOf = (ref: RefObject<HTMLElement | null>): number | undefined => {
+  const [aspect, setAspect] = useState<number>();
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const measure = () => setAspect(aspectRatioOf(element));
+    measure();
+    // ponytail: jsdom has no ResizeObserver; tests measure once
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref]);
+  return aspect;
+};
+
+/** What a 2.5D scene's floor is fitted between: the screen, and the camera image's shape. */
+interface FloorShapes {
+  /** The viewport, which fills the screen in a 2.5D scene. */
+  screen: RefObject<HTMLElement | null>;
+  /** The camera image's, once the camera reports it. */
+  camera: number | undefined;
+}
+
+/**
+ * The shown scene's floor: the calibrated one with a camera, else the default one; none in a 2D scene. Its crop fills
+ * the scene box, which takes the crop's shape within the screen.
+ */
+const useShownFloor = (
+  scene: SceneTransition<GameLayers>,
+  { corners: calibrated, mirror }: { corners: Corners; mirror: boolean },
+  shapes: FloorShapes,
+) => {
   const is25D = scene.sceneMode === "2.5D";
   const corners = scene.camera.enabled ? calibrated : DEFAULT_CORNERS;
-  return useMemo(
-    (): FloorView | undefined =>
-      is25D ? { corners, crop: cropPlacement(floorCrop(corners), mirror), mirrored: mirror } : undefined,
-    [is25D, corners, mirror],
-  );
+  const imageAspect = (scene.camera.enabled ? shapes.camera : undefined) ?? ASSUMED_IMAGE_ASPECT;
+  const screen = useAspectRatioOf(shapes.screen);
+  return useMemo((): FloorView | undefined => {
+    if (!is25D) return undefined;
+    const crop = floorCrop(corners);
+    const box = isDefined(screen) ? sceneBox(screen, cropAspect(crop, imageAspect)) : undefined;
+    return { corners, crop: cropPlacement(crop, mirror, box), mirrored: mirror };
+  }, [is25D, corners, mirror, screen, imageAspect]);
 };
 
 /** The players and the challenge foreground, in one stacking context so they can be sorted among each other by depth. */
@@ -406,10 +436,28 @@ const cameraLayersOf = (
   show: !scene.camera.enabled || isDefined(cameraAspectRatio),
 });
 
-/** The viewport's target shape, and the shape a reshape starts from while one is running. */
-const viewportStyle = (scene: SceneTransition<GameLayers>): CSSProperties => {
+/** The viewport's classes: reshaping while it changes shape, and marked as showing a 2.5D scene. */
+const viewportClasses = (scene: SceneTransition<GameLayers>, floor: FloorView | undefined): string =>
+  ["gameViewport", scene.reshaping && "gameViewportReshaping", floor && SCENE_25D_CLASS].filter(Boolean).join(" ");
+
+/** Where a 2.5D scene's box sits in the viewport, for the template bodies to take. */
+const sceneBoxStyle = (floor: FloorView | undefined): Record<string, string> => {
+  if (!floor) return {};
+  const { left, top, right, bottom } = sceneBoxOf(floor);
+  const percent = (fraction: number) => `${(fraction * 100).toFixed(3)}%`;
+  return {
+    "--scene-left": percent(left),
+    "--scene-top": percent(top),
+    "--scene-width": percent(right - left),
+    "--scene-height": percent(bottom - top),
+  };
+};
+
+/** The viewport's target shape, the shape a reshape starts from while one is running, and a 2.5D scene's box. */
+const viewportStyle = (scene: SceneTransition<GameLayers>, floor: FloorView | undefined): CSSProperties => {
   const style: CSSProperties & { "--reshape-from"?: string; "--reshape-to"?: string } = {
     aspectRatio: scene.viewport.ratio,
+    ...sceneBoxStyle(floor),
   };
   if (scene.reshaping && isDefined(scene.viewport.from) && isDefined(scene.viewport.ratio)) {
     style["--reshape-from"] = `${scene.viewport.from} / 1`;
@@ -446,7 +494,7 @@ export default function GameLayersLayout({
     sceneKey,
     camera,
     sceneMode,
-    shape: viewportShapeOf(sceneMode, camera, cameraAspectRatio, corners),
+    shape: viewportShapeOf(sceneMode, camera, cameraAspectRatio),
     reducedMotion,
     measureViewport,
     measureContainer,
@@ -454,7 +502,7 @@ export default function GameLayersLayout({
   // Keep the media until the shown camera goes too, so a camera-off reshape keeps its preview alive
   const media = useCameraMedia(camera.enabled || scene.camera.enabled);
 
-  const floor = useShownFloor(scene, corners, mirror);
+  const floor = useShownFloor(scene, { corners, mirror }, { screen: viewportRef, camera: cameraAspectRatio });
   const { canvasRef, debugPlayers, onPlayers } = usePlayerInput(viewportRef, {
     scene,
     mirror,
@@ -469,8 +517,8 @@ export default function GameLayersLayout({
     <div
       ref={viewportRef}
       id="game-viewport"
-      className={`gameViewport${scene.reshaping ? " gameViewportReshaping" : ""}`}
-      style={viewportStyle(scene)}
+      className={viewportClasses(scene, floor)}
+      style={viewportStyle(scene, floor)}
     >
       <Scene
         scene={scene}

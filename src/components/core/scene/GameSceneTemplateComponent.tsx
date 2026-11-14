@@ -19,6 +19,7 @@ import type { GameSceneTemplateSourceData as GameSceneTemplateData } from "../..
 import useContentCache from "../../../providers/GameContentCacheHook";
 import { isDefined } from "../../../util/ObjectUtils";
 import { summariseTemplateSource, type SceneDomEvent } from "../logic/TemplateUtils";
+import { keepPlacement } from "../layout/FloorPlacement";
 
 /** Props for {@link GameSceneTemplateComponent}. */
 interface GameSceneTemplateProps {
@@ -149,7 +150,10 @@ export default function GameSceneTemplateComponent({
   // Patches the template's DOM in place, matching elements by id, so CSS transitions run between renders
   useLayoutEffect(() => {
     if (!isDefined(html) || !bodyRef.current) return;
-    Idiomorph.morph(bodyRef.current, DOMPurify.sanitize(html, SANITIZE_OPTIONS), { morphStyle: "innerHTML" });
+    Idiomorph.morph(bodyRef.current, DOMPurify.sanitize(html, SANITIZE_OPTIONS), {
+      morphStyle: "innerHTML",
+      callbacks: keepPlacement(),
+    });
   }, [html, bodyKey]);
 
   useEffect(() => {

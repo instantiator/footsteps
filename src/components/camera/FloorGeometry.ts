@@ -234,6 +234,13 @@ export interface FloorView {
   mirrored: boolean;
 }
 
+/** The scene box a view's crop fills, in screen fractions: the inverse of {@link cropPlacement}. */
+export const sceneBoxOf = ({ corners, crop, mirrored }: FloorView): Rect => {
+  const { left, right, bottom } = floorCrop(corners);
+  const x = crop.left + (mirrored ? 1 - right : left) * crop.width;
+  return { left: x, top: crop.top, right: x + (right - left) * crop.width, bottom: crop.top + bottom * crop.height };
+};
+
 /** Flips a floor x to or from the screen's side when mirrored; flipping is its own inverse. */
 const onScreenSide = ({ x, y }: Point, mirrored: boolean): Point => ({ x: mirrored ? 100 - x : x, y });
 

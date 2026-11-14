@@ -29,8 +29,8 @@
   {{#if game.players.[1]}}
   <div id="depth-ring" class="demo-depth-ring" data-floor-x="{{game.players.[1].x}}" data-floor-y="{{game.players.[1].y}}" data-floor-anchor="center"></div>
   {{/if}}
-  <p class="demo-depth-hint">Walk around the posts. Stand beside the near one, or on the tile left of it, to light them.</p>
-  <p id="depth-position" class="demo-depth-position">
+  <p class="noClicks demo-depth-hint">Walk around the posts. Stand beside the near one, or on the tile left of it, to light them.</p>
+  <p id="depth-position" class="noClicks demo-depth-position">
     {{#if game.players.[1]}}Player 1 is at {{game.players.[1].x}} across, {{game.players.[1].y}} forward{{else}}Nobody is on the floor yet{{/if}}
   </p>
   <button id="depth-done" type="button" class="demo-depth-done">Done</button>

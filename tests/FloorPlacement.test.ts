@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { cropPlacement, DEFAULT_CORNERS, floorCrop, viewportToFloor } from "../src/components/camera/FloorGeometry";
-import { floorRegionOf, isInRegion, isUnreachable, parseFloorItem } from "../src/components/core/layout/FloorPlacement";
+import { Idiomorph } from "idiomorph";
+import {
+  floorRegionOf,
+  isInRegion,
+  isUnreachable,
+  keepPlacement,
+  parseFloorItem,
+} from "../src/components/core/layout/FloorPlacement";
 import type { Point } from "../src/vision/VisionTypes";
 
 /** An element with the given attributes. */
@@ -92,5 +99,37 @@ describe("isUnreachable", () => {
   it("is false for a rectangle on the floor, or straddling its edge", () => {
     expect(isUnreachable({ left: 0.4, top: 0.8, right: 0.6, bottom: 0.9 }, toFloor)).toBe(false);
     expect(isUnreachable({ left: 0, top: 0.62, right: 0.3, bottom: 0.7 }, toFloor)).toBe(false);
+  });
+});
+
+describe("keepPlacement", () => {
+  it("keeps floor items and surfaces where placement put them through a re-render, and nothing else", () => {
+    const body = document.createElement("div");
+    body.innerHTML = `<div id="post" data-floor-y="50" style="color: red; translate: 10px 20px; scale: 0.5"></div>
+      <div id="tile" data-floor-area="0 0 50 50" style="transform: matrix(1, 0, 0, 1, 5, 5)"></div>
+      <div id="wall" class="rear-wall" style="z-index: -3"></div>
+      <div id="plain" style="translate: 1px 1px"></div>`;
+    Idiomorph.morph(
+      body,
+      `<div id="post" data-floor-y="50" style="color: blue"></div>
+      <div id="tile" data-floor-area="0 0 50 50"></div>
+      <div id="wall" class="rear-wall" style="z-index: 4"></div>
+      <div id="plain"></div>`,
+      { morphStyle: "innerHTML", callbacks: keepPlacement() },
+    );
+    const style = (id: string) => body.querySelector<HTMLElement>(`#${id}`)!.style;
+    expect(style("post").color).toBe("blue");
+    expect(style("post").translate).toBe("10px 20px");
+    expect(style("post").scale).toBe("0.5");
+    expect(style("tile").transform).toBe("matrix(1, 0, 0, 1, 5, 5)");
+    expect(style("wall").zIndex).toBe("4");
+    expect(style("plain").translate).toBe("");
+  });
+
+  it("doesn't carry a surface's placement onto an element the morph reuses for something else", () => {
+    const body = document.createElement("div");
+    body.innerHTML = `<div class="floor-background" style="transform: matrix(1, 0, 0, 1, 5, 5); z-index: -3"></div>`;
+    Idiomorph.morph(body, `<div id="start">Start</div>`, { morphStyle: "innerHTML", callbacks: keepPlacement() });
+    expect(body.querySelector<HTMLElement>("#start")!.getAttribute("style")).toBeNull();
   });
 });

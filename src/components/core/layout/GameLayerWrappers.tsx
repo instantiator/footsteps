@@ -9,6 +9,7 @@ import type { PlayerFrame } from "../../camera/PlayerMonitor";
 import HeadsUpDisplay from "../HeadsUpDisplay";
 import type { LayerHint } from "../scene/GameSceneComponent";
 import GameChallengeGrid from "./GameChallengeGrid";
+import { SCENE_BOX_CLASS } from "../../camera/PlayerPosition";
 
 /**
  * Props shared by the layer wrappers. Each wrapper uses only the subset it needs, and
@@ -70,7 +71,7 @@ export const GameLayerWrapper = ({ nodes, style, zIndex, layer, layerHint }: Lay
     style={{ ...style, zIndex: zIndex }}
   >
     {isDefined(nodes) && (
-      <GameChallengeGrid layer={layer!} layerHint={layerHint!} className="innerStyle noClicks">
+      <GameChallengeGrid layer={layer!} layerHint={layerHint!} className={`innerStyle noClicks ${SCENE_BOX_CLASS}`}>
         {nodes.map((node, index) => (
           <Fragment key={`${layer!}-${layerHint!}-grid-content-${index}`}>{node}</Fragment>
         ))}

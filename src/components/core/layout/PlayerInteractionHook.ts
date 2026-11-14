@@ -19,6 +19,7 @@ import {
 } from "../../camera/PlayerMonitor";
 import { centreOnScreen } from "../effects/EffectTargets";
 import { floorRegionOf, isInRegion } from "./FloorPlacement";
+import { SCENE_BOX_SELECTOR } from "../../camera/PlayerPosition";
 import type { FloorArea } from "../../camera/FloorSurfaces";
 import { sceneRoots } from "../logic/TemplateUtils";
 
@@ -127,7 +128,10 @@ export const targetsInReach = (
   return reachable;
 };
 
-/** How being near an element reads in mask pixels. Its centre may be off the mask, unlike its bounds. */
+/**
+ * How being near an element reads in mask pixels. Its centre may be off the mask, unlike its bounds. `within` is a
+ * share of the scene's width: a 2.5D scene's box, or else the viewport.
+ */
 const nearTarget = (
   element: Element,
   within: number,
@@ -135,7 +139,8 @@ const nearTarget = (
   { mask, mirrored }: { mask: PlayerFrame; mirrored: boolean },
 ): MonitorTarget["near"] => {
   const canvasRect = canvas.getBoundingClientRect();
-  const sceneWidth = canvas.closest(".gameViewport")?.getBoundingClientRect().width ?? canvasRect.width;
+  const scene = element.closest(SCENE_BOX_SELECTOR) ?? canvas.closest(".gameViewport");
+  const sceneWidth = scene?.getBoundingClientRect().width ?? canvasRect.width;
   return {
     centre: maskPointForScreenPoint(centreOnScreen(element), canvasRect, mask, mirrored),
     within: ((within / 100) * sceneWidth * mask.width) / canvasRect.width,

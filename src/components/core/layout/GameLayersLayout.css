@@ -98,6 +98,29 @@
 }
 
 /*
+ * A 2.5D scene fills the screen. Each layer's grid of challenges is the scene box, where the floor's crop shows and the
+ * author's HTML, %, cqw and cqh are laid out; surfaces reach past it to the screen's edges.
+ */
+.floorScene .sceneBox {
+  position: absolute;
+  left: var(--scene-left);
+  top: var(--scene-top);
+  width: var(--scene-width);
+  height: var(--scene-height);
+  container-type: size;
+  overflow: visible;
+}
+
+/* Each challenge's column clips its scene, except in a 2.5D scene, whose surfaces reach the screen's edges */
+.challengeColumn {
+  overflow: hidden;
+}
+
+.floorScene .challengeColumn {
+  overflow: visible;
+}
+
+/*
  * Surfaces paint beneath the rest of their template. Each template outside the depth stack is its own stacking
  * context, so they still paint above the scene's own background style.
  */
