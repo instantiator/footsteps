@@ -22,21 +22,20 @@ const onGo = (actions: GameRule["do"]): GameRule => ({ on: { interact: ["click"]
 /** The rule that fires when `#again` is clicked. */
 const onAgain = (actions: GameRule["do"]): GameRule => ({ on: { interact: ["click"], target: "#again" }, do: actions });
 
-/** Serves the example game with one stage's challenge playing these rules, then opens it. */
-const openWith = async (page: Page, rules: GameRule[], change: (game: GameData) => void = () => {}) => {
+/**
+ * Serves the example game with one stage's challenge playing these rules, then opens it: without the camera, so each
+ * scene plays in its fallback mode, unless the test asks for it.
+ */
+const openWith = async (
+  page: Page,
+  rules: GameRule[],
+  change: (game: GameData) => void = () => {},
+  { camera = false } = {},
+) => {
   await page.route("**/game-repository.json", async (route) => {
     const response = await route.fetch();
     const repository = (await response.json()) as GameRepository;
     const game = repository.games["rules-demo"];
-    for (const scene of [
-      ...game.scenes,
-      // The effects stage acts on players, so it can't load without the camera
-      ...game.stages
-        .filter((stage) => stage.id !== "effects")
-        .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
-    ]) {
-      if (scene.avatar?.mode === "camera") scene.avatar = { mode: "mouse" };
-    }
     const stage = game.stages.find(({ id }) => id === "balloons")!;
     const [scene] = stage.challenges[0].scenes;
     delete scene.resetScene;
@@ -51,7 +50,7 @@ const openWith = async (page: Page, rules: GameRule[], change: (game: GameData) 
     await route.fulfill({ response, json: repository });
   });
   await seedCalibration(page); // the demo has a 2.5D stage, which a granted camera must calibrate for
-  await page.goto("/game/rules-demo/play");
+  await page.goto(`/game/rules-demo/play${camera ? "" : "?noCamera=true"}`);
   await page.locator("#demo-title").click();
   await page.locator("#stage-link-balloons").click();
   await expect(page.locator("#bridge")).toBeVisible();
@@ -464,11 +463,15 @@ test.describe("on players, with a fake camera", () => {
     test.setTimeout(MODEL_TIMEOUT + 60_000);
     await page.context().grantPermissions(["camera"]);
     await installFakeCamera(page, peoplePhotoUrls());
-    await openWith(page, rules, (game) => {
-      const [scene] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].scenes;
-      scene.avatar = { mode: "camera", fallback: "mouse" };
-      scene.component.foregroundTemplate = { sourceType: "embedded", content: `${ITEMS}${PLAYERS}` };
-    });
+    await openWith(
+      page,
+      rules,
+      (game) => {
+        const [scene] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].scenes;
+        scene.component.foregroundTemplate = { sourceType: "embedded", content: `${ITEMS}${PLAYERS}` };
+      },
+      { camera: true },
+    );
     await page.evaluate(() => window.__fakeCamera.setImage("photo:jumping-side-on"));
     await expect(page.locator(".player-1")).toHaveCount(1, { timeout: MODEL_TIMEOUT });
     await expect(page.locator("#players")).toHaveText("1/0/0");

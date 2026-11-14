@@ -1,0 +1,8 @@
+<div class="ndc-screen">
+  <p class="ndc-message">{{#if state.done}}All lit. Well done!{{else}}Click each lamp to light it. Click a lit one to put it out.{{/if}}</p>
+  <div class="ndc-lamps">
+    <div id="lamp-1" class="ndc-lamp{{#if state.lamp1}} lit{{/if}}" role="button" tabindex="0" aria-label="Lamp 1"></div>
+    <div id="lamp-2" class="ndc-lamp{{#if state.lamp2}} lit{{/if}}" role="button" tabindex="0" aria-label="Lamp 2"></div>
+    <div id="lamp-3" class="ndc-lamp{{#if state.lamp3}} lit{{/if}}" role="button" tabindex="0" aria-label="Lamp 3"></div>
+  </div>
+</div>

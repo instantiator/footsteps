@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { saveCalibration } from "../src/components/camera/FloorCalibration";
 import { DEFAULT_CORNERS } from "../src/components/camera/FloorGeometry";
@@ -46,6 +46,9 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+/** Stands in for the game, showing the query it was started with. */
+const Playing = () => <p>Playing the game{useLocation().search}</p>;
+
 /** Renders the landing page with a play route that stands in for the game. */
 const renderLanding = (game: GameData = simpleGameData) =>
   render(
@@ -54,13 +57,47 @@ const renderLanding = (game: GameData = simpleGameData) =>
         <GameDataProvider id={GAME_ID}>
           <Routes>
             <Route path="/game/:id" element={<GameLanding />} />
-            <Route path="/game/:id/play" element={<p>Playing the game</p>} />
+            <Route path="/game/:id/play" element={<Playing />} />
             <Route path="/game/:id/calibrate" element={<p>Calibrating</p>} />
           </Routes>
         </GameDataProvider>
       </GameRepositoryProvider>
     </MemoryRouter>,
   );
+
+describe("GameLanding without the camera", () => {
+  it("offers to play without the camera only for a game that can do without it", () => {
+    renderLanding(cameraGame).unmount();
+    expect(screen.queryByRole("checkbox", { name: "Play without the camera" })).toBeNull();
+    renderLanding(simpleGameData).unmount();
+    expect(screen.queryByRole("checkbox", { name: "Play without the camera" })).toBeNull();
+    renderLanding(optionalCameraGame);
+    expect(screen.getByRole("checkbox", { name: "Play without the camera" })).not.toBeChecked();
+  });
+
+  it("starts without needing the floor calibrated, and tells the game to leave the camera off", async () => {
+    permissionQuery("granted");
+    getUserMedia();
+    renderLanding(floorGame);
+    expect(await screen.findByText("Calibrate the floor before you start.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Play without the camera" }));
+    expect(screen.queryByText("Calibrate the floor before you start.")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "New game" }));
+    expect(screen.getByText("Playing the game?noCamera=true")).toBeInTheDocument();
+  });
+});
+
+describe("GameLanding badges", () => {
+  it("shows the game's badges, with how far a saved game has got", () => {
+    saveGameState(GAME_ID, partlyComplete());
+    renderLanding(optionalCameraGame);
+    const badges = screen.getByRole("list", { name: "About this game" });
+    expect(badges).toHaveTextContent("2D");
+    expect(badges).toHaveTextContent("Camera optional");
+    expect(badges).toHaveTextContent("% complete");
+  });
+});
 
 describe("GameLanding for a game with 2.5D scenes", () => {
   it("holds New game back until the camera's floor is calibrated, and links to calibrate it", async () => {

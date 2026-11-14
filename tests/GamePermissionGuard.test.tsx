@@ -6,6 +6,7 @@ import { saveCalibration } from "../src/components/camera/FloorCalibration";
 import { DEFAULT_CORNERS } from "../src/components/camera/FloorGeometry";
 import { requestGamePermission } from "../src/components/core/logic/GamePermissionUtils";
 import type { GameData } from "../src/entities/data/GameData";
+import AppConfigProvider from "../src/providers/AppConfigProvider";
 import { GameDataProvider } from "../src/providers/GameDataProvider";
 import GameRepositoryProvider from "../src/providers/GameRepositoryProvider";
 import { simpleGameData } from "./data/SampleGameState";
@@ -29,24 +30,26 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const renderGuard = (game: GameData = cameraGame) =>
+const renderGuard = (game: GameData = cameraGame, query = "") =>
   render(
-    <MemoryRouter initialEntries={[`/game/${GAME_ID}/play`]}>
-      <GameRepositoryProvider source={{ type: "RawRepository", repository: { games: { [GAME_ID]: game } } }}>
-        <GameDataProvider id={GAME_ID}>
-          <Routes>
-            <Route
-              path="/game/:id/play"
-              element={
-                <GamePermissionGuard>
-                  <p>Playing the game</p>
-                </GamePermissionGuard>
-              }
-            />
-            <Route path="/game/:id" element={<p>Landing page</p>} />
-          </Routes>
-        </GameDataProvider>
-      </GameRepositoryProvider>
+    <MemoryRouter initialEntries={[`/game/${GAME_ID}/play${query}`]}>
+      <AppConfigProvider>
+        <GameRepositoryProvider source={{ type: "RawRepository", repository: { games: { [GAME_ID]: game } } }}>
+          <GameDataProvider id={GAME_ID}>
+            <Routes>
+              <Route
+                path="/game/:id/play"
+                element={
+                  <GamePermissionGuard>
+                    <p>Playing the game</p>
+                  </GamePermissionGuard>
+                }
+              />
+              <Route path="/game/:id" element={<p>Landing page</p>} />
+            </Routes>
+          </GameDataProvider>
+        </GameRepositoryProvider>
+      </AppConfigProvider>
     </MemoryRouter>,
   );
 
@@ -66,6 +69,12 @@ describe("GamePermissionGuard for a game with 2.5D scenes", () => {
     permissionQuery("granted");
     saveCalibration("default", DEFAULT_CORNERS);
     renderGuard(floorGame({ mode: "camera" }));
+    expect(await screen.findByText("Playing the game")).toBeInTheDocument();
+  });
+
+  it("lets a player who chose to play without the camera in, uncalibrated, even with it granted", async () => {
+    permissionQuery("granted");
+    renderGuard(floorGame({ mode: "camera", fallback: "mouse" }), "?noCamera=true");
     expect(await screen.findByText("Playing the game")).toBeInTheDocument();
   });
 

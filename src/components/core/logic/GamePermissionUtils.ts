@@ -18,8 +18,8 @@ const PERMISSION_LABELS: Record<GamePermissionId, string> = {
 /** The human-readable name of a permission. */
 export const gamePermissionLabel = (id: GamePermissionId): string => PERMISSION_LABELS[id];
 
-/** A scene's own settings, which its reset scenes share. */
-type SceneSettings = Pick<GameSceneBase, "avatar" | "scene" | "resetScene">;
+/** A scene's own settings, which its reset scenes share, and its component. */
+type SceneSettings = Pick<GameSceneBase, "avatar" | "scene" | "resetScene" | "component">;
 
 /** A scene, then each reset scene nested in it. */
 const withResets = (scene: SceneSettings): SceneSettings[] => [
@@ -28,7 +28,7 @@ const withResets = (scene: SceneSettings): SceneSettings[] => [
 ];
 
 /** Every scene in the game, with the reset scenes nested in them. */
-const allScenes = (gameData: GameData): SceneSettings[] =>
+export const allScenes = (gameData: GameData): SceneSettings[] =>
   [
     ...gameData.scenes,
     ...gameData.stages.flatMap((stage) => stage.scenes ?? []),
@@ -39,7 +39,7 @@ const allScenes = (gameData: GameData): SceneSettings[] =>
  * The most the game asks of the camera, anywhere: `"required"` if any setting is `camera` with no fallback, else
  * `"enabled"` if any is `camera`, else `false`.
  */
-const gameCameraRequirement = (gameData: GameData): "required" | "enabled" | false => {
+export const gameCameraRequirement = (gameData: GameData): "required" | "enabled" | false => {
   const cameras = [gameData.modules?.avatar, ...allScenes(gameData).map(({ avatar }) => avatar)].filter(
     (settings) => settings?.mode === "camera",
   );

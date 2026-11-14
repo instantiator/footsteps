@@ -9,7 +9,7 @@ import {
   type PlayerEffectRun,
 } from "../src/components/core/effects/PlayerEffects";
 import { NO_EVENT } from "../src/components/core/logic/GameRuleUtils";
-import type { GameEffect } from "../src/entities/data/scenes/GameEffectData";
+import type { ResolvedEffect } from "../src/entities/data/scenes/GameEffectData";
 import { noKeyPoints, type VisionFrame, type VisionPerson } from "../src/vision/VisionTypes";
 
 const WIDTH = 100;
@@ -135,7 +135,7 @@ describe("PlayerEffects", () => {
     onEnd: vi.fn(),
     ...extra,
   });
-  const fall: GameEffect = { effect: "player-fall", durationMs: 700, easing: "ease-in" };
+  const fall: ResolvedEffect = { effect: "player-fall", durationMs: 700, easing: "ease-in" };
 
   beforeEach(() => {
     animate.mockClear();
@@ -220,7 +220,7 @@ describe("PlayerEffects", () => {
   });
 
   describe("player-spin-away", () => {
-    const spin: GameEffect = {
+    const spin: ResolvedEffect = {
       effect: "player-spin-away",
       angle: { min: 0, max: 0 },
       zoom: 0.5,
@@ -306,7 +306,7 @@ describe("PlayerEffects", () => {
   });
 
   describe("player-restore", () => {
-    const restore: GameEffect = { effect: "player-restore", players: "all", durationMs: 300 };
+    const restore: ResolvedEffect = { effect: "player-restore", players: "all", durationMs: 300 };
 
     it("returns a removed player, and fades them in", () => {
       const { players, ids, effects } = withPlayers(1);

@@ -1,6 +1,6 @@
 import _ from "lodash";
 import type { GameId } from "../../../entities/data/GameData";
-import type { GameEffect } from "../../../entities/data/scenes/GameEffectData";
+import type { GameEffect, ResolvedEffect } from "../../../entities/data/scenes/GameEffectData";
 import type {
   GameAction,
   GameFeedbackAction,
@@ -8,6 +8,7 @@ import type {
   GameInteraction,
   GameInteractTrigger,
   PointerInteraction,
+  GameTime,
   GameTrigger,
 } from "../../../entities/data/scenes/GameSceneData";
 import { toGameSnapshot } from "../../../entities/state/GameSnapshot";
@@ -109,6 +110,34 @@ const evaluate = ({ env, scene, event }: RuleRun, state: GameState, source: stri
   return evaluateGameExpression(env.expressions.get(source) ?? compileGameExpression(source, where), context, where);
 };
 
+/**
+ * A time worked out now: a number, or an expression over the rule's scene.
+ * @returns milliseconds, or undefined (after logging, naming `where`) if it isn't a finite number of at least 0
+ */
+const timeOf = (run: RuleRun, state: GameState, value: GameTime, where: string): number | undefined => {
+  const ms = typeof value === "string" ? evaluate(run, state, value, where) : value;
+  if (typeof ms === "number" && Number.isFinite(ms) && ms >= 0) return ms;
+  console.error(`${where}: a duration must be a number of milliseconds, not ${String(ms)}`);
+  return undefined;
+};
+
+/** An effect with its times worked out now; undefined (after logging) if one isn't a usable number. */
+const resolveEffect = (
+  run: RuleRun,
+  state: GameState,
+  effect: GameEffect,
+  where: string,
+): ResolvedEffect | undefined => {
+  const { durationMs, cycleMs } = { durationMs: undefined, cycleMs: undefined, ...effect };
+  const duration =
+    durationMs === undefined || durationMs === "indefinite"
+      ? durationMs
+      : timeOf(run, state, durationMs, `${where}.durationMs`);
+  const cycle = cycleMs === undefined ? undefined : timeOf(run, state, cycleMs, `${where}.cycleMs`);
+  if ((isDefined(durationMs) && !isDefined(duration)) || (isDefined(cycleMs) && !isDefined(cycle))) return undefined;
+  return { ...effect, durationMs: duration, cycleMs: cycle };
+};
+
 /** Sets the scene's state keys to their expressions' values, all worked out from the state before the action. */
 const applySet = (run: RuleRun, state: GameState, values: Record<string, string>, where: string): GameState => {
   const updates = _.omitBy(
@@ -129,10 +158,15 @@ const applyAnswer = (state: GameState, { stageId, challengeId }: ShownScene, ans
   return completeChallenge(state, stageId!, challengeId!);
 };
 
-/** Adds a sound or reward to those waiting for the game to play them. */
-const queueEffect = ({ scene, event }: RuleRun, state: GameState, effect: GameFeedbackAction): GameState => {
+/** Adds a sound or reward to those waiting for the game to play them, after its delay. */
+const queueEffect = (
+  { scene, event }: RuleRun,
+  state: GameState,
+  effect: GameFeedbackAction,
+  delayMs: number,
+): GameState => {
   const { effects, nextEffectId } = state.session;
-  const queued = { id: nextEffectId, effect, scope: scene.scope, event };
+  const queued = { id: nextEffectId, effect, delayMs, scope: scene.scope, event };
   return { ...state, session: { ...state.session, effects: [...effects, queued], nextEffectId: nextEffectId + 1 } };
 };
 
@@ -142,19 +176,17 @@ const finishReset = (state: GameState, scope: SceneScope): GameState =>
     ? state
     : { ...state, session: { ...state.session, finishedResets: [...state.session.finishedResets, scope] } };
 
-/** Adds an effect to those waiting for the game to play them. */
-const queueVisualEffect = (
-  { scene, event }: RuleRun,
-  state: GameState,
-  effect: GameEffect,
-  where: string,
-): GameState => {
+/** Adds an effect, with its times worked out now, to those waiting for the game to play them. */
+const queueVisualEffect = (run: RuleRun, state: GameState, effect: GameEffect, where: string): GameState => {
+  const resolved = resolveEffect(run, state, effect, where);
+  if (!isDefined(resolved)) return state;
+  const { scene, event } = run;
   const { visualEffects, nextEffectId } = state.session;
   const queued = {
     id: nextEffectId,
     scope: scene.scope,
     run: sceneRun(state, scene.scope),
-    effect,
+    effect: resolved,
     event,
     where,
   };
@@ -164,17 +196,14 @@ const queueVisualEffect = (
   };
 };
 
-/** Puts an action off, for the game to run after its `delayMs`. */
-const delayAction = ({ scene, event }: RuleRun, state: GameState, action: GameAction, where: string): GameState => {
+/** Puts an action off, for the game to run after its delay. */
+const delayAction = (
+  { scene, event }: RuleRun,
+  state: GameState,
+  waiting: Pick<DelayedAction, "action" | "where" | "delayMs">,
+): GameState => {
   const { delayedActions, nextEffectId } = state.session;
-  const delayed = {
-    id: nextEffectId,
-    scope: scene.scope,
-    run: sceneRun(state, scene.scope),
-    action,
-    event,
-    where,
-  };
+  const delayed = { id: nextEffectId, scope: scene.scope, run: sceneRun(state, scene.scope), event, ...waiting };
   return {
     ...state,
     session: { ...state.session, delayedActions: [...delayedActions, delayed], nextEffectId: nextEffectId + 1 },
@@ -184,7 +213,7 @@ const delayAction = ({ scene, event }: RuleRun, state: GameState, action: GameAc
 /** Applies one action, to the game or (for finishing a reset scene, and sounds and rewards) to the session. */
 const applyAction = (run: RuleRun, state: GameState, action: GameAction, where: string): GameState => {
   if ("finishReset" in action) return finishReset(state, run.scene.scope);
-  if ("sound" in action || "reward" in action) return queueEffect(run, state, action);
+  if ("sound" in action || "reward" in action) return queueEffect(run, state, action, 0);
   if ("effect" in action) return queueVisualEffect(run, state, action, where);
   return applyGameAction(run, state, action, where);
 };
@@ -217,8 +246,12 @@ const applyRule = (run: RuleRun, state: GameState, ruleIndex: number): GameState
   if (isDefined(rule.if) && !evaluate(run, state, rule.if, `${where}.if`)) return state;
   return rule.do.reduce((current, action, a) => {
     const actionWhere = `${where}.do[${a}]`;
-    const delayed = (action.delayMs ?? 0) > 0 && !("sound" in action || "reward" in action);
-    return (delayed ? delayAction : applyAction)(run, current, action, actionWhere);
+    const delayMs = timeOf(run, current, action.delayMs ?? 0, `${actionWhere}.delayMs`);
+    if (!isDefined(delayMs)) return current;
+    // Sounds and rewards wait in the game's own queue, so they carry on if their scene closes
+    if ("sound" in action || "reward" in action) return queueEffect(run, current, action, delayMs);
+    if (delayMs > 0) return delayAction(run, current, { action, where: actionWhere, delayMs });
+    return applyAction(run, current, action, actionWhere);
   }, state);
 };
 
@@ -274,7 +307,7 @@ export interface WhenRound {
 
 /**
  * Evaluates the `when` rules of the shown scenes against one state, then fires those that changed from false to
- * true, in order. A rule seen for the first time (its scene has just been shown) only records its value.
+ * true, in order. A rule seen for the first time (its scene has just been shown or reset) fires if it is already true.
  * @param fire false to only record values
  */
 const whenRound = (env: RuleEnvironment, state: GameState, edges: WhenEdges, fire = true): WhenRound => {
@@ -288,7 +321,7 @@ const whenRound = (env: RuleEnvironment, state: GameState, edges: WhenEdges, fir
       const value = Boolean(evaluate({ env, scene, event: NO_EVENT }, state, rule.on.when, where));
       // A rule held for a while is fired by the game's timers, once it has stayed true
       const immediate = !isDefined(rule.on.forMs);
-      if (fire && immediate && edges.get(key) === false && value) firing.push([scene, ruleIndex, key]);
+      if (fire && immediate && edges.get(key) !== true && value) firing.push([scene, ruleIndex, key]);
       values.set(key, value);
     });
   }
@@ -372,11 +405,7 @@ export const ruleDelay = (
 ): number | undefined => {
   const trigger = scene.component.rules![ruleIndex].on;
   const value = "every" in trigger ? trigger.every : "after" in trigger ? trigger.after : undefined;
-  const where = `${scene.scope} › rules[${ruleIndex}].on`;
-  const ms = typeof value === "string" ? evaluate({ env, scene, event: NO_EVENT }, state, value, where) : value;
-  if (typeof ms !== "number" || !Number.isFinite(ms) || ms < 0) {
-    console.error(`${where}: a duration must be a number of milliseconds, not ${String(ms)}`);
-    return undefined;
-  }
-  return "every" in trigger ? Math.max(ms, MIN_EVERY_MS) : ms;
+  if (!isDefined(value)) return undefined;
+  const ms = timeOf({ env, scene, event: NO_EVENT }, state, value, `${scene.scope} › rules[${ruleIndex}].on`);
+  return isDefined(ms) && "every" in trigger ? Math.max(ms, MIN_EVERY_MS) : ms;
 };

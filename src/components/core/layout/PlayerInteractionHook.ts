@@ -215,7 +215,7 @@ const updateMonitors = (
   }
 };
 
-/** Rearms the monitors for a scene that has reset: whoever is already over its elements must move into them again. */
+/** Rearms the monitors for a scene that has reset: whoever is already over its elements enters them again. */
 function useRearmOnReset(
   cameraRules: CameraRuleTarget[] | undefined,
   monitorsRef: RefObject<Map<number, PlayerMonitor>>,
@@ -286,7 +286,7 @@ export function usePlayerInteractions(
     jumpRef.current = jumpSettingsOf(config);
   }, [stableFrames, config]);
 
-  // Interactions pause during scene changes; fresh monitors afterwards ignore whatever already holds
+  // Interactions pause during scene changes; fresh monitors afterwards enter whatever already holds
   useEffect(() => {
     enabledRef.current = enabled;
     if (!enabled) monitorsRef.current.clear();

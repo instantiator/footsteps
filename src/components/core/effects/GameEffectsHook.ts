@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from "react";
-import type { GameEffect } from "../../../entities/data/scenes/GameEffectData";
+import type { ResolvedEffect } from "../../../entities/data/scenes/GameEffectData";
 import type { SceneScope, GameState, QueuedVisualEffect } from "../../../entities/state/GameState";
 import { useQueueDrain } from "../QueueDrainHook";
 import { targetsPlayers } from "../logic/GameEffectCompile";
@@ -29,14 +29,14 @@ interface GameEffectsContext {
 }
 
 /** The effect's target, for those that have one. */
-const targetOf = (effect: GameEffect): string | undefined => ("target" in effect ? effect.target : undefined);
+const targetOf = (effect: ResolvedEffect): string | undefined => ("target" in effect ? effect.target : undefined);
 
 /** Whether a run of a scene has reached the screen. The game's state moves on before the scene does. */
 const isOnScreen = (scope: string, run: number): boolean =>
   sceneRoots(scope).some((root) => root.querySelector(`:scope > .templateBody[data-scene-run="${run}"]`) !== null);
 
 /** Starts an effect on its elements. */
-const runEffect = (effects: ItemEffects, effect: GameEffect, elements: Element[], run: EffectRun): void => {
+const runEffect = (effects: ItemEffects, effect: ResolvedEffect, elements: Element[], run: EffectRun): void => {
   if (effect.effect === "quake") effects.quake(effect, elements, run);
   else if (effect.effect === "item-fall") effects.fall(effect, elements, run);
   else if (effect.effect === "item-move") effects.move(effect, elements, run);
@@ -55,7 +55,7 @@ const endPick =
   };
 
 /** Whether an effect acts on players, chosen with `players`, rather than on elements. */
-const isOnPlayers = (effect: GameEffect): boolean =>
+const isOnPlayers = (effect: ResolvedEffect): boolean =>
   effect.effect.startsWith("player-") || (effect.effect === "stop" && effect.players !== undefined);
 
 /** A scene and which run of it is showing, by its place on screen: reset scenes share their parent's. */

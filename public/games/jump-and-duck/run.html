@@ -1,0 +1,9 @@
+<div class="jd-screen jd-run">
+  <div class="jd-ground"></div>
+  <p id="jd-status" class="jd-status">Score {{state.score}} of {{data.target}} · Lives {{state.lives}}</p>
+  {{#if state.over}}<p id="jd-message" class="jd-message">{{#if state.won}}You made it!{{else}}Ouch! Back to the start…{{/if}}</p>{{/if}}
+  <div id="low-1" class="jd-obstacle jd-snowball"></div>
+  <div id="low-2" class="jd-obstacle jd-snowball"></div>
+  <div id="high-1" class="jd-obstacle jd-bat"></div>
+  <div id="high-2" class="jd-obstacle jd-bat"></div>
+</div>

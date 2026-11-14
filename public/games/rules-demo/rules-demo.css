@@ -159,17 +159,18 @@
   }
 }
 
-.demo-lava-floor {
+.demo-pits-floor {
   background: #3d405b;
 }
 
-/* Pools laid on the floor; the box is drawn onto each pool's rectangle */
-.lava {
+/* Holes in the floor; the box is drawn onto each pit's rectangle */
+.pit {
   border-radius: 40%;
-  background: radial-gradient(#ffd166, #ef476f);
+  background: radial-gradient(#000 40%, #1b1b2f 75%, #594a3c);
+  box-shadow: inset 0 1cqh 2cqh #000;
 }
 
-.lava-start {
+.demo-start {
   position: absolute;
   left: 4cqw;
   bottom: 4cqh;
@@ -184,7 +185,7 @@
 }
 
 /* Stands at the back of the floor, where the engine places it */
-.lava-door {
+.pits-door {
   position: absolute;
   left: 0;
   top: 0;
@@ -195,7 +196,7 @@
   pointer-events: none;
 }
 /* Only the door's base counts as reaching it */
-.lava-door-base {
+.pits-door-base {
   position: absolute;
   inset: 80% 0 0;
   background: #c68642;
@@ -207,7 +208,7 @@
 .demo-reset-backdrop {
   background: #1b1b2f;
 }
-.lava-start-bright {
+.demo-start-bright {
   background: #ffd166;
   box-shadow: 0 0 3cqh #ffd166;
 }
@@ -329,7 +330,7 @@
   background: #99615b;
 }
 
-/* Stone hop: everything is lava but three stones, jumped between by dragging; its glow repeats every 40 floor units */
+/* The floor is lava: everything is lava but three stones, jumped between by dragging; its glow repeats every 40 floor units */
 .stones-lava {
   background: radial-gradient(circle, #ffd166, #ef476f 60%, #9d0208) 0 0 / calc(var(--floor-unit) * 40) repeat;
 }
@@ -370,8 +371,9 @@
 .demo-tile-dark {
   background: rgba(29, 53, 87, 0.45);
 }
-.demo-tile-lit {
-  background: rgba(255, 209, 102, 0.9);
+/* A spring in the floor: coils seen from above */
+.demo-spring {
+  background: repeating-radial-gradient(circle, #adb5bd 0 6%, #495057 6% 10%);
 }
 .demo-wall {
   aspect-ratio: 100 / 12;

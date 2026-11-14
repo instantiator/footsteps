@@ -4,7 +4,7 @@ import { GameOverviewPurposeSequence } from "../../components/core/logic/GameCli
 import { isDefined } from "../../util/ObjectUtils";
 import type { RuleEvent } from "../../components/core/logic/GameRuleUtils";
 import type { GameAction, GameFeedbackAction, GameOverviewScenePurpose } from "../data/scenes/GameSceneData";
-import type { GameEffect } from "../data/scenes/GameEffectData";
+import type { ResolvedEffect } from "../data/scenes/GameEffectData";
 import type { GameData } from "../data/GameData";
 import type { GameChallengeId } from "../data/GameChallengeData";
 import type { GameStageId } from "../data/GameStageData";
@@ -22,6 +22,8 @@ export interface QueuedEffect {
   id: number;
   /** What to play. */
   effect: GameFeedbackAction;
+  /** How long to wait before playing it, worked out when its rule fired. */
+  delayMs: number;
   /** The scene whose rule asked for it. */
   scope: SceneScope;
   /** The event its rule fired with. */
@@ -38,6 +40,8 @@ export interface DelayedAction {
   run: number;
   /** What to do. */
   action: GameAction;
+  /** How long to wait, worked out when its rule fired. */
+  delayMs: number;
   /** What expressions see as `event`: the event the rule fired with. */
   event: RuleEvent;
   /** Where the action is in the game's rules, for error messages. */
@@ -52,8 +56,8 @@ export interface QueuedVisualEffect {
   scope: SceneScope;
   /** Which run of the scene the rule fired in: it is dropped if the scene has moved on from it. */
   run: number;
-  /** What to play. */
-  effect: GameEffect;
+  /** What to play, its times worked out. */
+  effect: ResolvedEffect;
   /** The event its rule fired with. */
   event: RuleEvent;
   /** Where the action is in the game's rules, for error messages. */

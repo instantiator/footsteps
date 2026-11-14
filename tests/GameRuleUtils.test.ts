@@ -56,6 +56,17 @@ describe("compileGameRules", () => {
     ["when", { on: { when: "1 +" }, do: [] }, `${OVERVIEW}.on.when`],
     ["every", { on: { every: "(" }, do: [] }, `${OVERVIEW}.on`],
     ["set", { on: { start: true }, do: [{ set: { a: "1 +" } }] }, `${OVERVIEW}.do[0].set.a`],
+    ["delayMs", { on: { start: true }, do: [{ set: { a: "1" }, delayMs: "1 +" }] }, `${OVERVIEW}.do[0].delayMs`],
+    [
+      "durationMs",
+      { on: { start: true }, do: [{ effect: "quake", target: "#a", durationMs: "(" }] },
+      `${OVERVIEW}.do[0].durationMs`,
+    ],
+    [
+      "cycleMs",
+      { on: { start: true }, do: [{ effect: "quake", target: "#a", durationMs: "indefinite", cycleMs: ")" }] },
+      `${OVERVIEW}.do[0].cycleMs`,
+    ],
   ] satisfies [string, GameRule, string][])("names the path of a bad %s expression", (_, rule, where) => {
     expect(() => compileGameRules(gameWithRules([rule]))).toThrow(`${where}: `);
   });
@@ -66,6 +77,21 @@ describe("compileGameRules", () => {
   ] satisfies [string, GameAction][])("rejects a start rule that does %s, as it would loop", (_, action) => {
     expect(() => compileGameRules(gameWithRules([], [{ on: { start: true }, do: [action] }]))).toThrow(
       `${CHALLENGE}.do[0]: a start rule can't reset`,
+    );
+  });
+
+  it("compiles expression timings and random() at load, leaving their values to play", () => {
+    const rule: GameRule = {
+      on: { when: "random(0, 1) > 0.5" },
+      do: [
+        { set: { n: "1" }, delayMs: "random(500, 2500)" },
+        { effect: "item-move", target: "#a", end: { left: 0, top: 0 }, durationMs: "max(800, 3000 - state.n)" },
+        { effect: "quake", target: "#a", durationMs: "indefinite", cycleMs: "state.n" },
+      ],
+    };
+    const expressions = compileGameRules(gameWithRules([rule]));
+    expect([...expressions.keys()]).toEqual(
+      expect.arrayContaining(["random(0, 1) > 0.5", "random(500, 2500)", "max(800, 3000 - state.n)", "state.n"]),
     );
   });
 
@@ -241,6 +267,39 @@ describe("rule engine", () => {
       ]);
     });
 
+    it("works out an expression delay from the state when the rule fires", () => {
+      const rule: GameRule = {
+        on: { start: true },
+        do: [
+          { set: { done: "true" }, delayMs: "state.n * 100" },
+          { sound: "pop", delayMs: "state.n * 10" },
+        ],
+      };
+      const state = fireAll(playing([rule], { n: 3 }));
+      expect(state.session.delayedActions).toEqual([expect.objectContaining({ delayMs: 300 })]);
+      expect(state.session.effects).toEqual([expect.objectContaining({ delayMs: 30 })]);
+    });
+
+    it("applies an action at once when its expression delay works out to 0", () => {
+      const state = fireAll(
+        playing([{ on: { start: true }, do: [{ set: { done: "true" }, delayMs: "state.n" }] }], { n: 0 }),
+      );
+      expect(state.session.delayedActions).toEqual([]);
+      expect(stateOf(state)).toMatchObject({ done: true });
+    });
+
+    it("logs and skips an action whose delay isn't a usable number, carrying on with the rest", () => {
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      const rule: GameRule = {
+        on: { start: true },
+        do: [{ set: { a: "1" }, delayMs: "0 - 5" }, { set: { b: "1" } }],
+      };
+      const state = fireAll(playing([rule]));
+      expect(stateOf(state)).toEqual({ b: 1 });
+      expect(state.session.delayedActions).toEqual([]);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining("rules[0].do[0].delayMs"));
+    });
+
     it("leaves sounds and rewards to the game's own queue", () => {
       const state = fireAll(playing([{ on: { start: true }, do: [{ sound: "pop", delayMs: 500 }] }]));
       expect(state.session.delayedActions).toEqual([]);
@@ -338,13 +397,61 @@ describe("rule engine", () => {
       };
       const state = fireAll(fireAll(playing([rule])));
       expect(state.session.effects).toEqual([
-        { id: 1, effect: { sound: "pop" }, scope: SCOPE, event: NO_EVENT },
-        { id: 2, effect: { reward: { animation: "stars" }, delayMs: 500 }, scope: SCOPE, event: NO_EVENT },
-        { id: 3, effect: { sound: "pop" }, scope: SCOPE, event: NO_EVENT },
-        { id: 4, effect: { reward: { animation: "stars" }, delayMs: 500 }, scope: SCOPE, event: NO_EVENT },
+        { id: 1, effect: { sound: "pop" }, delayMs: 0, scope: SCOPE, event: NO_EVENT },
+        {
+          id: 2,
+          effect: { reward: { animation: "stars" }, delayMs: 500 },
+          delayMs: 500,
+          scope: SCOPE,
+          event: NO_EVENT,
+        },
+        { id: 3, effect: { sound: "pop" }, delayMs: 0, scope: SCOPE, event: NO_EVENT },
+        {
+          id: 4,
+          effect: { reward: { animation: "stars" }, delayMs: 500 },
+          delayMs: 500,
+          scope: SCOPE,
+          event: NO_EVENT,
+        },
       ]);
       expect(state.session.nextEffectId).toBe(5);
       expect(state.sceneStates).toEqual({});
+    });
+
+    it("queues an effect with its duration and loop worked out as numbers from the state", () => {
+      const rule: GameRule = {
+        on: { start: true },
+        do: [
+          { effect: "item-move", target: "#a", end: { left: 0, top: 0 }, durationMs: "5000 - state.score * 100" },
+          { effect: "quake", target: "#a", durationMs: "indefinite", cycleMs: "state.score" },
+        ],
+      };
+      const state = fireAll(playing([rule], { score: 10 }));
+      expect(state.session.visualEffects.map(({ effect }) => effect)).toEqual([
+        expect.objectContaining({ effect: "item-move", durationMs: 4000 }),
+        expect.objectContaining({ effect: "quake", durationMs: "indefinite", cycleMs: 10 }),
+      ]);
+    });
+
+    it("logs and skips an effect whose duration isn't a usable number", () => {
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      const rule: GameRule = { on: { start: true }, do: [{ effect: "item-fall", target: "#a", durationMs: '"soon"' }] };
+      expect(fireAll(playing([rule])).session.visualEffects).toEqual([]);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining("rules[0].do[0].durationMs"));
+    });
+
+    it("sends Jump and duck's obstacles at random times, at a speed worked out from the score", () => {
+      vi.spyOn(Math, "random").mockReturnValue(0);
+      const [run] = (localRepository as GameRepository).games["jump-and-duck"].stages[0].challenges[0].scenes;
+      const state = playing(run.component.rules!, { ...run.component.initialState, score: 10 });
+      Object.assign(state.stages[0].stage.challenges[0].scenes[0].component, { data: run.component.data });
+      const started = fireRules(env, state, SCOPE, (trigger) => ("start" in trigger ? NO_EVENT : undefined));
+
+      // At the lowest random draw, the first goes at once and the rest at the bottom of their ranges
+      expect(started.session.visualEffects.map(({ effect }) => effect)).toEqual([
+        expect.objectContaining({ target: "#low-1", durationMs: 3500 }),
+      ]);
+      expect(started.session.delayedActions.map(({ delayMs }) => delayMs)).toEqual([1500, 3000, 4500]);
     });
 
     it("sets every key from the state before the action", () => {
@@ -451,14 +558,22 @@ describe("rule engine", () => {
       sceneStates: { ...state.sceneStates, [SCOPE]: { ...(stateOf(state) ?? { fired: 0 }), n } },
     });
 
-    it("records a when rule seen for the first time without firing it, even if true", () => {
+    it("fires a when rule seen for the first time if it is already true, once", () => {
       const state = withN(counting(), 5);
       const result = runWhens(env, state, new Map());
-      expect(result.state).toBe(state);
+      expect(stateOf(result.state)).toMatchObject({ fired: 1 });
       expect(result.edges.get(whenKey(state, SCOPE, 0))).toBe(true);
+      expect(runWhens(env, result.state, result.edges).state).toBe(result.state);
     });
 
-    it("begins again after a reset: already true only records, and a later change fires", () => {
+    it("records a when rule seen for the first time without firing it while false", () => {
+      const state = counting();
+      const result = runWhens(env, state, new Map());
+      expect(result.state).toBe(state);
+      expect(result.edges.get(whenKey(state, SCOPE, 0))).toBe(false);
+    });
+
+    it("begins again after a reset: a rule already true then fires again", () => {
       const rules: GameRule[] = [
         { on: { when: "state.n >= 5" }, do: [{ set: { fired: "true" } }] },
         { on: { start: true }, do: [{ resetState: true }] },
@@ -470,8 +585,9 @@ describe("rule engine", () => {
         () => undefined,
       );
       const { edges } = runWhens(env, before, new Map());
+      expect(stateOf(before)).not.toHaveProperty("fired");
       const reset = fireRules(env, before, SCOPE, (trigger) => ("start" in trigger ? NO_EVENT : undefined));
-      expect(runWhens(env, reset, edges).state).toBe(reset);
+      expect(stateOf(runWhens(env, reset, edges).state)).toMatchObject({ fired: true });
     });
 
     it("fires on false to true, not while it stays true, and again after it has been false", () => {
@@ -485,13 +601,13 @@ describe("rule engine", () => {
       expect(stateOf(state)).toMatchObject({ fired: 2 });
     });
 
-    it("forgets a hidden scene's rules, so they record afresh when it is shown again", () => {
+    it("forgets a hidden scene's rules, so one already true fires when it is shown again", () => {
       const { edges } = runWhens(env, counting(), new Map());
       const hidden = { ...counting(), current: { ...counting().current, stageId: null } };
       const { edges: afterHide } = runWhens(env, hidden, edges);
       expect(afterHide.has(`${SCOPE}#0`)).toBe(false);
       const { state } = runWhens(env, withN(counting(), 2), afterHide);
-      expect(stateOf(state)).toMatchObject({ fired: 0 });
+      expect(stateOf(state)).toMatchObject({ fired: 1 });
     });
 
     it("follows a chain of when rules that set state", () => {
@@ -510,10 +626,7 @@ describe("rule engine", () => {
         { on: { when: "state.x" }, do: [{ set: { x: "false", n: "state.n + 1" } }] },
         { on: { when: "not state.x" }, do: [{ set: { x: "true", n: "state.n + 1" } }] },
       ];
-      const { edges } = runWhens(env, playing(rules, { x: false, n: 0 }), new Map());
-      const kicked = { ...playing(rules), sceneStates: { [SCOPE]: { x: true, n: 0 } } };
-
-      const looped = runWhens(env, kicked, edges);
+      const looped = runWhens(env, playing(rules, { x: false, n: 0 }), new Map());
       expect(error).toHaveBeenCalledWith(expect.stringContaining(`${SCOPE}#`));
       expect(stateOf(looped.state)).toMatchObject({ n: MAX_WHEN_CHAIN });
 

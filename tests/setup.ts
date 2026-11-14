@@ -8,6 +8,8 @@ beforeEach(() => {
   setReducedMotion(true);
   localStorage.clear();
   sessionStorage.clear();
+  // Forgets where the pointer was, so a scene in one test doesn't enter what a pointer in another rested on
+  window.dispatchEvent(new MouseEvent("pointerout", { relatedTarget: null }));
 });
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());

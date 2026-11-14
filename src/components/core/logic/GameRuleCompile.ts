@@ -220,6 +220,15 @@ const actionProblem = (action: GameAction, target: SceneToCompile, gameData: Gam
   return "effect" in action ? effectProblem(action) : undefined;
 };
 
+/** An action's times that are expressions: its delay, and an effect's duration and loop length. */
+const timeSources = (action: GameAction, where: string): [string, string][] => {
+  const times = { durationMs: undefined, cycleMs: undefined, ...action };
+  return (["delayMs", "durationMs", "cycleMs"] as const).flatMap((key): [string, string][] => {
+    const value = times[key];
+    return typeof value === "string" && value !== "indefinite" ? [[value, `${where}.${key}`]] : [];
+  });
+};
+
 /** The expressions an action needs, checking it is allowed on this scene. */
 const actionSources = (
   action: GameAction,
@@ -228,14 +237,19 @@ const actionSources = (
   gameData: GameData,
 ): [string, string][] => {
   const problem =
-    (action.delayMs ?? 0) < 0
+    typeof action.delayMs === "number" && action.delayMs < 0
       ? "delayMs can't be negative"
       : (actionProblem(action, target, gameData) ??
         (target.modes.has("camera") ? undefined : needsPlayerProblem(action)));
   if (isDefined(problem)) throw new Error(`${where}: ${problem}`);
-  if ("set" in action) return Object.entries(action.set).map(([key, source]) => [source, `${where}.set.${key}`]);
-  if ("answer" in action) return [[action.answer, `${where}.answer`]];
-  return [];
+  const times = timeSources(action, where);
+  if ("set" in action)
+    return [
+      ...times,
+      ...Object.entries(action.set).map(([key, source]): [string, string] => [source, `${where}.set.${key}`]),
+    ];
+  if ("answer" in action) return [...times, [action.answer, `${where}.answer`]];
+  return times;
 };
 
 /**

@@ -37,8 +37,8 @@ const inline = (source: GameSceneTemplateSourceData | undefined): GameSceneTempl
     : source;
 
 /**
- * The committed rules demo, with its templates inlined and the camera itself off (other modes stay): jsdom has no
- * camera, and the rules the camera can fire don't depend on it.
+ * The committed rules demo, with its templates inlined. It is played with the camera off (`noCamera`), as jsdom has
+ * none: scenes use their fallback modes, and the rules the camera can fire don't depend on it.
  */
 const demo = (change: (game: GameData) => void): GameData => {
   const game: GameData = structuredClone((localRepository as GameRepository).games["rules-demo"]);
@@ -47,18 +47,17 @@ const demo = (change: (game: GameData) => void): GameData => {
     scene.resetScene ? [scene, ...withResets(scene.resetScene)] : [scene];
   for (const scene of [
     ...game.scenes,
-    // The effects stage acts on players, so it can't load without the camera
-    ...game.stages
-      .filter((stage) => stage.id !== "effects")
-      .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
+    ...game.stages.flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
   ].flatMap(withResets)) {
-    if (scene.avatar?.mode === "camera") scene.avatar = { mode: "mouse" };
     if (scene.component.type !== "template") continue;
     scene.component.foregroundTemplate = inline(scene.component.foregroundTemplate);
     scene.component.backgroundTemplate = inline(scene.component.backgroundTemplate);
   }
   return game;
 };
+
+/** Plays without the camera, which jsdom doesn't have. */
+const NO_CAMERA = { noCamera: true };
 
 /** Lets the given time pass, for the demo's countdowns and waits. */
 const wait = (ms: number) =>
@@ -100,7 +99,7 @@ afterEach(() => vi.useRealTimers());
 describe("rules demo, played by camera", () => {
   const start = async (change: (game: GameData) => void = () => {}) => {
     render(
-      <GameProviders repository={{ games: { "rules-demo": demo(change) } }} gameId="rules-demo">
+      <GameProviders repository={{ games: { "rules-demo": demo(change) } }} gameId="rules-demo" config={NO_CAMERA}>
         <Game />
       </GameProviders>,
     );
@@ -171,7 +170,7 @@ describe("rules demo, played by camera", () => {
     expect($("#balloon-1 .balloon-body")).toHaveAttribute("data-colour", "1");
   });
 
-  /** Stands on the lava's reset scene's start, and waits for the floor to be revealed. */
+  /** Stands on the pits' reset scene's start, and waits for the floor to be revealed. */
   const returnToStart = async () => {
     await waitFor(() => expect($("#reset-message")).toHaveTextContent("Return to the start"));
     touch("#reset-start", "foot-enter");
@@ -180,16 +179,39 @@ describe("rules demo, played by camera", () => {
     await waitFor(() => expect($("#door-base")).not.toBeNull());
   };
 
-  it("asks for the start before the lava, sends the player back on lava, and completes at the door's base", async () => {
+  it("asks for the start before the pits, sends a player who falls in back after the fall, and completes at the door", async () => {
     await start();
-    touch("#stage-link-lava", "hand-enter");
+    touch("#stage-link-pits", "hand-enter");
     await returnToStart();
 
-    touch("#lava-2", "foot-enter");
+    touch("#pit-2", "foot-enter");
+    touch("#door-base", "foot-enter"); // too late: they are already falling
+    await wait(500);
+    expect($("#pit-2")).not.toBeNull();
+    await wait(1000);
     await returnToStart();
     touch("#door-base", "foot-enter");
 
-    await waitFor(() => expect($("#stage-link-lava")).toHaveClass("completed"));
+    await waitFor(() => expect($("#stage-link-pits")).toHaveClass("completed"));
+  });
+
+  it("asks for the start before walking around, and springs the player back to it from the spring", async () => {
+    await start();
+    touch("#stage-link-depth", "hand-enter");
+    await waitFor(() => expect($("[aria-label='Next page']")).not.toBeNull());
+    fireEvent.click($("[aria-label='Next page']")!);
+    await waitFor(() => expect($("input[name='answer']")).not.toBeNull());
+    fireEvent.change($("input[name='answer']")!, { target: { value: "walk" } });
+    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Stand on the start"));
+    touch("#reset-start", "foot-enter");
+    await waitFor(() => expect($("#depth-spring")).not.toBeNull());
+
+    touch("#depth-spring", "foot-enter");
+    // The reset waits for the spin (1.5 s), well past this, however busy the machine
+    await wait(500);
+    expect($("#reset-start")).toBeNull();
+    await wait(1000);
+    await waitFor(() => expect($("#reset-start")).not.toBeNull(), { timeout: 3000 });
   });
 
   it("asks the camera not to count covered elements, as clicks don't", async () => {
@@ -198,7 +220,7 @@ describe("rules demo, played by camera", () => {
   });
 });
 
-describe("rules demo, stone hop, played by mouse-feet", () => {
+describe("rules demo, the floor is lava, played by mouse-feet", () => {
   /** Where each element sits on the screen, as jsdom has no layout; later ones are drawn on top. */
   const BOXES: [string, [number, number, number, number]][] = [
     ["lava", [0, 0, 1000, 1000]],
@@ -265,7 +287,7 @@ describe("rules demo, stone hop, played by mouse-feet", () => {
 
   /** Puts the mouse on the reset scene's first stone, and waits for the stones. */
   const returnToStart = async () => {
-    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Put your mouse on the first stone"));
+    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Stand on the first stone"), { timeout: 3000 });
     await wait(3000); // the scene change, during which the feet wait
     pointer.move(LAVA);
     pointer.move(STONE_1);
@@ -276,21 +298,21 @@ describe("rules demo, stone hop, played by mouse-feet", () => {
   /** Opens stone hop, and stands on the first stone. */
   const openStage = async () => {
     render(
-      <GameProviders repository={{ games: { "rules-demo": demo(() => {}) } }} gameId="rules-demo">
+      <GameProviders repository={{ games: { "rules-demo": demo(() => {}) } }} gameId="rules-demo" config={NO_CAMERA}>
         <Game />
       </GameProviders>,
     );
     await waitFor(() => expect($("#demo-title")).not.toBeNull());
     fireEvent.click($("#demo-title")!);
-    await waitFor(() => expect($("#stage-link-stone-hop")).not.toBeNull());
-    fireEvent.click($("#stage-link-stone-hop")!);
+    await waitFor(() => expect($("#stage-link-floor-is-lava")).not.toBeNull());
+    fireEvent.click($("#stage-link-floor-is-lava")!);
     await returnToStart();
-    expect(receivedLayout.at(-1)!.avatar.mode).toBe("mouse-feet");
+    expect(receivedLayout.at(-1)!.avatar).toMatchObject({ mode: "camera", fallback: "mouse-feet" });
   };
 
-  it("tells the player to drag between the stones", async () => {
+  it("tells the player to jump between the stones, dragging with the mouse", async () => {
     await openStage();
-    expect($("#stones-message")).toHaveTextContent("Drag from the first stone to the second");
+    expect($("#stones-message")).toHaveTextContent("With the mouse, drag from one to the next");
   });
 
   it("sends the player back to the start for walking onto the lava", async () => {
@@ -310,7 +332,7 @@ describe("rules demo, stone hop, played by mouse-feet", () => {
 
     pointer.move(DOOR);
     fireEvent.click($("#door")!);
-    await waitFor(() => expect($("#stage-link-stone-hop")).toHaveClass("completed"));
+    await waitFor(() => expect($("#stage-link-floor-is-lava")).toHaveClass("completed"));
   });
 
   it("sends the player back for jumping from the first stone straight to the last, or into the lava", async () => {
@@ -326,6 +348,6 @@ describe("rules demo, stone hop, played by mouse-feet", () => {
     fireEvent.click($("#door")!);
     await wait(1000);
     expect($("#door")).not.toHaveClass("open");
-    expect($("#stage-link-stone-hop")).not.toHaveClass("completed");
+    expect($("#stage-link-floor-is-lava")).not.toHaveClass("completed");
   });
 });

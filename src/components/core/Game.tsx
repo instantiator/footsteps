@@ -162,7 +162,7 @@ function useRuleEffects(reducedMotion: boolean, playerEffects: PlayerEffects) {
           const shownScopes = getShownScenes(stateRef.current).map((scene) => scene.scope);
           setShown((rewards) => [...rewards, ...rewardsFor(queued, effect.reward, { shownScopes, playerEffects })]);
         }
-      }, effect.delayMs ?? 0);
+      }, queued.delayMs);
       timersRef.current.add(timer);
     }
     const played = playedRef.current;

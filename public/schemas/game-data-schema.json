@@ -111,9 +111,11 @@
                     "type": "string"
                 },
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 }
             },
             "required": [
@@ -227,9 +229,11 @@
                     "type": "boolean"
                 },
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 }
             },
             "required": [
@@ -290,9 +294,11 @@
             "description": "Opens a stage, unless it is locked or completed.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "enterStage": {
                     "description": "The stage's id.",
@@ -324,9 +330,11 @@
             "description": "Finishes this reset scene, revealing the scene it is shown for. Reset scenes only.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "finishReset": {
                     "const": true,
@@ -343,21 +351,18 @@
             "description": "Plays a series of styles on elements, which then return to their own styles.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "durationMs": {
-                    "anyOf": [
-                        {
-                            "const": "indefinite",
-                            "type": "string"
-                        },
-                        {
-                            "type": "number"
-                        }
-                    ],
-                    "description": "How long it runs."
+                    "description": "How long it runs.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "effect": {
                     "const": "highlight",
@@ -500,26 +505,25 @@
             "description": "Drops elements off the bottom of the scene, where they stay until it resets.",
             "properties": {
                 "cycleMs": {
-                    "description": "The length of one loop, when `durationMs` is `\"indefinite\"`.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "The length of one loop, when `durationMs` is `\"indefinite\"`: milliseconds, or an expression.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "durationMs": {
-                    "anyOf": [
-                        {
-                            "const": "indefinite",
-                            "type": "string"
-                        },
-                        {
-                            "type": "number"
-                        }
-                    ],
-                    "description": "How long it runs."
+                    "description": "How long it runs.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "easing": {
                     "description": "A CSS easing function: how it speeds up and slows down.",
@@ -544,26 +548,25 @@
             "description": "Moves elements, where they stay until their scene resets.",
             "properties": {
                 "cycleMs": {
-                    "description": "The length of one loop, when `durationMs` is `\"indefinite\"`.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "The length of one loop, when `durationMs` is `\"indefinite\"`: milliseconds, or an expression.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "durationMs": {
-                    "anyOf": [
-                        {
-                            "const": "indefinite",
-                            "type": "string"
-                        },
-                        {
-                            "type": "number"
-                        }
-                    ],
-                    "description": "How long it runs."
+                    "description": "How long it runs.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "easing": {
                     "description": "A CSS easing function: how it speeds up and slows down.",
@@ -668,21 +671,18 @@
             "description": "Drops players off the scene. They are removed once they have gone.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "durationMs": {
-                    "anyOf": [
-                        {
-                            "const": "indefinite",
-                            "type": "string"
-                        },
-                        {
-                            "type": "number"
-                        }
-                    ],
-                    "description": "How long it takes."
+                    "description": "How long it takes.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "easing": {
                     "description": "A CSS easing function: how it speeds up and slows down.",
@@ -711,9 +711,11 @@
             "description": "Stops players in place until `player-unfreeze`. They are still active, but can't interact. Applies at once.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "effect": {
                     "const": "player-freeze",
@@ -738,21 +740,18 @@
             "description": "Hides players, or shows them again. They are still active, and can still interact.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "durationMs": {
-                    "anyOf": [
-                        {
-                            "const": "indefinite",
-                            "type": "string"
-                        },
-                        {
-                            "type": "number"
-                        }
-                    ],
-                    "description": "How long it takes."
+                    "description": "How long it takes.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "easing": {
                     "description": "A CSS easing function: how it speeds up and slows down.",
@@ -784,21 +783,18 @@
             "description": "Returns players to normal, whatever has happened to them. `\"all\"` includes removed players.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "durationMs": {
-                    "anyOf": [
-                        {
-                            "const": "indefinite",
-                            "type": "string"
-                        },
-                        {
-                            "type": "number"
-                        }
-                    ],
-                    "description": "How long they take to fade back in. Defaults to 500."
+                    "description": "How long they take to fade back in. Defaults to 500.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "effect": {
                     "const": "player-restore",
@@ -827,21 +823,18 @@
                     "description": "The directions they may leave in; one is picked at random. Defaults to -60 to 60."
                 },
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "durationMs": {
-                    "anyOf": [
-                        {
-                            "const": "indefinite",
-                            "type": "string"
-                        },
-                        {
-                            "type": "number"
-                        }
-                    ],
-                    "description": "How long it takes."
+                    "description": "How long it takes.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "easing": {
                     "description": "A CSS easing function: how it speeds up and slows down.",
@@ -884,21 +877,18 @@
             "description": "Makes players look partly transparent, like a detuned TV. They are still active, and can still interact.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "durationMs": {
-                    "anyOf": [
-                        {
-                            "const": "indefinite",
-                            "type": "string"
-                        },
-                        {
-                            "type": "number"
-                        }
-                    ],
-                    "description": "How long it takes."
+                    "description": "How long it takes.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "easeMs": {
                     "description": "How long it takes to reach `proportion`, and to fade away again. Defaults to 500.",
@@ -942,9 +932,11 @@
             "description": "Returns frozen players to the live camera. Applies at once.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "effect": {
                     "const": "player-unfreeze",
@@ -1027,26 +1019,25 @@
                     "type": "boolean"
                 },
                 "cycleMs": {
-                    "description": "The length of one loop, when `durationMs` is `\"indefinite\"`.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "The length of one loop, when `durationMs` is `\"indefinite\"`: milliseconds, or an expression.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "durationMs": {
-                    "anyOf": [
-                        {
-                            "const": "indefinite",
-                            "type": "string"
-                        },
-                        {
-                            "type": "number"
-                        }
-                    ],
-                    "description": "How long it runs."
+                    "description": "How long it runs.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "dx": {
                     "description": "How far to shake horizontally, as a % of the scene's width. Defaults to 0.",
@@ -1079,9 +1070,11 @@
             "description": "Clears this scene's challenge, and the state of its scenes. Challenge scenes only.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "resetChallenge": {
                     "const": true,
@@ -1135,9 +1128,11 @@
             "description": "Returns the scene's state to `initialState`.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "resetState": {
                     "const": true,
@@ -1180,9 +1175,11 @@
             "description": "Shows a celebration, as the game does for a completed stage; not shown to players who prefer reduced motion. It\ndoesn't hold up the rule, and plays alongside any other sounds and rewards.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "players": {
                     "description": "The players each burst starts from the centre of the body of, instead of `target`.",
@@ -1599,9 +1596,11 @@
             "description": "Sets state keys to the values of expressions, all evaluated against the state before the action.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "set": {
                     "$ref": "#/definitions/Record%3Cstring%2Cstring%3E",
@@ -1617,9 +1616,11 @@
             "description": "Plays one of the game's sound resources. It doesn't hold up the rule: the rule's other actions carry on.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "sound": {
                     "description": "The resource's name, a key of the game's `resources`.",
@@ -1716,9 +1717,11 @@
             "description": "Ends effects before their scene does. An item returns to where its template puts it.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.",
-                    "minimum": 0,
-                    "type": "number"
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
                 },
                 "effect": {
                     "const": "stop",

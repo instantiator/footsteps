@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Navigate } from "react-router";
+import useAppConfig from "../../providers/AppConfigHook";
 import { useGameData } from "../../providers/GameDataHook";
 import { loadCameraChoice } from "../camera/CameraChoice";
 import { cameraKeyOf } from "../camera/FloorCalibration";
@@ -17,14 +18,16 @@ type GuardState = "checking" | "allowed" | "blocked";
 /**
  * Holds the game back until its required permissions are granted, and until the floor is calibrated for a game with
  * 2.5D scenes played by camera, or sends the player to the landing page. Direct links skip the landing page's checks.
+ * Played without the camera (`noCamera`), a game that can do without it needs neither.
  */
 export default function GamePermissionGuard({ children }: { children: ReactNode }) {
   const { gameId, gameData } = useGameData();
+  const { noCamera } = useAppConfig();
   const permissions = useMemo(() => requiredGamePermissions(gameData), [gameData]);
-  // A camera the game can do without still needs a floor, if the player has granted it
+  // A camera the game can do without still needs a floor, if the player has granted it and is using it
   const checkFloor = useMemo(
-    () => gameUsesFloor(gameData) && usedGamePermissions(gameData).includes("camera"),
-    [gameData],
+    () => !noCamera && gameUsesFloor(gameData) && usedGamePermissions(gameData).includes("camera"),
+    [gameData, noCamera],
   );
   const needsChecks = permissions.length > 0 || checkFloor;
   const [state, setState] = useState<GuardState>(() => (needsChecks ? "checking" : "allowed"));

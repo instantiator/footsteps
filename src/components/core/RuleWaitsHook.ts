@@ -20,7 +20,7 @@ type FireRules = (scope: SceneScope, pick: Parameters<typeof fireRules>[3]) => v
 type HeldWhens = Map<string, ReturnType<typeof setTimeout>>;
 
 /**
- * Starts a wait for each shown `when` rule with `forMs` that has just turned true, and cancels those whose rule has
+ * Starts a wait for each shown `when` rule with `forMs` that has just turned true (or is true when first seen), and cancels those whose rule has
  * turned false or whose scene is no longer shown. A wait that runs its course fires its rule.
  * @param edges each rule's value before the change, and each shown rule's value now
  */
@@ -39,7 +39,7 @@ const followHeldWhens = (
     (component.rules ?? []).forEach(({ on }, ruleIndex) => {
       const key = whenKey(state, scope, ruleIndex);
       if (!("when" in on) || !isDefined(on.forMs) || waits.has(key)) return;
-      if (before.get(key) !== false || after.get(key) !== true) return;
+      if (before.get(key) === true || after.get(key) !== true) return;
       const timer = setTimeout(() => {
         waits.delete(key);
         fire(scope, (_, index) => (index === ruleIndex ? NO_EVENT : undefined));
@@ -99,7 +99,7 @@ export function useDelayedActions(
       const timer = setTimeout(() => {
         timersRef.current.delete(timer);
         setGameState((state) => applyDelayedAction(env, state, delayed));
-      }, delayed.action.delayMs);
+      }, delayed.delayMs);
       timersRef.current.add(timer);
     },
     [env, setGameState],

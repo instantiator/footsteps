@@ -6,30 +6,19 @@ import type { GameRepository } from "../../src/entities/GameRepository";
 const GAME_ID = "rules-demo";
 
 /**
- * Serves the example game with the camera off on every scene (other modes stay), so it plays by mouse without the
- * vision model,
- * after the test's own changes. Motion is reduced so the game's scene changes are immediate: during a fade the
- * scene ignores clicks, and raw mouse clicks (unlike locator clicks) don't wait for it.
+ * Serves the example game, after the test's own changes, and plays it without the camera (`noCamera`), so each scene
+ * plays in its fallback mode, without the vision model. Motion is reduced so the game's scene changes are immediate:
+ * during a fade the scene ignores clicks, and raw mouse clicks (unlike locator clicks) don't wait for it.
  */
 const openDemo = async (page: Page, change: (game: GameData) => void = () => {}): Promise<void> => {
   await page.route("**/game-repository.json", async (route) => {
     const response = await route.fetch();
     const repository = (await response.json()) as GameRepository;
-    const game = repository.games[GAME_ID];
-    for (const scene of [
-      ...game.scenes,
-      // The effects stage acts on players, so it can't load without the camera
-      ...game.stages
-        .filter((stage) => stage.id !== "effects")
-        .flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
-    ]) {
-      if (scene.avatar?.mode === "camera") scene.avatar = { mode: "mouse" };
-    }
-    change(game);
+    change(repository.games[GAME_ID]);
     await route.fulfill({ response, json: repository });
   });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto(`/game/${GAME_ID}/play`);
+  await page.goto(`/game/${GAME_ID}/play?noCamera=true`);
   await page.locator("#demo-title").click();
   await expect(page.locator("#switch")).toBeVisible();
 };
@@ -50,18 +39,12 @@ const clickNow = async (page: Page, selector: string) => {
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 };
 
-/** Stands the mouse on the lava's reset scene's start, and waits for the floor to be revealed. */
+/** Stands the mouse on the pits' reset scene's start, and waits for the floor to be revealed. */
 const returnToStart = async (page: Page) => {
   await expect(page.locator("#reset-message")).toHaveText("Return to the start");
   await page.locator("#reset-start").hover();
   await expect(page.locator("#reset-message")).toHaveText("Get ready!");
   await expect(page.locator("#door-base")).toBeVisible({ timeout: 6000 });
-};
-
-/** Moves the mouse just inside the scene box's top left, on the sky. */
-const moveToSceneCorner = async (page: Page) => {
-  const viewport = (await page.locator(".floorScene .sceneBox").first().boundingBox())!;
-  await page.mouse.move(viewport.x + 5, viewport.y + 5);
 };
 
 /** Moves the mouse just inside the floor's front right corner, which is the scene box's bottom right: on the lava. */
@@ -70,12 +53,8 @@ const moveToFrontCorner = async (page: Page) => {
   await page.mouse.move(viewport.x + viewport.width - 5, viewport.y + viewport.height - 5);
 };
 
-/**
- * Puts the mouse on stone hop's first stone in its reset scene. The feet start afresh when a scene changes, and what
- * they first find under them counts as already there, so the mouse moves off and back on.
- */
+/** Puts the mouse on stone hop's first stone in its reset scene. */
 const standOnFirstStoneOf = (page: Page) => async () => {
-  await moveToSceneCorner(page);
   await moveTo(page, "#reset-start");
 };
 
@@ -114,7 +93,7 @@ test.describe("rules demo", () => {
     await page.locator("#switch").click();
     await expect(page.locator("#switch")).toHaveClass(/position-2/);
 
-    await page.locator("#stage-link-lava").click();
+    await page.locator("#stage-link-pits").click();
     await expect(page.locator("#reset-message")).toBeVisible();
     await page.getByRole("button", { name: "Close challenge" }).click();
 
@@ -225,36 +204,64 @@ test.describe("rules demo", () => {
     await expect(page.locator("#score")).toHaveText("0 / 5");
   });
 
-  test("asks for the start before the lava, sends the mouse back there from lava, and completes at the door", async ({
+  test("asks for the start before the pits, drops the mouse into a pit and back there, and completes at the door", async ({
     page,
   }) => {
     await openDemo(page);
-    await page.locator("#stage-link-lava").click();
+    await page.locator("#stage-link-pits").click();
     await returnToStart(page);
 
-    await page.locator("#lava-1").hover();
+    await page.locator("#pit-1").hover();
     await returnToStart(page);
 
     await page.locator("#door-base").hover();
-    await expect(page.locator("#stage-link-lava")).toHaveClass(/completed/);
+    await expect(page.locator("#stage-link-pits")).toHaveClass(/completed/);
   });
 
-  test("takes a pool laid on the floor only where it is drawn, not anywhere in its box", async ({ page }) => {
+  test("finishes the reset for mouse-feet already resting where the start appears, without them moving", async ({
+    page,
+  }) => {
+    // A jump on the spot on the first stone resets the challenge, leaving the feet where the reset scene's start appears
+    await openDemo(page, (game) =>
+      challengeOf(game, "floor-is-lava").rules!.push({
+        on: { interact: "jump", target: "#stone-1" },
+        do: [{ resetChallenge: true }],
+      }),
+    );
+    await page.locator("#stage-link-floor-is-lava").click();
+    await standOnFirstStoneOf(page)();
+    const run = () =>
+      page.locator("[data-scene-scope^='challenge:'] .templateBody").first().getAttribute("data-scene-run");
+    await expect(page.locator("#stone-1")).toBeVisible();
+    const before = await run();
+
+    const stone = (await page.locator("#stone-1").boundingBox())!;
+    await page.mouse.move(stone.x + stone.width / 2, stone.y + stone.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(stone.x + stone.width / 2 + 15, stone.y + stone.height / 2, { steps: 3 });
+    await page.mouse.up();
+
+    await expect.poll(run).not.toBe(before);
+    await expect(page.locator("#reset-message")).toHaveCount(0);
+    await expect(page.locator("#stone-1")).toBeVisible();
+  });
+
+  test("takes a pit laid on the floor only where it is drawn, not anywhere in its box", async ({ page }) => {
     await openDemo(page);
-    await page.locator("#stage-link-lava").click();
+    await page.locator("#stage-link-pits").click();
     await returnToStart(page);
 
-    // The pool narrows to the back, so its box's top left corner is off the pool
-    const pool = (await page.locator("#lava-1").boundingBox())!;
+    // The pit narrows to the back, so its box's top left corner is off the pit
+    const pool = (await page.locator("#pit-1").boundingBox())!;
     await page.mouse.move(pool.x + 3, pool.y + 3);
     await page.waitForTimeout(500);
     await expect(page.locator("#reset-message")).toHaveCount(0);
 
-    await moveTo(page, "#lava-1");
+    await moveTo(page, "#pit-1");
     await expect(page.locator("#reset-message")).toBeVisible();
   });
 
-  test("hops the stones in mouse-feet by dragging over the lava, then clicks the open door", async ({ page }) => {
+  test("hops the stones over the lava in mouse-feet by dragging, then clicks the open door", async ({ page }) => {
     const standOnFirstStone = standOnFirstStoneOf(page);
     /** Drags the mouse from one element to another, through the moves between, as a jump. */
     const jump = async (from: string, to: string) => {
@@ -266,10 +273,10 @@ test.describe("rules demo", () => {
     };
 
     await openDemo(page);
-    await page.locator("#stage-link-stone-hop").click();
-    await expect(page.locator("#reset-message")).toHaveText("Put your mouse on the first stone");
+    await page.locator("#stage-link-floor-is-lava").click();
+    await expect(page.locator("#reset-message")).toHaveText("Stand on the first stone, or put your mouse on it");
     await standOnFirstStone();
-    await expect(page.locator("#stones-message")).toContainText("Drag from the first stone to the second");
+    await expect(page.locator("#stones-message")).toContainText("With the mouse, drag from one to the next");
 
     await jump("#stone-1", "#stone-2");
     await expect(page.locator("#reset-message")).toHaveCount(0);
@@ -277,22 +284,22 @@ test.describe("rules demo", () => {
     await expect(page.locator("#door")).toHaveClass(/open/);
 
     await clickNow(page, "#door");
-    await expect(page.locator("#stage-link-stone-hop")).toHaveClass(/completed/);
+    await expect(page.locator("#stage-link-floor-is-lava")).toHaveClass(/completed/);
   });
 
   test("sends the mouse back to the first stone for stepping onto the lava", async ({ page }) => {
     const standOnFirstStone = standOnFirstStoneOf(page);
     await openDemo(page);
-    await page.locator("#stage-link-stone-hop").click();
+    await page.locator("#stage-link-floor-is-lava").click();
     await standOnFirstStone();
     await expect(page.locator("#stone-1")).toBeVisible();
     await moveToFrontCorner(page);
-    await expect(page.locator("#reset-message")).toHaveText("Put your mouse on the first stone");
+    await expect(page.locator("#reset-message")).toHaveText("Stand on the first stone, or put your mouse on it");
   });
 
   test("asks for the start again when the game is reloaded", async ({ page }) => {
     await openDemo(page);
-    await page.locator("#stage-link-lava").click();
+    await page.locator("#stage-link-pits").click();
     await returnToStart(page);
 
     await page.reload();
@@ -313,24 +320,24 @@ test.describe("rules demo", () => {
     page,
   }) => {
     await openDemo(page, (game) => {
-      // A cover laid over the first lava pool, in the foreground; the rest of the foreground is empty
-      challengeOf(game, "lava").foregroundTemplate = {
+      // A cover laid over the first pit, in the foreground; the rest of the foreground is empty
+      challengeOf(game, "pits").foregroundTemplate = {
         sourceType: "embedded",
         content:
           '<div class="demo-screen" style="pointer-events: none">' +
           '<div id="cover" data-floor-area="18 52 42 68" style="background: #0008; pointer-events: auto"></div>' +
           "</div>",
       };
-      challengeOf(game, "lava").foregroundTemplateStyle = { width: "100%", height: "100%" };
+      challengeOf(game, "pits").foregroundTemplateStyle = { width: "100%", height: "100%" };
     });
-    await page.locator("#stage-link-lava").click();
+    await page.locator("#stage-link-pits").click();
     await returnToStart(page);
     await expect(page.locator("#cover")).toBeVisible();
 
-    await moveTo(page, "#lava-1");
+    await moveTo(page, "#pit-1");
     await expect(page.locator("#door-base")).toBeVisible();
 
-    await moveTo(page, "#lava-2");
+    await moveTo(page, "#pit-2");
     await expect(page.locator("#reset-message")).toBeVisible();
   });
 });

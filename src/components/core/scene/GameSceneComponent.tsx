@@ -38,10 +38,24 @@ export default function GameSceneComponent({ render, layerHint, onAnswer, onScen
   };
   if (component.type === "template") return <GameSceneTemplateComponent {...common} />;
 
+  // A dialog draws its paper and text together, in front of the players, so its background half is empty
+  if (background) return null;
   const paged = {
-    ...common,
+    paper: {
+      templateSource: component.backgroundTemplate,
+      containerStyle: component.backgroundStyle,
+      templateStyle: component.backgroundTemplateStyle,
+    },
+    text: {
+      templateSource: component.foregroundTemplate,
+      containerStyle: component.foregroundStyle,
+      templateStyle: component.foregroundTemplateStyle,
+    },
+    templateData: render.templateData,
+    scope: render.scope,
+    run: render.run,
+    onSceneEvent,
     contents: component.contents,
-    layerHint,
     stageId: render.stageId,
     challengeId: render.challengeId,
     onAnswer,

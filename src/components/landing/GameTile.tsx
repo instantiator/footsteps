@@ -2,11 +2,13 @@ import { useContext } from "react";
 import { Link } from "react-router";
 import type { GameData, GameId } from "../../entities/data/GameData";
 import type { GameSource } from "../../entities/GameSource";
+import { loadGameState } from "../../entities/state/GameStateStorage";
 import { GameRepositoryContext } from "../../providers/GameRepositoryContext";
 import { isDefined } from "../../util/ObjectUtils";
 import { resolveResources } from "../../util/ResourceUtils";
 import "./GamePanel.css";
 import "./GameTile.css";
+import GameBadges from "./GameBadges";
 
 /** Props for {@link GameTile}. */
 interface GameTileProps {
@@ -32,7 +34,7 @@ function tileGraphicURL(gameData: GameData, source: GameSource): string | undefi
   }
 }
 
-/** A square, clickable tile: a game's title, id and description over its graphic. */
+/** A square, clickable tile: a game's title, id, description and badges over its graphic. */
 export default function GameTile({ gameId, gameData }: GameTileProps) {
   const { source } = useContext(GameRepositoryContext);
   const graphic = tileGraphicURL(gameData, source);
@@ -47,7 +49,8 @@ export default function GameTile({ gameId, gameData }: GameTileProps) {
       <div className="game-tile-panel game-panel">
         <h3>{gameData.title}</h3>
         <p className="game-tile-id">{gameId}</p>
-        <p>{gameData.description}</p>
+        <p className="game-tile-description">{gameData.description}</p>
+        <GameBadges gameData={gameData} saved={loadGameState(gameId, gameData)} />
       </div>
     </Link>
   );

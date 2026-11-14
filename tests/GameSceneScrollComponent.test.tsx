@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import GameSceneScrollComponent from "../src/components/core/scene/GameSceneScrollComponent";
 import type { GameSceneScrollComponentData } from "../src/entities/data/scenes/GameSceneScrollComponentData";
@@ -19,10 +19,10 @@ const scroll: GameSceneScrollComponentData = {
   ],
 };
 
-const renderScroll = (layerHint: "foreground" | "background" = "foreground") =>
+const renderScroll = () =>
   render(
     <GameProviders repository={smallRepository} gameId={SMALL_GAME_ID}>
-      <GameSceneScrollComponent contents={scroll.contents} layerHint={layerHint} stageId="s" challengeId="c" />
+      <GameSceneScrollComponent contents={scroll.contents} stageId="s" challengeId="c" />
     </GameProviders>,
   );
 
@@ -59,11 +59,11 @@ describe("GameSceneScrollComponent", () => {
     expect(container.querySelector("audio")).not.toBeNull();
   });
 
-  it("draws the controls and text only in the foreground, leaving the paper to the background", async () => {
-    const { container } = renderScroll("background");
-    await waitFor(() => expect(container.querySelector("[id^='embedded:']")).not.toBeNull());
-    expect(screen.queryByText("First line")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Next page" })).toBeNull();
-    expect(container.querySelector("p")).toBeNull();
+  it("shadows the paper, under the text", async () => {
+    const { container } = renderScroll();
+    await screen.findByText("First line");
+    const paper = container.querySelector<HTMLElement>("[style*='drop-shadow']")!;
+    expect(paper.style.backgroundImage).toContain("old-paper");
+    expect(paper.contains(screen.getByText("First line"))).toBe(false);
   });
 });

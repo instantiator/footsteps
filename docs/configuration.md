@@ -37,10 +37,11 @@ React Router re-reads the query when the URL changes, so a setting can be change
 
 ### General
 
-| Query     | Default | Values  | What it does                                                                                                             |
-| --------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `debug`   | `false` | boolean | Debugging aids at the start; the HUD's Debug button switches them. See [camera mode debugging](camera-mode.md#debugging) |
-| `showFps` | `false` | boolean | The vision stats readout alone, without the other debug aids, while a camera is tracked                                  |
+| Query      | Default | Values  | What it does                                                                                                                               |
+| ---------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `debug`    | `false` | boolean | Debugging aids at the start; the HUD's Debug button switches them. See [camera mode debugging](camera-mode.md#debugging)                   |
+| `showFps`  | `false` | boolean | The vision stats readout alone, without the other debug aids, while a camera is tracked                                                    |
+| `noCamera` | `false` | boolean | Plays without the camera, even where one is available, in each scene's fallback mode. The landing page's "Play without the camera" sets it |
 
 ### Vision
 

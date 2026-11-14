@@ -42,7 +42,7 @@
   font-size: 0.75rem;
 }
 
-.game-tile-panel p:last-child {
+.game-tile-description {
   margin: 0;
   font-size: 0.85rem;
 }

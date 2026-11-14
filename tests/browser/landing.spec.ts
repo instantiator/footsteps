@@ -94,3 +94,26 @@ test("holds a 2.5D game back until the floor is calibrated, and calibrates it", 
   await newGame.click();
   await expect(page.locator("#game-container")).toBeVisible();
 });
+
+test("shows each game's badges on its tile and its landing page, and plays without the camera when asked", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const tile = page.getByRole("link", { name: "Play Demo scenes (2.5D)" });
+  const tileBadges = tile.getByRole("list", { name: "About this game" });
+  await expect(tileBadges).toContainText("2.5D");
+  await expect(tileBadges).toContainText("Camera optional");
+  await expect(tileBadges).toContainText(/\d+ stages · \d+ challenges/);
+  await expect(tileBadges).not.toContainText("% complete");
+
+  await tile.click();
+  await expect(page).toHaveURL(/\/game\/rules-demo$/);
+  await expect(page.getByRole("list", { name: "About this game" })).toContainText("Camera optional");
+  // No floor is calibrated, which only the camera needs
+  await expect(page.getByText("Calibrate the floor before you start.")).toBeVisible();
+  await page.getByRole("checkbox", { name: "Play without the camera" }).check();
+  await page.getByRole("button", { name: "New game" }).click();
+  await expect(page).toHaveURL(/\/play\?noCamera=true$/);
+  await expect(page.locator("#game-container")).toBeVisible();
+  await expect(page.locator("#character-camera-layer")).toHaveCount(0);
+});

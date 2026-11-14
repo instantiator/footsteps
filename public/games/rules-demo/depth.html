@@ -1,5 +1,5 @@
 <div class="demo-depth">
-  <!-- The room: sky and grass to the horizon, hills across the screen beyond low walls, and a chequered floor; one tile lights underfoot -->
+  <!-- The room: sky and grass to the horizon, hills across the screen beyond low walls, and a chequered floor with a spring in it -->
   <div class="horizon-background demo-horizon"></div>
   <div class="floor-background demo-ground"></div>
   <div class="rear-background demo-hills" data-fill-width></div>
@@ -12,7 +12,7 @@
   <div class="demo-tile demo-tile-dark" data-floor-area="50 25 75 50"></div>
   <div class="demo-tile" data-floor-area="75 25 100 50"></div>
   <div class="demo-tile" data-floor-area="0 50 25 75"></div>
-  <div id="depth-tile" class="demo-tile demo-tile-dark{{#if state.tile}} demo-tile-lit{{/if}}" data-floor-area="25 50 50 75"></div>
+  <div id="depth-spring" class="demo-tile demo-spring" data-floor-area="25 50 50 75"></div>
   <div class="demo-tile" data-floor-area="50 50 75 75"></div>
   <div class="demo-tile demo-tile-dark" data-floor-area="75 50 100 75"></div>
   <div class="demo-tile demo-tile-dark" data-floor-area="0 75 25 100"></div>
@@ -27,7 +27,7 @@
   {{#if game.players.[1]}}
   <div id="depth-ring" class="demo-depth-ring" data-floor-x="{{game.players.[1].x}}" data-floor-y="{{game.players.[1].y}}" data-floor-anchor="center"></div>
   {{/if}}
-  <p class="noClicks demo-depth-hint">Walk around the posts. Stand beside the near one, or on the tile left of it, to light them.</p>
+  <p class="noClicks demo-depth-hint">Walk around the posts. Stand beside the near one to light it. Mind the spring!</p>
   <p id="depth-position" class="noClicks demo-depth-position">
     {{#if game.players.[1]}}Player 1 is at {{game.players.[1].x}} across, {{game.players.[1].y}} forward{{else}}Nobody is on the floor yet{{/if}}
   </p>

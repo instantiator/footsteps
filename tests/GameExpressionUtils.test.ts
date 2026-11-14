@@ -26,6 +26,23 @@ describe("GameExpressionUtils", () => {
     expect(run("not state.popping")).toBe(true);
   });
 
+  it("picks random(min, max) from min up to max, and whole numbers with floor", () => {
+    const draw = vi.spyOn(Math, "random").mockReturnValue(0);
+    expect(run("random(2, 5)")).toBe(2);
+    draw.mockReturnValue(0.999999);
+    expect(run("random(2, 5)")).toBeCloseTo(5, 4);
+    expect(run("random(2, 5)")).toBeLessThan(5);
+    expect(run("floor(random(0, 3))")).toBe(2);
+    expect(run("random(state.score, state.score)")).toBe(3);
+  });
+
+  it("logs a random() with bounds that aren't numbers in order", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(run("random(5, 2)")).toBeUndefined();
+    expect(run('random("a", 2)')).toBeUndefined();
+    expect(error).toHaveBeenCalledWith(expect.stringContaining("random(min, max) needs two numbers"));
+  });
+
   it("supports true and false literals", () => {
     expect(run("true")).toBe(true);
     expect(run("false")).toBe(false);

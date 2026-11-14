@@ -23,13 +23,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const renderDialog = (
-  layerHint: "foreground" | "background",
-  props: { image?: string; margins?: GameSceneDialogMargins } = {},
-) =>
+const renderDialog = (props: { image?: string; margins?: GameSceneDialogMargins } = {}) =>
   render(
     <GameProviders repository={smallRepository} gameId={SMALL_GAME_ID}>
-      <GameSceneDialogComponent contents={[{ text: "Hello" }]} layerHint={layerHint} {...props} />
+      <GameSceneDialogComponent contents={[{ text: "Hello" }]} {...props} />
     </GameProviders>,
   );
 
@@ -43,7 +40,7 @@ describe("GameSceneDialogComponent", () => {
     ["a large image", { width: 4000, height: 5000 }, 0.8],
   ])("sizes its frame to the largest box of %s's ratio that fits, scaling up or down", async (_, size, ratio) => {
     stubImage(size);
-    const { container } = renderDialog("foreground", { image: "paper.png" });
+    const { container } = renderDialog({ image: "paper.png" });
     // jsdom normalises the CSS: "2" reads back as "2 / 1", and calc(100cqh * 2) as 200cqh
     await waitFor(() => expect(frameOf(container).style.aspectRatio).toBe(`${ratio} / 1`));
     expect(frameOf(container).style.width).toBe(`min(100cqw, ${ratio * 100}cqh)`);
@@ -51,27 +48,33 @@ describe("GameSceneDialogComponent", () => {
 
   it("fills the scene until the image loads", async () => {
     stubImage();
-    const { container } = renderDialog("foreground", { image: "paper.png" });
+    const { container } = renderDialog({ image: "paper.png" });
     await screen.findByText("Hello");
     expect(frameOf(container).style.aspectRatio).toBe("");
     expect(frameOf(container).style.height).toBe("100%");
   });
 
-  it("draws the image in the background, and nothing behind a dialog without one", async () => {
+  it("draws the paper and then the text in one frame, so nothing can come between them", async () => {
     stubImage({ width: 1, height: 1 });
-    const withImage = renderDialog("background", { image: "paper.png" });
-    await waitFor(() => expect(withImage.container.querySelector("[style*='paper.png']")).not.toBeNull());
-    withImage.unmount();
+    const { container } = renderDialog({ image: "paper.png" });
+    const text = (await screen.findByText("Hello")).closest("[id^='embedded:']")!;
+    await waitFor(() => expect(container.querySelector("[style*='paper.png']")).not.toBeNull());
+    const paper = container.querySelector("[style*='paper.png']")!;
+    expect(paper.parentElement).toBe(frameOf(container));
+    expect(text.parentElement).toBe(frameOf(container));
+    expect(paper.compareDocumentPosition(text) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 
-    const { container } = renderDialog("background");
-    await waitFor(() => expect(container.querySelector("[id^='embedded:']")).not.toBeNull());
+  it("draws no image for a dialog without one", async () => {
+    const { container } = renderDialog();
+    await screen.findByText("Hello");
     expect(container.querySelector("[style*='background-image']")).toBeNull();
     expect(frameOf(container).style.height).toBe("100%");
   });
 
   it("keeps the text inside the image's margins", async () => {
     stubImage({ width: 1, height: 1 });
-    renderDialog("foreground", { image: "paper.png", margins: { top: "20%", left: "10%" } });
+    renderDialog({ image: "paper.png", margins: { top: "20%", left: "10%" } });
     const column = (await screen.findByText("Hello")).closest("[id^='embedded:']") as HTMLElement;
     expect(column.style.position).toBe("absolute");
     expect([column.style.top, column.style.right, column.style.bottom, column.style.left]).toEqual([

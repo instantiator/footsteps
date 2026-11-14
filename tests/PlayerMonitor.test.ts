@@ -167,16 +167,12 @@ describe("PlayerMonitor near", () => {
     expect(events).toHaveLength(1);
   });
 
-  it("makes a player already near when it starts leave and come back", () => {
+  it("enters a player already near when it starts, once", () => {
     const events: PlayerMonitorEvent[] = [];
     const monitor = new PlayerMonitor((event) => events.push(event));
     const near = nearTarget(0, 0, 3);
     withSilhouette([[2, 2]], 1, monitor, near);
     withSilhouette([[2, 2]], 2, monitor, near);
-    expect(events).toEqual([]);
-    withSilhouette([[9, 9]], 3, monitor, near);
-    expect(events).toEqual([]);
-    withSilhouette([[2, 2]], 4, monitor, near);
     expect(events).toEqual([{ key: "near", interaction: "near-enter" }]);
   });
 
@@ -196,7 +192,7 @@ describe("PlayerMonitor near", () => {
 });
 
 describe("PlayerMonitor rearm", () => {
-  it("makes what is over a target move in again, fires no exit, and leaves other targets alone", () => {
+  it("enters what is over a target again, fires no exit, and leaves other targets alone", () => {
     const { events, monitor } = monitorWithEvents();
     const targets = {
       "a#0": target(["hand-enter", "hand-exit"], 0),
@@ -208,11 +204,14 @@ describe("PlayerMonitor rearm", () => {
     monitor.rearm("a#");
     monitor.update(handFrame([[1, 1]]), targets, 2);
     monitor.update(handFrame([[1, 1]]), targets, 3);
-    expect(events).toHaveLength(1);
-
-    monitor.update(handFrame([]), targets, 4);
     expect(events).toEqual([
       { key: "a#0", interaction: "hand-enter" },
+      { key: "a#0", interaction: "hand-enter" },
+    ]);
+
+    monitor.update(handFrame([]), targets, 4);
+    expect(events.slice(2)).toEqual([
+      { key: "a#0", interaction: "hand-exit" },
       { key: "b#0", interaction: "hand-exit" },
     ]);
 
@@ -222,18 +221,18 @@ describe("PlayerMonitor rearm", () => {
 });
 
 describe("PlayerMonitor first frame", () => {
-  it("ignores what already holds on its first frame, and fires once it begins again", () => {
+  it("enters what already holds on its first frame, once, and again once it begins again", () => {
     const events: PlayerMonitorEvent[] = [];
     const monitor = new PlayerMonitor((event) => events.push(event));
     const targets = { "the-element": target(["hand-enter"], 0) };
 
     monitor.update(handFrame([[1, 1]]), targets, 0);
     monitor.update(handFrame([[1, 1]]), targets, 100);
-    expect(events).toEqual([]);
+    expect(events).toEqual([{ key: "the-element", interaction: "hand-enter" }]);
 
     monitor.update(handFrame([[8, 8]]), targets, 200);
     monitor.update(handFrame([[1, 1]]), targets, 300);
-    expect(events).toEqual([{ key: "the-element", interaction: "hand-enter" }]);
+    expect(events).toHaveLength(2);
   });
 });
 
@@ -505,11 +504,8 @@ describe("PlayerMonitor exits", () => {
     expect(run([outside, inside, outside], 1, { "the-element": target(["hand-exit"], 0) }).events).toEqual([EXITED]);
   });
 
-  it("fires no exit for a part that never entered, including one already over the element when it started", () => {
-    const events: PlayerMonitorEvent[] = [];
-    const monitor = new PlayerMonitor((event) => events.push(event));
-    [inside, inside, outside].forEach((f, i) => monitor.update(f, INOUT, i * 16));
-    expect(events).toEqual([]);
+  it("fires no exit for a part that never entered", () => {
+    expect(run([outside, inside, outside], 2).events).toEqual([]);
   });
 
   it("ignores a part away for fewer frames than it needs, and exits once it has been away long enough", () => {
@@ -582,12 +578,12 @@ describe("PlayerMonitor stable frames", () => {
     expect(events).toEqual([{ key: "the-element", interaction: "hand-enter" }]);
   });
 
-  it("never fires for an interaction already holding when it started, until it lets go", () => {
+  it("fires for an interaction already holding when it started, once it has held for the stable frames", () => {
     const events: PlayerMonitorEvent[] = [];
     const monitor = new PlayerMonitor((event) => events.push(event), 2);
-    [inside, inside, inside].forEach((f, i) => monitor.update(f, handTarget, i * 16));
+    monitor.update(inside, handTarget, 0);
     expect(events).toEqual([]);
-    [outside, inside, inside].forEach((f, i) => monitor.update(f, handTarget, 100 + i * 16));
+    [inside, inside].forEach((f, i) => monitor.update(f, handTarget, 16 + i * 16));
     expect(events).toHaveLength(1);
   });
 });

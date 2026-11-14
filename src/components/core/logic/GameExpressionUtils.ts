@@ -26,6 +26,19 @@ export type GameExpression = (context: ExpressionContext) => unknown;
 const CONSTANTS = { true: true, false: false };
 
 /**
+ * `random(min, max)`: a number picked evenly from `min` up to (not including) `max`, so each use can differ. Use
+ * `floor(random(0, 3))` for a whole number from 0 to 2.
+ * @returns an Error, which filtrex hands back as the expression's value, if the bounds aren't numbers in order
+ */
+export const random = (min: unknown, max: unknown): number | Error =>
+  typeof min === "number" && typeof max === "number" && min <= max
+    ? min + Math.random() * (max - min)
+    : new Error(`random(min, max) needs two numbers, min no more than max, not ${String(min)} and ${String(max)}`);
+
+/** The functions expressions can call, beyond filtrex's own. */
+const EXTRA_FUNCTIONS = { random };
+
+/**
  * Resolves a dotted name such as `state.score` through own data properties only, so expressions can't reach
  * prototypes (`constructor`, `__proto__`) or run getters. A missing step gives undefined rather than an error,
  * so authors can test state that hasn't been set yet.
@@ -41,13 +54,13 @@ const dottedProp = (name: string, _get: unknown, object: unknown): unknown =>
 
 /**
  * Compiles a game expression with filtrex: a sandboxed language with no access to globals,
- * functions beyond its built-ins, or prototypes.
+ * functions beyond its built-ins and {@link random}, or prototypes.
  * @param where names the expression in error messages, eg. the scene and rule it belongs to
  * @throws if the expression doesn't parse, naming `where`
  */
 export const compileGameExpression = (source: string, where: string): GameExpression => {
   try {
-    return compileExpression(source, { constants: CONSTANTS, customProp: dottedProp });
+    return compileExpression(source, { constants: CONSTANTS, customProp: dottedProp, extraFunctions: EXTRA_FUNCTIONS });
   } catch (error) {
     throw new Error(`${where}: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
   }

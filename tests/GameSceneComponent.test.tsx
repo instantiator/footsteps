@@ -52,18 +52,19 @@ const templateComponent: GameSceneComponentData = {
 };
 
 describe("GameSceneComponent", () => {
-  it("renders a dialog on the game's image resource, with its pages in the foreground", async () => {
+  it("renders a dialog whole in the foreground, on the game's image resource, and nothing in the background", async () => {
     const dialog: GameSceneComponentData = {
       type: "dialog",
       data: {},
       imageResource: "parchment",
       contents: [{ text: "A dialog page" }],
     };
-    const { container, unmount } = renderScene(dialog, "background", { parchment: "https://img.example/p.png" });
-    await vi.waitFor(() => expect(container.querySelector("[style*='img.example/p.png']")).not.toBeNull());
-    unmount();
-    renderScene(dialog, "foreground");
+    const background = renderScene(dialog, "background", { parchment: "https://img.example/p.png" });
+    expect(background.container).toBeEmptyDOMElement();
+    background.unmount();
+    const { container } = renderScene(dialog, "foreground", { parchment: "https://img.example/p.png" });
     expect(await screen.findByText("A dialog page")).toBeInTheDocument();
+    await vi.waitFor(() => expect(container.querySelector("[style*='img.example/p.png']")).not.toBeNull());
   });
 
   it.each([

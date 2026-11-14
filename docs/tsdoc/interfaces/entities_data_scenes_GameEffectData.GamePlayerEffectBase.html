@@ -14,8 +14,8 @@
 <section class="tsd-panel tsd-comment">
 <div class="tsd-comment tsd-typography"><p>What every effect on players can have.</p>
 </div></section>
-<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">GamePlayerEffectBase</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#delayms">delayMs</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#durationms">durationMs</a><span class="tsd-signature-symbol">?:</span> <a href="../types/entities_data_scenes_GameEffectData.GameEffectDuration.html" class="tsd-signature-type tsd-kind-type-alias">GameEffectDuration</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#easing">easing</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#players">players</a><span class="tsd-signature-symbol">?:</span> <a href="../types/entities_data_scenes_GameEffectData.GamePlayerChoice.html" class="tsd-signature-type tsd-kind-type-alias">GamePlayerChoice</a><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div>
-<section class="tsd-panel tsd-hierarchy" data-refl="2014">
+<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">GamePlayerEffectBase</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#delayms">delayMs</a><span class="tsd-signature-symbol">?:</span> <a href="../types/entities_data_scenes_GameSceneData.GameTime.html" class="tsd-signature-type tsd-kind-type-alias">GameTime</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#durationms">durationMs</a><span class="tsd-signature-symbol">?:</span> <a href="../types/entities_data_scenes_GameEffectData.GameEffectDuration.html" class="tsd-signature-type tsd-kind-type-alias">GameEffectDuration</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#easing">easing</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#players">players</a><span class="tsd-signature-symbol">?:</span> <a href="../types/entities_data_scenes_GameEffectData.GamePlayerChoice.html" class="tsd-signature-type tsd-kind-type-alias">GamePlayerChoice</a><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div>
+<section class="tsd-panel tsd-hierarchy" data-refl="2027">
 <h4>Hierarchy (<a href="../hierarchy.html#entities/data/scenes/GameEffectData.GamePlayerEffectBase">View Summary</a>)</h4>
 <ul class="tsd-hierarchy">
 <li class="tsd-hierarchy-item"><a href="entities_data_scenes_GameSceneData.GameActionBase.html" class="tsd-signature-type tsd-kind-interface">GameActionBase</a>
@@ -27,7 +27,7 @@
 <li class="tsd-hierarchy-item"><a href="entities_data_scenes_GameEffectData.GamePlayerOpacityEffect.html" class="tsd-signature-type tsd-kind-interface">GamePlayerOpacityEffect</a></li>
 <li class="tsd-hierarchy-item"><a href="entities_data_scenes_GameEffectData.GamePlayerStaticEffect.html" class="tsd-signature-type tsd-kind-interface">GamePlayerStaticEffect</a></li></ul></li></ul></li></ul></section><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameEffectData.ts#L26">entities/data/scenes/GameEffectData.ts:26</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameEffectData.ts#L25">entities/data/scenes/GameEffectData.ts:25</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -45,37 +45,34 @@
 <section>
 <section class="tsd-panel tsd-member tsd-is-inherited">
 <h3 class="tsd-anchor-link" id="delayms"><code class="tsd-tag">Optional</code><span>delay<wbr/>Ms</span><a href="#delayms" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<div class="tsd-signature"><span class="tsd-kind-property">delayMs</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div>
-<div class="tsd-comment tsd-typography"><p>Milliseconds to wait before it happens. Defaults to 0. Later actions don't wait for it.</p>
-</div>
-<div class="tsd-comment tsd-typography">
-<div class="tsd-tag-minimum">
-<h4 class="tsd-anchor-link" id="minimum">Minimum<a href="#minimum" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p>0</p>
-</div></div><aside class="tsd-sources">
+<div class="tsd-signature"><span class="tsd-kind-property">delayMs</span><span class="tsd-signature-symbol">?:</span> <a href="../types/entities_data_scenes_GameSceneData.GameTime.html" class="tsd-signature-type tsd-kind-type-alias">GameTime</a></div>
+<div class="tsd-comment tsd-typography"><p>Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later
+actions don't wait for it.</p>
+</div><aside class="tsd-sources">
 <p>Inherited from <a href="entities_data_scenes_GameSceneData.GameActionBase.html">GameActionBase</a>.<a href="entities_data_scenes_GameSceneData.GameActionBase.html#delayms">delayMs</a></p>
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameSceneData.ts#L264">entities/data/scenes/GameSceneData.ts:264</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameSceneData.ts#L266">entities/data/scenes/GameSceneData.ts:266</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="durationms"><code class="tsd-tag">Optional</code><span>duration<wbr/>Ms</span><a href="#durationms" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">durationMs</span><span class="tsd-signature-symbol">?:</span> <a href="../types/entities_data_scenes_GameEffectData.GameEffectDuration.html" class="tsd-signature-type tsd-kind-type-alias">GameEffectDuration</a></div>
 <div class="tsd-comment tsd-typography"><p>How long it takes.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameEffectData.ts#L30">entities/data/scenes/GameEffectData.ts:30</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameEffectData.ts#L29">entities/data/scenes/GameEffectData.ts:29</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="easing"><code class="tsd-tag">Optional</code><span>easing</span><a href="#easing" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">easing</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span></div>
 <div class="tsd-comment tsd-typography"><p>A CSS easing function: how it speeds up and slows down.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameEffectData.ts#L32">entities/data/scenes/GameEffectData.ts:32</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameEffectData.ts#L31">entities/data/scenes/GameEffectData.ts:31</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="players"><code class="tsd-tag">Optional</code><span>players</span><a href="#players" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">players</span><span class="tsd-signature-symbol">?:</span> <a href="../types/entities_data_scenes_GameEffectData.GamePlayerChoice.html" class="tsd-signature-type tsd-kind-type-alias">GamePlayerChoice</a></div>
 <div class="tsd-comment tsd-typography"><p>Who it applies to. Defaults to <code>&quot;triggering&quot;</code>.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameEffectData.ts#L28">entities/data/scenes/GameEffectData.ts:28</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameEffectData.ts#L27">entities/data/scenes/GameEffectData.ts:27</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
