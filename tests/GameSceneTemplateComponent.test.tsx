@@ -49,7 +49,7 @@ describe("GameSceneTemplateComponent", () => {
   });
 
   it("fetches a url template", async () => {
-    const url = new URL("games/magic-trifle/title/foreground.hbs", getBaseURL()).toString();
+    const url = new URL("games/magic-trifle/title/foreground.html", getBaseURL()).toString();
     const { container } = render(
       <GameSceneTemplateComponent
         templateSource={{ sourceType: "url", templateSource: url }}
@@ -64,7 +64,7 @@ describe("GameSceneTemplateComponent", () => {
   it("fetches a local template from the site, for a local repository", async () => {
     render(
       <GameSceneTemplateComponent
-        templateSource={{ sourceType: "local", templateSource: "games/magic-trifle/title/foreground.hbs" }}
+        templateSource={{ sourceType: "local", templateSource: "games/magic-trifle/title/foreground.html" }}
         templateData={{ resources: { "title-foreground": "local.png" } }}
       />,
       { wrapper: Wrapper },
@@ -219,10 +219,10 @@ describe("GameSceneTemplateComponent", () => {
 
   it("logs and renders nothing for a template that fails to load, rather than the error page", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    server.use(http.get("/missing.hbs", () => HttpResponse.text("<h1>Not found</h1>", { status: 404 })));
+    server.use(http.get("/missing.html", () => HttpResponse.text("<h1>Not found</h1>", { status: 404 })));
     const { container } = render(
       <GameSceneTemplateComponent
-        templateSource={{ sourceType: "url", templateSource: new URL("missing.hbs", getBaseURL()).toString() }}
+        templateSource={{ sourceType: "url", templateSource: new URL("missing.html", getBaseURL()).toString() }}
         templateData={{}}
       />,
       { wrapper: Wrapper },
@@ -234,14 +234,14 @@ describe("GameSceneTemplateComponent", () => {
   it("fetches a template once for scenes that ask for it at the same time", async () => {
     let fetches = 0;
     server.use(
-      http.get("/shared.hbs", () => {
+      http.get("/shared.html", () => {
         fetches++;
         return HttpResponse.text("<p>shared</p>");
       }),
     );
     const source: GameSceneTemplateSourceData = {
       sourceType: "url",
-      templateSource: new URL("shared.hbs", getBaseURL()).toString(),
+      templateSource: new URL("shared.html", getBaseURL()).toString(),
     };
     render(
       <>

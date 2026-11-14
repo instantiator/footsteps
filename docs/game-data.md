@@ -268,7 +268,7 @@ a countdown before balloons fall. Until then, the scene's own rules, timers and 
       { "on": { "every": 1000 }, "do": [{ "set": { "count": "state.count - 1" } }] },
       { "on": { "after": 3000 }, "do": [{ "finishReset": true }] }
     ],
-    "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/balloons-ready.hbs" }
+    "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/balloons-ready.html" }
   }
 }
 ```
@@ -531,6 +531,8 @@ A `GameSceneTemplateSourceData` gives the template's `sourceType` and its `templ
 
 `resolveTemplateURL` in `src/providers/GameContentCacheHook.tsx` resolves fetched templates, which are cached for the life of the game.
 
+The committed games name their template files `.html`. Any name works, but tools that look for where a CSS class is used (such as aislop's unused-CSS check) read `.html` files and not `.hbs` ones.
+
 ### Template data
 
 Every template, and every Handlebars value in a style, is rendered with `GameTemplateData` (`src/components/core/logic/RenderDataUtils.ts`):
@@ -557,7 +559,7 @@ A dialog's or scroll's templates also get `text`, the current page's text, and `
 
 ### Example
 
-The magic-trifle stages overview (`public/games/magic-trifle/overview/foreground.hbs`) draws a stepping stone per stage. A rule enters each stage when its stone is clicked:
+The magic-trifle stages overview (`public/games/magic-trifle/overview/foreground.html`) draws a stepping stone per stage. A rule enters each stage when its stone is clicked:
 
 ```json
 {
@@ -566,7 +568,7 @@ The magic-trifle stages overview (`public/games/magic-trifle/overview/foreground
     "type": "template",
     "foregroundTemplate": {
       "sourceType": "relative",
-      "templateSource": "games/magic-trifle/overview/foreground.hbs"
+      "templateSource": "games/magic-trifle/overview/foreground.html"
     },
     "backgroundStyle": { "backgroundImage": "url('{{resources.blank-river}}')" },
     "data": {},

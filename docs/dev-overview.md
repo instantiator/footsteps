@@ -102,7 +102,7 @@ a rule names the elements with a CSS selector, and the interactions it accepts (
 any, jump, jump-from, jump-onto; see [camera mode](camera-mode.md#how-interactions-work) for what the camera detects). For keyboard
 players, also mark each element a player can currently use with `role="button"`, `tabindex="0"`, and a label
 (`alt` on an image, or `aria-label`): the scene then treats Enter or Space on it as a click. On the title
-screen, Enter or Space anywhere moves on, as a click does. See `public/games/magic-trifle/overview/foreground.hbs`.
+screen, Enter or Space anywhere moves on, as a click does. See `public/games/magic-trifle/overview/foreground.html`.
 
 ### How rules run
 

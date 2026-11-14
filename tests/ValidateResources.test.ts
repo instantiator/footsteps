@@ -88,12 +88,12 @@ describe("checkGame", () => {
         local: { type: "local", target: "games/local.png" },
         relative: { type: "relative", target: "games/relative.png" },
       },
-      scenes: [templateScene({ sourceType: "relative", templateSource: "views/overview.hbs" })],
+      scenes: [templateScene({ sourceType: "relative", templateSource: "views/overview.html" })],
     });
 
     const result = await checkGame(
       game,
-      optionsWith(["/site/games/local.png", "/repo/games/relative.png", "/repo/views/overview.hbs"]),
+      optionsWith(["/site/games/local.png", "/repo/games/relative.png", "/repo/views/overview.html"]),
     );
 
     expect(result).toEqual({ problems: [], warnings: [], checked: { files: 3, urls: 0, names: 0 } });
@@ -149,7 +149,7 @@ describe("checkGame", () => {
                   component: {
                     type: "template",
                     data: {},
-                    foregroundTemplate: { sourceType: "relative", templateSource: "views/challenge.hbs" },
+                    foregroundTemplate: { sourceType: "relative", templateSource: "views/challenge.html" },
                   },
                 },
               ],
@@ -159,7 +159,7 @@ describe("checkGame", () => {
       ],
     });
 
-    const result = await checkGame(game, optionsWith(["/repo/views/challenge.hbs"]));
+    const result = await checkGame(game, optionsWith(["/repo/views/challenge.html"]));
 
     expect(result.problems).toEqual([]);
     expect(result.checked.files).toBe(1);
@@ -361,8 +361,8 @@ describe("template text", () => {
   });
 
   it("reads a template's file to check it, when it can", async () => {
-    const game = gameWith({ scenes: [templateScene({ sourceType: "relative", templateSource: "views/a.hbs" })] });
-    const options = { ...optionsWith(["/repo/views/a.hbs"]), readText: async () => '<p data-depth="40"></p>' };
+    const game = gameWith({ scenes: [templateScene({ sourceType: "relative", templateSource: "views/a.html" })] });
+    const options = { ...optionsWith(["/repo/views/a.html"]), readText: async () => '<p data-depth="40"></p>' };
     const result = await checkGame(game, options);
     expect(result.problems.map(({ path }) => path)).toEqual(["scenes[0].component.foregroundTemplate.templateSource"]);
   });

@@ -1,6 +1,6 @@
 # Special effects
 
-How a game makes things shake, fall, move, pulse and celebrate. Effects are [rule actions](game-data.md#rules), so they fire on the same triggers as everything else. The rules demo's Effects stage (`public/games/rules-demo/effects.hbs`) has a worked example of each.
+How a game makes things shake, fall, move, pulse and celebrate. Effects are [rule actions](game-data.md#rules), so they fire on the same triggers as everything else. The rules demo's Effects stage (`public/games/rules-demo/effects.html`) has a worked example of each.
 
 What happens to players is covered by the player effects below, and how players are followed by [player tracking](player-tracking.md).
 
