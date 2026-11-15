@@ -3,6 +3,7 @@ import type {
   GameInteraction,
   GameSceneAvatarData,
   GameSceneMode,
+  GameSpectatorsData,
 } from "../../../entities/data/scenes/GameSceneData";
 import { POINTER_INTERACTIONS } from "../../../entities/data/scenes/GameSceneData";
 import type { GameData } from "../../../entities/data/GameData";
@@ -121,4 +122,18 @@ export const resolveSceneMode = (gameData: GameData, renderData: LayeredGameScen
     firstDefined(renderData.stageRenderData?.scene, renderData.overviewRenderData?.scene, gameData.modules?.scene) ??
     "2D"
   );
+};
+
+/**
+ * Resolves how spectators show in the scenes shown: the first active challenge with a setting over the stage scene's,
+ * the overview scene's and the game's `modules.spectators`, key by key.
+ */
+export const resolveSpectators = (gameData: GameData, renderData: LayeredGameSceneRenderData): GameSpectatorsData => {
+  const challenge = renderData.challengesRenderData?.find(({ spectators }) => isDefined(spectators))?.spectators;
+  return {
+    ...gameData.modules?.spectators,
+    ...renderData.overviewRenderData?.spectators,
+    ...renderData.stageRenderData?.spectators,
+    ...challenge,
+  };
 };

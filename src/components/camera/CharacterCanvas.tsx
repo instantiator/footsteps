@@ -17,6 +17,8 @@ import { PlayerRegistryContext } from "../../providers/PlayerRegistryContext";
 import { PlayerPositions, positionMapping, type PlayerPosition, type PositionSettings } from "./PlayerPosition";
 import type { PlayerFrame } from "./PlayerMonitor";
 import { NO_SPECTATORS, SpectatorWatch, type SpectatorSettings } from "./Spectators";
+import { SpectatorsContext } from "../../providers/SpectatorsContext";
+import type { GameSpectatorsData } from "../../entities/data/scenes/GameSceneData";
 
 /** Props for {@link CharacterCanvas}. */
 interface CharacterCanvasProps {
@@ -45,6 +47,21 @@ interface CharacterCanvasProps {
   /** Whether the canvas is shown flipped like a mirror, so positions run from the screen's left. */
   mirrored?: boolean;
 }
+
+/** A ref holding the latest value, for the tracking loop to read each frame without restarting. */
+const useLatest = <T,>(value: T): RefObject<T> => {
+  const ref = useRef(value);
+  useEffect(() => {
+    ref.current = value;
+  }, [value]);
+  return ref;
+};
+
+/** The floor players stand on now, for the tracking loop to read each frame. */
+const usePlayersFloor = (floor: Corners | undefined, mirrored: boolean): RefObject<PlayersFloor> =>
+  useLatest(
+    useMemo(() => ({ toPosition: positionMapping(floor, mirrored), sorted: isDefined(floor) }), [floor, mirrored]),
+  );
 
 /** How often the stats readout updates, in milliseconds; every frame would re-render too often. */
 const STATS_INTERVAL_MS = 500;
@@ -136,6 +153,8 @@ type LoopHandlers = Pick<CharacterCanvasProps, "offScreenThreshold_percent" | "o
   onStats?: (stats: FrameStats) => void;
   /** The floor players stand on now, read each frame as scenes change. */
   floor: RefObject<PlayersFloor>;
+  /** How spectators show now, read each frame as scenes change. */
+  shownSpectators: RefObject<GameSpectatorsData>;
 };
 
 /** How players' ground points become positions, and whether they are sorted among the foreground by them. */
@@ -352,6 +371,7 @@ const startTrackingLoop = (
     settings: { smoothing, hold, fillGaps, inputWidth, featherPx, position, spectators },
     onStats,
     floor,
+    shownSpectators,
   }: LoopHandlers,
 ): (() => void) => {
   const detections = videoDetections(model, video, inputWidth);
@@ -376,7 +396,13 @@ const startTrackingLoop = (
     const trackEnd = performance.now();
     onPlayersChange?.(players, timestamp);
     const monitorEnd = performance.now();
-    drawPlayers(video, frames, { canvases, positions: where, sorted, players: registry }, { maskType, featherPx });
+    const drawnSpectators = { report: watching, settings: shownSpectators.current, margin: spectators.margin };
+    drawPlayers(
+      video,
+      frames,
+      { canvases, positions: where, sorted, players: registry, spectators: drawnSpectators },
+      { maskType, featherPx },
+    );
     reportStats(detected, timestamp, inferenceEnd, {
       trackMs: trackEnd - inferenceEnd,
       monitorMs: monitorEnd - trackEnd,
@@ -436,14 +462,8 @@ export default function CharacterCanvas({
   const canvasesRef = useRef<PlayerCanvases | null>(null);
   const players = useContext(PlayerRegistryContext);
   const { video, mediaStream, offScreenThreshold_percent, onPlayersChange } = loopProps;
-  const playersFloor = useMemo(
-    (): PlayersFloor => ({ toPosition: positionMapping(floor, mirrored), sorted: isDefined(floor) }),
-    [floor, mirrored],
-  );
-  const floorRef = useRef(playersFloor);
-  useEffect(() => {
-    floorRef.current = playersFloor;
-  }, [playersFloor]);
+  const floorRef = usePlayersFloor(floor, mirrored);
+  const spectatorsRef = useLatest(useContext(SpectatorsContext));
 
   // The stream belongs to CharacterCamera, which stops its tracks; this effect only stops its own loop
   useEffect(() => {
@@ -457,6 +477,7 @@ export default function CharacterCanvas({
       settings,
       onStats,
       floor: floorRef,
+      shownSpectators: spectatorsRef,
     };
     const canvases = (canvasesRef.current ??= new PlayerCanvases(canvasElement));
     return startTrackingLoop(model, video, { reference: canvasElement, canvases, players }, handlers);
@@ -471,6 +492,8 @@ export default function CharacterCanvas({
     maskType,
     settings,
     showStats,
+    floorRef,
+    spectatorsRef,
   ]);
 
   return (

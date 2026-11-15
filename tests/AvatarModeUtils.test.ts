@@ -4,6 +4,7 @@ import {
   cameraModeOf,
   resolveAvatarMode,
   resolveSceneMode,
+  resolveSpectators,
 } from "../src/components/core/logic/AvatarModeUtils";
 import { getLayeredRenderData, type LayeredGameSceneRenderData } from "../src/components/core/logic/RenderDataUtils";
 import type { GameSceneAvatarData, GameSceneMode } from "../src/entities/data/scenes/GameSceneData";
@@ -189,5 +190,19 @@ describe("resolveSceneMode", () => {
   it("lets a 2.5D challenge win over a 2D one", () => {
     expect(sceneModeOf({ challenges: ["2D", "2.5D"] }, true)).toBe("2.5D");
     expect(sceneModeOf({ stage: "2.5D", challenges: ["2D", undefined] }, true)).toBe("2D");
+  });
+});
+
+describe("resolveSpectators", () => {
+  it("takes a challenge's settings over the stage's and the game's, key by key, and none by default", () => {
+    const gameData = gameWithAvatar({ challenges: [undefined, undefined] });
+    gameData.modules = { spectators: { show: "shown", look: { opacity: 0.2 } } };
+    gameData.stages[0].scenes![0].spectators = { fade: { to: 30 } };
+    gameData.stages[0].challenges[1].scenes[0].spectators = { show: "hidden" };
+    const state = createBlankGameState(gameData);
+    const shown = getLayeredRenderData({ ...state, current: { stageId: "stage-1", overviewScene: null } }, {}, "game");
+    expect(resolveSpectators(gameData, shown)).toEqual({ show: "hidden", look: { opacity: 0.2 }, fade: { to: 30 } });
+    const plain = gameWithAvatar();
+    expect(resolveSpectators(plain, getLayeredRenderData(createBlankGameState(plain), {}, "game"))).toEqual({});
   });
 });

@@ -4,7 +4,7 @@ import { useMediaQuery } from "@uidotdev/usehooks";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { GameOverviewScenePurpose } from "../../entities/data/scenes/GameSceneData";
 import type { GameChallengeId } from "../../entities/data/GameChallengeData";
-import type { GameRewardData } from "../../entities/data/GameData";
+import type { GameData, GameRewardData } from "../../entities/data/GameData";
 import type { GameChallengeAnswerValidation } from "../../entities/data/GameChallengeSolution";
 import type { GameStageId } from "../../entities/data/GameStageData";
 import type { SceneScope, GameState, QueuedEffect } from "../../entities/state/GameState";
@@ -20,7 +20,8 @@ import type { PlayerEffects } from "./effects/PlayerEffects";
 import "./Game.css";
 import GameStylesheets from "./GameStylesheets";
 import GameLayersLayout, { type GameLayers } from "./layout/GameLayersLayout";
-import { resolveAvatarMode, resolveSceneMode } from "./logic/AvatarModeUtils";
+import { resolveAvatarMode, resolveSceneMode, resolveSpectators } from "./logic/AvatarModeUtils";
+import { SpectatorsContext } from "../../providers/SpectatorsContext";
 import { leaveTitleScreen } from "./logic/GameClickUtils";
 import { findChallengeState } from "./logic/GameDataUtils";
 import type { SceneDomEvent } from "./logic/TemplateUtils";
@@ -303,6 +304,18 @@ function useAnswerHandler(): GameAnswerFunction {
   );
 }
 
+/** The avatar, layout and spectator settings for the scenes shown, the same objects while they are. */
+function useSceneSettings(gameData: GameData, renderData: LayeredGameSceneRenderData) {
+  return useMemo(
+    () => ({
+      avatar: resolveAvatarMode(gameData, renderData),
+      sceneMode: resolveSceneMode(gameData, renderData),
+      spectators: resolveSpectators(gameData, renderData),
+    }),
+    [gameData, renderData],
+  );
+}
+
 /**
  * The game itself: builds layered render data from the game state, and hands it to {@link GameLayersLayout}
  * along with the click handling, feedback (music, sound effects, rewards) and title screen keys.
@@ -329,8 +342,7 @@ export default function Game() {
     () => createLayers(renderData, { onAnswer, onSceneEvent }),
     [renderData, onAnswer, onSceneEvent],
   );
-  const avatar = useMemo(() => resolveAvatarMode(gameState.gameData, renderData), [gameState.gameData, renderData]);
-  const sceneMode = useMemo(() => resolveSceneMode(gameState.gameData, renderData), [gameState.gameData, renderData]);
+  const { avatar, sceneMode, spectators } = useSceneSettings(gameState.gameData, renderData);
 
   return (
     <div
@@ -354,17 +366,19 @@ export default function Game() {
         <RewardBurst key={id} id={id} reward={reward} at={at} onDone={() => ruleRewards.done({ id, actionId })} />
       ))}
       <PlayerRegistryContext.Provider value={players}>
-        <GameLayersLayout
-          debug={debug}
-          onToggleDebug={toggleDebug}
-          gameLayers={layers}
-          sceneKey={sceneKey}
-          avatar={avatar}
-          sceneMode={sceneMode}
-          cameraRules={cameraRules}
-          onPlayerInteraction={onPlayerInteraction}
-          onPlayerPositions={onPlayerPositions}
-        />
+        <SpectatorsContext.Provider value={spectators}>
+          <GameLayersLayout
+            debug={debug}
+            onToggleDebug={toggleDebug}
+            gameLayers={layers}
+            sceneKey={sceneKey}
+            avatar={avatar}
+            sceneMode={sceneMode}
+            cameraRules={cameraRules}
+            onPlayerInteraction={onPlayerInteraction}
+            onPlayerPositions={onPlayerPositions}
+          />
+        </SpectatorsContext.Provider>
       </PlayerRegistryContext.Provider>
     </div>
   );
