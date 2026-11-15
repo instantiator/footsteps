@@ -388,6 +388,50 @@ describe("Game sounds and reward", () => {
       expect(rewardSpy).toHaveBeenCalledTimes(1);
     });
 
+    describe("named, so rules follow their end", () => {
+      /** The stages overview's state, as the rules following the sound and reward set it. */
+      function Ended() {
+        const { gameState } = useGameState();
+        const { chimed, burst } = gameState.sceneStates["overview:game-overview-stages"] ?? {};
+        return <output data-testid="ended">{`chimed:${String(chimed)} burst:${String(burst)}`}</output>;
+      }
+      const renderNamed = () => {
+        const data = withEffects([
+          { sound: "opened", name: "chime" },
+          { reward: { animation: "stars" }, name: "burst" },
+        ]);
+        data.scenes[0].component.rules!.push(
+          { on: { actionEnd: "chime" }, do: [{ set: { chimed: "true" } }] },
+          { on: { actionEnd: "burst" }, do: [{ set: { burst: "true" } }] },
+        );
+        return render(
+          <GameProviders repository={{ games: { [SMALL_GAME_ID]: data } }} gameId={SMALL_GAME_ID}>
+            <Game />
+            <Ended />
+          </GameProviders>,
+        );
+      };
+      const chime = () =>
+        playback.play.mock.contexts.find(
+          (audio): audio is HTMLMediaElement => audio instanceof HTMLMediaElement && audio.src.endsWith("/opened.mp3"),
+        );
+
+      it("ends a sound once it has played, and a reward once it has shown", async () => {
+        setReducedMotion(false);
+        renderNamed();
+        await vi.waitFor(() => expect(screen.getByTestId("ended")).toHaveTextContent("chimed:undefined burst:true"));
+        act(() => chime()!.dispatchEvent(new Event("ended")));
+        await vi.waitFor(() => expect(screen.getByTestId("ended")).toHaveTextContent("chimed:true burst:true"));
+      });
+
+      it("ends a reward at once for players who prefer reduced motion, as it isn't shown", async () => {
+        setReducedMotion(true);
+        renderNamed();
+        await vi.waitFor(() => expect(screen.getByTestId("ended")).toHaveTextContent("burst:true"));
+        expect(rewardSpy).not.toHaveBeenCalled();
+      });
+    });
+
     describe("with a target", () => {
       /** A template that gives the targeted elements, on the scene whose rule asks for the reward. */
       const renderTargeted = (target: string) => {

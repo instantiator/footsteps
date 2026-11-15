@@ -3,6 +3,7 @@ import type { ResolvedEffect } from "../../../entities/data/scenes/GameEffectDat
 import type { SceneScope, GameState, QueuedVisualEffect } from "../../../entities/state/GameState";
 import { useQueueDrain } from "../QueueDrainHook";
 import { targetsPlayers } from "../logic/GameEffectCompile";
+import type { EndedWith } from "../logic/ActionRuns";
 import type { fireRules, RuleEvent } from "../logic/GameRuleUtils";
 import { sceneRun } from "../logic/GameStateUtils";
 import { getSceneSlots, getShownScenes } from "../logic/RenderDataUtils";
@@ -12,6 +13,7 @@ import { ItemEffects, type EffectRun } from "./ItemEffects";
 import { PlayerEffects } from "./PlayerEffects";
 import type { PlayerRegistry } from "../../camera/PlayerRegistry";
 import useAppConfig from "../../../providers/AppConfigHook";
+import { isDefined } from "../../../util/ObjectUtils";
 
 /** How long an effect waits for its scene's elements to appear, before saying they haven't. */
 const TARGET_WAIT_MS = 5000;
@@ -26,6 +28,8 @@ interface GameEffectsContext {
   fire: (scope: SceneScope, pick: Parameters<typeof fireRules>[3]) => void;
   /** What has happened to each player. */
   players: PlayerRegistry;
+  /** Reports that a running action has ended, with the element it ended on, if any. */
+  onActionEnd: (actionId: number, ended?: EndedWith) => void;
 }
 
 /** The effect's target, for those that have one. */
@@ -129,11 +133,13 @@ const noteAffectedPlayers = (elements: Element[], scope: SceneScope, players: Pl
 
 /** What is needed to start an effect on elements. */
 type ElementEffectStart = Pick<QueuedVisualEffect, "scope" | "run" | "effect" | "where"> &
-  Pick<EffectRun, "onEnd" | "reducedMotion"> & {
+  Pick<EffectRun, "onEnd" | "onCancel" | "reducedMotion"> & {
     /** Plays it. */
     effects: ItemEffects;
     /** What has happened to each player. */
     players: PlayerRegistry;
+    /** Says the effect is over at once: it found nothing to play on, or (as `stop` does) it acts at once. */
+    settle: () => void;
   };
 
 /**
@@ -141,7 +147,7 @@ type ElementEffectStart = Pick<QueuedVisualEffect, "scope" | "run" | "effect" | 
  * state moves on before the scene does. It gives up if its scene moves on first.
  */
 const startOnElements = (
-  { scope, run, effect, where, effects, players, onEnd, reducedMotion }: ElementEffectStart,
+  { scope, run, effect, where, effects, players, onEnd, onCancel, reducedMotion, settle }: ElementEffectStart,
   stateRef: RefObject<GameState>,
   framesRef: RefObject<Set<number>>,
 ): void => {
@@ -158,20 +164,41 @@ const startOnElements = (
       warnIfTrappingFloorItems(elements, selector, where);
       noteAffectedPlayers(elements, scope, players);
       const find = (other: string) => resolveTargets(scope, other, shownScopes)[0];
-      runEffect(effects, effect, elements, { reducedMotion, find, onEnd });
+      runEffect(effects, effect, elements, { reducedMotion, find, onEnd, onCancel });
+      if (effect.effect === "stop" || elements.length === 0) settle();
     } else if (performance.now() < deadline) {
       const frame = requestAnimationFrame(() => {
         framesRef.current.delete(frame);
         attempt();
       });
       framesRef.current.add(frame);
-    } else console.warn(`${where}.target: "${selector}" matches nothing in the scene`);
+    } else {
+      console.warn(`${where}.target: "${selector}" matches nothing in the scene`);
+      settle();
+    }
   };
   attempt();
 };
 
+/**
+ * Says, once, that an effect is over for the action waiting on it (if any): as it first finishes or is cut short on an
+ * element, which the action's `actionEnd` then carries, or at once if there is nothing to wait for.
+ * ponytail: an effect's elements start together and last as long, so the first to finish ends the action.
+ */
+const settler = (actionId: number | undefined, onActionEnd: GameEffectsContext["onActionEnd"]) => {
+  let settled = false;
+  return (element?: Element) => {
+    if (settled || !isDefined(actionId)) return;
+    settled = true;
+    onActionEnd(actionId, isDefined(element) ? { id: element.id, matches: (s) => element.matches(s) } : undefined);
+  };
+};
+
 /** Plays the effects rules have queued, on the elements or players each one targets. */
-export function useGameEffects(gameState: GameState, { stateRef, setGameState, fire, players }: GameEffectsContext) {
+export function useGameEffects(
+  gameState: GameState,
+  { stateRef, setGameState, fire, players, onActionEnd }: GameEffectsContext,
+) {
   const [{ effects, playerEffects }] = useState(() => {
     const items = new ItemEffects();
     return { effects: items, playerEffects: new PlayerEffects(items, players) };
@@ -181,26 +208,31 @@ export function useGameEffects(gameState: GameState, { stateRef, setGameState, f
   const warnedRef = useRef(false);
 
   const start = useCallback(
-    ({ scope, run, effect, event, where }: QueuedVisualEffect) => {
+    ({ scope, run, effect, event, where, actionId }: QueuedVisualEffect) => {
       const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      // An effect ended by its scene closing or resetting doesn't count as finishing
+      const settle = settler(actionId, onActionEnd);
+      // An effect ended by its scene closing or resetting doesn't count as finishing, nor does one on a removed copy
       const onEnd = (element: Element) => {
-        if (sceneRun(stateRef.current, scope) === run) fire(scope, endPick(effect.effect, element, event));
+        if (sceneRun(stateRef.current, scope) === run && element.isConnected)
+          fire(scope, endPick(effect.effect, element, event));
+        settle(element);
       };
+      const onCancel = (element: Element) => settle(element);
       if (isOnPlayers(effect)) {
-        if (visionSmoothing) {
-          const find = () => undefined;
-          playerEffects.play(effect, { scope, event, where, onEnd, reducedMotion: reducedMotion(), find });
-        } else if (!warnedRef.current) {
+        const find = () => undefined;
+        const playerRun = { scope, event, where, onEnd, onCancel, reducedMotion: reducedMotion(), find };
+        const started = visionSmoothing ? playerEffects.play(effect, playerRun) : 0;
+        if (!visionSmoothing && !warnedRef.current) {
           warnedRef.current = true;
           console.warn(`${where}: player effects need visionSmoothing on, to follow who is who`);
         }
+        if (started === 0 || effect.effect === "stop") settle();
         return;
       }
-      const starting = { scope, run, effect, where, effects, players, onEnd, reducedMotion: reducedMotion() };
-      startOnElements(starting, stateRef, framesRef);
+      const starting = { scope, run, effect, where, effects, players, onEnd, onCancel, settle };
+      startOnElements({ ...starting, reducedMotion: reducedMotion() }, stateRef, framesRef);
     },
-    [stateRef, fire, effects, players, playerEffects, visionSmoothing],
+    [stateRef, fire, effects, players, playerEffects, visionSmoothing, onActionEnd],
   );
 
   const withoutUpTo = useCallback(

@@ -243,6 +243,30 @@ export interface GameStartTrigger {
   start: true;
 }
 
+/** A named action starting, in any shown scene, once any `delayMs` of its own is over. */
+export interface GameActionStartTrigger {
+  /** The action's `name`. */
+  actionStart: string;
+}
+
+/**
+ * A named action ending, in any shown scene: see each action for when it ends. Not when its scene closes or resets
+ * first. `event` is the one the action ran with, except that a spawn's end gives the copy, and an effect's end the
+ * element it ended on.
+ */
+export interface GameActionEndTrigger {
+  /** The action's `name`. */
+  actionEnd: string;
+  /** CSS selector: only fire if the element the action ended with matches, eg. a spawned copy. Defaults to any. */
+  target?: string;
+}
+
+/** An event raised by a `raise` action, in any shown scene. */
+export interface GameRaisedTrigger {
+  /** The event's name. */
+  raised: string;
+}
+
 /** What makes a rule fire. */
 export type GameTrigger =
   | GameInteractTrigger
@@ -252,7 +276,10 @@ export type GameTrigger =
   | GameWhenTrigger
   | GameEveryTrigger
   | GameAfterTrigger
-  | GameStartTrigger;
+  | GameStartTrigger
+  | GameActionStartTrigger
+  | GameActionEndTrigger
+  | GameRaisedTrigger;
 
 /** A time in milliseconds: a number, or an expression worked out when it is needed. */
 export type GameTime = number | GameExpressionSource;
@@ -261,9 +288,11 @@ export type GameTime = number | GameExpressionSource;
 export interface GameActionBase {
   /**
    * Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later
-   * actions don't wait for it.
+   * actions in a plain `do` list don't wait for it.
    */
   delayMs?: GameTime;
+  /** A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`). */
+  name?: string;
 }
 
 /** Sets state keys to the values of expressions, all evaluated against the state before the action. */
@@ -330,6 +359,12 @@ export interface GameEnterStageAction extends GameActionBase {
   enterStage: GameStageId;
 }
 
+/** Raises a named event, which `raised` rules in every shown scene hear. Ends at once. */
+export interface GameRaiseAction extends GameActionBase {
+  /** The event's name. */
+  raise: string;
+}
+
 /** Something a rule does. */
 export type GameAction =
   | GameSetAction
@@ -338,6 +373,7 @@ export type GameAction =
   | GameAnswerAction
   | GameResetChallengeAction
   | GameEnterStageAction
+  | GameRaiseAction
   | GameFinishResetAction
   | GameSoundAction
   | GameRewardAction

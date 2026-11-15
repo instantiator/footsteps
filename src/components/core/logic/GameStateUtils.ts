@@ -221,11 +221,15 @@ export const stageCompletion = (challengeStates: GameChallengeState[]): GameStag
 /** Which run of a scene this is; see `GameSession.sceneRuns`. 0 before it has first been shown. */
 export const sceneRun = (state: GameState, scope: SceneScope): number => state.session.sceneRuns[scope] ?? 0;
 
-/** Starts a new run of each of the given scenes. */
+/** Starts a new run of each of the given scenes, dropping the actions their last runs had running, unended. */
 export const startSceneRuns = (state: GameState, scopes: Iterable<SceneScope>): GameState => {
   const sceneRuns = { ...state.session.sceneRuns };
-  for (const scope of scopes) sceneRuns[scope] = (sceneRuns[scope] ?? 0) + 1;
-  return { ...state, session: { ...state.session, sceneRuns } };
+  const restarted = new Set(scopes);
+  for (const scope of restarted) sceneRuns[scope] = (sceneRuns[scope] ?? 0) + 1;
+  const runningActions = Object.fromEntries(
+    Object.entries(state.session.runningActions).filter(([, running]) => !restarted.has(running.scope)),
+  );
+  return { ...state, session: { ...state.session, sceneRuns, runningActions } };
 };
 
 /** A scene's scope, followed by those of its reset scene, and theirs. */

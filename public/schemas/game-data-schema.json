@@ -58,6 +58,9 @@
                     "$ref": "#/definitions/GameEnterStageAction"
                 },
                 {
+                    "$ref": "#/definitions/GameRaiseAction"
+                },
+                {
                     "$ref": "#/definitions/GameFinishResetAction"
                 },
                 {
@@ -68,6 +71,36 @@
                 }
             ],
             "description": "Something a rule does."
+        },
+        "GameActionEndTrigger": {
+            "description": "A named action ending, in any shown scene: see each action for when it ends. Not when its scene closes or resets\nfirst. `event` is the one the action ran with, except that a spawn's end gives the copy, and an effect's end the\nelement it ended on.",
+            "properties": {
+                "actionEnd": {
+                    "description": "The action's `name`.",
+                    "type": "string"
+                },
+                "target": {
+                    "description": "CSS selector: only fire if the element the action ended with matches, eg. a spawned copy. Defaults to any.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "actionEnd"
+            ],
+            "type": "object"
+        },
+        "GameActionStartTrigger": {
+            "description": "A named action starting, in any shown scene, once any `delayMs` of its own is over.",
+            "properties": {
+                "actionStart": {
+                    "description": "The action's `name`.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "actionStart"
+            ],
+            "type": "object"
         },
         "GameAfterTrigger": {
             "description": "Once, some time after the scene is shown.",
@@ -111,11 +144,15 @@
                     "type": "string"
                 },
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
                     ]
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
+                    "type": "string"
                 }
             },
             "required": [
@@ -229,11 +266,15 @@
                     "type": "boolean"
                 },
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
                     ]
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
+                    "type": "string"
                 }
             },
             "required": [
@@ -294,7 +335,7 @@
             "description": "Opens a stage, unless it is locked or completed.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
@@ -302,6 +343,10 @@
                 },
                 "enterStage": {
                     "description": "The stage's id.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
                     "type": "string"
                 }
             },
@@ -330,7 +375,7 @@
             "description": "Finishes this reset scene, revealing the scene it is shown for. Reset scenes only.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
@@ -340,6 +385,10 @@
                     "const": true,
                     "description": "Always true.",
                     "type": "boolean"
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
+                    "type": "string"
                 }
             },
             "required": [
@@ -351,7 +400,7 @@
             "description": "Plays a series of styles on elements, which then return to their own styles.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
@@ -367,6 +416,10 @@
                 "effect": {
                     "const": "highlight",
                     "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
                     "type": "string"
                 },
                 "sequence": {
@@ -512,7 +565,7 @@
                     ]
                 },
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
@@ -532,6 +585,10 @@
                 "effect": {
                     "const": "item-fall",
                     "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
                     "type": "string"
                 },
                 "target": {
@@ -555,7 +612,7 @@
                     ]
                 },
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
@@ -580,6 +637,10 @@
                 "end": {
                     "$ref": "#/definitions/GameEffectPosition",
                     "description": "Where the move ends."
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
+                    "type": "string"
                 },
                 "start": {
                     "anyOf": [
@@ -671,7 +732,7 @@
             "description": "Drops players off the scene. They are removed once they have gone.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
@@ -693,6 +754,10 @@
                     "description": "Which effect this is.",
                     "type": "string"
                 },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
+                    "type": "string"
+                },
                 "players": {
                     "description": "Who it applies to. Defaults to `\"triggering\"`.",
                     "enum": [
@@ -711,7 +776,7 @@
             "description": "Stops players in place until `player-unfreeze`. They are still active, but can't interact. Applies at once.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
@@ -720,6 +785,10 @@
                 "effect": {
                     "const": "player-freeze",
                     "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
                     "type": "string"
                 },
                 "players": {
@@ -740,7 +809,7 @@
             "description": "Hides players, or shows them again. They are still active, and can still interact.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
@@ -765,6 +834,10 @@
                     ],
                     "type": "string"
                 },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
+                    "type": "string"
+                },
                 "players": {
                     "description": "Who it applies to. Defaults to `\"triggering\"`.",
                     "enum": [
@@ -783,7 +856,7 @@
             "description": "Returns players to normal, whatever has happened to them. `\"all\"` includes removed players.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
@@ -799,6 +872,10 @@
                 "effect": {
                     "const": "player-restore",
                     "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
                     "type": "string"
                 },
                 "players": {
@@ -823,7 +900,7 @@
                     "description": "The directions they may leave in; one is picked at random. Defaults to -60 to 60."
                 },
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
@@ -843,6 +920,10 @@
                 "effect": {
                     "const": "player-spin-away",
                     "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
                     "type": "string"
                 },
                 "opacity": {
@@ -877,7 +958,7 @@
             "description": "Makes players look partly transparent, like a detuned TV. They are still active, and can still interact.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
@@ -902,6 +983,10 @@
                 "effect": {
                     "const": "player-static",
                     "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
                     "type": "string"
                 },
                 "pixelSize": {
@@ -932,7 +1017,7 @@
             "description": "Returns frozen players to the live camera. Applies at once.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
@@ -941,6 +1026,10 @@
                 "effect": {
                     "const": "player-unfreeze",
                     "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
                     "type": "string"
                 },
                 "players": {
@@ -1026,7 +1115,7 @@
                     ]
                 },
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
@@ -1056,6 +1145,10 @@
                     "description": "Which effect this is.",
                     "type": "string"
                 },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
+                    "type": "string"
+                },
                 "target": {
                     "description": "CSS selector for the elements. Defaults to every item in the shown scenes.",
                     "type": "string"
@@ -1066,15 +1159,56 @@
             ],
             "type": "object"
         },
-        "GameResetChallengeAction": {
-            "description": "Clears this scene's challenge, and the state of its scenes. Challenge scenes only.",
+        "GameRaiseAction": {
+            "description": "Raises a named event, which `raised` rules in every shown scene hear. Ends at once.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
                     ]
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
+                    "type": "string"
+                },
+                "raise": {
+                    "description": "The event's name.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "raise"
+            ],
+            "type": "object"
+        },
+        "GameRaisedTrigger": {
+            "description": "An event raised by a `raise` action, in any shown scene.",
+            "properties": {
+                "raised": {
+                    "description": "The event's name.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "raised"
+            ],
+            "type": "object"
+        },
+        "GameResetChallengeAction": {
+            "description": "Clears this scene's challenge, and the state of its scenes. Challenge scenes only.",
+            "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
+                    "type": "string"
                 },
                 "resetChallenge": {
                     "const": true,
@@ -1128,11 +1262,15 @@
             "description": "Returns the scene's state to `initialState`.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
                     ]
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
+                    "type": "string"
                 },
                 "resetState": {
                     "const": true,
@@ -1175,11 +1313,15 @@
             "description": "Shows a celebration, as the game does for a completed stage; not shown to players who prefer reduced motion. It\ndoesn't hold up the rule, and plays alongside any other sounds and rewards.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
                     ]
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
+                    "type": "string"
                 },
                 "players": {
                     "description": "The players each burst starts from the centre of the body of, instead of `target`.",
@@ -1596,11 +1738,15 @@
             "description": "Sets state keys to the values of expressions, all evaluated against the state before the action.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
                     ]
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
+                    "type": "string"
                 },
                 "set": {
                     "$ref": "#/definitions/Record%3Cstring%2Cstring%3E",
@@ -1616,11 +1762,15 @@
             "description": "Plays one of the game's sound resources. It doesn't hold up the rule: the rule's other actions carry on.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
                     ]
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
+                    "type": "string"
                 },
                 "sound": {
                     "description": "The resource's name, a key of the game's `resources`.",
@@ -1717,7 +1867,7 @@
             "description": "Ends effects before their scene does. An item returns to where its template puts it.",
             "properties": {
                 "delayMs": {
-                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions don't wait for it.",
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
                     "type": [
                         "string",
                         "number"
@@ -1726,6 +1876,10 @@
                 "effect": {
                     "const": "stop",
                     "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
                     "type": "string"
                 },
                 "players": {
@@ -1793,6 +1947,15 @@
                 },
                 {
                     "$ref": "#/definitions/GameStartTrigger"
+                },
+                {
+                    "$ref": "#/definitions/GameActionStartTrigger"
+                },
+                {
+                    "$ref": "#/definitions/GameActionEndTrigger"
+                },
+                {
+                    "$ref": "#/definitions/GameRaisedTrigger"
                 }
             ],
             "description": "What makes a rule fire."

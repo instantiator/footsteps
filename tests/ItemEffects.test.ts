@@ -191,6 +191,19 @@ describe("ItemEffects", () => {
     document.body.innerHTML = "";
   });
 
+  it("tells the rule an effect was cut short when stopped or started again, and not that it finished", () => {
+    const target = element();
+    const effects = new ItemEffects();
+    const first = run({ onCancel: vi.fn() });
+    effects.fall({ effect: "item-fall" }, [target], first);
+    const again = run({ onCancel: vi.fn() });
+    effects.fall({ effect: "item-fall" }, [target], again);
+    expect(first.onCancel).toHaveBeenCalledExactlyOnceWith(target);
+    effects.stop([target], "item-fall");
+    expect(again.onCancel).toHaveBeenCalledExactlyOnceWith(target);
+    expect([first.onEnd, again.onEnd].map((onEnd) => vi.mocked(onEnd).mock.calls.length)).toEqual([0, 0]);
+  });
+
   it("adds to what the element has, so its template's positioning still applies", () => {
     new ItemEffects().fall({ effect: "item-fall" }, [element()], run());
     expect(optionsOf(0).composite).toBe("add");

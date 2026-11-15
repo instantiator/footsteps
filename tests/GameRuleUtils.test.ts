@@ -166,6 +166,33 @@ describe("compileGameRules", () => {
     expect(() => compileGameRules(gameWithRules([rule]))).toThrow("can't be negative");
   });
 
+  it.each([["start"], ["when"]] as const)(
+    'rejects an "event" target on a %s rule, which fires for no element',
+    (key) => {
+      const on = key === "start" ? { start: true as const } : { when: "true" };
+      expect(() => compileGameRules(gameWithRules([{ on, do: [{ effect: "quake", target: "event" }] }]))).toThrow(
+        `${OVERVIEW}.do[0].target: a ${key} rule fires for no element`,
+      );
+    },
+  );
+
+  it("warns about following a named action or raised event that nothing in the game names or raises", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    compileGameRules(
+      gameWithRules([
+        { on: { start: true }, do: [{ set: { a: "1" }, name: "known" }, { raise: "heard" }] },
+        { on: { actionEnd: "known" }, do: [] },
+        { on: { raised: "heard" }, do: [] },
+        { on: { actionStart: "unknown" }, do: [] },
+        { on: { raised: "unheard" }, do: [] },
+      ]),
+    );
+    expect(warn.mock.calls.map(([message]) => message)).toEqual([
+      `scenes[0] (game-overview-stages) › rules[3].on: no action is named "unknown"`,
+      `scenes[0] (game-overview-stages) › rules[4].on: nothing raises "unheard"`,
+    ]);
+  });
+
   it("compiles the rules of every game in the local repository", () => {
     for (const [id, data] of Object.entries((localRepository as GameRepository).games)) {
       expect(() => compileGameRules(data), id).not.toThrow();

@@ -26,6 +26,7 @@ import {
 import { avatarOver, declaredChoice } from "./AvatarModeUtils";
 import { isEntering, triggerInteractions, type GameExpressions } from "./GameRuleUtils";
 import { renamedKeyProblems } from "./RenamedKeys";
+import { EVENT_TARGET } from "./RuleActions";
 
 /** Actions that act on the scene's own challenge, so only make sense on challenge scenes. */
 const CHALLENGE_ACTIONS = ["completeChallenge", "answer", "resetChallenge"] as const;
@@ -252,6 +253,22 @@ const actionSources = (
   return times;
 };
 
+/** Triggers that fire for no element, so `event` has none for a target to mean. */
+const ELEMENTLESS_TRIGGERS = ["start", "every", "after", "when"] as const;
+
+/**
+ * Checks that a rule only targets `"event"` when its trigger can have an element.
+ * @throws naming `where` if it can't
+ */
+const checkEventTargets = ({ on, do: actions }: GameRule, where: string): void => {
+  const trigger = ELEMENTLESS_TRIGGERS.find((key) => key in on);
+  if (!isDefined(trigger)) return;
+  const a = actions.findIndex((action) => "target" in action && action.target === EVENT_TARGET);
+  if (a >= 0) {
+    throw new Error(`${where}.do[${a}].target: a ${trigger} rule fires for no element, so "event" means nothing`);
+  }
+};
+
 /**
  * Checks that a `start` rule doesn't reset its scene: a reset starts the scene again, so it would never stop.
  * @throws naming `where` if it does
@@ -271,6 +288,7 @@ const ruleSources = (rule: GameRule, where: string, target: SceneToCompile, game
     ...rule.do.flatMap((action, a) => actionSources(action, `${where}.do[${a}]`, target, gameData)),
   ];
   checkStartRule(rule, where);
+  checkEventTargets(rule, where);
   const unfireable = unfireableRuleProblem(rule, target.modes);
   if (isDefined(unfireable)) throw new Error(`${where}.on: ${unfireable}`);
   return sources;
@@ -287,12 +305,36 @@ export const compileGameRules = (gameData: GameData): GameExpressions => {
   const [renamed] = renamedKeyProblems(gameData);
   if (isDefined(renamed)) throw new Error(renamed);
   const expressions = new Map<string, GameExpression>();
-  for (const target of allScenes(gameData)) {
+  const scenes = allScenes(gameData);
+  for (const target of scenes) {
     (target.scene.component.rules ?? []).forEach((rule, r) => {
       for (const [source, where] of ruleSources(rule, `${target.path} › rules[${r}]`, target, gameData)) {
         if (!expressions.has(source)) expressions.set(source, compileGameExpression(source, where));
       }
     });
   }
+  warnUnheardNames(scenes);
   return expressions;
+};
+
+/** The names a game's actions have, and the events they raise. */
+const namesIn = (scenes: SceneToCompile[]) => {
+  const actions = scenes.flatMap(({ scene }) => (scene.component.rules ?? []).flatMap((rule) => rule.do));
+  return {
+    named: new Set(actions.flatMap(({ name }) => (isDefined(name) ? [name] : []))),
+    raised: new Set(actions.flatMap((action) => ("raise" in action ? [action.raise] : []))),
+  };
+};
+
+/** Warns about rules following a named action or raised event that nothing in the game names or raises: a typo. */
+const warnUnheardNames = (scenes: SceneToCompile[]): void => {
+  const { named, raised } = namesIn(scenes);
+  for (const { scene, path } of scenes) {
+    (scene.component.rules ?? []).forEach(({ on }, r) => {
+      const where = `${path} › rules[${r}].on`;
+      const name = "actionStart" in on ? on.actionStart : "actionEnd" in on ? on.actionEnd : undefined;
+      if (isDefined(name) && !named.has(name)) console.warn(`${where}: no action is named "${name}"`);
+      if ("raised" in on && !raised.has(on.raised)) console.warn(`${where}: nothing raises "${on.raised}"`);
+    });
+  }
 };

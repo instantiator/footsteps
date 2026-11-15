@@ -73,8 +73,9 @@ const chosenIds = (
     console.warn(`${where}: no player fired this rule, so there's nobody for it to apply to; try players: "all"`);
     return [];
   }
-  const id = players.idOf(event.player);
-  return id === undefined ? [] : [id];
+  // By their id where known, which isn't given to anyone else if they leave, so a late effect can't reach a newcomer
+  const id = event.playerId ?? players.idOf(event.player);
+  return id === undefined || players.numberOf(id) === undefined ? [] : [id];
 };
 
 /** What a player effect needs to know about the rule that started it. */
@@ -100,10 +101,15 @@ export class PlayerEffects {
     this.players = players;
   }
 
-  /** Starts an effect on the players it chooses. */
-  play(effect: ResolvedEffect, run: PlayerEffectRun): void {
+  /**
+   * Starts an effect on the players it chooses.
+   * @returns how many it started on
+   */
+  play(effect: ResolvedEffect, run: PlayerEffectRun): number {
     const choice = "players" in effect ? effect.players : undefined;
-    for (const id of chosenIds(choice, run.event, this.players, run.where)) this.playOn(id, effect, run);
+    const ids = chosenIds(choice, run.event, this.players, run.where);
+    for (const id of ids) this.playOn(id, effect, run);
+    return ids.length;
   }
 
   /**

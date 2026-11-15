@@ -106,6 +106,8 @@ interface ShownReward {
   reward: GameRewardData;
   /** Where on screen it starts; the middle of the game if not given. */
   at?: { x: number; y: number };
+  /** The running action that ends once it has shown, if one waits on it. */
+  actionId?: number;
 }
 
 /**
@@ -113,7 +115,7 @@ interface ShownReward {
  * has no target. So does one whose element has gone by now, as rewards outlive their scene.
  */
 const rewardsFor = (
-  { id, effect, scope, event }: QueuedEffect,
+  { id, effect, scope, event, actionId }: QueuedEffect,
   reward: GameRewardData,
   { shownScopes, playerEffects }: { shownScopes: SceneScope[]; playerEffects: PlayerEffects },
 ): ShownReward[] => {
@@ -124,19 +126,39 @@ const rewardsFor = (
     : isDefined(selector)
       ? resolveTargets(scope, selector, shownScopes)
       : [];
-  if (elements.length === 0) return [{ id, reward }];
+  if (elements.length === 0) return [{ id, reward, actionId }];
   // A player's canvas fills the scene, so its centre would be the middle of the scene, not the player
   const centreOf = (element: Element) =>
     element.classList.contains("player") ? playerEffects.bodyCentre(element) : centreOnScreen(element);
-  return elements.map((element, index) => ({ id: `${id}-${index}`, reward, at: centreOf(element) }));
+  // ponytail: the bursts start together and last as long, so the first to finish ends the action
+  return elements.map((element, index) => ({
+    id: `${id}-${index}`,
+    reward,
+    at: centreOf(element),
+    actionId: index === 0 ? actionId : undefined,
+  }));
+};
+
+/** Reports a running action's end, once a sound has played or a reward has shown. */
+type OnActionEnd = (actionId: number) => void;
+
+/** Plays a sound, reporting its action's end (if one waits on it) once it has played, or failed to. */
+const playSound = async (resource: string, actionId: number | undefined, onActionEnd: OnActionEnd) => {
+  const playing = await playAudio(resource);
+  if (!isDefined(actionId)) return;
+  if (!isDefined(playing)) return onActionEnd(actionId);
+  const end = () => onActionEnd(actionId);
+  playing.audio.addEventListener("ended", end, { once: true });
+  playing.audio.addEventListener("error", end, { once: true });
 };
 
 /**
  * Plays the sounds and rewards rules queue: each once, after its `delayMs`, alongside any others, then drops it from
- * the queue. Rewards aren't shown to players who prefer reduced motion; their sounds still play.
+ * the queue. Rewards aren't shown to players who prefer reduced motion; their sounds still play. Each reports the end
+ * of the action waiting on it, if any: a sound once it has played, a reward once it has shown (or at once, if not shown).
  * @returns the rewards showing now, to render
  */
-function useRuleEffects(reducedMotion: boolean, playerEffects: PlayerEffects) {
+function useRuleEffects(reducedMotion: boolean, playerEffects: PlayerEffects, onActionEnd: OnActionEnd) {
   const { gameState, setGameState } = useGameState();
   const { resources } = useGameData();
   const [shown, setShown] = useState<ShownReward[]>([]);
@@ -157,11 +179,11 @@ function useRuleEffects(reducedMotion: boolean, playerEffects: PlayerEffects) {
       const { effect } = queued;
       const timer = setTimeout(() => {
         timersRef.current.delete(timer);
-        if ("sound" in effect) void playAudio(resources[effect.sound]);
+        if ("sound" in effect) void playSound(resources[effect.sound], queued.actionId, onActionEnd);
         else if (!reducedMotion) {
           const shownScopes = getShownScenes(stateRef.current).map((scene) => scene.scope);
           setShown((rewards) => [...rewards, ...rewardsFor(queued, effect.reward, { shownScopes, playerEffects })]);
-        }
+        } else if (isDefined(queued.actionId)) onActionEnd(queued.actionId);
       }, queued.delayMs);
       timersRef.current.add(timer);
     }
@@ -170,7 +192,7 @@ function useRuleEffects(reducedMotion: boolean, playerEffects: PlayerEffects) {
       ...state,
       session: { ...state.session, effects: state.session.effects.filter(({ id }) => id > played) },
     }));
-  }, [effects, resources, reducedMotion, setGameState, playerEffects]);
+  }, [effects, resources, reducedMotion, setGameState, playerEffects, onActionEnd]);
 
   useEffect(() => {
     const timers = timersRef.current;
@@ -178,8 +200,11 @@ function useRuleEffects(reducedMotion: boolean, playerEffects: PlayerEffects) {
   }, []);
 
   const done = useCallback(
-    (id: number | string) => setShown((rewards) => rewards.filter((reward) => reward.id !== id)),
-    [],
+    ({ id, actionId }: Pick<ShownReward, "id" | "actionId">) => {
+      setShown((rewards) => rewards.filter((reward) => reward.id !== id));
+      if (isDefined(actionId)) onActionEnd(actionId);
+    },
+    [onActionEnd],
   );
   return { shown, done };
 }
@@ -289,8 +314,9 @@ export default function Game() {
   const onAnswer = useAnswerHandler();
   const renderData = useMemo(() => getLayeredRenderData(gameState, resources, gameId), [gameState, resources, gameId]);
   const sceneKey = useMemo(() => getSceneKey(renderData), [renderData]);
-  const { onSceneEvent, cameraRules, onPlayerInteraction, players, playerEffects, onPlayerPositions } = useGameRules();
-  const ruleRewards = useRuleEffects(reducedMotion, playerEffects);
+  const { onSceneEvent, cameraRules, onPlayerInteraction, players, playerEffects, onPlayerPositions, onActionEnd } =
+    useGameRules();
+  const ruleRewards = useRuleEffects(reducedMotion, playerEffects, onActionEnd);
   const layers = useMemo(
     () => createLayers(renderData, { onAnswer, onSceneEvent }),
     [renderData, onAnswer, onSceneEvent],
@@ -316,8 +342,8 @@ export default function Game() {
         id="reward-element"
         style={{ position: "absolute", top: "50vh", left: "50vw", width: 0, height: 0, pointerEvents: "none" }}
       />
-      {ruleRewards.shown.map(({ id, reward, at }) => (
-        <RewardBurst key={id} id={id} reward={reward} at={at} onDone={() => ruleRewards.done(id)} />
+      {ruleRewards.shown.map(({ id, reward, at, actionId }) => (
+        <RewardBurst key={id} id={id} reward={reward} at={at} onDone={() => ruleRewards.done({ id, actionId })} />
       ))}
       <PlayerRegistryContext.Provider value={players}>
         <GameLayersLayout

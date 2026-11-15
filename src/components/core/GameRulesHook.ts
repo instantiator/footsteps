@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+} from "react";
 import type { SceneScope, GameState } from "../../entities/state/GameState";
 import { useGameData } from "../../providers/GameDataHook";
 import { useGameState } from "../../providers/GameStateHook";
@@ -8,6 +17,8 @@ import { useGameEffects } from "./effects/GameEffectsHook";
 import type { PlayerEffects } from "./effects/PlayerEffects";
 import { useDelayedActions, useWhenRules } from "./RuleWaitsHook";
 import { leaveTitleScreen } from "./logic/GameClickUtils";
+import { endAction, type EndedWith } from "./logic/ActionRuns";
+import { EVENT_TARGET } from "./logic/RuleActions";
 import { targetsPlayers } from "./logic/GameEffectCompile";
 import { sceneRun } from "./logic/GameStateUtils";
 import {
@@ -52,7 +63,8 @@ const warnUnmatchedSelectors = (scene: ShownScene): void => {
     }
     rule.do.forEach((action, a) => {
       const target = "target" in action ? action.target : undefined;
-      if (!isDefined(target) || targetsPlayers(target) || resolveTargets(scene.scope, target, []).length > 0) return;
+      if (!isDefined(target) || target === EVENT_TARGET || targetsPlayers(target)) return;
+      if (resolveTargets(scene.scope, target, []).length > 0) return;
       console.warn(`${scene.scope} › rules[${ruleIndex}].do[${a}].target: "${target}" matches nothing in the scene`);
     });
   });
@@ -286,6 +298,26 @@ export interface GameRules {
   playerEffects: PlayerEffects;
   /** Gives rules and templates every player's position, in one change. */
   onPlayerPositions: (positions: PublishedPositions) => void;
+  /** Reports that a running action has ended, with the element it ended on, if any. */
+  onActionEnd: (actionId: number, ended?: EndedWith) => void;
+}
+
+/** The game's player registry, and how its counts and positions reach the session, for rules and templates. */
+function usePlayerSession(setGameState: Dispatch<SetStateAction<GameState>>) {
+  const [players] = useState(() => new PlayerRegistry());
+  useEffect(
+    () =>
+      players.onCounts((counts) =>
+        setGameState((state) => ({ ...state, session: { ...state.session, players: counts } })),
+      ),
+    [players, setGameState],
+  );
+  const onPlayerPositions = useCallback(
+    (positions: PublishedPositions) =>
+      setGameState((state) => ({ ...state, session: { ...state.session, playerPositions: positions } })),
+    [setGameState],
+  );
+  return { players, onPlayerPositions };
 }
 
 /**
@@ -301,19 +333,7 @@ export function useGameRules(): GameRules {
   const { gameId, expressions } = useGameData();
   const { gameState, setGameState } = useGameState();
   const env: RuleEnvironment = useMemo(() => ({ gameId, expressions }), [gameId, expressions]);
-  const [players] = useState(() => new PlayerRegistry());
-  useEffect(
-    () =>
-      players.onCounts((counts) =>
-        setGameState((state) => ({ ...state, session: { ...state.session, players: counts } })),
-      ),
-    [players, setGameState],
-  );
-  const onPlayerPositions = useCallback(
-    (positions: PublishedPositions) =>
-      setGameState((state) => ({ ...state, session: { ...state.session, playerPositions: positions } })),
-    [setGameState],
-  );
+  const { players, onPlayerPositions } = usePlayerSession(setGameState);
   const stateRef = useRef(gameState);
   useEffect(() => {
     stateRef.current = gameState;
@@ -323,11 +343,15 @@ export function useGameRules(): GameRules {
     (scope, pick) => setGameState((previous) => fireRules(env, previous, scope, pick)),
     [env, setGameState],
   );
+  const onActionEnd = useCallback(
+    (actionId: number, ended?: EndedWith) => setGameState((previous) => endAction(env, previous, actionId, ended)),
+    [env, setGameState],
+  );
   useSceneLifecycles(env, gameState, stateRef, fire);
   const mouseHolds = useMouseHolds(gameState, stateRef, fire);
   useWhenRules(env, gameState, setGameState, fire);
   useDelayedActions(env, gameState, setGameState);
-  const playerEffects = useGameEffects(gameState, { stateRef, setGameState, fire, players });
+  const playerEffects = useGameEffects(gameState, { stateRef, setGameState, fire, players, onActionEnd });
 
   /** Fires a scene's rules for an event in its template. A click no rule takes moves on from the title screen. */
   const onSceneEvent = useCallback(
@@ -349,13 +373,15 @@ export function useGameRules(): GameRules {
     [fire, setGameState, mouseHolds],
   );
 
-  /** Fires the camera rule that watches the element the player interacted with. */
+  /** Fires the camera rule that watches the element the player interacted with, naming the player for good. */
   const onPlayerInteraction = useCallback(
-    ({ scope, ruleIndex, element, interaction, player }: CameraRuleEvent) =>
-      fire(scope, (_, index) => (index === ruleIndex ? { id: element?.id ?? "", interaction, player } : undefined)),
-    [fire],
+    ({ scope, ruleIndex, element, interaction, player }: CameraRuleEvent) => {
+      const event = { id: element?.id ?? "", interaction, player, playerId: players.idOf(player) };
+      fire(scope, (_, index) => (index === ruleIndex ? event : undefined));
+    },
+    [fire, players],
   );
 
   const cameraRules = useMemo(() => getCameraRules(gameState), [gameState]);
-  return { onSceneEvent, cameraRules, onPlayerInteraction, players, playerEffects, onPlayerPositions };
+  return { onSceneEvent, cameraRules, onPlayerInteraction, players, playerEffects, onPlayerPositions, onActionEnd };
 }
