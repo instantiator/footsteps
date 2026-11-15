@@ -1,7 +1,7 @@
 # How filtrex works
 
 Scene rules use short expressions for their conditions (`if`, `when`), computed values (`set`), answers
-(`answer`) and timer durations (`every`, `after`). These are written in
+(`answer`) and times (`every`, `after`, and any `delayMs`, `durationMs` or `cycleMs`). These are written in
 [filtrex](https://github.com/cshaa/filtrex), a small, safe expression language. This page explains what it
 does and how to write it.
 
@@ -36,17 +36,17 @@ site's Content Security Policy.
 
 ## Syntax
 
-| Write                              | Meaning                                                           |
-| ---------------------------------- | ----------------------------------------------------------------- |
-| `state.score + 1`                  | Arithmetic: `+ - * /`, `^` (power), `mod` (always positive)       |
-| `state.score >= data.target`       | Comparison: `== != < <= > >=`                                     |
-| `not state.popping`                | Boolean logic: `and`, `or`, `not`                                 |
-| `true`, `false`                    | Booleans                                                          |
-| `if state.on then 2 else 1`        | A value that depends on a condition                               |
-| `event.id in ("lava-1", "lava-2")` | Membership (`not in` too)                                         |
-| `"hello"`                          | A string: always double quotes                                    |
-| `'state.my-key'`                   | A name with other characters (eg. `-`): single quotes, not double |
-| `max(state.a, 3)`                  | Built-ins: `abs ceil floor round sqrt min max log exists empty`   |
+| Write                              | Meaning                                                                                                   |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `state.score + 1`                  | Arithmetic: `+ - * /`, `^` (power), `mod` (always positive)                                               |
+| `state.score >= data.target`       | Comparison: `== != < <= > >=`                                                                             |
+| `not state.popping`                | Boolean logic: `and`, `or`, `not`                                                                         |
+| `true`, `false`                    | Booleans                                                                                                  |
+| `if state.on then 2 else 1`        | A value that depends on a condition                                                                       |
+| `event.id in ("lava-1", "lava-2")` | Membership (`not in` too)                                                                                 |
+| `"hello"`                          | A string: always double quotes                                                                            |
+| `'state.my-key'`                   | A name with other characters (eg. `-`): single quotes, not double                                         |
+| `max(state.a, 3)`                  | Built-ins: `abs ceil floor round sqrt min max log exists empty`, and [`random`](game-data.md#expressions) |
 
 Values are not converted between types: `1 + true` is an error, not `2`.
 

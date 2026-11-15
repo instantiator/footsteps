@@ -42,7 +42,7 @@ the camera feedback work too ([ADRs 0007](ADRs/0007-camera-flicker.md) and [0008
 - hops on the spot and between two elements fire `jump`, `jump-from` and `jump-onto` for a child and an adult;
 - stepping back and forth fires nothing.
 
-Tune the `VITE_JUMP_*` and `VITE_CAMERA_HOLD_MS` / `FADE_MS` defaults from what you see, as they are estimates.
+Tune the `VITE_JUMP_*` and `VITE_CAMERA_HOLD_MS` / `VITE_CAMERA_FADE_MS` defaults from what you see, as they are estimates.
 
 Run [the floor and 2.5D scenes](testing/manual-testing.md#the-floor-and-25d-scenes) checklist too: the default
 corners are calculated for an assumed camera, not measured, and whether a calibrated floor lines up, keeps feet green

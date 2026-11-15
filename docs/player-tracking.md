@@ -14,10 +14,10 @@ Tracker ids only ever grow, so each tracked person also takes the lowest free nu
 
 ## Choosing players
 
-| Value                    | Meaning                                                                                                                             |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `"triggering"` (default) | The player who fired the rule. On a rule no player fired (eg. `when` or `every`), the effect does nothing, and this logs a warning. |
-| `"all"`                  | Every player. Each effect applies to those it can: a removed player only responds to `player-restore`.                              |
+| Value                    | Meaning                                                                                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `"triggering"` (default) | The player who fired the rule. On a rule no player fired (eg. `when` or `every`), the effect does nothing, and this logs a warning.        |
+| `"all"`                  | Every player the game knows, spectators included. Each effect applies to those it can: a removed player only responds to `player-restore`. |
 
 ## States
 
@@ -115,7 +115,6 @@ These are hard to fix without recognising people by appearance:
 
 - **Players who cross can swap**, moving a removal or a freeze to the wrong person, as people are matched by the nearest silhouette centre.
 - **Walking out of shot and back rejoins** as someone new, unless near a note. A stranger who walks through a note's place inherits it instead.
-- **A delayed `"triggering"` effect finds its player by number**, so if they have left and their number has been reused by then, it reaches the new holder.
 - **Player effects need `visionSmoothing` on.** Without it, an id is only a person's place in the frame's list. They do nothing, and log one warning.
 
 These need real people in front of a real camera to judge, so they are in [manual testing](testing/manual-testing.md#player-effects).

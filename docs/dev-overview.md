@@ -11,17 +11,17 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 
 ## Layout
 
-| Path                         | What it is                                                                                                   |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `react-router.config.ts`     | Static build settings: no server, the routes to prerender, the base path                                     |
-| `src/root.tsx`               | The HTML document every page renders into (head tags, security policy)                                       |
-| `src/routes.ts`              | Route config: `/`, `/game/:id`, `/game/:id/play`, `/game/:id/calibrate`, `/game/:id/json`, `/scene-renderer` |
-| `src/pages/`, `src/Home.tsx` | Route modules (one page each)                                                                                |
-| `src/components/`            | Game engine UI: layers, scenes, camera, and the game logic in `core/logic/`                                  |
-| `src/config/`                | App config; see [Configuration](configuration.md)                                                            |
-| `src/vision/`                | Vision models behind one interface, body-part queries, tracking, the worker                                  |
-| `src/providers/`             | React contexts: repository, game data, game state, music, app config                                         |
-| `tests/`                     | Vitest unit and component tests                                                                              |
+| Path                         | What it is                                                                                                       |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `react-router.config.ts`     | Static build settings: no server, the routes to prerender, the base path                                         |
+| `src/root.tsx`               | The HTML document every page renders into (head tags, security policy)                                           |
+| `src/routes.ts`              | Route config: `/`, `/game/:id`, `/game/:id/play`, `/game/:id/calibrate`, `/game/:id/json`, `/scene-renderer`     |
+| `src/pages/`, `src/Home.tsx` | Route modules (one page each)                                                                                    |
+| `src/components/`            | Game engine UI: layers, scenes, camera, and the game logic in `core/logic/`                                      |
+| `src/config/`                | App config; see [Configuration](configuration.md)                                                                |
+| `src/vision/`                | Vision models behind one interface, body-part queries, tracking, the worker                                      |
+| `src/providers/`             | React contexts: repository, game data, game state, content cache, music, app config, player registry, spectators |
+| `tests/`                     | Vitest unit and component tests                                                                                  |
 
 ## Invocations
 
@@ -115,8 +115,8 @@ sample-screenshots`, which rewrites `docs/tutorials/images/`.
 ### Clickable elements in templates
 
 Any scene's template makes elements interactive through the scene's [rules](game-data.md#rules-and-state):
-a rule names the elements with a CSS selector, and the interactions it accepts (click, hand, foot, head, body,
-any, jump, jump-from, jump-onto; see [camera mode](camera-mode.md#how-interactions-work) for what the camera detects). For keyboard
+a rule names the elements with a CSS selector, and the interactions it accepts (click, mouse, hand, foot, head, body,
+any, near, jump, jump-from, jump-onto; see [camera mode](camera-mode.md#how-interactions-work) for what the camera detects). For keyboard
 players, also mark each element a player can currently use with `role="button"`, `tabindex="0"`, and a label
 (`alt` on an image, or `aria-label`): the scene then treats Enter or Space on it as a click. On the title
 screen, Enter or Space anywhere moves on, as a click does. See `public/games/magic-trifle/overview/foreground.html`.

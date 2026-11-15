@@ -475,7 +475,7 @@ See [how filtrex works](filtrex.md) for the syntax and why it is safe.
 | `mouse-exit`                                                   | Moves the mouse off the element, or the element moves out from under it       |
 | `hand-enter`                                                   | Puts either hand over the element                                             |
 | `foot-enter`                                                   | Puts either foot over the element                                             |
-| `head-enter`                                                   | Puts either side of their face over the element                               |
+| `head-enter`                                                   | Puts their head over the element                                              |
 | `body-enter`                                                   | Covers the element with their whole silhouette                                |
 | `any-enter`                                                    | Covers it with any single body part                                           |
 | `hand-exit`, `foot-exit`, `head-exit`, `body-exit`, `any-exit` | Stops doing the matching `-enter`, or leaves the camera's view while doing it |
@@ -552,7 +552,7 @@ The **`template`** type renders those templates and nothing more. The **`dialog`
 
 - `text`
 - `showInput` and `label`: an answer box that checks the challenge's solution as the player types
-- `media`: a `GameSceneMediaData` audio clip, with optional `stillImageResource` and `motionImageResource` images that play and stop it
+- `media`: a `GameSceneMediaData` audio clip, with optional `stillImageResource` and `motionImageResource` images that play and stop it, and an `audioDescription` for screen readers (default "audio")
 
 Without its own templates, a dialog or scroll shows the page text one paragraph per line. The text scrolls if it doesn't fit, and the page's audio, answer box and page arrows stay in view below it.
 
