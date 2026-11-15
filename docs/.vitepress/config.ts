@@ -1,4 +1,4 @@
-import { readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitepress";
 
@@ -14,6 +14,19 @@ const promptPages = readdirSync(promptsDir)
     text: name.replace(/\.md$/, ""),
     link: `/prompts/${name.replace(/\.md$/, "")}`,
   }));
+
+/** ADRs, listed so new ones appear in the sidebar without config edits, each titled from its heading. */
+const adrsDir = fileURLToPath(new URL("../ADRs", import.meta.url));
+const adrPages = readdirSync(adrsDir)
+  .filter((name) => /^\d{4}-.*\.md$/.test(name))
+  .sort()
+  .map((name) => {
+    const heading = readFileSync(`${adrsDir}/${name}`, "utf8").match(/^# ADR (\d{4}): (.+)$/m);
+    return {
+      text: heading ? `${heading[1]} ${heading[2]}` : name.replace(/\.md$/, ""),
+      link: `/ADRs/${name.replace(/\.md$/, "")}`,
+    };
+  });
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
@@ -69,17 +82,7 @@ export default defineConfig({
       },
       {
         text: "Decisions",
-        items: [
-          {
-            text: "0001 Replace vite-react-ssg with React Router",
-            link: "/ADRs/0001-replace-vite-react-ssg-with-react-router-framework-mode",
-          },
-          { text: "0002 Camera interactions", link: "/ADRs/0002-camera-interactions" },
-          {
-            text: "0003 Save game progress in local storage",
-            link: "/ADRs/0003-save-progress-in-local-storage",
-          },
-        ],
+        items: adrPages,
       },
       {
         text: "Prompts and plans",
