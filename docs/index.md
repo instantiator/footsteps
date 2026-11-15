@@ -33,3 +33,4 @@ Published as HTML at <https://instantiator.dev/footsteps/docs/>, with the API re
 - [0009 Reset displays and rule effects](ADRs/0009-reset-displays-and-rule-effects.md)
 - [0010 Tracking players from behind](ADRs/0010-player-tracking-from-behind.md)
 - [0011 Effects and player state](ADRs/0011-effects-and-player-state.md)
+- [0012 Action runs and spawning](ADRs/0012-action-runs-and-spawning.md)

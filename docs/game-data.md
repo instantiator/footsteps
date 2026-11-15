@@ -285,7 +285,8 @@ a countdown before balloons fall. Until then, the scene's own rules, timers and 
 
 #### Rules
 
-A rule has a trigger (`on`), an optional condition (`if`, an expression), and actions (`do`), applied in order.
+A rule has a trigger (`on`), an optional condition (`if`, an expression), and actions (`do`), started in order, all
+at once. To run actions one after another, put them in a [series](#series-and-parallel-groups).
 Rules on scenes that aren't showing do nothing. An overview scene counts as showing only while no stage is
 open.
 
@@ -299,6 +300,9 @@ open.
 | `{ "every": <ms or expression> }`                            | Repeatedly while the scene shows; an expression is worked out again each time                                                                                                                 |
 | `{ "after": <ms or expression> }`                            | Once, that long after the scene is shown                                                                                                                                                      |
 | `{ "start": true }`                                          | When the scene is shown                                                                                                                                                                       |
+| `{ "actionStart": "<name>" }`                                | When a [named action](#named-actions-and-raised-events) starts, in any shown scene                                                                                                            |
+| `{ "actionEnd": "<name>", "target"?: "<selector>" }`         | When a [named action](#named-actions-and-raised-events) ends, in any shown scene; with `target`, only if the element it ended with matches                                                    |
+| `{ "raised": "<name>" }`                                     | When a `raise` action raises the event, in any shown scene                                                                                                                                    |
 
 | Action                                                                   | Does                                                                                                                                                                                     |
 | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -312,8 +316,13 @@ open.
 | `{ "sound": "<resource>" }`                                              | Plays a sound resource                                                                                                                                                                   |
 | `{ "reward": { "animation", "particleCount"? }, "target"?, "players"? }` | Shows a [partycles](https://www.npmjs.com/package/partycles) celebration, like the stage [reward](#reward), from the middle of the game or [what it targets](special-effects.md#rewards) |
 | `{ "effect": "<effect>", … }`                                            | Runs a [special effect](special-effects.md) on elements or players                                                                                                                       |
+| `{ "spawn": "<template selector>", "into": "<selector>" }`               | Adds a copy of a `<template>`'s element to an element of the scene ([spawn and despawn](#spawn-and-despawn))                                                                             |
+| `{ "despawn": "<selector>" }`                                            | Removes the spawned copies the selector matches                                                                                                                                          |
+| `{ "raise": "<name>" }`                                                  | Raises a named event, for `raised` rules in every shown scene                                                                                                                            |
+| `{ "series": [ … ] }`                                                    | Runs its actions one after another ([groups](#series-and-parallel-groups))                                                                                                               |
+| `{ "parallel": [ … ] }`                                                  | Runs its actions together, ending with the last                                                                                                                                          |
 
-Every action can have a [`delayMs`](special-effects.md#delay).
+Every action can have a [`delayMs`](special-effects.md#delay), and a [`name`](#named-actions-and-raised-events).
 
 - Selectors are any CSS selector (`#door`, `.pit`, `.door:not(.open)`), matched inside the scene's own
   templates. A click fires the rules whose selector matches the clicked element or its nearest matching ancestor.
@@ -324,18 +333,90 @@ Every action can have a [`delayMs`](special-effects.md#delay).
 - A `set` can make a `when` fire, which can `set` again. A chain of more than 10 rounds is logged, naming the
   rules, and stopped.
 - `every` waits at least 50 ms between firings.
-- `sound` and `reward` don't hold anything up: the rule's other actions apply at once, and sounds and rewards from
-  the same rule start together (or after their own `delayMs`), carrying on even if their scene closes or resets. Each plays once. Sounds play at full volume. With reduced
+- In a plain `do` list, `sound` and `reward` don't hold anything up: the rule's other actions apply at once, and
+  sounds and rewards from the same rule start together (or after their own `delayMs`), carrying on even if their
+  scene closes or resets. To wait for one, put it in a [series](#series-and-parallel-groups). Each plays once. Sounds play at full volume. With reduced
   motion, rewards aren't shown but sounds still play. A reload drops effects still waiting to play.
 - `holdMs` and `forMs` restart from zero if the player moves away, or the expression turns false, before the time
   is up. `holdMs` works only with `-enter` interactions.
 - Everything is checked when the game loads: an expression that doesn't parse, an invalid selector, a negative
   duration, a challenge action outside a challenge scene, `enterStage` to a stage the game doesn't have, a `start`
-  rule that resets its own scene, a mistake in an [effect](special-effects.md), or a rule that no avatar mode the
+  rule that resets its own scene (even from inside a group), an `"event"` target on a rule that fires for no element,
+  a mistake in an [effect](special-effects.md), or a rule that no avatar mode the
   scene can have would fire, stops the game loading, with a message naming the scene and rule. A selector that matches nothing in the scene is
-  a console warning. So does a `holdMs` on an interaction that isn't an `-enter`, `finishReset` outside a reset
+  a console warning (except in a scene that spawns, whose elements come and go; its `spawn` and `into` are still
+  checked). So is an `actionStart` or `actionEnd` naming no action in the game, or a `raised` naming an event nothing
+  raises. So does a `holdMs` on an interaction that isn't an `-enter`, `finishReset` outside a reset
   scene, a `sound` naming a resource the game doesn't have, or an old name: an interaction (eg. `hand`, now
   `hand-enter`), or a layer class (`.display-foreground`, now `.scene-foreground`).
+
+#### The `event` target
+
+A `target` (or `despawn`, or `into`) of `"event"` means the element the rule fired for: the one clicked, entered,
+animated or spawned, as `event.id` names it. So one rule can act on whichever of many copies fired it, as Jump and
+duck's do. It needs an element with an `id`: a rule with none logs an error, and the action ends at once. A `start`,
+`every`, `after` or `when` rule fires for no element, so `"event"` there stops the game loading.
+
+#### Named actions and raised events
+
+Any action can have a `name`. Rules in every shown scene can then follow it: `actionStart` fires as it starts (after
+its own `delayMs`), and `actionEnd` as it ends. Each action ends:
+
+| Action                                                                                                     | Ends                                                                                            |
+| ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `set`, `resetState`, `answer`, `completeChallenge`, `resetChallenge`, `enterStage`, `finishReset`, `raise` | At once                                                                                         |
+| `sound`                                                                                                    | Once it has played, or failed to                                                                |
+| `reward`                                                                                                   | Once its burst is over (2.5 s at most), or at once with reduced motion, as it isn't shown       |
+| `effect`                                                                                                   | Once it finishes, or is stopped, on its first element; at once if it found nothing to play on   |
+| `spawn`                                                                                                    | Once its copy is in place; `actionEnd` gets the copy as `event`, and its `target` filters on it |
+| `despawn`                                                                                                  | At once                                                                                         |
+| `series`, `parallel`                                                                                       | Once the last of its actions has ended                                                          |
+
+An indefinite effect ends when it is stopped. An action that can't happen (eg. a time that doesn't work out) is
+logged and ends at once. One whose scene closes or resets first is dropped, and doesn't end. `actionEnd`'s `event` is
+the one the action's rule fired with, except as above, and for an effect, which gives the element it ended on.
+
+`{ "raise": "<name>" }` fires the `raised` rules naming it in every shown scene, with the raising rule's `event`. A
+stage's shared scene and its challenges can signal each other this way. Events carry no data of their own: share
+values through state. Named starts, ends and raised events that set each other off more than 10 deep are logged and
+stopped.
+
+#### Series and parallel groups
+
+`{ "series": [ … ] }` runs its actions one after another: each starts when the one before it has ended, and the
+series ends with the last. `{ "parallel": [ … ] }` starts its actions together, and ends when the last has ended. A
+plain `do` list is parallel, though nothing waits on it. Groups are actions, so they nest, and can have a `name` and
+a `delayMs`. A `delayMs` inside a group waits from when its action's turn comes.
+
+```json
+{
+  "series": [
+    { "effect": "player-fall", "durationMs": 1000 },
+    { "resetChallenge": true, "delayMs": 500 }
+  ]
+}
+```
+
+falls, then resets the challenge half a second after the fall has ended, however long it takes. If the group's
+scene closes or resets part way, the rest of it is dropped.
+
+#### Spawn and despawn
+
+`{ "spawn": "<template selector>", "into": "<selector>" }` adds a copy of a `<template>` element's content (its first
+element) at the end of the element `into` matches, in the scene's own templates. So any number of copies can be on
+screen at once.
+
+- The template is rendered with the rest of its scene, so Handlebars in it (eg.
+  `{{#if state.high}}jd-bat{{else}}jd-snowball{{/if}}`) follows the state, including a `set` earlier in the same rule.
+- Each copy gets an `id`, `<template id>-<n>`, unless its markup gives one. Rules, effects, the camera and the mouse
+  find copies by selector, like any other element. Copies survive their template re-rendering around them.
+- A named spawn's `actionEnd` gives the copy as `event`, so a rule can start an effect on `"event"`: the copy that
+  has just arrived. `actionEnd`'s `target` picks copies by selector, eg. `.jd-bat`.
+- `{ "despawn": "<selector>" }` removes the copies the selector matches; elements that weren't spawned stay. Use
+  `"event"` to remove the copy a rule fired for, eg. on its `effectEnd` once it has left the scene.
+- Copies go when their scene closes or resets, and aren't saved.
+- A scene holds at most 100 copies at once: past that, a spawn is logged, once a run, and skipped.
+- A `spawn` whose template isn't a `<template>`, or whose `into` matches nothing, is a console warning.
 
 #### Expressions
 
@@ -349,7 +430,7 @@ Times are `every`, `after`, and any action's `delayMs`, and an effect's `duratio
 | `state` | This scene's state                                                                                                                    |
 | `data`  | The component's `data`, as authored                                                                                                   |
 | `game`  | The game's progress: `id`, `title`, `config`, `stages` (each with `id`, `availability`, `completion` and `challenges`), and `current` |
-| `event` | For element triggers: the matched element's `id` (empty if it has none) and the `interaction`                                         |
+| `event` | For element triggers: the matched element's `id` (empty if it has none), the `interaction`, and the `player`'s number                 |
 
 Besides filtrex's own functions (`abs`, `ceil`, `floor`, `log`, `max`, `min`, `round`, `sqrt`, `exists`, `empty`),
 an expression can call `random(min, max)`: a number picked evenly from `min` up to (not including) `max`, different
@@ -364,8 +445,8 @@ See [how filtrex works](filtrex.md) for the syntax and why it is safe.
 | Interaction                                                    | The player does                                                               |
 | -------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | `click`                                                        | Clicks the element, or focuses it and presses Enter/Space                     |
-| `mouse-enter`                                                  | Moves the mouse onto the element, from outside it                             |
-| `mouse-exit`                                                   | Moves the mouse off the element                                               |
+| `mouse-enter`                                                  | Moves the mouse onto the element, or the element moves under the pointer      |
+| `mouse-exit`                                                   | Moves the mouse off the element, or the element moves out from under it       |
 | `hand-enter`                                                   | Puts either hand over the element                                             |
 | `foot-enter`                                                   | Puts either foot over the element                                             |
 | `head-enter`                                                   | Puts either side of their face over the element                               |
@@ -411,7 +492,7 @@ inside a `noClicks` wrapper still takes clicks.
 Templates are patched in place when state changes, rather than replaced, so CSS transitions and animations carry
 on, until the scene [resets](special-effects.md#ending-with-the-scene). An element is matched to its previous self by `id`, so give an `id` to anything that animates or that the
 camera tracks. Changing an element's `id` (eg. `balloon-{{state.balloonIndex}}`) makes a new element, which restarts its
-animations: a simple way to spawn a replacement.
+animations: a simple way to replace one. To have any number at once, [spawn](#spawn-and-despawn) copies instead.
 
 ### Layers
 

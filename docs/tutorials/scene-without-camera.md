@@ -120,6 +120,7 @@ A rule has a trigger (`on`), an optional condition (`if`), and actions (`do`)
 
 A `when` rule fires when its expression turns true, after any change of state:
 
+<!-- prettier-ignore -->
 ```json [public/game-repository.json]
 {
   "on": { "when": "state.lamp1 and state.lamp2 and state.lamp3" },
@@ -128,7 +129,10 @@ A `when` rule fires when its expression turns true, after any change of state:
     {
       "series": [
         {
-          "parallel": [{ "sound": "fanfare" }, { "reward": { "animation": "sparkles", "particleCount": 80 } }]
+          "parallel": [
+            { "sound": "fanfare" },
+            { "reward": { "animation": "sparkles", "particleCount": 80 } }
+          ]
         },
         { "completeChallenge": true }
       ]

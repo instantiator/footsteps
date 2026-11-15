@@ -162,14 +162,6 @@ Each near rule looks at the circle around its element, for each player, every fr
 
 **Act when:** the bench's `monitor-ms` is over 2 ms with near rules in a game. Then share the scan between rules, or do it at a lower resolution.
 
-## A delayed effect finds its player by number
-
-A delayed `"triggering"` effect looks up the player's number when it runs, so if they have left and the number has been reused, it reaches the new holder.
-
-**Act when:** a game delays an effect by more than a few seconds, or a tester sees an effect land on the wrong person. Then carry the player's stable id on the event as well.
-
-**Related:** [002.03.14 (spawn and moving targets)](prompts/002.03.14.prompt%20-%20spawn%20and%20moving%20targets.md), whose series of actions make longer waits common.
-
 ## A challenge's sibling counts for the camera check, across chunks
 
 The load check that a scene's camera can be on counts another challenge in the same stage as turning it on if the stage shows several at once, even if they fall in different chunks, so aren't shown together. It can miss a mistake, but never rejects a working game.
@@ -317,16 +309,6 @@ volume setting for a game, a sound, or the player.
 **Act when:** players or testers ask to turn sounds down, or a game mixes loud and quiet sounds. Then add a
 `volume` to `sound` actions and a player-facing volume control, applied in `playAudio`.
 
-## Rules can't follow an effect ending
-
-`sound` and `reward` actions don't hold anything up, and nothing fires when they finish. A game can only line
-rules up with an effect by its `delayMs` and a matching `after` or `every`.
-
-**Act when:** a game needs to act when a sound or animation ends (eg. reveal a scene after a fanfare). Then add
-an `effectEnd` trigger, naming the effect, fired by `useRuleEffects` in `Game.tsx`.
-
-**Planned in:** [002.03.14 (spawn and moving targets)](prompts/002.03.14.prompt%20-%20spawn%20and%20moving%20targets.md), where every action reports its end.
-
 ## Mouse-feet has no body for player effects
 
 In `mouse-feet` the pointer is player 1's feet only: there's no silhouette, so effects that act on players
@@ -451,20 +433,6 @@ Everyone the camera sees is a player, including people standing off the floor. [
 
 **Act when:** prompt 002.03.16 is planned.
 
-## No `spawn` or `despawn` actions
-
-A game can't add copies of a `<template>` while it runs, so any number of obstacles can't be on screen at once. Jump
-and duck sends a fixed pool of four obstacles across instead, each restarted on its `effectEnd` with a random
-`delayMs`, and that was enough for a simple runner (prompt 002.03.10). The planned actions were
-`{ "spawn": "<template selector>", "into": "<selector>" }`, adding a copy that goes when the scene resets, and
-`{ "despawn": "<selector>" }`, removing copies (eg. on an obstacle's `animationEnd` once it has left the scene).
-
-**Act when:** a game needs more obstacles on screen than a fixed pool gives, or an obstacle whose kind (eg. high or
-low) is picked at random each time. Then add both actions, with copies marked so a reset removes them, and effects
-and rules that find them by selector as usual.
-
-**Planned in:** [002.03.14 (spawn and moving targets)](prompts/002.03.14.prompt%20-%20spawn%20and%20moving%20targets.md).
-
 ## Jump and duck's thresholds aren't proven on a real camera
 
 Jump and duck counts a hit as `body-enter` on a snowball (threshold 0.1) or `head-enter` on a bat (0.3), with the
@@ -474,18 +442,6 @@ uses; it plays the game by mouse.
 **Act when:** the first real-camera session. Note whether jumps clear the snowballs and ducks clear the bats (see
 [Landing, progress, and keep-awake](testing/manual-testing.md#landing-progress-and-keep-awake)), and tune the
 thresholds, the lanes' heights and the obstacles' sizes.
-
-## A still mouse pointer misses later obstacles
-
-In mouse mode, `mouse-enter` comes from the browser's own `mouseover`. Chrome reports an obstacle moving under a
-pointer that isn't moving, but only on each obstacle's first pass, so a perfectly still pointer in Jump and duck's
-lanes loses a life or two and then goes untouched. Moving the pointer, as a player does, counts every pass.
-
-**Act when:** mouse players report getting through Jump and duck untouched. Then hit-test the last pointer position
-(`lastPointer` in `src/util/PointerPosition.ts`) each animation frame while a scene has `mouse-enter` rules on moving
-elements, and fire `mouse-enter` and `mouse-exit` from it.
-
-**Planned in:** [002.03.14 (spawn and moving targets)](prompts/002.03.14.prompt%20-%20spawn%20and%20moving%20targets.md).
 
 ## Overview and stage dialogs sit behind players
 
@@ -522,3 +478,33 @@ browser shows a different floor from the docs' pictures.
 
 **Act when:** game authors ask to try rules in it, or are confused by a floor that differs from the pictures. Then
 add a box for the component's JSON (its `rules` and `initialState`), or a "default floor" switch.
+
+## A stopped `player-static` doesn't end its action
+
+A named or grouped effect ends as it first finishes or is cut short on one of its elements or players. Stopping an indefinite `player-static` fades it out without telling the action, so a series waiting on it waits until its scene ends. The first player to finish also ends an effect on several players, as they start together and last as long.
+
+**Act when:** a game puts an indefinite `player-static` in a series and stops it, or plays a player effect whose players finish at different times. Then report the static's stop as an end, and count each chosen player's end.
+
+## A reward's end is capped at 2.5 s
+
+partycles doesn't always resolve a burst's promise (it pauses while the page is hidden, and in headless Chromium it never resolved), so a named or grouped `reward` ends at `REWARD_END_MS` (2500 ms, `src/components/core/Game.tsx`) if its burst hasn't finished first.
+
+**Act when:** a game waits on a reward whose burst clearly lasts longer or shorter than 2.5 s. Then tune `REWARD_END_MS`, or end on partycles' own completion once it reports it reliably.
+
+## Dialogs and scrolls don't hit-test a still pointer
+
+Template scenes with `mouse-enter` or `mouse-exit` rules hit-test the resting pointer each frame, so elements moving under it enter and leave it. Dialog and scroll scenes don't, and rely on the browser's events.
+
+**Act when:** a dialog or scroll has moving targets with mouse rules. Then pass `watchPointer` through `GameSceneDialogComponent` and `GameSceneScrollComponent` as `GameSceneComponent` does for templates.
+
+## Raised events carry no data
+
+`raise` passes the raising rule's `event` but no values of its own; shared values go through state.
+
+**Act when:** a game needs a raised event to carry a value its listeners can't read from state (eg. from another scene's state). Then add `data` expressions to `raise`, worked out as it fires, as `event.data`.
+
+## Scenes that spawn skip the unmatched-selector warning
+
+A copy's classes can depend on Handlebars branches its template hasn't rendered yet (Jump and duck's `.jd-bat`), so a scene with a `spawn` skips the "matches nothing" check for its targets, checking only each `spawn` and `into`. A typo in such a scene's targets goes unwarned.
+
+**Act when:** a typo in a spawning scene's target goes unnoticed. Then check its targets against every branch of its templates' markup.

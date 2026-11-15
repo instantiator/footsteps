@@ -462,7 +462,8 @@ describe("Game sounds and reward", () => {
         );
         await vi.waitFor(() => expect(state().gone).toMatch(/^ob-\d+$/));
         expect(animated).toEqual([state().gone]);
-        expect(copies()).toEqual([]);
+        // The despawn plays from the queue just after the state that records it
+        await vi.waitFor(() => expect(copies()).toEqual([]));
       });
 
       it("keeps copies as the template re-renders, finds them by class, and loses them as the scene resets", async () => {

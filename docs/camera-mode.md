@@ -58,11 +58,22 @@ without a camera, as a stand-in while designing, or as a camera mode's `fallback
   off leaves everything, and landing fires `jump-from` for A, `jump-onto` for B, and `jump` for an element under both
   (and for a `jump` rule with no target), then enters B. The browser's click at the end of a drag is dropped.
 - **A press and release** that moves no more than 8 pixels (`DRAG_PX`) is still a `click`.
-- Leaving the game viewport leaves everything. As with the camera, what is already under the feet when a scene starts,
-  resets or is revealed is entered then, without the pointer having to move.
+- Leaving the game viewport leaves everything. As with the camera, what comes under feet that aren't moving is entered
+  then: a scene starting, resetting or being revealed beneath them, or an element moving under them (eg. an obstacle
+  sliding along), and what moves out from under them is left. The feet stand again on each animation frame.
 
 Hand, head, body and near interactions never fire in `mouse-feet`, and nor do effects that act on players. Mouse
-interactions (`click`, `mouse-enter`, `mouse-exit`) work as usual. The code is `MouseFeet` and `useMouseFeet` in
+interactions (`click`, `mouse-enter`, `mouse-exit`) work as usual.
+
+### A still pointer and moving things
+
+The browser reports the mouse entering and leaving elements as the pointer moves, but not reliably as elements move
+under a pointer that is still: Chrome only reports each element's first pass. So while a template scene has
+`mouse-enter` or `mouse-exit` rules, it hit-tests the pointer's last position on each animation frame, and enters
+and leaves elements as a real move would. The browser's own events and the frame's hit-test share one record of
+what is under the pointer, so neither fires twice, and a frame where nothing has changed fires nothing. In Jump and
+duck, a pointer resting in a lane loses a life to every obstacle that passes, as a player standing there would.
+Dialog and scroll scenes don't hit-test each frame. The code is `MouseFeet` and `useMouseFeet` in
 `src/components/core/layout/MouseFeetHook.ts`. The rules demo's floor stages fall back to it without a camera: in "The floor is lava", the player drags between three stones over lava, each stone falling behind them.
 
 ## Permission

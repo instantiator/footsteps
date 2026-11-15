@@ -128,21 +128,30 @@ loads ([filtrex](filtrex.md)), and `GameDataProvider` reports `rules-error` if o
 
 ```mermaid
 flowchart LR
-  click["Click, key, animationend, transitionend<br/>(GameSceneTemplateComponent)"] --> hook
+  click["Click, key, mouse over and out, animationend, transitionend<br/>(GameSceneTemplateComponent)"] --> hook
   camera["Camera frame<br/>(usePlayerInteractions: selectors, elementFromPoint)"] --> hook
   timers["start, every, after<br/>(per shown scene)"] --> hook
   hook["useGameRules<br/>(GameRulesHook.ts)"] -->|"setGameState(prev => fireRules(...))"| state["GameState<br/>(sceneStates)"]
   state -->|"after each change"| whens["runWhens"]
   whens --> state
   state -->|"applyShowResets, save"| provider["GameStateProvider"]
+  state -->|"queued sounds, effects, spawns, delays"| hooks["useRuleEffects, useGameEffects,<br/>useDelayedActions"]
+  hooks -->|"setGameState(prev => endAction(...))"| state
 ```
 
 - The engine (`fireRules`, `runWhens`, `applyShowResets`) is pure: each change is a function of the latest
   `GameState`, so no rule receives `setGameState`, and events between renders compose.
+- `logic/RuleActions.ts` applies or queues a single action; `logic/ActionRuns.ts` applies rules, and records the
+  actions something waits on (named ones, and groups and their parts) in `session.runningActions`. Hooks play what
+  is queued and report each end with `endAction`, which fires `actionEnd` rules and moves a series on
+  ([ADR 0012](ADRs/0012-action-runs-and-spawning.md)).
+- While a template scene has mouse rules, it hit-tests the resting pointer each frame, so elements moving under a
+  still pointer enter and leave it; `useMouseFeet` stands the feet again each frame.
 - Scene state lives in `GameState.sceneStates`, keyed by scene scope (`overview:<purpose>`,
   `stage:<id>:shared`, `challenge:<stage>:<challenge>:<purpose>`), and is saved with the progress.
 - `GameSceneTemplateComponent` patches its HTML in place with idiomorph, after DOMPurify, so elements keep
   their transitions. Its container carries `data-scene-scope`, which the camera uses to find a scene's elements.
+  Spawned copies (`effects/Spawns.ts`) carry `data-spawned`, which the morph keeps.
 - See [ADR 0006](ADRs/0006-display-rules-and-state.md) for why it is built this way.
 
 ### Validate data

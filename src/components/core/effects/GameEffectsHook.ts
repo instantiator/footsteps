@@ -278,10 +278,9 @@ export function useGameEffects(
           fire(scope, endPick(effect.effect, element, event));
         settle(element);
       };
-      const onCancel = (element: Element) => settle(element);
       if (isOnPlayers(effect)) {
         const find = () => undefined;
-        const playerRun = { scope, event, where, onEnd, onCancel, reducedMotion: reducedMotion(), find };
+        const playerRun = { scope, event, where, onEnd, onCancel: settle, reducedMotion: reducedMotion(), find };
         const started = visionSmoothing ? playerEffects.play(effect, playerRun) : 0;
         if (!visionSmoothing && !warnedRef.current) {
           warnedRef.current = true;
@@ -290,7 +289,7 @@ export function useGameEffects(
         if (started === 0 || effect.effect === "stop") settle();
         return;
       }
-      const starting = { scope, run, effect, where, effects, players, onEnd, onCancel, settle };
+      const starting = { scope, run, effect, where, effects, players, onEnd, onCancel: settle, settle };
       startOnElements({ ...starting, reducedMotion: reducedMotion() }, waiting);
     },
     [stateRef, fire, effects, players, playerEffects, visionSmoothing, onActionEnd, waiting],
