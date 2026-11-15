@@ -19,6 +19,7 @@ const REBUILD_DELAY_MS = 400;
 export default function SceneRenderer() {
   const [html, setHtml] = useState(STARTER_SCENE);
   const [rendered, setRendered] = useState(STARTER_SCENE);
+  const [wrap, setWrap] = useState(false);
   // The game's hooks are client-only, and an in-memory repository is ready during prerendering
   const isClient = useIsClient();
 
@@ -33,13 +34,19 @@ export default function SceneRenderer() {
   return (
     <div style={{ display: "flex", height: "100dvh" }}>
       <div style={{ flex: "0 0 35%", display: "flex", flexDirection: "column", padding: "8px", gap: "8px" }}>
-        <label htmlFor="scene-html">Scene HTML</label>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <label htmlFor="scene-html">Scene HTML</label>
+          <label>
+            <input type="checkbox" checked={wrap} onChange={(event) => setWrap(event.target.checked)} /> Wrap lines
+          </label>
+        </div>
         <textarea
           id="scene-html"
           value={html}
           onChange={(event) => setHtml(event.target.value)}
           spellCheck={false}
-          style={{ flex: 1, fontFamily: "monospace", whiteSpace: "pre" }}
+          wrap={wrap ? "soft" : "off"}
+          style={{ flex: 1, fontFamily: "monospace", whiteSpace: wrap ? "pre-wrap" : "pre" }}
         />
         <ul id="scene-messages" aria-label="Validation" style={{ margin: 0, paddingLeft: "1.2em" }}>
           {problems.map((message) => (
