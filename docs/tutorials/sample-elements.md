@@ -251,3 +251,123 @@ stones, and `foot-enter` on the lava:
 ```
 
 The [2.5D scene tutorial](2-5d-scene.md) builds that stage.
+
+## Putting it together
+
+A whole scene, made from the samples above: sky and hills, a tiled courtyard with brick walls round the back and
+sides, a pond with stepping stones, two trees and a hanging lantern, and a title. Paste it into the scene renderer
+and tick **Show floor** to see how it sits on the floor. Each part is labelled with a comment.
+
+```html [docs/tutorials/samples/courtyard.html]
+<!-- Sky, ground, and hills beyond the walls -->
+<div class="horizon-background" style="background: linear-gradient(#1e5799, #7db9e8 80%, #fff)"></div>
+<div class="floor-background" style="background: #6a4"></div>
+<div
+  class="rear-background"
+  data-wall-distance="60"
+  data-fill-width
+  style="
+    aspect-ratio: 100 / 20;
+    background: radial-gradient(ellipse at 50% 100%, #385 60%, transparent 61%) 0 100% / 25% 100% repeat-x;
+  "
+></div>
+
+<!-- A tiled courtyard, ten tiles across -->
+<div
+  data-floor-area="0 0 100 100"
+  style="aspect-ratio: 1; background: repeating-conic-gradient(#ddd 0 25%, #bbb 0 50%) 0 0 / 20% 20%"
+></div>
+
+<!-- Brick walls, 15 floor units high, round the back and sides -->
+<div
+  class="rear-wall"
+  data-floor-height="15"
+  style="
+    background: repeating-linear-gradient(
+      90deg,
+      #b54 0 calc(var(--floor-unit) * 9),
+      #833 0 calc(var(--floor-unit) * 10)
+    );
+  "
+></div>
+<div
+  class="left-wall"
+  data-floor-height="15"
+  style="
+    background: repeating-linear-gradient(
+      90deg,
+      #a43 0 calc(var(--floor-unit) * 9),
+      #722 0 calc(var(--floor-unit) * 10)
+    );
+  "
+></div>
+<div
+  class="right-wall"
+  data-floor-height="15"
+  style="
+    background: repeating-linear-gradient(
+      90deg,
+      #a43 0 calc(var(--floor-unit) * 9),
+      #722 0 calc(var(--floor-unit) * 10)
+    );
+  "
+></div>
+
+<!-- A pond, and stepping stones across it -->
+<div
+  id="pond"
+  data-floor-area="20 35 80 70"
+  style="background: radial-gradient(#39f 60%, #27c 69%, transparent 70%)"
+></div>
+<div id="stone-1" data-floor-area="30 48 38 56" style="background: #888; border-radius: 45%"></div>
+<div id="stone-2" data-floor-area="46 46 54 54" style="background: #888; border-radius: 45%"></div>
+<div id="stone-3" data-floor-area="62 44 70 52" style="background: #888; border-radius: 45%"></div>
+
+<!-- Trees, the far one smaller, and a lantern hanging 20 units up -->
+<div
+  id="near-tree"
+  data-floor-x="12"
+  data-floor-y="88"
+  style="width: 10cqw; height: 25cqh; background: #262; border-radius: 50% 50% 0 0"
+></div>
+<div
+  id="far-tree"
+  data-floor-x="85"
+  data-floor-y="15"
+  style="width: 10cqw; height: 25cqh; background: #262; border-radius: 50% 50% 0 0"
+></div>
+<div
+  id="lantern"
+  data-floor-x="50"
+  data-floor-y="80"
+  data-floor-height="20"
+  data-floor-anchor="center center"
+  style="width: 4cqw; height: 4cqw; background: gold; border-radius: 50%; box-shadow: 0 0 2cqw gold"
+></div>
+
+<!-- Plain HTML: a title in the scene box, in front of everything -->
+<h1
+  class="noClicks"
+  style="
+    position: absolute;
+    top: 2cqh;
+    width: 100%;
+    margin: 0;
+    text-align: center;
+    color: white;
+    font: bold 5cqh system-ui;
+    text-shadow: 0 0 1cqh #000;
+  "
+>
+  The courtyard
+</h1>
+```
+
+![A courtyard: a checked floor inside low brick walls, a pond with three stepping stones, two trees and a glowing lantern, with hills and sky beyond and a title above](images/courtyard.png)
+
+Things to try in it:
+
+- Give the walls `data-fill-height`, and the courtyard becomes a room open to the sky.
+- Move the far tree's `data-floor-y` from 15 to 95, and it grows as it comes to the front.
+- Add `data-fill-width` to the left wall to see a validation warning, or `data-depth="3"` to the lantern to see a
+  problem.

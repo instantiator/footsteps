@@ -19,7 +19,8 @@ Start with "Your first game"; the others build on it.
 
 ## Toolkit
 
-- [Sample elements](sample-elements.md): copy-and-paste HTML for each part of a 2.5D scene, with how it looks.
+- [Sample elements](sample-elements.md): copy-and-paste HTML for each part of a 2.5D scene, with how it looks, and
+  [a whole courtyard](sample-elements.md#putting-it-together) made from them.
 - [Positions, sizes and units](../positions-sizes-units.md): how a 2.5D scene measures things, with examples, and
   every class and attribute.
 - **The scene renderer**, at `/scene-renderer` in the app (<https://instantiator.dev/footsteps/scene-renderer>, or
