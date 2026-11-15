@@ -16,6 +16,12 @@ test("renders the starter scene's floor item on the floor, and lists problems in
   await expect(page.locator("#scene-pane #stone")).toHaveText("A stone");
   await expect(page.locator("#scene-messages .problem")).toContainText("data-depth is no longer supported");
 
+  // The floor outline is the debug overlay, off until asked for
+  const overlay = page.locator('#scene-pane [data-testid="floor-overlay"]');
+  await expect(overlay).toHaveCount(0);
+  await page.getByRole("checkbox", { name: "Show floor" }).check();
+  await expect(overlay).toBeVisible();
+
   const wrap = page.getByRole("checkbox", { name: "Wrap lines" });
   await expect(page.getByLabel("Scene HTML")).toHaveCSS("white-space", "pre");
   await wrap.check();

@@ -95,7 +95,8 @@ Every game in the local repository, `public/game-repository.json`, is prerendere
 left, and the right shows it as it would play: in 2.5D, with the mouse as the player's feet (`mouse-feet`), on the
 floor saved for the chosen camera or the default floor. It lists, under the HTML, the template problems and warnings
 that the validator would report for a 2.5D scene (`src/components/core/logic/TemplateChecks.ts`, shared with
-`scripts/resource-checks.ts`). **Wrap lines** wraps long lines in the HTML box.
+`scripts/resource-checks.ts`). **Wrap lines** wraps long lines in the HTML box, and **Show floor** outlines the floor (the game's debug aids, which
+restart the scene).
 
 It takes HTML only, with no rules, so it shows how a scene looks rather than how it plays. Its game
 (`src/pages/SceneRendererGame.ts`) opens on its stages overview, which is the pasted HTML. The
