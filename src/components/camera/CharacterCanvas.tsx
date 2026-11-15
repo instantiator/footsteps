@@ -16,9 +16,8 @@ import type { PlayerRegistry } from "./PlayerRegistry";
 import { PlayerRegistryContext } from "../../providers/PlayerRegistryContext";
 import { PlayerPositions, positionMapping, type PlayerPosition, type PositionSettings } from "./PlayerPosition";
 import type { PlayerFrame } from "./PlayerMonitor";
-import { NO_SPECTATORS, SpectatorWatch, type SpectatorSettings } from "./Spectators";
-import { SpectatorsContext } from "../../providers/SpectatorsContext";
-import type { GameSpectatorsData } from "../../entities/data/scenes/GameSceneData";
+import { NO_SPECTATORS, RETURN_DISTANCE, SpectatorWatch, type SpectatorSettings } from "./Spectators";
+import { SpectatorsContext, type ShownSpectators } from "../../providers/SpectatorsContext";
 
 /** Props for {@link CharacterCanvas}. */
 interface CharacterCanvasProps {
@@ -153,8 +152,8 @@ type LoopHandlers = Pick<CharacterCanvasProps, "offScreenThreshold_percent" | "o
   onStats?: (stats: FrameStats) => void;
   /** The floor players stand on now, read each frame as scenes change. */
   floor: RefObject<PlayersFloor>;
-  /** How spectators show now, read each frame as scenes change. */
-  shownSpectators: RefObject<GameSpectatorsData>;
+  /** How spectators show now, and what their return does, read each frame as scenes change. */
+  shownSpectators: RefObject<ShownSpectators>;
 };
 
 /** How players' ground points become positions, and whether they are sorted among the foreground by them. */
@@ -391,12 +390,14 @@ const startTrackingLoop = (
     // Only a floor has an outside to watch from
     const watching = sorted ? watch.update(where, detected.timestamp, registry.knownIds()) : NO_SPECTATORS;
     registry.setSpectators(watching.spectators);
+    if (watching.returned.some(({ distance }) => distance > RETURN_DISTANCE))
+      shownSpectators.current.onReturnElsewhere?.();
     const playing = frames.interactive.people.filter(({ id }) => !watching.spectators.has(id));
     const players = playersOf({ ...frames.interactive, people: playing }, where, offScreenThreshold_percent);
     const trackEnd = performance.now();
     onPlayersChange?.(players, timestamp);
     const monitorEnd = performance.now();
-    const drawnSpectators = { report: watching, settings: shownSpectators.current, margin: spectators.margin };
+    const drawnSpectators = { report: watching, settings: shownSpectators.current.settings, margin: spectators.margin };
     drawPlayers(
       video,
       frames,

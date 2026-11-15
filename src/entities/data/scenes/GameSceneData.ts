@@ -93,6 +93,11 @@ export interface GameSpectatorsData {
    * (defaults to the spectator margin, 5), full at `to`, eased between. Without it, the look is at full strength.
    */
   fade?: GameSpectatorFade;
+  /**
+   * Whether this scene's challenge resets when a spectator steps back on the floor far from where they left it, so
+   * walking round the outside can't skip part of it. Defaults to false.
+   */
+  resetOnReturn?: boolean;
 }
 
 /** Where a spectator's look fades in, in floor units outside the floor. */

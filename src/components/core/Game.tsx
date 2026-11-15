@@ -20,12 +20,17 @@ import type { PlayerEffects } from "./effects/PlayerEffects";
 import "./Game.css";
 import GameStylesheets from "./GameStylesheets";
 import GameLayersLayout, { type GameLayers } from "./layout/GameLayersLayout";
-import { resolveAvatarMode, resolveSceneMode, resolveSpectators } from "./logic/AvatarModeUtils";
+import {
+  challengesResetOnReturn,
+  resolveAvatarMode,
+  resolveSceneMode,
+  resolveSpectators,
+} from "./logic/AvatarModeUtils";
 import { SpectatorsContext } from "../../providers/SpectatorsContext";
 import { leaveTitleScreen } from "./logic/GameClickUtils";
 import { findChallengeState } from "./logic/GameDataUtils";
 import type { SceneDomEvent } from "./logic/TemplateUtils";
-import { completeChallenge, validateAnswer } from "./logic/GameStateUtils";
+import { completeChallenge, resetChallenge, validateAnswer } from "./logic/GameStateUtils";
 import {
   getSceneKey,
   getLayeredRenderData,
@@ -306,14 +311,22 @@ function useAnswerHandler(): GameAnswerFunction {
 
 /** The avatar, layout and spectator settings for the scenes shown, the same objects while they are. */
 function useSceneSettings(gameData: GameData, renderData: LayeredGameSceneRenderData) {
-  return useMemo(
-    () => ({
+  const { setGameState } = useGameState();
+  return useMemo(() => {
+    const resets = challengesResetOnReturn(gameData, renderData) ?? [];
+    const onReturnElsewhere = () =>
+      setGameState((state) =>
+        resets.reduce((reset, { stageId, challengeId }) => resetChallenge(reset, stageId!, challengeId!), state),
+      );
+    return {
       avatar: resolveAvatarMode(gameData, renderData),
       sceneMode: resolveSceneMode(gameData, renderData),
-      spectators: resolveSpectators(gameData, renderData),
-    }),
-    [gameData, renderData],
-  );
+      spectators: {
+        settings: resolveSpectators(gameData, renderData),
+        ...(resets.length > 0 && { onReturnElsewhere }),
+      },
+    };
+  }, [gameData, renderData, setGameState]);
 }
 
 /**

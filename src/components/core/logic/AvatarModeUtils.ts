@@ -130,10 +130,23 @@ export const resolveSceneMode = (gameData: GameData, renderData: LayeredGameScen
  */
 export const resolveSpectators = (gameData: GameData, renderData: LayeredGameSceneRenderData): GameSpectatorsData => {
   const challenge = renderData.challengesRenderData?.find(({ spectators }) => isDefined(spectators))?.spectators;
-  return {
-    ...gameData.modules?.spectators,
-    ...renderData.overviewRenderData?.spectators,
-    ...renderData.stageRenderData?.spectators,
-    ...challenge,
-  };
+  return { ...broaderSpectators(gameData, renderData), ...challenge };
+};
+
+/** The spectator settings broader than the challenges': the game's, then the overview scene's and the stage's. */
+const broaderSpectators = (gameData: GameData, renderData: LayeredGameSceneRenderData): GameSpectatorsData => ({
+  ...gameData.modules?.spectators,
+  ...renderData.overviewRenderData?.spectators,
+  ...renderData.stageRenderData?.spectators,
+});
+
+/** The shown challenges whose own settings, over broader ones, reset them as a spectator returns elsewhere. */
+export const challengesResetOnReturn = (
+  gameData: GameData,
+  renderData: LayeredGameSceneRenderData,
+): LayeredGameSceneRenderData["challengesRenderData"] => {
+  const broader = broaderSpectators(gameData, renderData);
+  return renderData.challengesRenderData?.filter(
+    ({ spectators }) => ({ ...broader, ...spectators }).resetOnReturn === true,
+  );
 };

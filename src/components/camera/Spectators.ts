@@ -27,6 +27,9 @@ export interface SpectatorReport {
   returned: SpectatorReturn[];
 }
 
+/** How far from where they left the floor a spectator must come back on for it to count as elsewhere, in floor units. */
+export const RETURN_DISTANCE = 25;
+
 /** No spectators, as in a scene without a floor. */
 export const NO_SPECTATORS: SpectatorReport = { spectators: new Set(), distances: new Map(), returned: [] };
 

@@ -1963,6 +1963,10 @@
                     "$ref": "#/definitions/GameSpectatorLook",
                     "description": "How a shown spectator looks, at full strength. Without it, they look like a player."
                 },
+                "resetOnReturn": {
+                    "description": "Whether this scene's challenge resets when a spectator steps back on the floor far from where they left it, so\nwalking round the outside can't skip part of it. Defaults to false.",
+                    "type": "boolean"
+                },
                 "show": {
                     "description": "Whether spectators are drawn. Defaults to `hidden`.",
                     "enum": [

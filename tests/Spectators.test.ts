@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { distanceOffFloor, SpectatorWatch } from "../src/components/camera/Spectators";
+import { distanceOffFloor, RETURN_DISTANCE, SpectatorWatch } from "../src/components/camera/Spectators";
 import type { PlayerPosition } from "../src/components/camera/PlayerPosition";
 import type { Point } from "../src/vision/VisionTypes";
 
@@ -59,6 +59,19 @@ describe("SpectatorWatch", () => {
     const report = at(back, 2000 + HOLD);
     expect(report.spectators.has(1)).toBe(false);
     expect(report.returned).toEqual([{ id: 1, distance: 60 }]);
+  });
+
+  it(`reports a return near where they left as within ${RETURN_DISTANCE}, and one across the floor as beyond it`, () => {
+    const leaveAndReturn = (back: Point) => {
+      const { at } = watching();
+      at({ x: 50, y: 95 }, 0);
+      at(OFF, 100);
+      at(OFF, 100 + HOLD);
+      at(back, 3000);
+      return at(back, 3000 + HOLD).returned[0].distance;
+    };
+    expect(leaveAndReturn({ x: 55, y: 90 })).toBeLessThan(RETURN_DISTANCE);
+    expect(leaveAndReturn({ x: 5, y: 10 })).toBeGreaterThan(RETURN_DISTANCE);
   });
 
   it("makes someone first seen off the floor a spectator at once, and their walking on no return", () => {

@@ -5,6 +5,7 @@ import {
   resolveAvatarMode,
   resolveSceneMode,
   resolveSpectators,
+  challengesResetOnReturn,
 } from "../src/components/core/logic/AvatarModeUtils";
 import { getLayeredRenderData, type LayeredGameSceneRenderData } from "../src/components/core/logic/RenderDataUtils";
 import type { GameSceneAvatarData, GameSceneMode } from "../src/entities/data/scenes/GameSceneData";
@@ -204,5 +205,17 @@ describe("resolveSpectators", () => {
     expect(resolveSpectators(gameData, shown)).toEqual({ show: "hidden", look: { opacity: 0.2 }, fade: { to: 30 } });
     const plain = gameWithAvatar();
     expect(resolveSpectators(plain, getLayeredRenderData(createBlankGameState(plain), {}, "game"))).toEqual({});
+  });
+});
+
+describe("challengesResetOnReturn", () => {
+  it("picks the shown challenges whose settings, over the game's, reset on a return", () => {
+    const gameData = gameWithAvatar({ challenges: [undefined, undefined, undefined] });
+    gameData.modules = { spectators: { resetOnReturn: true } };
+    gameData.stages[0].challenges[1].scenes[0].spectators = { resetOnReturn: false };
+    const state = createBlankGameState(gameData);
+    const shown = getLayeredRenderData({ ...state, current: { stageId: "stage-1", overviewScene: null } }, {}, "game");
+    const ids = challengesResetOnReturn(gameData, shown)?.map(({ challengeId }) => challengeId);
+    expect(ids).toEqual(["challenge-0", "challenge-2"]);
   });
 });
