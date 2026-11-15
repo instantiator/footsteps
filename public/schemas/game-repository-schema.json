@@ -61,6 +61,12 @@
                     "$ref": "#/definitions/GameRaiseAction"
                 },
                 {
+                    "$ref": "#/definitions/GameSeriesAction"
+                },
+                {
+                    "$ref": "#/definitions/GameParallelAction"
+                },
+                {
                     "$ref": "#/definitions/GameFinishResetAction"
                 },
                 {
@@ -849,6 +855,33 @@
                 "game-overview-title"
             ],
             "type": "string"
+        },
+        "GameParallelAction": {
+            "description": "Runs actions together, as a plain `do` list does; the group ends when the last of them has ended.",
+            "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
+                    "type": "string"
+                },
+                "parallel": {
+                    "description": "The actions.",
+                    "items": {
+                        "$ref": "#/definitions/GameAction"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "parallel"
+            ],
+            "type": "object"
         },
         "GamePlayerFallEffect": {
             "description": "Drops players off the scene. They are removed once they have gone.",
@@ -1853,6 +1886,33 @@
             },
             "required": [
                 "sourceType"
+            ],
+            "type": "object"
+        },
+        "GameSeriesAction": {
+            "description": "Runs actions one after another: each starts when the one before it has ended, and the series ends with the last.\nA `delayMs` inside waits from when that action's turn comes. If its scene closes or resets, the rest are dropped.",
+            "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
+                    "type": "string"
+                },
+                "series": {
+                    "description": "The actions, in order.",
+                    "items": {
+                        "$ref": "#/definitions/GameAction"
+                    },
+                    "type": "array"
+                }
+            },
+            "required": [
+                "series"
             ],
             "type": "object"
         },

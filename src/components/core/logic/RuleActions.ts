@@ -5,7 +5,9 @@ import type {
   GameAction,
   GameFeedbackAction,
   GameFinishResetAction,
+  GameParallelAction,
   GameRaiseAction,
+  GameSeriesAction,
   GameTime,
 } from "../../../entities/data/scenes/GameSceneData";
 import { toGameSnapshot } from "../../../entities/state/GameSnapshot";
@@ -204,8 +206,14 @@ export const delayAction = (
   };
 };
 
-/** The actions {@link applyAction} applies at once: all but sounds, rewards, effects and raised events. */
-export type ImmediateAction = Exclude<GameAction, GameFeedbackAction | GameEffect | GameRaiseAction>;
+/** A series or parallel group of actions. */
+export type GameGroupAction = GameSeriesAction | GameParallelAction;
+
+/** Whether an action is a group of others. */
+export const isGroup = (action: GameAction): action is GameGroupAction => "series" in action || "parallel" in action;
+
+/** The actions {@link applyAction} applies at once: all but sounds, rewards, effects, raised events and groups. */
+export type ImmediateAction = Exclude<GameAction, GameFeedbackAction | GameEffect | GameRaiseAction | GameGroupAction>;
 
 /** Applies one action that happens at once, to the game or (for finishing a reset scene) to the session. */
 export const applyAction = (run: RuleRun, state: GameState, action: ImmediateAction, where: string): GameState => {

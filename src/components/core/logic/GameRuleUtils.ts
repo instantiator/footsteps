@@ -1,4 +1,5 @@
 import type {
+  GameAction,
   GameInteraction,
   GameInteractTrigger,
   PointerInteraction,
@@ -112,6 +113,18 @@ export const runWhens = (env: RuleEnvironment, state: GameState, edges: WhenEdge
   console.error(`when rules still firing after ${MAX_WHEN_CHAIN} rounds, so stopped: ${round.fired.join(", ")}`);
   return { state: round.state, edges: whenRound(env, round.state, round.edges, false).edges };
 };
+
+/**
+ * Every action in a list and in the groups within it, each with where it is.
+ * @param where where the list is, eg. `… › rules[0].do`
+ */
+export const actionsWithin = (actions: GameAction[], where: string): [GameAction, string][] =>
+  actions.flatMap((action, a): [GameAction, string][] => {
+    const at = `${where}[${a}]`;
+    if ("series" in action) return [[action, at], ...actionsWithin(action.series, `${at}.series`)];
+    if ("parallel" in action) return [[action, at], ...actionsWithin(action.parallel, `${at}.parallel`)];
+    return [[action, at]];
+  });
 
 /** The interactions an interact trigger accepts, as a list. */
 export const triggerInteractions = (trigger: GameInteractTrigger): GameInteraction[] =>

@@ -8,9 +8,11 @@ import {
   applyAction,
   delayAction,
   evaluate,
+  isGroup,
   queueEffect,
   queueVisualEffect,
   timeOf,
+  type GameGroupAction,
   type RuleEnvironment,
   type RuleEvent,
   type RuleRun,
@@ -82,7 +84,7 @@ const raisedPick =
 const play = (
   run: RuleRun,
   state: GameState,
-  action: GameAction,
+  action: Exclude<GameAction, GameGroupAction>,
   { where, actionId }: { where: string; actionId?: number },
 ): [GameState, boolean] => {
   if ("sound" in action || "reward" in action)
@@ -95,7 +97,7 @@ const play = (
   return [applyAction(run, state, action, where), true];
 };
 
-/** Whether something waits on an action ending, so it needs a record while it runs. */
+/** Whether something waits on an action ending, so it needs a record while it runs. (A group waits on its own.) */
 const isWaitedOn = (action: GameAction, parent: number | undefined): boolean =>
   isDefined(parent) || isDefined(action.name);
 
@@ -110,7 +112,12 @@ const withRunning = (state: GameState, record: RunningAction): GameState => ({
 });
 
 /** Starts an action nothing waits on, as a plain `do` list's actions are: after its delay, if it has one. */
-const startUnwatched = (run: RuleRun, state: GameState, action: GameAction, where: string): GameState => {
+const startUnwatched = (
+  run: RuleRun,
+  state: GameState,
+  action: Exclude<GameAction, GameGroupAction>,
+  where: string,
+): GameState => {
   const delayMs = timeOf(run, state, action.delayMs ?? 0, `${where}.delayMs`);
   if (!isDefined(delayMs)) return state;
   // Sounds and rewards wait in the game's own queue, so they carry on if their scene closes
@@ -130,7 +137,7 @@ export const startAction = (
   action: GameAction,
   { where, parent }: { where: string; parent?: number },
 ): GameState => {
-  if (!isWaitedOn(action, parent)) return startUnwatched(run, state, action, where);
+  if (!isGroup(action) && !isWaitedOn(action, parent)) return startUnwatched(run, state, action, where);
   const id = state.session.nextEffectId;
   const scope = run.scene.scope;
   const record = { id, scope, run: sceneRun(state, scope), action, event: run.event, where, parent };
@@ -149,8 +156,59 @@ const beginAction = (run: RuleRun, state: GameState, id: number): GameState => {
   const started = isDefined(action.name)
     ? fireEverywhere(run.env, state, startPick(action.name, record.event), where)
     : state;
+  if (isGroup(action)) return beginGroup(run, started, id);
   const [next, ended] = play(run, started, action, { where, actionId: id });
   return ended ? endAction(run.env, next, id) : next;
+};
+
+/** A group's actions, and how to name where each is. */
+const groupParts = (action: GameGroupAction): { actions: GameAction[]; key: "series" | "parallel" } =>
+  "series" in action ? { actions: action.series, key: "series" } : { actions: action.parallel, key: "parallel" };
+
+/** The state with a running group's progress updated. */
+const withProgress = (state: GameState, id: number, progress: number): GameState => {
+  const record = state.session.runningActions[id];
+  return isDefined(record) ? withRunning(state, { ...record, progress }) : state;
+};
+
+/** Starts one of a running group's actions. */
+const startPart = (
+  run: RuleRun,
+  state: GameState,
+  { record, parts: { actions, key } }: { record: RunningAction; parts: ReturnType<typeof groupParts> },
+  index: number,
+): GameState =>
+  startAction(run, state, actions[index], { where: `${record.where}.${key}[${index}]`, parent: record.id });
+
+/**
+ * Starts a group: a series its first action, a parallel group all of them. One with no actions ends at once. Progress
+ * is recorded first, as an action may end as it starts.
+ */
+const beginGroup = (run: RuleRun, state: GameState, id: number): GameState => {
+  const record = state.session.runningActions[id];
+  if (!isDefined(record) || !isGroup(record.action)) return state;
+  const parts = groupParts(record.action);
+  if (parts.actions.length === 0) return endAction(run.env, state, id);
+  if (parts.key === "series") return startPart(run, withProgress(state, id, 0), { record, parts }, 0);
+  return parts.actions.reduce(
+    (current, _action, index) => startPart(run, current, { record, parts }, index),
+    withProgress(state, id, parts.actions.length),
+  );
+};
+
+/** One of a group's actions has ended: a series starts its next, and a group with nothing left ends. */
+const partEnded = (env: RuleEnvironment, state: GameState, id: number): GameState => {
+  const record = state.session.runningActions[id];
+  const scene = getShownScenes(state).find(({ scope }) => scope === record?.scope);
+  if (!isDefined(record) || !isDefined(scene) || !isGroup(record.action)) return state;
+  const parts = groupParts(record.action);
+  const progress = record.progress ?? 0;
+  if (parts.key === "parallel") {
+    return progress <= 1 ? endAction(env, state, id) : withProgress(state, id, progress - 1);
+  }
+  if (progress + 1 >= parts.actions.length) return endAction(env, state, id);
+  const run = { env, scene, event: record.event };
+  return startPart(run, withProgress(state, id, progress + 1), { record, parts }, progress + 1);
 };
 
 /**
@@ -167,7 +225,10 @@ export const endAction = (env: RuleEnvironment, state: GameState, id: number, en
   };
   if (sceneRun(state, record.scope) !== record.run) return without;
   const name = record.action.name;
-  return isDefined(name) ? fireEverywhere(env, without, endPick(name, record.event, ended), record.where) : without;
+  const announced = isDefined(name)
+    ? fireEverywhere(env, without, endPick(name, record.event, ended), record.where)
+    : without;
+  return isDefined(record.parent) ? partEnded(env, announced, record.parent) : announced;
 };
 
 /** Applies one rule of a scene: checks its `if`, then starts its actions in order. */
@@ -193,7 +254,8 @@ export const applyDelayedAction = (
   const scene = getShownScenes(state).find((d) => d.scope === scope);
   if (!isDefined(scene) || sceneRun(state, scope) !== run) return state;
   const ruleRun = { env, scene, event };
-  return isDefined(actionId) ? beginAction(ruleRun, state, actionId) : play(ruleRun, state, action, { where })[0];
+  if (isDefined(actionId)) return beginAction(ruleRun, state, actionId);
+  return isGroup(action) ? state : play(ruleRun, state, action, { where })[0];
 };
 
 /**

@@ -359,6 +359,21 @@ export interface GameEnterStageAction extends GameActionBase {
   enterStage: GameStageId;
 }
 
+/**
+ * Runs actions one after another: each starts when the one before it has ended, and the series ends with the last.
+ * A `delayMs` inside waits from when that action's turn comes. If its scene closes or resets, the rest are dropped.
+ */
+export interface GameSeriesAction extends GameActionBase {
+  /** The actions, in order. */
+  series: GameAction[];
+}
+
+/** Runs actions together, as a plain `do` list does; the group ends when the last of them has ended. */
+export interface GameParallelAction extends GameActionBase {
+  /** The actions. */
+  parallel: GameAction[];
+}
+
 /** Raises a named event, which `raised` rules in every shown scene hear. Ends at once. */
 export interface GameRaiseAction extends GameActionBase {
   /** The event's name. */
@@ -374,6 +389,8 @@ export type GameAction =
   | GameResetChallengeAction
   | GameEnterStageAction
   | GameRaiseAction
+  | GameSeriesAction
+  | GameParallelAction
   | GameFinishResetAction
   | GameSoundAction
   | GameRewardAction

@@ -24,7 +24,7 @@ import {
   unfireableRuleProblem,
 } from "./GameEffectCompile";
 import { avatarOver, declaredChoice } from "./AvatarModeUtils";
-import { isEntering, triggerInteractions, type GameExpressions } from "./GameRuleUtils";
+import { actionsWithin, isEntering, triggerInteractions, type GameExpressions } from "./GameRuleUtils";
 import { renamedKeyProblems } from "./RenamedKeys";
 import { EVENT_TARGET } from "./RuleActions";
 
@@ -262,10 +262,11 @@ const ELEMENTLESS_TRIGGERS = ["start", "every", "after", "when"] as const;
  */
 const checkEventTargets = ({ on, do: actions }: GameRule, where: string): void => {
   const trigger = ELEMENTLESS_TRIGGERS.find((key) => key in on);
-  if (!isDefined(trigger)) return;
-  const a = actions.findIndex((action) => "target" in action && action.target === EVENT_TARGET);
-  if (a >= 0) {
-    throw new Error(`${where}.do[${a}].target: a ${trigger} rule fires for no element, so "event" means nothing`);
+  const [, at] =
+    actionsWithin(actions, `${where}.do`).find(([action]) => "target" in action && action.target === EVENT_TARGET) ??
+    [];
+  if (isDefined(trigger) && isDefined(at)) {
+    throw new Error(`${at}.target: a ${trigger} rule fires for no element, so "event" means nothing`);
   }
 };
 
@@ -274,9 +275,11 @@ const checkEventTargets = ({ on, do: actions }: GameRule, where: string): void =
  * @throws naming `where` if it does
  */
 const checkStartRule = ({ on, do: actions }: GameRule, where: string): void => {
-  const a = actions.findIndex((action) => "resetState" in action || "resetChallenge" in action);
-  if ("start" in on && a >= 0) {
-    throw new Error(`${where}.do[${a}]: a start rule can't reset its own scene, as it would start again and again`);
+  const [, at] =
+    actionsWithin(actions, `${where}.do`).find(([action]) => "resetState" in action || "resetChallenge" in action) ??
+    [];
+  if ("start" in on && isDefined(at)) {
+    throw new Error(`${at}: a start rule can't reset its own scene, as it would start again and again`);
   }
 };
 
@@ -285,7 +288,7 @@ const ruleSources = (rule: GameRule, where: string, target: SceneToCompile, game
   const sources: [string, string][] = [
     ...triggerSources(rule.on, `${where}.on`),
     ...(rule.if === undefined ? [] : [[rule.if, `${where}.if`] satisfies [string, string]]),
-    ...rule.do.flatMap((action, a) => actionSources(action, `${where}.do[${a}]`, target, gameData)),
+    ...actionsWithin(rule.do, `${where}.do`).flatMap(([action, at]) => actionSources(action, at, target, gameData)),
   ];
   checkStartRule(rule, where);
   checkEventTargets(rule, where);
@@ -319,7 +322,9 @@ export const compileGameRules = (gameData: GameData): GameExpressions => {
 
 /** The names a game's actions have, and the events they raise. */
 const namesIn = (scenes: SceneToCompile[]) => {
-  const actions = scenes.flatMap(({ scene }) => (scene.component.rules ?? []).flatMap((rule) => rule.do));
+  const actions = scenes.flatMap(({ scene }) =>
+    (scene.component.rules ?? []).flatMap((rule) => actionsWithin(rule.do, "").map(([action]) => action)),
+  );
   return {
     named: new Set(actions.flatMap(({ name }) => (isDefined(name) ? [name] : []))),
     raised: new Set(actions.flatMap((action) => ("raise" in action ? [action.raise] : []))),

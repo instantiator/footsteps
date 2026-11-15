@@ -147,3 +147,97 @@ describe('the "event" target', () => {
     expect(error.mock.calls[0][0]).toContain('"event" needs an element with an id');
   });
 });
+
+describe("groups", () => {
+  /** The id of the running action each queued sound reports the end of, in order. */
+  const soundIds = (state: GameState) => state.session.effects.map(({ actionId }) => actionId!);
+
+  it("run a series in order, each action starting as the one before ends", () => {
+    const fired = start(
+      playing([
+        {
+          on: { start: true },
+          do: [{ series: [{ set: { log: '"a"' } }, { sound: "pop" }, { set: { log: 'state.log + "b"' } }] }],
+        },
+      ]),
+    );
+    expect(logOf(fired)).toBe("a");
+    const ended = endAction(env, fired, soundIds(fired)[0]);
+    expect(logOf(ended)).toBe("ab");
+    expect(ended.session.runningActions).toEqual({});
+  });
+
+  it("end a parallel group with the last of its actions, inside a named series that ends once", () => {
+    const fired = start(
+      playing([
+        {
+          on: { start: true },
+          do: [
+            { series: [{ parallel: [{ sound: "pop" }, { sound: "tick" }] }, { set: { log: '"done;"' } }], name: "all" },
+          ],
+        },
+        logs({ actionEnd: "all" }, "end;"),
+      ]),
+    );
+    const [pop, tick] = soundIds(fired);
+    const popped = endAction(env, fired, pop);
+    expect(logOf(popped)).toBe("");
+    const both = endAction(env, popped, tick);
+    expect(logOf(both)).toBe("done;end;");
+    expect(both.session.runningActions).toEqual({});
+  });
+
+  it("drop the rest of a series, without ending, when its scene resets part way", () => {
+    const fired = start(
+      playing([
+        { on: { start: true }, do: [{ series: [{ sound: "pop" }, { set: { log: '"late"' } }], name: "s" }] },
+        logs({ actionEnd: "s" }, "end;"),
+      ]),
+    );
+    const reset = startSceneRuns(fired, [SCOPE]);
+    expect(reset.session.runningActions).toEqual({});
+    expect(logOf(endAction(env, reset, soundIds(fired)[0]))).toBe("");
+  });
+
+  it("carry on past an action that can't be worked out, logging it", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const state = start(
+      playing([
+        {
+          on: { start: true },
+          do: [
+            {
+              series: [
+                { effect: "quake", target: "#a", durationMs: '"soon"' },
+                { set: { log: '"a"' }, delayMs: '"later"' },
+                { set: { log: 'state.log + "b"' } },
+              ],
+            },
+          ],
+        },
+      ]),
+    );
+    expect(logOf(state)).toBe("b");
+    expect(error).toHaveBeenCalledTimes(2);
+  });
+
+  it("wait out a delay inside a series from that action's turn", () => {
+    const fired = start(
+      playing([
+        { on: { start: true }, do: [{ series: [{ sound: "pop" }, { set: { log: '"late"' }, delayMs: 500 }] }] },
+      ]),
+    );
+    expect(fired.session.delayedActions).toEqual([]);
+    const popped = endAction(env, fired, soundIds(fired)[0]);
+    const [delayed] = popped.session.delayedActions;
+    expect(delayed).toMatchObject({ delayMs: 500 });
+    expect(logOf(applyDelayedAction(env, popped, delayed))).toBe("late");
+  });
+
+  it("end at once when empty", () => {
+    const state = start(
+      playing([{ on: { start: true }, do: [{ series: [], name: "none" }] }, logs({ actionEnd: "none" }, "end;")]),
+    );
+    expect(logOf(state)).toBe("end;");
+  });
+});

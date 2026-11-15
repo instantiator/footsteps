@@ -80,6 +80,13 @@ describe("compileGameRules", () => {
     );
   });
 
+  it("rejects a start rule that resets its scene from inside a group, naming where", () => {
+    const rule: GameRule = { on: { start: true }, do: [{ series: [{ sound: "pop" }, { resetChallenge: true }] }] };
+    const data = gameWithRules([], [rule]);
+    data.resources = { pop: { type: "url", target: "https://sounds.example/pop.mp3" } };
+    expect(() => compileGameRules(data)).toThrow(`${CHALLENGE}.do[0].series[1]: a start rule can't reset`);
+  });
+
   it("compiles expression timings and random() at load, leaving their values to play", () => {
     const rule: GameRule = {
       on: { when: "random(0, 1) > 0.5" },

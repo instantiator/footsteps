@@ -22,6 +22,7 @@ import { EVENT_TARGET } from "./logic/RuleActions";
 import { targetsPlayers } from "./logic/GameEffectCompile";
 import { sceneRun } from "./logic/GameStateUtils";
 import {
+  actionsWithin,
   fireRules,
   matchSceneEvent,
   NO_EVENT,
@@ -61,12 +62,12 @@ const warnUnmatchedSelectors = (scene: ShownScene): void => {
     if (isDefined(selector) && !roots.some((root) => root.querySelector(selector) !== null)) {
       console.warn(`${scene.scope} › rules[${ruleIndex}].on.target: "${selector}" matches nothing in the scene`);
     }
-    rule.do.forEach((action, a) => {
+    for (const [action, at] of actionsWithin(rule.do, `${scene.scope} › rules[${ruleIndex}].do`)) {
       const target = "target" in action ? action.target : undefined;
-      if (!isDefined(target) || target === EVENT_TARGET || targetsPlayers(target)) return;
-      if (resolveTargets(scene.scope, target, []).length > 0) return;
-      console.warn(`${scene.scope} › rules[${ruleIndex}].do[${a}].target: "${target}" matches nothing in the scene`);
-    });
+      if (!isDefined(target) || target === EVENT_TARGET || targetsPlayers(target)) continue;
+      if (resolveTargets(scene.scope, target, []).length > 0) continue;
+      console.warn(`${at}.target: "${target}" matches nothing in the scene`);
+    }
   });
 };
 

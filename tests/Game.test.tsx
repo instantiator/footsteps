@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ComponentProps } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { GameData } from "../src/entities/data/GameData";
 import type { GameAction } from "../src/entities/data/scenes/GameSceneData";
 import { useGameState } from "../src/providers/GameStateHook";
@@ -386,6 +386,51 @@ describe("Game sounds and reward", () => {
       // Dropping them from the queue changed the state, and played nothing again
       expect(opened()).toHaveLength(1);
       expect(rewardSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it("runs a series of effects in order for players who prefer reduced motion, as each still ends", async () => {
+      setReducedMotion(true);
+      const animated: string[] = [];
+      // Each finishes straight away, as an animation of no length does
+      Element.prototype.animate = vi.fn<Element["animate"]>(function (this: Element) {
+        animated.push(this.id);
+        const animation = Object.assign(new EventTarget(), {
+          onfinish: null as Animation["onfinish"],
+          cancel: vi.fn(),
+          persist: vi.fn(),
+          finish: vi.fn(),
+        });
+        const finish = () => animation.onfinish as ((event: AnimationPlaybackEvent) => void) | null;
+        setTimeout(() => finish()?.(new Event("finish") as AnimationPlaybackEvent));
+        return animation as EventTarget & Pick<Animation, "cancel" | "persist" | "onfinish" | "finish"> as Animation;
+      });
+      onTestFinished(() => {
+        Reflect.deleteProperty(Element.prototype, "animate");
+      });
+      const data = withEffects([
+        {
+          series: [
+            { effect: "item-fall", target: "#a" },
+            { effect: "item-fall", target: "#b" },
+            { set: { done: "true" } },
+          ],
+        },
+      ]);
+      data.scenes[0].component.foregroundTemplate = { sourceType: "embedded", content: '<p id="a"></p><p id="b"></p>' };
+      function Done() {
+        const { gameState } = useGameState();
+        return (
+          <output data-testid="done">{String(gameState.sceneStates["overview:game-overview-stages"]?.done)}</output>
+        );
+      }
+      render(
+        <GameProviders repository={{ games: { [SMALL_GAME_ID]: data } }} gameId={SMALL_GAME_ID}>
+          <Game />
+          <Done />
+        </GameProviders>,
+      );
+      await vi.waitFor(() => expect(screen.getByTestId("done")).toHaveTextContent("true"));
+      expect(animated).toEqual(["a", "b"]);
     });
 
     describe("named, so rules follow their end", () => {
