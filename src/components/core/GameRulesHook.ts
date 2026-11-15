@@ -40,6 +40,8 @@ import type { PublishedPositions } from "../camera/PositionPublisher";
 import {
   DEFAULT_INTERACTION_THRESHOLD,
   POINTER_INTERACTIONS,
+  type GameAction,
+  type GameSpawnAction,
   type GameTrigger,
 } from "../../entities/data/scenes/GameSceneData";
 
@@ -54,6 +56,22 @@ const isPointerInteraction = (interaction: string): boolean =>
  */
 const SELECTOR_CHECK_DELAY_MS = 2000;
 
+/** Warns about a spawn whose template isn't a `<template>` in the scene, or whose `into` matches nothing there. */
+const warnUnmatchedSpawn = (roots: Element[], { spawn, into }: GameSpawnAction, at: string): void => {
+  if (!roots.some((root) => root.querySelector(spawn) instanceof HTMLTemplateElement))
+    console.warn(`${at}.spawn: "${spawn}" matches no <template> in the scene`);
+  if (into !== EVENT_TARGET && !roots.some((root) => root.querySelector(into) !== null))
+    console.warn(`${at}.into: "${into}" matches nothing in the scene`);
+};
+
+/** Warns about an action whose target matches nothing in the scene. Players and `"event"` are found as they play. */
+const warnUnmatchedTarget = (scope: SceneScope, action: GameAction, at: string): void => {
+  const target = "target" in action ? action.target : undefined;
+  if (!isDefined(target) || target === EVENT_TARGET || targetsPlayers(target)) return;
+  if (resolveTargets(scope, target, []).length === 0)
+    console.warn(`${at}.target: "${target}" matches nothing in the scene`);
+};
+
 /** Warns about rules whose selectors match nothing in the scene, as that is usually a typo. */
 const warnUnmatchedSelectors = (scene: ShownScene): void => {
   const roots = sceneRoots(scene.scope);
@@ -63,10 +81,8 @@ const warnUnmatchedSelectors = (scene: ShownScene): void => {
       console.warn(`${scene.scope} › rules[${ruleIndex}].on.target: "${selector}" matches nothing in the scene`);
     }
     for (const [action, at] of actionsWithin(rule.do, `${scene.scope} › rules[${ruleIndex}].do`)) {
-      const target = "target" in action ? action.target : undefined;
-      if (!isDefined(target) || target === EVENT_TARGET || targetsPlayers(target)) continue;
-      if (resolveTargets(scene.scope, target, []).length > 0) continue;
-      console.warn(`${at}.target: "${target}" matches nothing in the scene`);
+      if ("spawn" in action) warnUnmatchedSpawn(roots, action, at);
+      else warnUnmatchedTarget(scene.scope, action, at);
     }
   });
 };

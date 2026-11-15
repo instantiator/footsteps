@@ -16,7 +16,7 @@
 </div></section>
 <div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">GameSession</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#delayedactions">delayedActions</a><span class="tsd-signature-symbol">:</span> <a href="entities_state_GameState.DelayedAction.html" class="tsd-signature-type tsd-kind-interface">DelayedAction</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#effects">effects</a><span class="tsd-signature-symbol">:</span> <a href="entities_state_GameState.QueuedEffect.html" class="tsd-signature-type tsd-kind-interface">QueuedEffect</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#finishedresets">finishedResets</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#focusedchallenge">focusedChallenge</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">challengeId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">stageId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">}</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">null</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#nexteffectid">nextEffectId</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#playerpositions">playerPositions</a><span class="tsd-signature-symbol">:</span> <a href="../types/components_camera_PositionPublisher.PublishedPositions.html" class="tsd-signature-type tsd-kind-type-alias">PublishedPositions</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#players">players</a><span class="tsd-signature-symbol">:</span> <a href="components_camera_PlayerRegistry.PlayerCounts.html" class="tsd-signature-type tsd-kind-interface">PlayerCounts</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#runningactions">runningActions</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">,</span> <a href="entities_state_GameState.RunningAction.html" class="tsd-signature-type tsd-kind-interface">RunningAction</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#sceneruns">sceneRuns</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/entities_state_GameState.SceneScope.html" class="tsd-signature-type tsd-kind-type-alias">SceneScope</a><span class="tsd-signature-symbol">,</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#visualeffects">visualEffects</a><span class="tsd-signature-symbol">:</span> <a href="entities_state_GameState.QueuedVisualEffect.html" class="tsd-signature-type tsd-kind-interface">QueuedVisualEffect</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L97">entities/state/GameState.ts:97</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L103">entities/state/GameState.ts:103</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -44,21 +44,21 @@
 <div class="tsd-comment tsd-typography"><p>Actions rules have delayed, until the game starts waiting for them.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L105">entities/state/GameState.ts:105</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L111">entities/state/GameState.ts:111</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="effects"><span>effects</span><a href="#effects" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">effects</span><span class="tsd-signature-symbol">:</span> <a href="entities_state_GameState.QueuedEffect.html" class="tsd-signature-type tsd-kind-interface">QueuedEffect</a><span class="tsd-signature-symbol">[]</span></div>
 <div class="tsd-comment tsd-typography"><p>Sounds and rewards rules have asked for, until the game plays them.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L101">entities/state/GameState.ts:101</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L107">entities/state/GameState.ts:107</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="finishedresets"><span>finished<wbr/>Resets</span><a href="#finishedresets" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">finishedResets</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></div>
 <div class="tsd-comment tsd-typography"><p>The scopes of the reset scenes finished since the game was loaded.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L99">entities/state/GameState.ts:99</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L105">entities/state/GameState.ts:105</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="focusedchallenge"><span>focused<wbr/>Challenge</span><a href="#focusedchallenge" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">focusedChallenge</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">challengeId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">stageId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">}</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">null</span></div>
@@ -80,35 +80,35 @@ chunk, until that chunk is solved or the stage closes. Null shows the stage's ch
 </div></li></ul></li>
 <li><span class="tsd-signature-type">null</span></li></ul></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L123">entities/state/GameState.ts:123</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L129">entities/state/GameState.ts:129</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="nexteffectid"><span>next<wbr/>Effect<wbr/>Id</span><a href="#nexteffectid" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">nextEffectId</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 <div class="tsd-comment tsd-typography"><p>The id the next queued effect or delayed action gets.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L113">entities/state/GameState.ts:113</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L119">entities/state/GameState.ts:119</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="playerpositions"><span>player<wbr/>Positions</span><a href="#playerpositions" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">playerPositions</span><span class="tsd-signature-symbol">:</span> <a href="../types/components_camera_PositionPublisher.PublishedPositions.html" class="tsd-signature-type tsd-kind-type-alias">PublishedPositions</a></div>
 <div class="tsd-comment tsd-typography"><p>Where each player stands, by number, quantised and rate-limited, as an update re-renders the game.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L111">entities/state/GameState.ts:111</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L117">entities/state/GameState.ts:117</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="players"><span>players</span><a href="#players" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">players</span><span class="tsd-signature-symbol">:</span> <a href="components_camera_PlayerRegistry.PlayerCounts.html" class="tsd-signature-type tsd-kind-interface">PlayerCounts</a></div>
 <div class="tsd-comment tsd-typography"><p>How many players there are. Updated only as it changes, as an update re-renders the game.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L109">entities/state/GameState.ts:109</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L115">entities/state/GameState.ts:115</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="runningactions"><span>running<wbr/>Actions</span><a href="#runningactions" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">runningActions</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">,</span> <a href="entities_state_GameState.RunningAction.html" class="tsd-signature-type tsd-kind-interface">RunningAction</a><span class="tsd-signature-symbol">&gt;</span></div>
 <div class="tsd-comment tsd-typography"><p>Named actions and groups that have started and not yet ended, by id.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L107">entities/state/GameState.ts:107</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L113">entities/state/GameState.ts:113</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="sceneruns"><span>scene<wbr/>Runs</span><a href="#sceneruns" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">sceneRuns</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/entities_state_GameState.SceneScope.html" class="tsd-signature-type tsd-kind-type-alias">SceneScope</a><span class="tsd-signature-symbol">,</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span></div>
@@ -116,14 +116,14 @@ chunk, until that chunk is solved or the stage closes. Null shows the stage's ch
 (its timers, template animations, delays and effects) belongs to one run, and ends with it.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L118">entities/state/GameState.ts:118</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L124">entities/state/GameState.ts:124</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="visualeffects"><span>visual<wbr/>Effects</span><a href="#visualeffects" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">visualEffects</span><span class="tsd-signature-symbol">:</span> <a href="entities_state_GameState.QueuedVisualEffect.html" class="tsd-signature-type tsd-kind-interface">QueuedVisualEffect</a><span class="tsd-signature-symbol">[]</span></div>
 <div class="tsd-comment tsd-typography"><p>Effects rules have started, until the game plays them.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L103">entities/state/GameState.ts:103</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L109">entities/state/GameState.ts:109</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

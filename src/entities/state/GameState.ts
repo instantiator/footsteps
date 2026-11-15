@@ -3,7 +3,13 @@ import type { PublishedPositions } from "../../components/camera/PositionPublish
 import { GameOverviewPurposeSequence } from "../../components/core/logic/GameClickUtils";
 import { isDefined } from "../../util/ObjectUtils";
 import type { RuleEvent } from "../../components/core/logic/GameRuleUtils";
-import type { GameAction, GameFeedbackAction, GameOverviewScenePurpose } from "../data/scenes/GameSceneData";
+import type {
+  GameAction,
+  GameDespawnAction,
+  GameFeedbackAction,
+  GameOverviewScenePurpose,
+  GameSpawnAction,
+} from "../data/scenes/GameSceneData";
 import type { ResolvedEffect } from "../data/scenes/GameEffectData";
 import type { GameData } from "../data/GameData";
 import type { GameChallengeId } from "../data/GameChallengeData";
@@ -60,8 +66,8 @@ export interface QueuedVisualEffect {
   scope: SceneScope;
   /** Which run of the scene the rule fired in: it is dropped if the scene has moved on from it. */
   run: number;
-  /** What to play, its times worked out. */
-  effect: ResolvedEffect;
+  /** What to play, its times worked out: an effect, or a spawn or despawn. */
+  effect: ResolvedEffect | GameSpawnAction | GameDespawnAction;
   /** The event its rule fired with. */
   event: RuleEvent;
   /** Where the action is in the game's rules, for error messages. */

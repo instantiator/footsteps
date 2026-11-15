@@ -3,11 +3,13 @@ import type { GameId } from "../../../entities/data/GameData";
 import type { GameEffect, ResolvedEffect } from "../../../entities/data/scenes/GameEffectData";
 import type {
   GameAction,
+  GameDespawnAction,
   GameFeedbackAction,
   GameFinishResetAction,
   GameParallelAction,
   GameRaiseAction,
   GameSeriesAction,
+  GameSpawnAction,
   GameTime,
 } from "../../../entities/data/scenes/GameSceneData";
 import { toGameSnapshot } from "../../../entities/state/GameSnapshot";
@@ -84,6 +86,7 @@ export const timeOf = (run: RuleRun, state: GameState, value: GameTime, where: s
 
 /**
  * A target with {@link EVENT_TARGET} made into a selector for the element the rule fired for.
+ * @param where where the target is, eg. `… .do[0].target`
  * @returns the target, or undefined (after logging, naming `where`) if it means the event's element and there is none
  */
 export const resolveEventTarget = <T extends string | undefined>(
@@ -93,14 +96,14 @@ export const resolveEventTarget = <T extends string | undefined>(
 ): T | string | undefined => {
   if (target !== EVENT_TARGET) return target;
   if (event.id !== "") return `[id="${event.id.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"]`;
-  console.error(`${where}.target: "event" needs an element with an id to have fired the rule`);
+  console.error(`${where}: "event" needs an element with an id to have fired the rule`);
   return undefined;
 };
 
 /** An effect with its target worked out for the rule's event; undefined (after logging) if it can't be. */
 const withEventTarget = (run: RuleRun, effect: ResolvedEffect, where: string): ResolvedEffect | undefined => {
   if (!("target" in effect) || effect.target !== EVENT_TARGET) return effect;
-  const target = resolveEventTarget(effect.target, run.event, where);
+  const target = resolveEventTarget(effect.target, run.event, `${where}.target`);
   return isDefined(target) ? { ...effect, target } : undefined;
 };
 
@@ -174,14 +177,50 @@ export const queueVisualEffect = (
   { where, actionId }: Pick<QueuedVisualEffect, "where" | "actionId">,
 ): GameState | undefined => {
   const resolved = resolveEffect(run, state, effect, where);
-  if (!isDefined(resolved)) return undefined;
-  const { scene, event } = run;
+  return isDefined(resolved) ? queueOnScreen(run, state, resolved, { where, actionId }) : undefined;
+};
+
+/** A spawn or despawn with `"event"` worked out; undefined (after logging) if it can't be. */
+const resolveSpawn = (
+  run: RuleRun,
+  action: GameSpawnAction | GameDespawnAction,
+  where: string,
+): GameSpawnAction | GameDespawnAction | undefined => {
+  if ("spawn" in action) {
+    const into = resolveEventTarget(action.into, run.event, `${where}.into`);
+    return isDefined(into) ? { ...action, into } : undefined;
+  }
+  const despawn = resolveEventTarget(action.despawn, run.event, `${where}.despawn`);
+  return isDefined(despawn) ? { ...action, despawn } : undefined;
+};
+
+/**
+ * Adds a spawn or despawn to what waits for the game to play on screen, after effects queued before it.
+ * @returns undefined (after logging) if its `"event"` can't be worked out
+ */
+export const queueSpawn = (
+  run: RuleRun,
+  state: GameState,
+  action: GameSpawnAction | GameDespawnAction,
+  at: Pick<QueuedVisualEffect, "where" | "actionId">,
+): GameState | undefined => {
+  const resolved = resolveSpawn(run, action, at.where);
+  return isDefined(resolved) ? queueOnScreen(run, state, resolved, at) : undefined;
+};
+
+/** Adds something to what waits for the game to play on screen. */
+const queueOnScreen = (
+  { scene, event }: RuleRun,
+  state: GameState,
+  effect: QueuedVisualEffect["effect"],
+  { where, actionId }: Pick<QueuedVisualEffect, "where" | "actionId">,
+): GameState => {
   const { visualEffects, nextEffectId } = state.session;
   const queued = {
     id: nextEffectId,
     scope: scene.scope,
     run: sceneRun(state, scene.scope),
-    effect: resolved,
+    effect,
     event,
     where,
     actionId,
@@ -212,8 +251,11 @@ export type GameGroupAction = GameSeriesAction | GameParallelAction;
 /** Whether an action is a group of others. */
 export const isGroup = (action: GameAction): action is GameGroupAction => "series" in action || "parallel" in action;
 
-/** The actions {@link applyAction} applies at once: all but sounds, rewards, effects, raised events and groups. */
-export type ImmediateAction = Exclude<GameAction, GameFeedbackAction | GameEffect | GameRaiseAction | GameGroupAction>;
+/** The actions {@link applyAction} applies at once: all but sounds, rewards, effects, spawns, raised events and groups. */
+export type ImmediateAction = Exclude<
+  GameAction,
+  GameFeedbackAction | GameEffect | GameSpawnAction | GameDespawnAction | GameRaiseAction | GameGroupAction
+>;
 
 /** Applies one action that happens at once, to the game or (for finishing a reset scene) to the session. */
 export const applyAction = (run: RuleRun, state: GameState, action: ImmediateAction, where: string): GameState => {

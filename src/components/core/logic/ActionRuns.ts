@@ -10,6 +10,7 @@ import {
   evaluate,
   isGroup,
   queueEffect,
+  queueSpawn,
   queueVisualEffect,
   timeOf,
   type GameGroupAction,
@@ -89,8 +90,9 @@ const play = (
 ): [GameState, boolean] => {
   if ("sound" in action || "reward" in action)
     return [queueEffect(run, state, action, { delayMs: 0, actionId }), false];
-  if ("effect" in action) {
-    const queued = queueVisualEffect(run, state, action, { where, actionId });
+  if ("effect" in action || "spawn" in action || "despawn" in action) {
+    const at = { where, actionId };
+    const queued = "effect" in action ? queueVisualEffect(run, state, action, at) : queueSpawn(run, state, action, at);
     return isDefined(queued) ? [queued, false] : [state, true];
   }
   if ("raise" in action) return [fireEverywhere(run.env, state, raisedPick(action.raise, run.event), where), true];

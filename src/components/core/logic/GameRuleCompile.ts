@@ -243,6 +243,11 @@ const actionSources = (
       : (actionProblem(action, target, gameData) ??
         (target.modes.has("camera") ? undefined : needsPlayerProblem(action)));
   if (isDefined(problem)) throw new Error(`${where}: ${problem}`);
+  if ("spawn" in action) {
+    checkSelector(action.spawn, `${where}.spawn`);
+    checkSelector(action.into, `${where}.into`);
+  }
+  if ("despawn" in action) checkSelector(action.despawn, `${where}.despawn`);
   const times = timeSources(action, where);
   if ("set" in action)
     return [
@@ -253,6 +258,12 @@ const actionSources = (
   return times;
 };
 
+/** Whether an action targets the element its rule fired for, as a target, the copies to despawn, or where to spawn. */
+const targetsEvent = (action: GameAction): boolean =>
+  ("target" in action && action.target === EVENT_TARGET) ||
+  ("despawn" in action && action.despawn === EVENT_TARGET) ||
+  ("into" in action && action.into === EVENT_TARGET);
+
 /** Triggers that fire for no element, so `event` has none for a target to mean. */
 const ELEMENTLESS_TRIGGERS = ["start", "every", "after", "when"] as const;
 
@@ -262,11 +273,9 @@ const ELEMENTLESS_TRIGGERS = ["start", "every", "after", "when"] as const;
  */
 const checkEventTargets = ({ on, do: actions }: GameRule, where: string): void => {
   const trigger = ELEMENTLESS_TRIGGERS.find((key) => key in on);
-  const [, at] =
-    actionsWithin(actions, `${where}.do`).find(([action]) => "target" in action && action.target === EVENT_TARGET) ??
-    [];
+  const [, at] = actionsWithin(actions, `${where}.do`).find(([action]) => targetsEvent(action)) ?? [];
   if (isDefined(trigger) && isDefined(at)) {
-    throw new Error(`${at}.target: a ${trigger} rule fires for no element, so "event" means nothing`);
+    throw new Error(`${at}: a ${trigger} rule fires for no element, so "event" means nothing`);
   }
 };
 

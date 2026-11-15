@@ -2,11 +2,11 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { GameData } from "../src/entities/data/GameData";
-import type { GameAction } from "../src/entities/data/scenes/GameSceneData";
+import type { GameAction, GameRule } from "../src/entities/data/scenes/GameSceneData";
 import { useGameState } from "../src/providers/GameStateHook";
 import Game from "../src/components/core/Game";
 import type GameLayersLayout from "../src/components/core/layout/GameLayersLayout";
-import { completeChallenge } from "../src/components/core/logic/GameStateUtils";
+import { completeChallenge, startSceneRuns } from "../src/components/core/logic/GameStateUtils";
 import { createBlankGameState } from "../src/entities/state/GameState";
 import { saveGameState } from "../src/entities/state/GameStateStorage";
 import { SMALL_GAME_ID, smallGame, smallRepository } from "./data/SmallGame";
@@ -388,10 +388,13 @@ describe("Game sounds and reward", () => {
       expect(rewardSpy).toHaveBeenCalledTimes(1);
     });
 
-    it("runs a series of effects in order for players who prefer reduced motion, as each still ends", async () => {
-      setReducedMotion(true);
+    /**
+     * Stands in for the Web Animations API, which jsdom lacks: each animation finishes straight away, as one of no
+     * length does.
+     * @returns the ids of the elements animated, in order
+     */
+    const stubAnimations = (): string[] => {
       const animated: string[] = [];
-      // Each finishes straight away, as an animation of no length does
       Element.prototype.animate = vi.fn<Element["animate"]>(function (this: Element) {
         animated.push(this.id);
         const animation = Object.assign(new EventTarget(), {
@@ -407,6 +410,85 @@ describe("Game sounds and reward", () => {
       onTestFinished(() => {
         Reflect.deleteProperty(Element.prototype, "animate");
       });
+      return animated;
+    };
+
+    describe("spawned copies", () => {
+      const STAGES = "overview:game-overview-stages";
+      const LANE =
+        '<p id="n">{{state.n}}</p><div id="lane"></div>' +
+        '<template id="ob"><i class="ob {{#if state.high}}bat{{else}}ball{{/if}}"></i></template>';
+
+      /** The stages overview, with the lane template, whose start rule does `actions`, with more rules after it. */
+      const renderLane = (actions: GameAction[], rules: GameRule[] = []) => {
+        const data = withEffects(actions);
+        data.scenes[0].component.foregroundTemplate = { sourceType: "embedded", content: LANE };
+        data.scenes[0].component.rules!.push(...rules);
+        function Controls() {
+          const { gameState, setGameState } = useGameState();
+          const state = gameState.sceneStates[STAGES] ?? {};
+          return (
+            <>
+              <output data-testid="state">{JSON.stringify(state)}</output>
+              <button onClick={() => setGameState((previous) => startSceneRuns(previous, [STAGES]))}>reset</button>
+            </>
+          );
+        }
+        const view = render(
+          <GameProviders repository={{ games: { [SMALL_GAME_ID]: data } }} gameId={SMALL_GAME_ID}>
+            <Game />
+            <Controls />
+          </GameProviders>,
+        );
+        const copies = () => Array.from(view.container.querySelectorAll("#lane > *"));
+        const state = () => JSON.parse(screen.getByTestId("state").textContent ?? "{}") as Record<string, unknown>;
+        return { copies, state };
+      };
+
+      it("starts a copy's move as it arrives, by its kind from the same rule's state, and removes it at the end", async () => {
+        const animated = stubAnimations();
+        const { copies, state } = renderLane(
+          [{ set: { high: "true" } }, { spawn: "#ob", into: "#lane", name: "obstacle" }],
+          [
+            {
+              on: { actionEnd: "obstacle", target: ".bat" },
+              do: [{ effect: "item-move", target: "event", end: { left: 0, top: 0 } }],
+            },
+            {
+              on: { effectEnd: "item-move", target: ".ob" },
+              do: [{ despawn: "event" }, { set: { gone: "event.id" } }],
+            },
+          ],
+        );
+        await vi.waitFor(() => expect(state().gone).toMatch(/^ob-\d+$/));
+        expect(animated).toEqual([state().gone]);
+        expect(copies()).toEqual([]);
+      });
+
+      it("keeps copies as the template re-renders, finds them by class, and loses them as the scene resets", async () => {
+        const { copies, state } = renderLane(
+          [{ spawn: "#ob", into: "#lane" }],
+          [
+            { on: { after: 100 }, do: [{ set: { n: "1" } }] },
+            { on: { interact: "mouse-enter", target: ".ob" }, do: [{ set: { hit: "event.id" } }] },
+          ],
+        );
+        await vi.waitFor(() => expect(copies()).toHaveLength(1));
+        const [copy] = copies();
+        expect(copy).toHaveClass("ball");
+        await vi.waitFor(() => expect(screen.getByText("1", { selector: "#n" })).toBeInTheDocument());
+        expect(copies()).toEqual([copy]);
+        fireEvent.mouseOver(copy);
+        await vi.waitFor(() => expect(state().hit).toBe(copy.id));
+
+        fireEvent.click(screen.getByText("reset"));
+        await vi.waitFor(() => expect(copy.isConnected).toBe(false));
+      });
+    });
+
+    it("runs a series of effects in order for players who prefer reduced motion, as each still ends", async () => {
+      setReducedMotion(true);
+      const animated = stubAnimations();
       const data = withEffects([
         {
           series: [

@@ -1,5 +1,15 @@
-import { useCallback, useEffect, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+} from "react";
 import type { ResolvedEffect } from "../../../entities/data/scenes/GameEffectData";
+import type { GameDespawnAction, GameSpawnAction } from "../../../entities/data/scenes/GameSceneData";
 import type { SceneScope, GameState, QueuedVisualEffect } from "../../../entities/state/GameState";
 import { useQueueDrain } from "../QueueDrainHook";
 import { targetsPlayers } from "../logic/GameEffectCompile";
@@ -10,6 +20,7 @@ import { getSceneSlots, getShownScenes } from "../logic/RenderDataUtils";
 import { sceneRoots } from "../logic/TemplateUtils";
 import { resolveTargets, warnIfTrappingFloorItems } from "./EffectTargets";
 import { ItemEffects, type EffectRun } from "./ItemEffects";
+import { despawn, spawn } from "./Spawns";
 import { PlayerEffects } from "./PlayerEffects";
 import type { PlayerRegistry } from "../../camera/PlayerRegistry";
 import useAppConfig from "../../../providers/AppConfigHook";
@@ -132,8 +143,10 @@ const noteAffectedPlayers = (elements: Element[], scope: SceneScope, players: Pl
 };
 
 /** What is needed to start an effect on elements. */
-type ElementEffectStart = Pick<QueuedVisualEffect, "scope" | "run" | "effect" | "where"> &
+type ElementEffectStart = Pick<QueuedVisualEffect, "scope" | "run" | "where"> &
   Pick<EffectRun, "onEnd" | "onCancel" | "reducedMotion"> & {
+    /** The effect. */
+    effect: ResolvedEffect;
     /** Plays it. */
     effects: ItemEffects;
     /** What has happened to each player. */
@@ -142,42 +155,87 @@ type ElementEffectStart = Pick<QueuedVisualEffect, "scope" | "run" | "effect" | 
     settle: () => void;
   };
 
+/** What waiting for a scene's elements needs: the latest state, and the frames waiting, to cancel on unmount. */
+interface Waiting {
+  stateRef: RefObject<GameState>;
+  framesRef: RefObject<Set<number>>;
+}
+
 /**
- * Starts an effect on the elements it targets, once its scene's new elements have reached the screen, as the game's
- * state moves on before the scene does. It gives up if its scene moves on first.
+ * Tries something each frame, as the game's state moves on before the scene does, until it is done, its scene moves
+ * on (when it stops quietly), or {@link TARGET_WAIT_MS} has passed (when it gives up).
+ * @param attempt tries, returning whether it is done
  */
+const eachFrameUntil = (
+  { scope, run }: Pick<QueuedVisualEffect, "scope" | "run">,
+  { stateRef, framesRef }: Waiting,
+  { attempt, giveUp }: { attempt: () => boolean; giveUp: () => void },
+): void => {
+  const deadline = performance.now() + TARGET_WAIT_MS;
+  const tryNow = () => {
+    if (sceneRun(stateRef.current, scope) !== run || attempt()) return;
+    if (performance.now() >= deadline) return giveUp();
+    const frame = requestAnimationFrame(() => {
+      framesRef.current.delete(frame);
+      tryNow();
+    });
+    framesRef.current.add(frame);
+  };
+  tryNow();
+};
+
+/** Starts an effect on the elements it targets, once its scene's new elements have reached the screen. */
 const startOnElements = (
   { scope, run, effect, where, effects, players, onEnd, onCancel, reducedMotion, settle }: ElementEffectStart,
-  stateRef: RefObject<GameState>,
-  framesRef: RefObject<Set<number>>,
+  waiting: Waiting,
 ): void => {
   const selector = targetOf(effect);
-  const deadline = performance.now() + TARGET_WAIT_MS;
   const attempt = () => {
-    const state = stateRef.current;
-    if (sceneRun(state, scope) !== run) return;
-    const shownScopes = getShownScenes(state).map((scene) => scene.scope);
+    const shownScopes = getShownScenes(waiting.stateRef.current).map((scene) => scene.scope);
     const elements = resolveTargets(scope, selector, shownScopes);
     const ready =
       targetsPlayers(selector) || (isOnScreen(scope, run) && (selector === undefined || elements.length > 0));
-    if (ready) {
-      warnIfTrappingFloorItems(elements, selector, where);
-      noteAffectedPlayers(elements, scope, players);
-      const find = (other: string) => resolveTargets(scope, other, shownScopes)[0];
-      runEffect(effects, effect, elements, { reducedMotion, find, onEnd, onCancel });
-      if (effect.effect === "stop" || elements.length === 0) settle();
-    } else if (performance.now() < deadline) {
-      const frame = requestAnimationFrame(() => {
-        framesRef.current.delete(frame);
-        attempt();
-      });
-      framesRef.current.add(frame);
-    } else {
-      console.warn(`${where}.target: "${selector}" matches nothing in the scene`);
+    if (!ready) return false;
+    warnIfTrappingFloorItems(elements, selector, where);
+    noteAffectedPlayers(elements, scope, players);
+    const find = (other: string) => resolveTargets(scope, other, shownScopes)[0];
+    runEffect(effects, effect, elements, { reducedMotion, find, onEnd, onCancel });
+    if (effect.effect === "stop" || elements.length === 0) settle();
+    return true;
+  };
+  const giveUp = () => {
+    console.warn(`${where}.target: "${selector}" matches nothing in the scene`);
+    settle();
+  };
+  eachFrameUntil({ scope, run }, waiting, { attempt, giveUp });
+};
+
+/**
+ * Spawns or despawns once its scene's run is on screen, then says it is over: a spawn with its copy, for `actionEnd`.
+ * One that can't happen (logged) is over at once.
+ */
+const startSpawn = (
+  {
+    scope,
+    run,
+    effect,
+    where,
+  }: Pick<QueuedVisualEffect, "scope" | "run" | "where"> & {
+    effect: GameSpawnAction | GameDespawnAction;
+  },
+  settle: (element?: Element) => void,
+  waiting: Waiting,
+): void => {
+  const attempt = () => {
+    if (!isOnScreen(scope, run)) return false;
+    if ("spawn" in effect) settle(spawn(scope, effect, { run, where }));
+    else {
+      despawn(scope, effect.despawn);
       settle();
     }
+    return true;
   };
-  attempt();
+  eachFrameUntil({ scope, run }, waiting, { attempt, giveUp: () => settle() });
 };
 
 /**
@@ -204,6 +262,7 @@ export function useGameEffects(
     return { effects: items, playerEffects: new PlayerEffects(items, players) };
   });
   const framesRef = useRef(new Set<number>());
+  const waiting = useMemo(() => ({ stateRef, framesRef }), [stateRef]);
   const { visionSmoothing } = useAppConfig();
   const warnedRef = useRef(false);
 
@@ -211,6 +270,7 @@ export function useGameEffects(
     ({ scope, run, effect, event, where, actionId }: QueuedVisualEffect) => {
       const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const settle = settler(actionId, onActionEnd);
+      if ("spawn" in effect || "despawn" in effect) return startSpawn({ scope, run, effect, where }, settle, waiting);
       // An effect ended by its scene closing or resetting doesn't count as finishing, nor does one on a removed copy
       const onEnd = (element: Element) => {
         if (sceneRun(stateRef.current, scope) === run && element.isConnected)
@@ -230,9 +290,9 @@ export function useGameEffects(
         return;
       }
       const starting = { scope, run, effect, where, effects, players, onEnd, onCancel, settle };
-      startOnElements({ ...starting, reducedMotion: reducedMotion() }, stateRef, framesRef);
+      startOnElements({ ...starting, reducedMotion: reducedMotion() }, waiting);
     },
-    [stateRef, fire, effects, players, playerEffects, visionSmoothing, onActionEnd],
+    [stateRef, fire, effects, players, playerEffects, visionSmoothing, onActionEnd, waiting],
   );
 
   const withoutUpTo = useCallback(

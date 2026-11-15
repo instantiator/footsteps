@@ -178,7 +178,7 @@ describe("compileGameRules", () => {
     (key) => {
       const on = key === "start" ? { start: true as const } : { when: "true" };
       expect(() => compileGameRules(gameWithRules([{ on, do: [{ effect: "quake", target: "event" }] }]))).toThrow(
-        `${OVERVIEW}.do[0].target: a ${key} rule fires for no element`,
+        `${OVERVIEW}.do[0]: a ${key} rule fires for no element`,
       );
     },
   );

@@ -17,7 +17,7 @@ has finished, and then its name's <code>actionEnd</code> rules fire and its grou
 </div></section>
 <div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">RunningAction</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#action">action</a><span class="tsd-signature-symbol">:</span> <a href="../types/entities_data_scenes_GameSceneData.GameAction.html" class="tsd-signature-type tsd-kind-type-alias">GameAction</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#event">event</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{</span><br/>        <span class="tsd-kind-property">id</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>        <span class="tsd-kind-property">interaction</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>        <span class="tsd-kind-property">player</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>        <span class="tsd-kind-property">playerId</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <span class="tsd-signature-symbol">}</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#id">id</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#parent">parent</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#progress">progress</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#run">run</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#scope">scope</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#where">where</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L77">entities/state/GameState.ts:77</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L83">entities/state/GameState.ts:83</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -43,7 +43,7 @@ has finished, and then its name's <code>actionEnd</code> rules fire and its grou
 <div class="tsd-comment tsd-typography"><p>The action.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L85">entities/state/GameState.ts:85</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L91">entities/state/GameState.ts:91</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="event"><span>event</span><a href="#event" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">event</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">id</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">interaction</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">player</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">playerId</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span> <span class="tsd-signature-symbol">}</span></div>
@@ -70,49 +70,49 @@ has finished, and then its name's <code>actionEnd</code> rules fire and its grou
 waits still reaches them. Absent if no tracked player fired the rule.</p>
 </div></li></ul></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L87">entities/state/GameState.ts:87</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L93">entities/state/GameState.ts:93</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="id"><span>id</span><a href="#id" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">id</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 <div class="tsd-comment tsd-typography"><p>Identifies it, from the same sequence as queued effects.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L79">entities/state/GameState.ts:79</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L85">entities/state/GameState.ts:85</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="parent"><code class="tsd-tag">Optional</code><span>parent</span><a href="#parent" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">parent</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div>
 <div class="tsd-comment tsd-typography"><p>The group it is in, if any.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L91">entities/state/GameState.ts:91</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L97">entities/state/GameState.ts:97</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="progress"><code class="tsd-tag">Optional</code><span>progress</span><a href="#progress" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">progress</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div>
 <div class="tsd-comment tsd-typography"><p>For a series: the index of the action running now. For a parallel group: how many are still running.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L93">entities/state/GameState.ts:93</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L99">entities/state/GameState.ts:99</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="run"><span>run</span><a href="#run" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">run</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 <div class="tsd-comment tsd-typography"><p>Which run of the scene: it is dropped, without ending, if the scene has moved on.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L83">entities/state/GameState.ts:83</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L89">entities/state/GameState.ts:89</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="scope"><span>scope</span><a href="#scope" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">scope</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 <div class="tsd-comment tsd-typography"><p>The scene whose rule started it.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L81">entities/state/GameState.ts:81</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L87">entities/state/GameState.ts:87</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="where"><span>where</span><a href="#where" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">where</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 <div class="tsd-comment tsd-typography"><p>Where the action is in the game's rules, for error messages.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L89">entities/state/GameState.ts:89</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/state/GameState.ts#L95">entities/state/GameState.ts:95</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

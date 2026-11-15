@@ -67,6 +67,12 @@
                     "$ref": "#/definitions/GameParallelAction"
                 },
                 {
+                    "$ref": "#/definitions/GameSpawnAction"
+                },
+                {
+                    "$ref": "#/definitions/GameDespawnAction"
+                },
+                {
                     "$ref": "#/definitions/GameFinishResetAction"
                 },
                 {
@@ -407,6 +413,30 @@
                 "scenes",
                 "stages",
                 "title"
+            ],
+            "type": "object"
+        },
+        "GameDespawnAction": {
+            "description": "Removes spawned copies; elements that weren't spawned stay. Ends at once.",
+            "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
+                },
+                "despawn": {
+                    "description": "CSS selector for the copies; `\"event\"` for the element the rule fired for.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "despawn"
             ],
             "type": "object"
         },
@@ -1961,6 +1991,35 @@
             },
             "required": [
                 "sound"
+            ],
+            "type": "object"
+        },
+        "GameSpawnAction": {
+            "description": "Adds a copy of a `<template>`'s content (its first element) to an element of the scene, so any number can be on\nscreen at once. The copy gets an `id` (`<template id>-<n>`) unless its markup gives one, and is found by selector\nlike any other element. Copies go when their scene closes or resets, and aren't saved. Ends once the copy is in\nplace, with the copy as `event` for `actionEnd`. At most 100 copies can be in a scene at once.",
+            "properties": {
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
+                },
+                "into": {
+                    "description": "CSS selector for the element the copy goes in, at its end; `\"event\"` for the element the rule fired for.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
+                    "type": "string"
+                },
+                "spawn": {
+                    "description": "CSS selector for the `<template>`.",
+                    "type": "string"
+                }
+            },
+            "required": [
+                "into",
+                "spawn"
             ],
             "type": "object"
         },

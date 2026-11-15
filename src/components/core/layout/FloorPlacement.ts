@@ -2,6 +2,7 @@ import { useEffect, type RefObject } from "react";
 import { isDefined } from "../../../util/ObjectUtils";
 import { placeOnFloor, sceneBoxOf, viewportToFloor, type FloorView, type Rect } from "../../camera/FloorGeometry";
 import type { FloorArea } from "../../camera/FloorSurfaces";
+import { SPAWNED_ATTRIBUTE } from "../effects/Spawns";
 import { sceneRoots } from "../logic/TemplateUtils";
 import type { CameraRuleTarget } from "./PlayerInteractionHook";
 import { DEPTH_STACK_CLASS, depthZIndex } from "../../camera/PlayerPosition";
@@ -128,6 +129,7 @@ const placedPropertiesOf = (element: Element): string[] => {
  * rewrites the `style` attribute, which would drop an item back to where the layout put it until the next frame, long
  * enough for the pointer to enter or leave it. Only an element that is placed the same way after the morph keeps them,
  * as a morph can reuse an element for a different one, and a property the template now sets itself is left as it says.
+ * They also keep spawned copies, which aren't in the template's markup.
  */
 export const keepPlacement = () => {
   const kept = new Map<Node, { properties: string[]; values: string[] }>();
@@ -143,6 +145,8 @@ export const keepPlacement = () => {
       }
       return true;
     },
+    /** Keeps spawned copies, which the template's markup doesn't have. */
+    beforeNodeRemoved: (node: Node): boolean => !(node instanceof Element && node.hasAttribute(SPAWNED_ATTRIBUTE)),
     /** Puts an element's placement back, if it is still placed the same way. */
     afterNodeMorphed: (node: Node) => {
       const before = kept.get(node);

@@ -374,6 +374,25 @@ export interface GameParallelAction extends GameActionBase {
   parallel: GameAction[];
 }
 
+/**
+ * Adds a copy of a `<template>`'s content (its first element) to an element of the scene, so any number can be on
+ * screen at once. The copy gets an `id` (`<template id>-<n>`) unless its markup gives one, and is found by selector
+ * like any other element. Copies go when their scene closes or resets, and aren't saved. Ends once the copy is in
+ * place, with the copy as `event` for `actionEnd`. At most 100 copies can be in a scene at once.
+ */
+export interface GameSpawnAction extends GameActionBase {
+  /** CSS selector for the `<template>`. */
+  spawn: string;
+  /** CSS selector for the element the copy goes in, at its end; `"event"` for the element the rule fired for. */
+  into: string;
+}
+
+/** Removes spawned copies; elements that weren't spawned stay. Ends at once. */
+export interface GameDespawnAction extends GameActionBase {
+  /** CSS selector for the copies; `"event"` for the element the rule fired for. */
+  despawn: string;
+}
+
 /** Raises a named event, which `raised` rules in every shown scene hear. Ends at once. */
 export interface GameRaiseAction extends GameActionBase {
   /** The event's name. */
@@ -391,6 +410,8 @@ export type GameAction =
   | GameRaiseAction
   | GameSeriesAction
   | GameParallelAction
+  | GameSpawnAction
+  | GameDespawnAction
   | GameFinishResetAction
   | GameSoundAction
   | GameRewardAction
