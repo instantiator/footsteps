@@ -186,9 +186,9 @@ describe("rules demo, played by camera", () => {
 
     touch("#pit-2", "foot-enter");
     touch("#door-base", "foot-enter"); // too late: they are already falling
-    await wait(500);
+    // With nobody in view to fall, the fall ends at once, and the reset follows its 500 ms pause
+    await wait(200);
     expect($("#pit-2")).not.toBeNull();
-    await wait(1000);
     await returnToStart();
     touch("#door-base", "foot-enter");
 
@@ -207,10 +207,9 @@ describe("rules demo, played by camera", () => {
     await waitFor(() => expect($("#depth-spring")).not.toBeNull());
 
     touch("#depth-spring", "foot-enter");
-    // The reset waits for the spin (1.5 s), well past this, however busy the machine
-    await wait(500);
+    // The reset follows the spin and a 500 ms pause; with nobody in view to spin, only the pause
+    await wait(200);
     expect($("#reset-start")).toBeNull();
-    await wait(1000);
     await waitFor(() => expect($("#reset-start")).not.toBeNull(), { timeout: 3000 });
   });
 

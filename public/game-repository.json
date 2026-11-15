@@ -528,9 +528,17 @@
                         "on": { "when": "state.lamp1 and state.lamp2 and state.lamp3" },
                         "do": [
                           { "set": { "done": "true" } },
-                          { "completeChallenge": true, "delayMs": 1000 },
-                          { "sound": "fanfare" },
-                          { "reward": { "animation": "sparkles", "particleCount": 80 } }
+                          {
+                            "series": [
+                              {
+                                "parallel": [
+                                  { "sound": "fanfare" },
+                                  { "reward": { "animation": "sparkles", "particleCount": 80 } }
+                                ]
+                              },
+                              { "completeChallenge": true }
+                            ]
+                          }
                         ]
                       }
                     ],
@@ -754,156 +762,48 @@
                     "rules": [
                       {
                         "on": {
-                          "start": true
+                          "every": "random(900, 2200)"
                         },
+                        "if": "not state.over",
                         "do": [
                           {
-                            "effect": "item-move",
-                            "target": "#low-1",
-                            "start": {
-                              "left": 110,
-                              "top": 82
-                            },
-                            "end": {
-                              "left": -10,
-                              "top": 82
-                            },
-                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
-                            "delayMs": "random(0, 1500)"
+                            "set": {
+                              "high": "random(0, 1) < 0.5"
+                            }
                           },
                           {
-                            "effect": "item-move",
-                            "target": "#high-1",
-                            "start": {
-                              "left": 110,
-                              "top": 22
-                            },
-                            "end": {
-                              "left": -10,
-                              "top": 22
-                            },
-                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
-                            "delayMs": "random(1500, 3500)"
-                          },
+                            "spawn": "#jd-obstacle",
+                            "into": "#jd-lanes",
+                            "name": "obstacle"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "actionEnd": "obstacle"
+                        },
+                        "do": [
                           {
                             "effect": "item-move",
-                            "target": "#low-2",
-                            "start": {
-                              "left": 110,
-                              "top": 82
-                            },
+                            "target": "event",
                             "end": {
-                              "left": -10,
-                              "top": 82
+                              "by": {
+                                "left": -120,
+                                "top": 0
+                              }
                             },
-                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
-                            "delayMs": "random(3000, 5000)"
-                          },
-                          {
-                            "effect": "item-move",
-                            "target": "#high-2",
-                            "start": {
-                              "left": 110,
-                              "top": 22
-                            },
-                            "end": {
-                              "left": -10,
-                              "top": 22
-                            },
-                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
-                            "delayMs": "random(4500, 6500)"
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)"
                           }
                         ]
                       },
                       {
                         "on": {
                           "effectEnd": "item-move",
-                          "target": "#low-1"
+                          "target": ".jd-obstacle"
                         },
-                        "if": "not state.over",
                         "do": [
                           {
-                            "effect": "item-move",
-                            "target": "#low-1",
-                            "start": {
-                              "left": 110,
-                              "top": 82
-                            },
-                            "end": {
-                              "left": -10,
-                              "top": 82
-                            },
-                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
-                            "delayMs": "random(300, 2500)"
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "effectEnd": "item-move",
-                          "target": "#high-1"
-                        },
-                        "if": "not state.over",
-                        "do": [
-                          {
-                            "effect": "item-move",
-                            "target": "#high-1",
-                            "start": {
-                              "left": 110,
-                              "top": 22
-                            },
-                            "end": {
-                              "left": -10,
-                              "top": 22
-                            },
-                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
-                            "delayMs": "random(300, 2500)"
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "effectEnd": "item-move",
-                          "target": "#low-2"
-                        },
-                        "if": "not state.over",
-                        "do": [
-                          {
-                            "effect": "item-move",
-                            "target": "#low-2",
-                            "start": {
-                              "left": 110,
-                              "top": 82
-                            },
-                            "end": {
-                              "left": -10,
-                              "top": 82
-                            },
-                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
-                            "delayMs": "random(300, 2500)"
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "effectEnd": "item-move",
-                          "target": "#high-2"
-                        },
-                        "if": "not state.over",
-                        "do": [
-                          {
-                            "effect": "item-move",
-                            "target": "#high-2",
-                            "start": {
-                              "left": 110,
-                              "top": 22
-                            },
-                            "end": {
-                              "left": -10,
-                              "top": 22
-                            },
-                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
-                            "delayMs": "random(300, 2500)"
+                            "despawn": "event"
                           }
                         ]
                       },
@@ -973,17 +873,24 @@
                             "stop": "item-move"
                           },
                           {
-                            "completeChallenge": true,
-                            "delayMs": 1500
-                          },
-                          {
-                            "sound": "fanfare"
-                          },
-                          {
-                            "reward": {
-                              "animation": "fireworks",
-                              "particleCount": 150
-                            }
+                            "series": [
+                              {
+                                "parallel": [
+                                  {
+                                    "sound": "fanfare"
+                                  },
+                                  {
+                                    "reward": {
+                                      "animation": "fireworks",
+                                      "particleCount": 150
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "completeChallenge": true
+                              }
+                            ]
                           }
                         ]
                       },
@@ -1097,156 +1004,48 @@
                     "rules": [
                       {
                         "on": {
-                          "start": true
+                          "every": "random(900, 2200)"
                         },
+                        "if": "not state.over",
                         "do": [
                           {
-                            "effect": "item-move",
-                            "target": "#low-1",
-                            "start": {
-                              "left": 110,
-                              "top": 82
-                            },
-                            "end": {
-                              "left": -10,
-                              "top": 82
-                            },
-                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
-                            "delayMs": "random(0, 1500)"
+                            "set": {
+                              "high": "random(0, 1) < 0.5"
+                            }
                           },
                           {
-                            "effect": "item-move",
-                            "target": "#high-1",
-                            "start": {
-                              "left": 110,
-                              "top": 22
-                            },
-                            "end": {
-                              "left": -10,
-                              "top": 22
-                            },
-                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
-                            "delayMs": "random(1500, 3500)"
-                          },
+                            "spawn": "#jd-obstacle",
+                            "into": "#jd-lanes",
+                            "name": "obstacle"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "actionEnd": "obstacle"
+                        },
+                        "do": [
                           {
                             "effect": "item-move",
-                            "target": "#low-2",
-                            "start": {
-                              "left": 110,
-                              "top": 82
-                            },
+                            "target": "event",
                             "end": {
-                              "left": -10,
-                              "top": 82
+                              "by": {
+                                "left": -120,
+                                "top": 0
+                              }
                             },
-                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
-                            "delayMs": "random(3000, 5000)"
-                          },
-                          {
-                            "effect": "item-move",
-                            "target": "#high-2",
-                            "start": {
-                              "left": 110,
-                              "top": 22
-                            },
-                            "end": {
-                              "left": -10,
-                              "top": 22
-                            },
-                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
-                            "delayMs": "random(4500, 6500)"
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)"
                           }
                         ]
                       },
                       {
                         "on": {
                           "effectEnd": "item-move",
-                          "target": "#low-1"
+                          "target": ".jd-obstacle"
                         },
-                        "if": "not state.over",
                         "do": [
                           {
-                            "effect": "item-move",
-                            "target": "#low-1",
-                            "start": {
-                              "left": 110,
-                              "top": 82
-                            },
-                            "end": {
-                              "left": -10,
-                              "top": 82
-                            },
-                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
-                            "delayMs": "random(300, 2500)"
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "effectEnd": "item-move",
-                          "target": "#high-1"
-                        },
-                        "if": "not state.over",
-                        "do": [
-                          {
-                            "effect": "item-move",
-                            "target": "#high-1",
-                            "start": {
-                              "left": 110,
-                              "top": 22
-                            },
-                            "end": {
-                              "left": -10,
-                              "top": 22
-                            },
-                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
-                            "delayMs": "random(300, 2500)"
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "effectEnd": "item-move",
-                          "target": "#low-2"
-                        },
-                        "if": "not state.over",
-                        "do": [
-                          {
-                            "effect": "item-move",
-                            "target": "#low-2",
-                            "start": {
-                              "left": 110,
-                              "top": 82
-                            },
-                            "end": {
-                              "left": -10,
-                              "top": 82
-                            },
-                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
-                            "delayMs": "random(300, 2500)"
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "effectEnd": "item-move",
-                          "target": "#high-2"
-                        },
-                        "if": "not state.over",
-                        "do": [
-                          {
-                            "effect": "item-move",
-                            "target": "#high-2",
-                            "start": {
-                              "left": 110,
-                              "top": 22
-                            },
-                            "end": {
-                              "left": -10,
-                              "top": 22
-                            },
-                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
-                            "delayMs": "random(300, 2500)"
+                            "despawn": "event"
                           }
                         ]
                       },
@@ -1316,17 +1115,24 @@
                             "stop": "item-move"
                           },
                           {
-                            "completeChallenge": true,
-                            "delayMs": 1500
-                          },
-                          {
-                            "sound": "fanfare"
-                          },
-                          {
-                            "reward": {
-                              "animation": "fireworks",
-                              "particleCount": 150
-                            }
+                            "series": [
+                              {
+                                "parallel": [
+                                  {
+                                    "sound": "fanfare"
+                                  },
+                                  {
+                                    "reward": {
+                                      "animation": "fireworks",
+                                      "particleCount": 150
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "completeChallenge": true
+                              }
+                            ]
                           }
                         ]
                       },
@@ -1599,8 +1405,12 @@
                         "if": "not state.done and not state.falling",
                         "do": [
                           { "set": { "falling": "true" } },
-                          { "effect": "player-fall", "durationMs": 1000, "easing": "ease-in" },
-                          { "resetChallenge": true, "delayMs": 1500 }
+                          {
+                            "series": [
+                              { "effect": "player-fall", "durationMs": 1000, "easing": "ease-in" },
+                              { "resetChallenge": true, "delayMs": 500 }
+                            ]
+                          }
                         ]
                       },
                       {
@@ -1694,8 +1504,12 @@
                         "if": "not state.sprung",
                         "do": [
                           { "set": { "sprung": "true" } },
-                          { "effect": "player-spin-away", "durationMs": 1000 },
-                          { "resetChallenge": true, "delayMs": 1500 }
+                          {
+                            "series": [
+                              { "effect": "player-spin-away", "durationMs": 1000 },
+                              { "resetChallenge": true, "delayMs": 500 }
+                            ]
+                          }
                         ]
                       },
                       {
@@ -1802,9 +1616,13 @@
                       {
                         "on": { "interact": ["click", "hand-enter"], "target": "#bridge", "threshold": 0.3 },
                         "do": [
-                          { "effect": "quake", "target": "#bridge", "dx": 0.5, "dy": 0.5, "durationMs": 400 },
-                          { "effect": "item-fall", "target": "#bridge", "delayMs": 400 },
-                          { "set": { "message": "\"The bridge has gone\"" }, "delayMs": 1400 }
+                          {
+                            "series": [
+                              { "effect": "quake", "target": "#bridge", "dx": 0.5, "dy": 0.5, "durationMs": 400 },
+                              { "effect": "item-fall", "target": "#bridge" },
+                              { "set": { "message": "\"The bridge has gone\"" } }
+                            ]
+                          }
                         ]
                       },
                       {
@@ -1835,8 +1653,12 @@
                       {
                         "on": { "interact": ["hand-enter"], "target": "#ghost", "threshold": 0.3 },
                         "do": [
-                          { "effect": "player-invisible", "durationMs": 500 },
-                          { "effect": "player-visible", "durationMs": 500, "delayMs": 3000 }
+                          {
+                            "series": [
+                              { "effect": "player-invisible", "durationMs": 500 },
+                              { "effect": "player-visible", "durationMs": 500, "delayMs": 2500 }
+                            ]
+                          }
                         ]
                       },
                       {

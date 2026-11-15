@@ -2,8 +2,8 @@
 
 This tutorial builds a runner played with the camera: snowballs roll along the ground and bats swoop at head height,
 and the player jumps and ducks to keep clear of them until the score is reached. It covers the camera avatar and its
-mouse fallback, how players are drawn between a scene's background and foreground, body-part interactions, timers,
-effects that move things, and a countdown before each run. It follows the **Jump and duck (2D)** game's "Warm-up"
+mouse fallback, how players are drawn between a scene's background and foreground, spawning copies of a template,
+body-part interactions, timers, effects that move things, a series of actions, and a countdown before each run. It follows the **Jump and duck (2D)** game's "Warm-up"
 stage; every snippet is quoted from `public/game-repository.json` and `public/games/jump-and-duck/`.
 
 Start from [your first game](your-first-game.md) and [a scene without a camera](scene-without-camera.md), which
@@ -52,7 +52,8 @@ screen is see-through, so the player shows behind the obstacles.
 }
 ```
 
-The template has the ground, a status line, a message for the end of the run, and four obstacles:
+The template has the ground, a status line, a message for the end of the run, somewhere for obstacles to go, and a
+`<template>` for an obstacle, which the rules copy:
 
 <!-- prettier-ignore -->
 ```html [public/games/jump-and-duck/run.html]
@@ -60,16 +61,15 @@ The template has the ground, a status line, a message for the end of the run, an
   <div class="jd-ground"></div>
   <p id="jd-status" class="jd-status">Score {{state.score}} of {{data.target}} · Lives {{state.lives}}</p>
   {{#if state.over}}<p id="jd-message" class="jd-message">{{#if state.won}}You made it!{{else}}Ouch! Back to the start…{{/if}}</p>{{/if}}
-  <div id="low-1" class="jd-obstacle jd-snowball"></div>
-  <div id="low-2" class="jd-obstacle jd-snowball"></div>
-  <div id="high-1" class="jd-obstacle jd-bat"></div>
-  <div id="high-2" class="jd-obstacle jd-bat"></div>
+  <div id="jd-lanes"></div>
+  <template id="jd-obstacle"><div class="jd-obstacle {{#if state.high}}jd-bat{{else}}jd-snowball{{/if}}"></div></template>
 </div>
 ```
 
 `pointer-events: none` on the ground and text keeps them from covering what's beneath them for the mouse.
 
-Each obstacle waits off the right edge, at its height: snowballs low, bats high.
+A `<template>` isn't shown. Its content is rendered with the rest of the template, so `state.high` picks the
+obstacle's kind. Each copy waits off the right edge, at its height: snowballs low, bats high.
 
 ```css [public/games/jump-and-duck/jump-and-duck.css]
 .jd-obstacle {
@@ -110,57 +110,82 @@ The scene's `data` holds the numbers the rules use, so they're easy to tune. Its
 "resetStateOnShow": true,
 ```
 
-## Step 4: send the obstacles across
+## Step 4: spawn the obstacles and send them across
 
-A `start` rule fires as the scene starts. Each obstacle gets an `item-move` [effect](../special-effects.md#item-move),
-from just off the right edge to just off the left. Positions are percentages of the scene
+An `every` rule adds an obstacle every second or two. `random(0, 1) < 0.5` picks its kind, and
+[`spawn`](../game-data.md#spawn-and-despawn) adds a copy of the template to `#jd-lanes`. As the `set` comes first in
+the rule, the copy is rendered with it.
+
+```json [public/game-repository.json]
+{
+  "on": {
+    "every": "random(900, 2200)"
+  },
+  "if": "not state.over",
+  "do": [
+    {
+      "set": {
+        "high": "random(0, 1) < 0.5"
+      }
+    },
+    {
+      "spawn": "#jd-obstacle",
+      "into": "#jd-lanes",
+      "name": "obstacle"
+    }
+  ]
+},
+```
+
+- `every` can be an [expression](../game-data.md#expressions), worked out again each time, so the gaps vary.
+- The spawn is [named](../game-data.md#named-actions-and-raised-events), so a rule can follow it ending, as the copy
+  arrives.
+
+As each copy arrives, an `item-move` [effect](../special-effects.md#item-move) sends it across the scene. The target
+`"event"` means the element the rule fired for: here, the copy that has just arrived. The move goes from where the
+copy is to 120% of the scene's width to the left, at its own height
 ([coordinates](../special-effects.md#coordinate-system)).
 
 ```json [public/game-repository.json]
 {
   "on": {
-    "start": true
+    "actionEnd": "obstacle"
   },
   "do": [
     {
       "effect": "item-move",
-      "target": "#low-1",
-      "start": {
-        "left": 110,
-        "top": 82
-      },
+      "target": "event",
       "end": {
-        "left": -10,
-        "top": 82
+        "by": {
+          "left": -120,
+          "top": 0
+        }
       },
-      "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)",
-      "delayMs": "random(0, 1500)"
-    },
+      "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)"
+    }
+  ]
+},
 ```
 
-- `durationMs` and `delayMs` can be [expressions](../game-data.md#expressions), worked out as the effect starts. The
-  crossing speeds up as the score rises, down to `minMs`.
-- `random(0, 1500)` staggers the start, so each run differs. The other obstacles start later.
+`durationMs` is worked out as the effect starts, so the crossing speeds up as the score rises, down to `minMs`.
 
-When an obstacle reaches the far side, an `effectEnd` rule sends it again, after a random pause:
+When an obstacle reaches the far side, an `effectEnd` rule removes it with `despawn`:
 
 ```json [public/game-repository.json]
 {
   "on": {
     "effectEnd": "item-move",
-    "target": "#low-1"
+    "target": ".jd-obstacle"
   },
-  "if": "not state.over",
   "do": [
     {
-      "effect": "item-move",
-      "target": "#low-1",
-…
-      "delayMs": "random(300, 2500)"
+      "despawn": "event"
     }
   ]
 },
 ```
+
+Copies also go when the run resets, so each run starts clear.
 
 **Look for:** snowballs roll along the ground, and bats fly across at head height, faster as the run goes on.
 
@@ -202,7 +227,7 @@ under bats.
   small next to a whole silhouette, and almost a third of the head for a bat.
 - `mouse-enter` is the mouse's stand-in: moving the pointer onto an obstacle costs a life too, so the mouse player
   keeps the pointer clear.
-- The target is a class, so one rule covers both snowballs.
+- The target is a class, so one rule covers every snowball, however many have been spawned.
 
 Jump and duck needs no jump interaction, as a jump is just keeping clear. When a jump itself should do something, use
 `jump`, `jump-from` or `jump-onto` ([jumps](../camera-mode.md#jumps)).
@@ -232,8 +257,9 @@ An `every` rule adds a point a second while the run lasts:
 ```
 
 Two `when` rules end the run. Reaching the target stops the obstacles with the `stop`
-[effect](../special-effects.md#stopping-an-effect), which puts them back off the screen where the template has them,
-and completes the challenge:
+[effect](../special-effects.md#stopping-an-effect), which puts them back off the screen where the template has them.
+Then a [series](../game-data.md#series-and-parallel-groups) plays the fanfare and fireworks together, and once both
+have finished, completes the challenge:
 
 ```json [public/game-repository.json]
 {
@@ -253,12 +279,23 @@ and completes the challenge:
       "stop": "item-move"
     },
     {
-      "completeChallenge": true,
-      "delayMs": 1500
-    },
+      "series": [
+        {
+          "parallel": [
+            {
+              "sound": "fanfare"
+            },
+…
+        {
+          "completeChallenge": true
+        }
+      ]
+    }
+  ]
+},
 ```
 
-Running out of lives does the same, but resets the challenge instead, for another go:
+Running out of lives does the same, but after a pause for its message, resets the challenge for another go:
 
 ```json [public/game-repository.json]
 {

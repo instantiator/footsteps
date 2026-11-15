@@ -193,8 +193,9 @@ const startOnElements = (
   const attempt = () => {
     const shownScopes = getShownScenes(waiting.stateRef.current).map((scene) => scene.scope);
     const elements = resolveTargets(scope, selector, shownScopes);
-    const ready =
-      targetsPlayers(selector) || (isOnScreen(scope, run) && (selector === undefined || elements.length > 0));
+    // Stopping nothing is fine, so a stop needn't wait for its elements
+    const needsElements = selector !== undefined && effect.effect !== "stop";
+    const ready = targetsPlayers(selector) || (isOnScreen(scope, run) && (!needsElements || elements.length > 0));
     if (!ready) return false;
     warnIfTrappingFloorItems(elements, selector, where);
     noteAffectedPlayers(elements, scope, players);

@@ -118,14 +118,20 @@ The spring is a target for a rule. Feet only count on a floor area where it's dr
   "if": "not state.sprung",
   "do": [
     { "set": { "sprung": "true" } },
-    { "effect": "player-spin-away", "durationMs": 1000 },
-    { "resetChallenge": true, "delayMs": 1500 }
+    {
+      "series": [
+        { "effect": "player-spin-away", "durationMs": 1000 },
+        { "resetChallenge": true, "delayMs": 500 }
+      ]
+    }
   ]
 },
 ```
 
-`player-spin-away` spins a camera player off the screen ([spin away](../special-effects.md#spin-away)); the mouse has
-no body to spin, so with the mouse the challenge just resets.
+`player-spin-away` spins a camera player off the screen ([spin away](../special-effects.md#spin-away)). The
+[series](../game-data.md#series-and-parallel-groups) resets the challenge once the spin has ended, and a short pause
+after. The mouse has no body to spin, so with the mouse the spin ends at once, and the challenge resets after the
+pause.
 
 **Look for:** a chequered floor. Move the pointer onto the spring, and the challenge starts again.
 

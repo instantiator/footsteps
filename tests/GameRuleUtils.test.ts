@@ -11,6 +11,7 @@ import {
   type RuleEnvironment,
   type RuleEvent,
 } from "../src/components/core/logic/GameRuleUtils";
+import { endAction } from "../src/components/core/logic/ActionRuns";
 import { compileGameRules } from "../src/components/core/logic/GameRuleCompile";
 import { startSceneRuns } from "../src/components/core/logic/GameStateUtils";
 import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
@@ -474,18 +475,26 @@ describe("rule engine", () => {
       expect(error).toHaveBeenCalledWith(expect.stringContaining("rules[0].do[0].durationMs"));
     });
 
-    it("sends Jump and duck's obstacles at random times, at a speed worked out from the score", () => {
-      vi.spyOn(Math, "random").mockReturnValue(0);
+    it("spawns Jump and duck's obstacles of a random kind, and sends each across at a speed from the score", () => {
+      vi.spyOn(Math, "random").mockReturnValue(0.25);
       const [run] = (localRepository as GameRepository).games["jump-and-duck"].stages[0].challenges[0].scenes;
       const state = playing(run.component.rules!, { ...run.component.initialState, score: 10 });
       Object.assign(state.stages[0].stage.challenges[0].scenes[0].component, { data: run.component.data });
-      const started = fireRules(env, state, SCOPE, (trigger) => ("start" in trigger ? NO_EVENT : undefined));
+      const spawned = fireRules(env, state, SCOPE, (trigger) =>
+        "every" in trigger && trigger.every !== 1000 ? NO_EVENT : undefined,
+      );
 
-      // At the lowest random draw, the first goes at once and the rest at the bottom of their ranges
-      expect(started.session.visualEffects.map(({ effect }) => effect)).toEqual([
-        expect.objectContaining({ target: "#low-1", durationMs: 3500 }),
-      ]);
-      expect(started.session.delayedActions.map(({ delayMs }) => delayMs)).toEqual([1500, 3000, 4500]);
+      // A low draw picks a bat, and the spawn waits on the screen, named so its arrival starts the move
+      expect(stateOf(spawned)).toMatchObject({ high: true });
+      const [queued] = spawned.session.visualEffects;
+      expect(queued.effect).toEqual({ spawn: "#jd-obstacle", into: "#jd-lanes", name: "obstacle" });
+
+      const arrived = endAction(env, spawned, queued.actionId!, { id: "jd-obstacle-1", matches: () => true });
+      expect(arrived.session.visualEffects.at(-1)?.effect).toMatchObject({
+        effect: "item-move",
+        target: '[id="jd-obstacle-1"]',
+        durationMs: 3500,
+      });
     });
 
     it("sets every key from the state before the action", () => {

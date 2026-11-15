@@ -139,6 +139,12 @@ const rewardsFor = (
   }));
 };
 
+/**
+ * The longest a reward holds up the action waiting on it: about as long as a burst shows. partycles doesn't always
+ * report a burst's end (it pauses while the page is hidden), so a reward ends at this time if it hasn't already.
+ */
+const REWARD_END_MS = 2500;
+
 /** Reports a running action's end, once a sound has played or a reward has shown. */
 type OnActionEnd = (actionId: number) => void;
 
@@ -183,6 +189,8 @@ function useRuleEffects(reducedMotion: boolean, playerEffects: PlayerEffects, on
         else if (!reducedMotion) {
           const shownScopes = getShownScenes(stateRef.current).map((scene) => scene.scope);
           setShown((rewards) => [...rewards, ...rewardsFor(queued, effect.reward, { shownScopes, playerEffects })]);
+          const { actionId } = queued;
+          if (isDefined(actionId)) timersRef.current.add(setTimeout(() => onActionEnd(actionId), REWARD_END_MS));
         } else if (isDefined(queued.actionId)) onActionEnd(queued.actionId);
       }, queued.delayMs);
       timersRef.current.add(timer);

@@ -72,19 +72,25 @@ const warnUnmatchedTarget = (scope: SceneScope, action: GameAction, at: string):
     console.warn(`${at}.target: "${target}" matches nothing in the scene`);
 };
 
-/** Warns about rules whose selectors match nothing in the scene, as that is usually a typo. */
+/**
+ * Warns about rules whose selectors match nothing in the scene, as that is usually a typo. A scene that spawns has
+ * elements that come and go, so only its spawns are checked.
+ * ponytail: all or nothing for a spawning scene; check against its templates' markup if typos there go unseen.
+ */
 const warnUnmatchedSelectors = (scene: ShownScene): void => {
   const roots = sceneRoots(scene.scope);
-  (scene.component.rules ?? []).forEach((rule, ruleIndex) => {
+  const rules = scene.component.rules ?? [];
+  const actions = rules.flatMap((rule, ruleIndex) => actionsWithin(rule.do, `${scene.scope} › rules[${ruleIndex}].do`));
+  const spawns = actions.flatMap(([action, at]) => ("spawn" in action ? [{ action, at }] : []));
+  spawns.forEach(({ action, at }) => warnUnmatchedSpawn(roots, action, at));
+  if (spawns.length > 0) return;
+  rules.forEach((rule, ruleIndex) => {
     const selector = "target" in rule.on ? rule.on.target : undefined;
     if (isDefined(selector) && !roots.some((root) => root.querySelector(selector) !== null)) {
       console.warn(`${scene.scope} › rules[${ruleIndex}].on.target: "${selector}" matches nothing in the scene`);
     }
-    for (const [action, at] of actionsWithin(rule.do, `${scene.scope} › rules[${ruleIndex}].do`)) {
-      if ("spawn" in action) warnUnmatchedSpawn(roots, action, at);
-      else warnUnmatchedTarget(scene.scope, action, at);
-    }
   });
+  actions.forEach(([action, at]) => warnUnmatchedTarget(scene.scope, action, at));
 };
 
 /** Most times a scene may reset within {@link RESTART_WINDOW_MS}, before it counts as a loop and is stopped. */

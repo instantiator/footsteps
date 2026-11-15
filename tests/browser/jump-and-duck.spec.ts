@@ -78,6 +78,25 @@ test("costs a life for each snowball that meets still mouse-feet", async ({ page
   await loseEveryLife(page, { feet: true });
 });
 
+test("spawns obstacles of both kinds, more than the four a fixed pool had, and removes each as it leaves", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  await openWarmUp(page, 100);
+  await parkClear(page);
+  const seen = new Map<string, string>();
+  const look = async () => {
+    const obstacles = await page
+      .locator(".jd-obstacle")
+      .evaluateAll((elements) => elements.map((element) => [element.id, element.className] as const));
+    for (const [id, className] of obstacles) seen.set(id, className);
+    return { seen: seen.size, onScreen: obstacles.length, kinds: new Set([...seen.values()]).size };
+  };
+  await expect.poll(look, { timeout: 30_000 }).toMatchObject({ seen: expect.any(Number), kinds: 2 });
+  await expect.poll(async () => (await look()).seen, { timeout: 30_000 }).toBeGreaterThan(4);
+  expect((await look()).onScreen).toBeLessThan(seen.size);
+});
+
 test("completes a run at its target, opening the next", async ({ page }) => {
   test.setTimeout(60_000);
   await openWarmUp(page, 3);
