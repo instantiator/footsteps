@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useMouseFeet } from "../src/components/core/layout/MouseFeetHook";
 import type { CameraRuleEvent, CameraRuleTarget } from "../src/components/core/layout/PlayerInteractionHook";
 import type { CameraInteraction } from "../src/components/camera/PlayerMonitor";
-import { SCENE_RENDERED_EVENT, trackPointer } from "../src/util/PointerPosition";
+import { trackPointer } from "../src/util/PointerPosition";
 
 const SCOPE = "challenge:lava/floor/challenge-in-progress";
 
@@ -141,14 +141,22 @@ describe("useMouseFeet", () => {
     expect(fired(onEvent)).toEqual(["any-enter@a", "any-exit@a"]);
   });
 
-  it("enters what is under a resting pointer when a scene renders, once", () => {
-    const { onEvent, viewport } = setup([rule(["foot-enter"], "#a")]);
-    restAt(10);
+  it("enters and leaves what moves under a resting pointer, once each, on the frames that follow", () => {
+    vi.useFakeTimers({ toFake: ["requestAnimationFrame", "cancelAnimationFrame"] });
+    const { onEvent } = setup([rule(["foot-enter", "foot-exit"], "#a")]);
+    restAt(150);
+    vi.advanceTimersToNextFrame();
     expect(onEvent).not.toHaveBeenCalled();
-    fireEvent(viewport, new Event(SCENE_RENDERED_EVENT, { bubbles: true }));
+    const a = vi.spyOn(document.getElementById("a")!, "getBoundingClientRect");
+    a.mockReturnValue(DOMRect.fromRect({ x: 100, y: 0, width: 100, height: 100 }));
+    BOXES.a = [100, 0, 200, 100];
+    vi.advanceTimersToNextFrame();
+    vi.advanceTimersToNextFrame();
     expect(fired(onEvent)).toEqual(["foot-enter@a"]);
-    fireEvent(viewport, new Event(SCENE_RENDERED_EVENT, { bubbles: true }));
-    expect(fired(onEvent)).toEqual(["foot-enter@a"]);
+    a.mockReturnValue(DOMRect.fromRect({ x: 0, y: 0, width: 100, height: 100 }));
+    BOXES.a = [0, 0, 100, 100];
+    vi.advanceTimersToNextFrame();
+    expect(fired(onEvent)).toEqual(["foot-enter@a", "foot-exit@a"]);
   });
 
   it("enters what is under the pointer as the feet start", () => {
@@ -250,13 +258,14 @@ describe("useMouseFeet", () => {
   });
 
   it("starts a scene's targets afresh when it resets, without firing exits, and enters again where the feet rest", () => {
+    vi.useFakeTimers({ toFake: ["requestAnimationFrame", "cancelAnimationFrame"] });
     const rules = [rule(["foot-enter", "foot-exit"], "#a")];
-    const { onEvent, move, view, viewport } = setup(rules);
+    const { onEvent, move, view } = setup(rules);
     move(10);
     onEvent.mockClear();
     view.rerender(<Harness rules={[{ ...rules[0], run: 1 }]} onEvent={onEvent} />);
     expect(onEvent).not.toHaveBeenCalled();
-    fireEvent(viewport, new Event(SCENE_RENDERED_EVENT, { bubbles: true }));
+    vi.advanceTimersToNextFrame();
     expect(fired(onEvent)).toEqual(["foot-enter@a"]);
   });
 });

@@ -1,4 +1,6 @@
+import type { GameSceneComponentData } from "../../../entities/data/scenes/GameSceneData";
 import { isDefined } from "../../../util/ObjectUtils";
+import { triggerInteractions } from "../logic/GameRuleUtils";
 import type { GameAnswerFunction } from "../Game";
 import type { GameSceneRenderData } from "../logic/RenderDataUtils";
 import type { SceneDomEvent } from "../logic/TemplateUtils";
@@ -21,6 +23,15 @@ interface GameSceneComponentProps {
 }
 
 /**
+ * Whether a scene's rules follow the mouse entering or leaving elements.
+ * ponytail: template scenes only; pass it through dialogs and scrolls when one of those has moving targets.
+ */
+const followsMouse = ({ rules }: Pick<GameSceneComponentData, "rules">): boolean =>
+  (rules ?? []).some(
+    ({ on }) => "interact" in on && triggerInteractions(on).some((i) => i === "mouse-enter" || i === "mouse-exit"),
+  );
+
+/**
  * Renders one half (the layer hint) of a scene, using the template, dialog or scroll component to suit its type,
  * and the background or foreground source and styles to suit the hint.
  */
@@ -36,7 +47,8 @@ export default function GameSceneComponent({ render, layerHint, onAnswer, onScen
     run: render.run,
     onSceneEvent,
   };
-  if (component.type === "template") return <GameSceneTemplateComponent {...common} />;
+  if (component.type === "template")
+    return <GameSceneTemplateComponent {...common} watchPointer={followsMouse(component)} />;
 
   // A dialog draws its paper and text together, in front of the players, so its background half is empty
   if (background) return null;

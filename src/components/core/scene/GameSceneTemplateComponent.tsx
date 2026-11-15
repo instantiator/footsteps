@@ -2,6 +2,7 @@ import DOMPurify from "dompurify";
 import Handlebars from "handlebars";
 import { Idiomorph } from "idiomorph";
 import {
+  useCallback,
   useEffect,
   useId,
   useLayoutEffect,
@@ -19,7 +20,7 @@ import {
 import type { GameSceneTemplateSourceData as GameSceneTemplateData } from "../../../entities/data/scenes/GameSceneTemplateComponentData";
 import useContentCache from "../../../providers/GameContentCacheHook";
 import { isDefined } from "../../../util/ObjectUtils";
-import { lastPointer, SCENE_RENDERED_EVENT, trackPointer } from "../../../util/PointerPosition";
+import { lastPointer, trackPointer } from "../../../util/PointerPosition";
 import { summariseTemplateSource, type SceneDomEvent } from "../logic/TemplateUtils";
 import { keepPlacement } from "../layout/FloorPlacement";
 
@@ -39,6 +40,11 @@ interface GameSceneTemplateProps {
   run?: number;
   /** Called with clicks, key activations, mouse moves, and animation and transition ends inside the template. */
   onSceneEvent?: (event: SceneDomEvent) => void;
+  /**
+   * Whether the scene's rules follow the mouse entering and leaving elements, so the resting pointer is hit-tested
+   * each frame: an element moving under a still pointer enters and leaves it, and so does a new body rendering.
+   */
+  watchPointer?: boolean;
 }
 
 /** Game content may come from a remote repository: allow only Handlebars' built-in helpers. */
@@ -86,17 +92,21 @@ const isTemplateButtonActivation = (event: KeyboardEvent<HTMLElement>): boolean 
   event.target instanceof Element &&
   event.target.getAttribute("role") === "button";
 
+/** Passes on the mouse moving over or out of an element in the template, with where it came from or went to. */
+type HoverHandler = (target: Element, related: Element | null) => void;
+
 /** The container's handlers, which pass events inside the template on to the scene, with the container they stop at. */
-const sceneEventHandlers = (onSceneEvent: GameSceneTemplateProps["onSceneEvent"]) => {
+const sceneEventHandlers = (
+  onSceneEvent: GameSceneTemplateProps["onSceneEvent"],
+  hover: { over: HoverHandler; out: HoverHandler },
+) => {
   const emit = (event: SyntheticEvent<HTMLElement>, kind: SceneDomEvent["kind"], name?: string) => {
     if (event.target instanceof Element)
       onSceneEvent?.({ kind, target: event.target, root: event.currentTarget, name });
   };
-  // The mouse moving over or out of an element, with where it came from or went to
-  const emitMouse = (event: MouseEvent<HTMLElement>, kind: "mouseOver" | "mouseOut") => {
-    if (!(event.target instanceof Element)) return;
-    const related = event.relatedTarget instanceof Element ? event.relatedTarget : null;
-    onSceneEvent?.({ kind, target: event.target, root: event.currentTarget, related });
+  const emitMouse = (event: MouseEvent<HTMLElement>, handler: HoverHandler) => {
+    if (event.target instanceof Element)
+      handler(event.target, event.relatedTarget instanceof Element ? event.relatedTarget : null);
   };
   return {
     onClick: (event: MouseEvent<HTMLElement>) => emit(event, "click"),
@@ -105,43 +115,79 @@ const sceneEventHandlers = (onSceneEvent: GameSceneTemplateProps["onSceneEvent"]
       event.preventDefault(); // stop Space scrolling the page
       emit(event, "click");
     },
-    onMouseOver: (event: MouseEvent<HTMLElement>) => emitMouse(event, "mouseOver"),
-    onMouseOut: (event: MouseEvent<HTMLElement>) => emitMouse(event, "mouseOut"),
+    onMouseOver: (event: MouseEvent<HTMLElement>) => emitMouse(event, hover.over),
+    onMouseOut: (event: MouseEvent<HTMLElement>) => emitMouse(event, hover.out),
     onAnimationEnd: (event: AnimationEvent<HTMLElement>) => emit(event, "animationEnd", event.animationName),
     onTransitionEnd: (event: TransitionEvent<HTMLElement>) => emit(event, "transitionEnd", event.propertyName),
   };
 };
 
 /**
- * Once a new body has rendered (and been laid out, a frame later): enters what is under a pointer that is already
- * resting on it, as if the pointer had just moved there, and tells the page (for the mouse's feet) with
- * {@link SCENE_RENDERED_EVENT}.
+ * Follows the element under the pointer inside the template, from the browser's mouse events and, while `watch` is
+ * on, from hit-testing the resting pointer each frame. The browser only reports an element moving under a still
+ * pointer on its first pass, if at all. Each change is passed on once, whichever reports it first, and frames with no
+ * change pass on nothing. A new body starts afresh, so what rests under the pointer enters it, without exits for
+ * the old body's elements.
+ * ponytail: one hit-test per frame while the scene has mouse rules; gate on running animations if that ever shows.
  */
-function useAnnounceNewBody(
-  bodyRef: RefObject<HTMLDivElement | null>,
+function useHover(
+  rootRef: RefObject<HTMLDivElement | null>,
   bodyKey: string,
-  rendered: boolean,
+  watch: boolean,
   onSceneEvent: GameSceneTemplateProps["onSceneEvent"],
 ) {
+  const hoveredRef = useRef<Element | null>(null);
   const onSceneEventRef = useRef(onSceneEvent);
   useEffect(() => {
     onSceneEventRef.current = onSceneEvent;
   }, [onSceneEvent]);
   useEffect(trackPointer, []);
   useEffect(() => {
-    if (!rendered) return;
-    const frame = requestAnimationFrame(() => {
-      const body = bodyRef.current;
-      const root = body?.parentElement;
-      if (!body || !root) return;
+    hoveredRef.current = null;
+  }, [bodyKey]);
+
+  const emit = useCallback(
+    (kind: "mouseOver" | "mouseOut", target: Element, related: Element | null) => {
+      const root = rootRef.current;
+      if (root) onSceneEventRef.current?.({ kind, target, root, related });
+    },
+    [rootRef],
+  );
+  const over: HoverHandler = useCallback(
+    (target, related) => {
+      if (target === hoveredRef.current) return;
+      hoveredRef.current = target;
+      emit("mouseOver", target, related);
+    },
+    [emit],
+  );
+  const out: HoverHandler = useCallback(
+    (target, related) => {
+      if (target !== hoveredRef.current) return;
+      hoveredRef.current = null;
+      emit("mouseOut", target, related);
+    },
+    [emit],
+  );
+
+  useEffect(() => {
+    if (!watch) return;
+    let frame = requestAnimationFrame(function hitTest() {
+      const root = rootRef.current;
       const point = lastPointer();
-      const target = isDefined(point) ? document.elementFromPoint(point.x, point.y) : null;
-      if (target !== null && body.contains(target))
-        onSceneEventRef.current?.({ kind: "mouseOver", target, root, related: null });
-      root.dispatchEvent(new Event(SCENE_RENDERED_EVENT, { bubbles: true }));
+      const found = isDefined(point) && root ? document.elementFromPoint(point.x, point.y) : null;
+      const hit = found !== null && root?.contains(found) ? found : null;
+      const before = hoveredRef.current;
+      if (hit !== before) {
+        if (before !== null) out(before, hit);
+        if (hit !== null) over(hit, before);
+      }
+      frame = requestAnimationFrame(hitTest);
     });
     return () => cancelAnimationFrame(frame);
-  }, [bodyRef, bodyKey, rendered]);
+  }, [watch, rootRef, over, out]);
+
+  return { over, out };
 }
 
 /**
@@ -160,6 +206,7 @@ export default function GameSceneTemplateComponent({
   scope,
   run = 0,
   onSceneEvent,
+  watchPointer = false,
   children,
 }: PropsWithChildren<GameSceneTemplateProps>) {
   const [render, setRender] = useState<GameSceneTemplateData | undefined>();
@@ -178,9 +225,10 @@ export default function GameSceneTemplateComponent({
     () => (isDefined(template) ? renderBody(template, templateData) : undefined),
     [template, templateData],
   );
+  const rootRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const bodyKey = `${scope}#${run}`;
-  useAnnounceNewBody(bodyRef, bodyKey, isDefined(html), onSceneEvent);
+  const hover = useHover(rootRef, bodyKey, watchPointer, onSceneEvent);
 
   // Patches the template's DOM in place, matching elements by id, so CSS transitions run between renders
   useLayoutEffect(() => {
@@ -206,10 +254,11 @@ export default function GameSceneTemplateComponent({
     <div
       id={summariseTemplateSource(templateSource, uid)}
       key={`template-${uid}`}
+      ref={rootRef}
       className="templateContent"
       data-scene-scope={scope}
       style={{ width: "100%", height: "100%", ...containerStyleParsed }}
-      {...sceneEventHandlers(onSceneEvent)}
+      {...sceneEventHandlers(onSceneEvent, hover)}
     >
       {isDefined(html) && (
         <div key={bodyKey} ref={bodyRef} className="templateBody" data-scene-run={run} style={templateStyleParsed} />
