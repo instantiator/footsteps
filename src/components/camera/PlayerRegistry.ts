@@ -171,6 +171,11 @@ export class PlayerRegistry {
     return new Set(this.players.keys());
   }
 
+  /** Everyone the game knows about but spectators, whom effects on every player leave out. */
+  playingIds(): number[] {
+    return Array.from(this.players.values()).flatMap(({ id, spectator }) => (spectator === true ? [] : [id]));
+  }
+
   /** Notes that a scene's rule has done something to a player, so they return to normal as it ends. */
   touch(id: number, scope: SceneScope): void {
     const player = this.players.get(id);

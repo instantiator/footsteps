@@ -14,10 +14,10 @@ Tracker ids only ever grow, so each tracked person also takes the lowest free nu
 
 ## Choosing players
 
-| Value                    | Meaning                                                                                                                                    |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `"triggering"` (default) | The player who fired the rule. On a rule no player fired (eg. `when` or `every`), the effect does nothing, and this logs a warning.        |
-| `"all"`                  | Every player the game knows, spectators included. Each effect applies to those it can: a removed player only responds to `player-restore`. |
+| Value                    | Meaning                                                                                                                              |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `"triggering"` (default) | The player who fired the rule. On a rule no player fired (eg. `when` or `every`), the effect does nothing, and this logs a warning.  |
+| `"all"`                  | Every player but [spectators](#spectators). Each effect applies to those it can: a removed player only responds to `player-restore`. |
 
 ## States
 
@@ -34,7 +34,7 @@ Leaving players count as active until they are off-screen, so a rule that resets
 
 In a 2.5D scene, an active player whose position is more than `spectatorMargin` (5) floor units outside the floor for `spectatorHoldMs` (1000 ms) becomes a spectator. They become a player again after the same hold back on the floor, so stepping over an edge, or a jump at it, changes nothing. Someone first seen off the floor is a spectator at once. 2D scenes have no floor, so nobody is a spectator there. `SpectatorWatch` (`src/components/camera/Spectators.ts`) decides, and the tracking loop in `CharacterCanvas` leaves spectators out of the players it reports.
 
-- A spectator keeps their player id and number, but fires no interactions, has no position, and isn't counted.
+- A spectator keeps their player id and number, but fires no interactions, has no position, isn't counted, and is left out of effects and rewards on `"all"` players.
 - Leaving, frozen and removed players are never spectators: what has happened to them carries on wherever they stand.
 - If the tracker loses a spectator, the registry keeps a note of them for 5 s, so someone appearing near there inherits their id and number.
 - The model segments the whole frame at once, so a spectator still costs inference. The loop skips filling their gaps, and drawing them when they are hidden.

@@ -15,7 +15,7 @@ import { useGameState } from "../../providers/GameStateHook";
 import { PlayerRegistryContext } from "../../providers/PlayerRegistryContext";
 import { isDefined } from "../../util/ObjectUtils";
 import GameSceneComponent, { type LayerHint } from "./scene/GameSceneComponent";
-import { centreOnScreen, playerWrappers, resolveTargets } from "./effects/EffectTargets";
+import { centreOnScreen, resolveTargets } from "./effects/EffectTargets";
 import type { PlayerEffects } from "./effects/PlayerEffects";
 import "./Game.css";
 import GameStylesheets from "./GameStylesheets";
@@ -128,7 +128,7 @@ const rewardsFor = (
   const selector = "reward" in effect ? effect.target : undefined;
   const choice = "reward" in effect ? effect.players : undefined;
   const elements = isDefined(choice)
-    ? playerWrappers(choice, event.player)
+    ? playerEffects.wrappersOf(choice, event.player)
     : isDefined(selector)
       ? resolveTargets(scope, selector, shownScopes)
       : [];
