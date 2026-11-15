@@ -168,7 +168,7 @@ A delayed `"triggering"` effect looks up the player's number when it runs, so if
 
 **Act when:** a game delays an effect by more than a few seconds, or a tester sees an effect land on the wrong person. Then carry the player's stable id on the event as well.
 
-**Related:** [002.03.20 (actions events and sequences)](prompts/002.03.20.prompt%20-%20actions%20events%20and%20sequences.md), whose series of actions make longer waits common.
+**Related:** [002.03.14 (spawn and moving targets)](prompts/002.03.14.prompt%20-%20spawn%20and%20moving%20targets.md), whose series of actions make longer waits common.
 
 ## A challenge's sibling counts for the camera check, across chunks
 
@@ -325,7 +325,7 @@ rules up with an effect by its `delayMs` and a matching `after` or `every`.
 **Act when:** a game needs to act when a sound or animation ends (eg. reveal a scene after a fanfare). Then add
 an `effectEnd` trigger, naming the effect, fired by `useRuleEffects` in `Game.tsx`.
 
-**Planned in:** [002.03.20 (actions events and sequences)](prompts/002.03.20.prompt%20-%20actions%20events%20and%20sequences.md), where every action reports its end.
+**Planned in:** [002.03.14 (spawn and moving targets)](prompts/002.03.14.prompt%20-%20spawn%20and%20moving%20targets.md), where every action reports its end.
 
 ## Mouse-feet has no body for player effects
 
