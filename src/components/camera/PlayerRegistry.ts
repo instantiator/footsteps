@@ -12,13 +12,19 @@ export type PlayerState = "active" | "leaving" | "frozen" | "removed";
 
 /** How many players there are, for expressions. */
 export interface PlayerCounts {
-  /** Players in shot and not removed, including any the model has lost for a moment, and those leaving or frozen. */
+  /**
+   * Players in shot and not removed, including any the model has lost for a moment, and those leaving or frozen.
+   * Spectators don't count.
+   */
   active: number;
   /** Players removed since their scene last reset. */
   removed: number;
   /** Players frozen now. They also count as active. */
   frozen: number;
 }
+
+/** How long a spectator the tracker loses is kept, to be found again near where they were, in milliseconds. */
+export const SPECTATOR_NOTE_MS = 5000;
 
 /** No players at all. */
 export const NO_PLAYERS: PlayerCounts = { active: 0, removed: 0, frozen: 0 };
@@ -52,7 +58,24 @@ interface Player {
   static?: PlayerStatic;
   /** Where their silhouette's centre was when the tracker lost them, in mask pixels. */
   centre?: { x: number; y: number };
+  /** Whether they are watching from off the floor: they keep their number, but don't play. */
+  spectator?: boolean;
+  /** When the tracker lost them, if they were a spectator, so their note can be forgotten. */
+  lostAt?: number;
 }
+
+/**
+ * Whether a player the tracker has lost goes: an active one at once, but a spectator only {@link SPECTATOR_NOTE_MS} after
+ * they were lost, so they can be found again. With no time, as when tracking restarts, a spectator goes at once too.
+ */
+const isForgotten = ({ state, spectator, trackId, lostAt }: Player, now: number | undefined): boolean => {
+  if (state !== "active") return false;
+  if (spectator !== true || now === undefined) return true;
+  return trackId === null && now - (lostAt ?? now) > SPECTATOR_NOTE_MS;
+};
+
+/** Whether a player is a spectator the tracker has lost, kept only as a note of where they were. */
+const isLostSpectator = ({ state, trackId }: Player): boolean => state === "active" && trackId === null;
 
 /** Whether a player's image has stopped updating. */
 const isStill = ({ state }: Player): boolean => state === "leaving" || state === "frozen";
@@ -90,11 +113,12 @@ export class PlayerRegistry {
     for (const person of frame.people) {
       const player = this.playerFor(person, frame.width);
       player.trackId = person.id;
+      player.lostAt = undefined;
       if (!isStill(player)) player.last = { ...person, id: player.id };
       seen.add(player);
     }
     for (const player of Array.from(this.players.values())) {
-      if (!seen.has(player)) this.lose(player, frame.width);
+      if (!seen.has(player)) this.lose(player, frame.width, frame.timestamp);
     }
     this.reportCounts();
     return this.framesFrom(frame);
@@ -128,6 +152,18 @@ export class PlayerRegistry {
   /** The size of the masks of the latest frame. */
   frameSize(): MaskSize {
     return this.size;
+  }
+
+  /** Marks which active players are spectators. Players something has happened to stay in play, wherever they are. */
+  setSpectators(ids: ReadonlySet<number>): void {
+    for (const player of this.players.values()) player.spectator = player.state === "active" && ids.has(player.id);
+    this.reportCounts();
+  }
+
+  /** The tracker's ids for the spectators it follows now. */
+  spectatorTrackIds(): ReadonlySet<number> {
+    const all = Array.from(this.players.values());
+    return new Set(all.flatMap(({ spectator, trackId }) => (spectator && trackId !== null ? [trackId] : [])));
   }
 
   /** Everyone the game knows about. */
@@ -199,15 +235,16 @@ export class PlayerRegistry {
     this.reportCounts();
   }
 
-  /** The tracker has lost a player: an active one has gone, and any other stays as a note of where they were. */
-  private lose(player: Player, width: number): void {
-    if (player.state === "active") {
+  /** The tracker has lost a player: one that {@link isForgotten} goes, and any other stays as a note of where they were. */
+  private lose(player: Player, width: number, now?: number): void {
+    if (isForgotten(player, now)) {
       this.players.delete(player.id);
       return;
     }
     if (player.trackId === null) return;
     player.trackId = null;
     player.centre = centreOf(player.last, width) ?? undefined;
+    if (player.state === "active") player.lostAt = now;
   }
 
   /** The player a person from the tracker is: the one it already calls that, one whose note they inherit, or someone new. */
@@ -250,7 +287,10 @@ export class PlayerRegistry {
     const interactive: VisionPerson[] = [];
     const drawn: VisionPerson[] = [];
     const frozenIds = new Set<number>();
+    const knownIds = new Set<number>();
     for (const player of this.players.values()) {
+      if (isLostSpectator(player)) continue;
+      knownIds.add(player.id);
       if (player.state === "active") {
         interactive.push(player.last);
         drawn.push(player.last);
@@ -263,7 +303,7 @@ export class PlayerRegistry {
       interactive: { ...frame, people: interactive },
       drawn: { ...frame, people: drawn },
       frozenIds,
-      knownIds: this.knownIds(),
+      knownIds,
     };
   }
 
@@ -271,7 +311,7 @@ export class PlayerRegistry {
   private reportCounts(): void {
     const all = Array.from(this.players.values());
     const counts = {
-      active: all.filter(({ state }) => state !== "removed").length,
+      active: all.filter(({ state, spectator }) => state !== "removed" && spectator !== true).length,
       removed: all.filter(({ state }) => state === "removed").length,
       frozen: all.filter(({ state }) => state === "frozen").length,
     };

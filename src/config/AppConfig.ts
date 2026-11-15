@@ -39,6 +39,10 @@ export interface AppConfig {
   cameraDepthWindowMs: number;
   /** How far a player's ground point must move to change their position, in % of the camera frame. */
   cameraDepthDeadband: number;
+  /** How far outside the floor someone must stand to be a spectator rather than a player, in floor units. */
+  spectatorMargin: number;
+  /** How long someone must stay off the floor to become a spectator, or on it to play again, in milliseconds. */
+  spectatorHoldMs: number;
   /** The grid players' positions are rounded to for rules and templates: the size of a cell, in position units. */
   positionCellSize: number;
   /** The most times a second players' positions reach rules and templates. */
@@ -91,6 +95,8 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   cameraFillGaps: false,
   cameraDepthWindowMs: 700,
   cameraDepthDeadband: 2,
+  spectatorMargin: 5,
+  spectatorHoldMs: 1000,
   positionCellSize: 5,
   positionUpdatesPerSecond: 10,
   jumpMinRise: 0.04,
@@ -154,6 +160,8 @@ const PARSERS: { [K in keyof AppConfig]: Parser<AppConfig[K]> } = {
   cameraFillGaps: bool,
   cameraDepthWindowMs: int(0),
   cameraDepthDeadband: int(0),
+  spectatorMargin: int(0),
+  spectatorHoldMs: int(0),
   positionCellSize: int(1),
   positionUpdatesPerSecond: int(1),
   jumpMinRise: fraction,

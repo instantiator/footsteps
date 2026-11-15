@@ -16,6 +16,7 @@ import type { PlayerRegistry } from "./PlayerRegistry";
 import { PlayerRegistryContext } from "../../providers/PlayerRegistryContext";
 import { PlayerPositions, positionMapping, type PlayerPosition, type PositionSettings } from "./PlayerPosition";
 import type { PlayerFrame } from "./PlayerMonitor";
+import { NO_SPECTATORS, SpectatorWatch, type SpectatorSettings } from "./Spectators";
 
 /** Props for {@link CharacterCanvas}. */
 interface CharacterCanvasProps {
@@ -159,12 +160,14 @@ interface LoopSettings {
   featherPx: number;
   /** How a player's position follows them. */
   position: PositionSettings;
+  /** Who counts as off the floor. */
+  spectators: SpectatorSettings;
 }
 
 /** The loop's settings from the app config, the same object until one of them changes. */
 const useLoopSettings = (config: AppConfig): LoopSettings => {
   const { visionSmoothing, cameraHoldMs, cameraFadeMs, cameraFillGaps, visionInputWidth, cameraFeatherPx } = config;
-  const { cameraDepthWindowMs, cameraDepthDeadband } = config;
+  const { cameraDepthWindowMs, cameraDepthDeadband, spectatorMargin, spectatorHoldMs } = config;
   return useMemo(
     () => ({
       smoothing: visionSmoothing,
@@ -173,6 +176,7 @@ const useLoopSettings = (config: AppConfig): LoopSettings => {
       inputWidth: visionInputWidth,
       featherPx: cameraFeatherPx,
       position: { windowMs: cameraDepthWindowMs, deadband: cameraDepthDeadband },
+      spectators: { margin: spectatorMargin, holdMs: spectatorHoldMs },
     }),
     [
       visionSmoothing,
@@ -183,6 +187,8 @@ const useLoopSettings = (config: AppConfig): LoopSettings => {
       cameraFeatherPx,
       cameraDepthWindowMs,
       cameraDepthDeadband,
+      spectatorMargin,
+      spectatorHoldMs,
     ],
   );
 };
@@ -196,6 +202,8 @@ const DRAWING_SETTINGS = [
   "cameraFillGaps",
   "cameraDepthWindowMs",
   "cameraDepthDeadband",
+  "spectatorMargin",
+  "spectatorHoldMs",
 ] as const;
 
 /** The config the model is made from, the same object while only {@link DRAWING_SETTINGS} change, so the model is kept. */
@@ -341,7 +349,7 @@ const startTrackingLoop = (
     offScreenThreshold_percent,
     onPlayersChange,
     maskType,
-    settings: { smoothing, hold, fillGaps, inputWidth, featherPx, position },
+    settings: { smoothing, hold, fillGaps, inputWidth, featherPx, position, spectators },
     onStats,
     floor,
   }: LoopHandlers,
@@ -352,14 +360,19 @@ const startTrackingLoop = (
   canvases.resize();
   registry.resetTracking(video.videoWidth);
   const positions = new PlayerPositions(position);
+  const watch = new SpectatorWatch(spectators);
   const reportStats = statsReporter(onStats);
   const tracker = smoothing ? new PersonTracker(hold, fillGaps) : null;
 
   const reportAndDraw = (timestamp: number, detected: VisionFrame, inferenceEnd: number) => {
-    const frames = registry.update(tracker ? tracker.update(detected) : detected);
+    const frames = registry.update(tracker ? tracker.update(detected, registry.spectatorTrackIds()) : detected);
     const { toPosition, sorted } = floor.current;
     const where = positions.update(frames.drawn, toPosition);
-    const players = playersOf(frames.interactive, where, offScreenThreshold_percent);
+    // Only a floor has an outside to watch from
+    const watching = sorted ? watch.update(where, detected.timestamp, registry.knownIds()) : NO_SPECTATORS;
+    registry.setSpectators(watching.spectators);
+    const playing = frames.interactive.people.filter(({ id }) => !watching.spectators.has(id));
+    const players = playersOf({ ...frames.interactive, people: playing }, where, offScreenThreshold_percent);
     const trackEnd = performance.now();
     onPlayersChange?.(players, timestamp);
     const monitorEnd = performance.now();
