@@ -2,7 +2,7 @@ import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
 /**
  * The route config: the landing page, a game's landing page, the game itself, the floor calibration it links to, and
- * its JSON debug view.
+ * its JSON debug view, and the scene renderer for game authors.
  */
 export default [
   index("Home.tsx"),
@@ -10,4 +10,5 @@ export default [
   route("game/:id/play", "pages/LocalGame.tsx"),
   route("game/:id/calibrate", "pages/LocalCalibrate.tsx"),
   route("game/:id/json", "pages/LocalGameJson.tsx"),
+  route("scene-renderer", "pages/SceneRenderer.tsx"),
 ] satisfies RouteConfig;

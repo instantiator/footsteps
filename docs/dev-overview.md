@@ -11,17 +11,17 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 
 ## Layout
 
-| Path                         | What it is                                                                  |
-| ---------------------------- | --------------------------------------------------------------------------- |
-| `react-router.config.ts`     | Static build settings: no server, the routes to prerender, the base path    |
-| `src/root.tsx`               | The HTML document every page renders into (head tags, security policy)      |
-| `src/routes.ts`              | Route config: `/`, `/game/:id`, `/game/:id/play`, `/game/:id/json`          |
-| `src/pages/`, `src/Home.tsx` | Route modules (one page each)                                               |
-| `src/components/`            | Game engine UI: layers, scenes, camera, and the game logic in `core/logic/` |
-| `src/config/`                | App config; see [Configuration](configuration.md)                           |
-| `src/vision/`                | Vision models behind one interface, body-part queries, tracking, the worker |
-| `src/providers/`             | React contexts: repository, game data, game state, music, app config        |
-| `tests/`                     | Vitest unit and component tests                                             |
+| Path                         | What it is                                                                                                   |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `react-router.config.ts`     | Static build settings: no server, the routes to prerender, the base path                                     |
+| `src/root.tsx`               | The HTML document every page renders into (head tags, security policy)                                       |
+| `src/routes.ts`              | Route config: `/`, `/game/:id`, `/game/:id/play`, `/game/:id/calibrate`, `/game/:id/json`, `/scene-renderer` |
+| `src/pages/`, `src/Home.tsx` | Route modules (one page each)                                                                                |
+| `src/components/`            | Game engine UI: layers, scenes, camera, and the game logic in `core/logic/`                                  |
+| `src/config/`                | App config; see [Configuration](configuration.md)                                                            |
+| `src/vision/`                | Vision models behind one interface, body-part queries, tracking, the worker                                  |
+| `src/providers/`             | React contexts: repository, game data, game state, music, app config                                         |
+| `tests/`                     | Vitest unit and component tests                                                                              |
 
 ## Invocations
 
@@ -79,12 +79,29 @@ the checks it does not replace.
 
 Every game in the local repository, `public/game-repository.json`, is prerendered at its own URL:
 
-| Game           | Landing page                              | Play page                                      | Game data URL                                  |
-| -------------- | ----------------------------------------- | ---------------------------------------------- | ---------------------------------------------- |
-| `magic-trifle` | <http://localhost:5173/game/magic-trifle> | <http://localhost:5173/game/magic-trifle/play> | <http://localhost:5173/game/magic-trifle/json> |
+| Game             | Landing page                                | Play page                                        | Game data URL                                    |
+| ---------------- | ------------------------------------------- | ------------------------------------------------ | ------------------------------------------------ |
+| `magic-trifle`   | <http://localhost:5173/game/magic-trifle>   | <http://localhost:5173/game/magic-trifle/play>   | <http://localhost:5173/game/magic-trifle/json>   |
+| `rules-demo`     | <http://localhost:5173/game/rules-demo>     | <http://localhost:5173/game/rules-demo/play>     | <http://localhost:5173/game/rules-demo/json>     |
+| `demo-no-camera` | <http://localhost:5173/game/demo-no-camera> | <http://localhost:5173/game/demo-no-camera/play> | <http://localhost:5173/game/demo-no-camera/json> |
+| `jump-and-duck`  | <http://localhost:5173/game/jump-and-duck>  | <http://localhost:5173/game/jump-and-duck/play>  | <http://localhost:5173/game/jump-and-duck/json>  |
 
 `public/test-repository.json` holds `test-game`, which isn't in the local repository, so
 `/game/test-game` shows "not found".
+
+## Scene renderer
+
+`/scene-renderer` (<http://localhost:5173/scene-renderer>) is a page for game authors. Paste a scene's HTML on the
+left, and the right shows it as it would play: in 2.5D, with the mouse as the player's feet (`mouse-feet`), on the
+floor saved for the chosen camera or the default floor. It lists, under the HTML, the template problems and warnings
+that the validator would report for a 2.5D scene (`src/components/core/logic/TemplateChecks.ts`, shared with
+`scripts/resource-checks.ts`). **Wrap lines** wraps long lines in the HTML box, and **Show floor** outlines the floor (the game's debug aids, which
+restart the scene).
+
+It takes HTML only, with no rules, so it shows how a scene looks rather than how it plays. Its game
+(`src/pages/SceneRendererGame.ts`) opens on its stages overview, which is the pasted HTML. The
+[sample elements](tutorials/sample-elements.md) are captured in it by `CAPTURE_SAMPLES=1 scripts/run-browser-tests.sh
+sample-screenshots`, which rewrites `docs/tutorials/images/`.
 
 ## Schemas
 

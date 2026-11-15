@@ -3,7 +3,7 @@ import type { GameData } from "../src/entities/data/GameData";
 import type { GameSceneBase } from "../src/entities/data/scenes/GameSceneData";
 import type { GameSceneTemplateSourceData } from "../src/entities/data/scenes/GameSceneTemplateComponentData";
 import type { GameRepository } from "../src/entities/GameRepository";
-import { FLOOR_AREA_ATTRIBUTE, SURFACE_CLASSES } from "../src/components/core/layout/FloorSurfaceClasses.ts";
+import { templateMessages } from "../src/components/core/logic/TemplateChecks.ts";
 
 /** True unless the value is undefined or null. */
 const isDefined = <T>(value: T | undefined | null): value is T => value !== undefined && value !== null;
@@ -155,62 +155,12 @@ function eachScene(game: GameData, visit: (scene: VisitedScene, path: string, ca
   });
 }
 
-/** A class attribute naming a floor surface as a whole class name. */
-const SURFACE_CLASS = new RegExp(`class\\s*=\\s*["'][^"']*(?<![\\w-])(${SURFACE_CLASSES.join("|")})(?![\\w-])`);
-
-/** What does nothing outside a 2.5D scene: floor items, and floor surfaces. */
-const floorOnlyWarnings = (text: string, path: string) => [
-  ...(/\bdata-floor-(?!area)/.test(text)
-    ? [{ path, message: "data-floor-* does nothing here, as this scene never shows in 2.5D" }]
-    : []),
-  ...(SURFACE_CLASS.test(text) ||
-  text.includes(FLOOR_AREA_ATTRIBUTE) ||
-  /\bdata-(wall-distance|fill-height|fill-width|fill-edge)\b/.test(text)
-    ? [{ path, message: "floor surfaces do nothing here, as this scene never shows in 2.5D" }]
-    : []),
-];
-
-const WALLS = ["rear-wall", "left-wall", "right-wall", "front-wall"];
-const BACKGROUNDS = ["rear-background", "left-background", "right-background"];
-
-/** The surface attributes that only shape some surfaces, which ones, and what each does. */
-const SURFACE_ATTRIBUTES = [
-  { name: "data-fill-height", on: [...WALLS, ...BACKGROUNDS], does: "stretches a wall or background up to the top" },
-  {
-    name: "data-fill-width",
-    on: ["rear-wall", "front-wall", "rear-background"],
-    does: "stretches a rear or front wall, or the rear background, to the sides",
-  },
-  {
-    name: "data-fill-edge",
-    on: ["left-wall", "right-wall", "left-background", "right-background"],
-    does: "picks which end of a side wall or background reaches the top",
-  },
-  { name: "data-floor-depth", on: ["floor-background"], does: "lowers the floor background" },
-];
-
-/** Each start tag in a template's text: its class names, and whether it has an attribute. */
-const startTags = (text: string) =>
-  [...text.matchAll(/<[a-zA-Z][^>]*>/g)].map(([tag]) => ({
-    classes: /\bclass\s*=\s*["']([^"']*)["']/.exec(tag)?.[1].split(/\s+/) ?? [],
-    has: (name: string) => new RegExp(`\\s${name}(?=[\\s=/>])`).test(tag),
-  }));
-
-/** A surface attribute on an element it does nothing for, such as `data-fill-width` on a side wall. */
-const misplacedSurfaceAttributes = (text: string, path: string) =>
-  startTags(text).flatMap(({ classes, has }) =>
-    SURFACE_ATTRIBUTES.filter(({ name, on }) => has(name) && !classes.some((kind) => on.includes(kind))).map(
-      ({ name, does }) => ({ path, message: `${name} does nothing here: it only ${does}` }),
-    ),
-  );
-
-/** What a template's text gets wrong: `data-depth`, which has gone, and floor items and surfaces where they do nothing. */
-const templateProblems = (text: string, { path, can25D }: TemplateReference) => ({
-  problems: /\bdata-depth\b/.test(text)
-    ? [{ path, message: "data-depth is no longer supported; give the item data-floor-y (see game-data.md)" }]
-    : [],
-  warnings: can25D ? misplacedSurfaceAttributes(text, path) : floorOnlyWarnings(text, path),
-});
+/** What a template's text gets wrong, located at the template's path. */
+const templateProblems = (text: string, { path, can25D }: TemplateReference) => {
+  const { problems, warnings } = templateMessages(text, can25D);
+  const located = (message: string) => ({ path, message });
+  return { problems: problems.map(located), warnings: warnings.map(located) };
+};
 
 /** What a template refers to: its file or URL, the text to check, or what is wrong with it. */
 const templateReferences = (

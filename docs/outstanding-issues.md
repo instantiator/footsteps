@@ -502,3 +502,23 @@ Dialogs and scrolls are for the mouse: their pages turn with buttons, and some a
 
 **Act when:** prompt [994 (virtual pointer mode)](prompts/994.00.00.prompt%20-%20virtual%20pointer%20mode.md) is
 planned.
+
+## Sample pictures aren't checked against the engine
+
+The [sample elements](tutorials/sample-elements.md) are pictures taken in the scene renderer
+(`tests/browser/sample-screenshots.spec.ts`), which only runs with `CAPTURE_SAMPLES=1`. Nothing notices when the
+engine starts drawing a surface differently, so the pictures can go stale. The samples' HTML is checked: the
+validator finds nothing wrong with any of them, and the docs quote them exactly.
+
+**Act when:** `FloorSurfaces.ts`, `FloorSurfacePlacement.ts` or `FloorPlacement.ts` change how something is drawn, or
+a sample changes. Then run `CAPTURE_SAMPLES=1 scripts/run-browser-tests.sh sample-screenshots` and look at the
+pictures.
+
+## The scene renderer shows how a scene looks, not how it plays
+
+The [scene renderer](dev-overview.md#scene-renderer) takes a scene's HTML only, so rules, state and effects can't be
+tried in it. It uses the floor saved for the chosen camera, or the default floor if there is none, so a calibrated
+browser shows a different floor from the docs' pictures.
+
+**Act when:** game authors ask to try rules in it, or are confused by a floor that differs from the pictures. Then
+add a box for the component's JSON (its `rules` and `initialState`), or a "default floor" switch.

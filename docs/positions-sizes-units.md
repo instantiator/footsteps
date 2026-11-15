@@ -1,8 +1,8 @@
 # Positions, sizes and units in 2.5D scenes
 
-A short reference for where things go in a 2.5D scene, and the names that put them there. The scene tutorials
-([002.03.12](<prompts/002.03.12.prompt - scene tutorials.md>)) will cover this in full for game creators;
-[game data](game-data.md#floor-surfaces) has the details of each.
+A short reference for where things go in a 2.5D scene, and the names that put them there.
+[Game data](game-data.md#floor-surfaces) has the details of each. The [tutorials](tutorials/index.md) show how to put
+them together, and [sample elements](tutorials/sample-elements.md) has copy-and-paste HTML for each.
 
 ## Positions, sizes and units
 
@@ -20,6 +20,8 @@ A short reference for where things go in a 2.5D scene, and the names that put th
   in the box. Size textures with it, so they keep one size across the floor and up the walls:
   `background-size: calc(var(--floor-unit) * 20)` repeats every 20 floor units. Most boxes are drawn at the floor's
   front edge's scale, where `--floor-unit` is `1cqw`; very large ones, like the floor background, are drawn smaller.
+  A box whose shape sets its size, like a floor area or a wall with no height set, is yours, and has no
+  `--floor-unit`: size its texture in `%` of the box instead.
 - **Floor items** (`data-floor-y` and so on) stand at a floor spot and scale with distance. **Surfaces** (the classes
   below) are drawn in the floor's perspective, and can reach past the scene box to the screen's edges. Everything else
   is plain 2D in the scene box.
@@ -48,3 +50,66 @@ A short reference for where things go in a 2.5D scene, and the names that put th
 
 Surfaces paint back to front: the screen background, the horizon, the floor background, the backgrounds, floor areas,
 then walls.
+
+## Examples
+
+Each example is a whole template: paste it into the scene renderer (`/scene-renderer`) to try it.
+
+### A fence of a given height
+
+`data-floor-height="8"` makes the fence 8 floor units high, so 8% of the floor's width, wherever the floor is. The engine
+sizes its box, so the slats and rails are sized with `--floor-unit`: a slat 1.5 units wide every 5 units, and rails 0.8
+units thick.
+
+```html [docs/tutorials/samples/fence.html]
+<div
+  class="rear-wall"
+  data-floor-height="8"
+  style="
+    background:
+      linear-gradient(#a76 0 0) 0 25% / 100% calc(var(--floor-unit) * 0.8) no-repeat,
+      linear-gradient(#a76 0 0) 0 70% / 100% calc(var(--floor-unit) * 0.8) no-repeat,
+      repeating-linear-gradient(90deg, #a76 0 calc(var(--floor-unit) * 1.5), transparent 0 calc(var(--floor-unit) * 5));
+  "
+></div>
+```
+
+![A low wooden fence along the back of a green floor](tutorials/images/fence.png)
+
+### A tiled floor
+
+A floor area covering the whole floor (`0 0 100 100`) is 100 floor units square, so its box is square
+(`aspect-ratio: 1`). Its box is the author's, with no `--floor-unit`, so the tiles are sized in `%`: a pattern repeat of
+20% holds two tiles, so each tile is 10 floor units, and there are ten across. The floor background beyond it is plain.
+
+```html [docs/tutorials/samples/tiled-floor.html]
+<div class="floor-background" style="background: #333"></div>
+
+<div
+  data-floor-area="0 0 100 100"
+  style="aspect-ratio: 1; background: repeating-conic-gradient(#eee 0 25%, #aaa 0 50%) 0 0 / 20% 20%"
+></div>
+```
+
+![A checked floor of ten by ten tiles on a dark surround](tutorials/images/tiled-floor.png)
+
+### A sky that fills a wide screen
+
+The scene box keeps the floor's shape, so a screen wider than the scene has room at the sides. The horizon background
+fills the screen above the horizon whatever its shape, and the floor background reaches to the screen's edges, so
+nothing is left blank.
+
+```html [docs/tutorials/samples/wide-sky.html]
+<div
+  class="horizon-background"
+  data-wall-distance="200"
+  style="background: linear-gradient(#0b1d51, #3a6ea5 70%, #f9c784)"
+></div>
+<div class="floor-background" style="background: #2f4f2f"></div>
+```
+
+![A dusk sky over a dark green floor](tutorials/images/wide-sky.png)
+
+On a screen more than twice as wide as it is high:
+
+![The same sky and floor, stretched across a very wide screen with no gaps](tutorials/images/wide-sky-wide.png)
