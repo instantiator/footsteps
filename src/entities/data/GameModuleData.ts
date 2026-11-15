@@ -1,4 +1,5 @@
-import type { GameSceneAvatarData, GameSceneMode, GameSpectatorsData } from "./scenes/GameSceneData";
+import type { GameSceneAvatarData, GameSceneMode } from "./scenes/GameSceneData";
+import type { GameSpectatorsData } from "./scenes/GameSpectatorsData";
 
 /** Game-wide settings, which any scene can override. */
 export interface GameModulesData {

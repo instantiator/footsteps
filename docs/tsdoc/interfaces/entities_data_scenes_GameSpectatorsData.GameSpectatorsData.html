@@ -8,7 +8,7 @@
 <div class="col-content">
 <div class="tsd-page-title">
 <ul class="tsd-breadcrumb" aria-label="Breadcrumb">
-<li><a href="../modules/entities_data_scenes_GameSceneData.html">entities/data/scenes/GameSceneData</a></li>
+<li><a href="../modules/entities_data_scenes_GameSpectatorsData.html">entities/data/scenes/GameSpectatorsData</a></li>
 <li><a href="" aria-current="page">GameSpectatorsData</a></li></ul>
 <h1>Interface GameSpectatorsData</h1></div>
 <section class="tsd-panel tsd-comment">
@@ -16,9 +16,9 @@
 interactions, positions or count, but keep their player number for when they step back on. A narrower scene's
 setting overrides a broader one's key by key.</p>
 </div></section>
-<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">GameSpectatorsData</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#fade">fade</a><span class="tsd-signature-symbol">?:</span> <a href="entities_data_scenes_GameSceneData.GameSpectatorFade.html" class="tsd-signature-type tsd-kind-interface">GameSpectatorFade</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#look">look</a><span class="tsd-signature-symbol">?:</span> <a href="entities_data_scenes_GameSceneData.GameSpectatorLook.html" class="tsd-signature-type tsd-kind-interface">GameSpectatorLook</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#resetonreturn">resetOnReturn</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#show">show</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">&quot;hidden&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;shown&quot;</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
+<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">GameSpectatorsData</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#fade">fade</a><span class="tsd-signature-symbol">?:</span> <a href="entities_data_scenes_GameSpectatorsData.GameSpectatorFade.html" class="tsd-signature-type tsd-kind-interface">GameSpectatorFade</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#look">look</a><span class="tsd-signature-symbol">?:</span> <a href="entities_data_scenes_GameSpectatorsData.GameSpectatorLook.html" class="tsd-signature-type tsd-kind-interface">GameSpectatorLook</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#resetonreturn">resetOnReturn</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#show">show</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">&quot;hidden&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;shown&quot;</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameSceneData.ts#L86">entities/data/scenes/GameSceneData.ts:86</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameSpectatorsData.ts#L6">entities/data/scenes/GameSpectatorsData.ts:6</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -36,19 +36,19 @@ setting overrides a broader one's key by key.</p>
 <section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="fade"><code class="tsd-tag">Optional</code><span>fade</span><a href="#fade" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<div class="tsd-signature"><span class="tsd-kind-property">fade</span><span class="tsd-signature-symbol">?:</span> <a href="entities_data_scenes_GameSceneData.GameSpectatorFade.html" class="tsd-signature-type tsd-kind-interface">GameSpectatorFade</a></div>
+<div class="tsd-signature"><span class="tsd-kind-property">fade</span><span class="tsd-signature-symbol">?:</span> <a href="entities_data_scenes_GameSpectatorsData.GameSpectatorFade.html" class="tsd-signature-type tsd-kind-interface">GameSpectatorFade</a></div>
 <div class="tsd-comment tsd-typography"><p>How the look's strength follows how far outside the floor a spectator stands, in floor units: none at <code>from</code>
 (defaults to the spectator margin, 5), full at <code>to</code>, eased between. Without it, the look is at full strength.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameSceneData.ts#L95">entities/data/scenes/GameSceneData.ts:95</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameSpectatorsData.ts#L15">entities/data/scenes/GameSpectatorsData.ts:15</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="look"><code class="tsd-tag">Optional</code><span>look</span><a href="#look" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<div class="tsd-signature"><span class="tsd-kind-property">look</span><span class="tsd-signature-symbol">?:</span> <a href="entities_data_scenes_GameSceneData.GameSpectatorLook.html" class="tsd-signature-type tsd-kind-interface">GameSpectatorLook</a></div>
+<div class="tsd-signature"><span class="tsd-kind-property">look</span><span class="tsd-signature-symbol">?:</span> <a href="entities_data_scenes_GameSpectatorsData.GameSpectatorLook.html" class="tsd-signature-type tsd-kind-interface">GameSpectatorLook</a></div>
 <div class="tsd-comment tsd-typography"><p>How a shown spectator looks, at full strength. Without it, they look like a player.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameSceneData.ts#L90">entities/data/scenes/GameSceneData.ts:90</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameSpectatorsData.ts#L10">entities/data/scenes/GameSpectatorsData.ts:10</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="resetonreturn"><code class="tsd-tag">Optional</code><span>reset<wbr/>On<wbr/>Return</span><a href="#resetonreturn" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">resetOnReturn</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
@@ -56,14 +56,14 @@ setting overrides a broader one's key by key.</p>
 walking round the outside can't skip part of it. Defaults to false.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameSceneData.ts#L100">entities/data/scenes/GameSceneData.ts:100</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameSpectatorsData.ts#L20">entities/data/scenes/GameSpectatorsData.ts:20</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="show"><code class="tsd-tag">Optional</code><span>show</span><a href="#show" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">show</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">&quot;hidden&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;shown&quot;</span></div>
 <div class="tsd-comment tsd-typography"><p>Whether spectators are drawn. Defaults to <code>hidden</code>.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameSceneData.ts#L88">entities/data/scenes/GameSceneData.ts:88</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameSpectatorsData.ts#L8">entities/data/scenes/GameSpectatorsData.ts:8</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

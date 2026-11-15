@@ -3,8 +3,8 @@ import type {
   GameInteraction,
   GameSceneAvatarData,
   GameSceneMode,
-  GameSpectatorsData,
 } from "../../../entities/data/scenes/GameSceneData";
+import type { GameSpectatorsData } from "../../../entities/data/scenes/GameSpectatorsData";
 import { POINTER_INTERACTIONS } from "../../../entities/data/scenes/GameSceneData";
 import type { GameData } from "../../../entities/data/GameData";
 import { isDefined } from "../../../util/ObjectUtils";

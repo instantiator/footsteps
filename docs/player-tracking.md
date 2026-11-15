@@ -30,13 +30,25 @@ Tracker ids only ever grow, so each tracked person also takes the lowest free nu
 
 Leaving players count as active until they are off-screen, so a rule that resets the scene when nobody is left lets the last fall finish.
 
+## Spectators
+
+In a 2.5D scene, an active player whose position is more than `spectatorMargin` (5) floor units outside the floor for `spectatorHoldMs` (1000 ms) becomes a spectator. They become a player again after the same hold back on the floor, so stepping over an edge, or a jump at it, changes nothing. Someone first seen off the floor is a spectator at once. 2D scenes have no floor, so nobody is a spectator there. `SpectatorWatch` (`src/components/camera/Spectators.ts`) decides, and the tracking loop in `CharacterCanvas` leaves spectators out of the players it reports.
+
+- A spectator keeps their player id and number, but fires no interactions, has no position, and isn't counted.
+- Leaving, frozen and removed players are never spectators: what has happened to them carries on wherever they stand.
+- If the tracker loses a spectator, the registry keeps a note of them for 5 s, so someone appearing near there inherits their id and number.
+- The model segments the whole frame at once, so a spectator still costs inference. The loop skips filling their gaps, and drawing them when they are hidden.
+- A spectator who comes back on more than 25 floor units from where they left the floor resets any shown challenge that sets `resetOnReturn`.
+
+How spectators are drawn is a game setting: see [spectators](game-data.md#spectators).
+
 ## Counting players
 
-| Expression             | Meaning                                                                                                                  |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `game.players.active`  | Players in shot and not removed. A player the model has lost for a moment, and is still holding, counts.                 |
-| `game.players.removed` | Players removed since their scene last reset.                                                                            |
-| `game.players.frozen`  | Players frozen now. They also count as active. A frozen player who starts to fall or spin away stops counting as frozen. |
+| Expression             | Meaning                                                                                                                    |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `game.players.active`  | Players in shot and not removed. A player the model has lost for a moment, and is still holding, counts. Spectators don't. |
+| `game.players.removed` | Players removed since their scene last reset.                                                                              |
+| `game.players.frozen`  | Players frozen now. They also count as active. A frozen player who starts to fall or spin away stops counting as frozen.   |
 
 ```json
 {

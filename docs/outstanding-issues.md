@@ -417,21 +417,22 @@ reading its layout and writing only what changed. It is O(items), and the games 
 **Act when:** profiling shows placement taking more than about 1 ms a frame, or a scene has more than about 50 floor
 items. Then place on resize, scene change and template mutation instead.
 
-## Spectators count as players (002.03.16)
+## Spectators still cost inference
 
-Everyone the camera sees is a player, including people standing off the floor. [002.03.16 (spectators)](prompts/002.03.16.prompt%20-%20spectators.md) is to ignore spectators:
+The model segments the whole frame, so spectators cost as much to find as players; the loop only skips filling their
+gaps and drawing them when hidden. Cropping the model's input to the floor would cut inference, but would lose
+spectators, and with them their numbers and `resetOnReturn`.
 
-- A spectator is a person whose held position (`PlayerPositions`, which already holds through jumps) falls outside the
-  floor (x or y outside 0–100) by more than a margin, about 5 units, for longer than a short hold, so stepping over
-  an edge doesn't drop someone at once.
-- The filter goes between `PlayerPositions` and the registry and interactions, in `CharacterCanvas`'s loop. Spectators
-  get no number, interactions, position variables or count. Whether they are drawn (dimmed, or not at all) is a
-  choice for that prompt.
-- 2D scenes have no floor, so nobody is a spectator there.
-- Tests: someone off the floor is ignored, walking on makes them a player, and a jump at the front edge doesn't drop
-  them.
+**Act when:** inference on a real camera stays over about 50 ms a frame with spectators in shot, or a game wants a
+room full of watchers. Then crop to the floor plus a band around it, and keep notes for those who leave the crop.
 
-**Act when:** prompt 002.03.16 is planned.
+## Spectator margin and hold aren't proven on a real camera
+
+`spectatorMargin` (5 floor units), `spectatorHoldMs` (1000 ms) and the 25-unit return distance were chosen without a
+real room. Positions near the floor's edges are the least reliable, as the camera sees feet there at a shallow angle.
+
+**Act when:** testing 2.5D scenes with a real camera. If players at an edge become spectators, raise the margin or the
+hold; if walking round the pits doesn't reset "Cross the floor", lower the return distance (`RETURN_DISTANCE`).
 
 ## Jump and duck's thresholds aren't proven on a real camera
 

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { drawPlayers, spectatorStrength, type DrawnSpectators } from "../src/components/camera/DrawPlayers";
 import { PlayerCanvases } from "../src/components/camera/PlayerCanvases";
 import { PlayerRegistry } from "../src/components/camera/PlayerRegistry";
-import type { GameSpectatorsData } from "../src/entities/data/scenes/GameSceneData";
+import type { GameSpectatorsData } from "../src/entities/data/scenes/GameSpectatorsData";
 import { noKeyPoints, type VisionFrame } from "../src/vision/VisionTypes";
 
 const frame: VisionFrame = {

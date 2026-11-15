@@ -431,12 +431,13 @@ toggling it.
 | `src/components/camera/PlayerRegistry.ts`             | stable player ids and numbers, player states, and notes of lost players; see [player tracking](player-tracking.md) |
 | `src/components/camera/PlayerStatic.ts`               | how a player's static changes over time                                                                            |
 | `src/components/camera/PlayerPosition.ts`             | each player's ground point, held through jumps, and their position on the floor or in the scene                    |
+| `src/components/camera/Spectators.ts`                 | who is a [spectator](player-tracking.md#spectators), off the floor, and who has returned elsewhere                 |
 | `src/components/camera/PositionPublisher.ts`          | players' positions for rules and templates: quantised, with hysteresis, rate-limited                               |
 | `src/components/core/layout/FloorPlacement.ts`        | placing, scaling and sorting floor items, kept through re-renders; the debug warning for targets off the floor     |
 | `src/components/core/layout/FloorSurfacePlacement.ts` | drawing floor surfaces onto the screen with a `matrix3d`, sizing their boxes, and their painting order             |
 | `src/components/camera/CharacterCanvas.tsx`           | tracking loop; draws the silhouettes; reports players and feet; the stats readout                                  |
 | `src/components/camera/DrawPeople.ts`                 | cuts the people out of the video, and tints them for debugging                                                     |
-| `src/components/camera/DrawPlayers.ts`                | draws each player on their canvas, frozen or with static, sorted to their floor depth                              |
+| `src/components/camera/DrawPlayers.ts`                | draws each player on their canvas, frozen or with static, sorted to their floor depth; hides or styles spectators  |
 | `src/components/camera/PlayerMonitor.ts`              | turns body-part coverage and feet into edge-triggered interactions                                                 |
 | `src/components/camera/JumpDetector.ts`               | follows a player's feet for jumps                                                                                  |
 | `src/components/camera/CameraSupport.ts`              | camera request and feet position                                                                                   |
@@ -452,7 +453,7 @@ toggling it.
 | `src/vision/Tracking.ts`                              | stable player ids, key-point smoothing, holding lost players, and filling gaps                                     |
 | `src/vision/models/`                                  | BodyPix, MediaPipe Pose and MoveNet, and the tfjs backend choice                                                   |
 | `src/vision/VisionWorkerProxy.ts`, `vision.worker.ts` | runs a model in a web worker                                                                                       |
-| `src/components/core/logic/AvatarModeUtils.ts`        | per-scene avatar mode resolution, and what each mode can fire                                                      |
+| `src/components/core/logic/AvatarModeUtils.ts`        | per-scene avatar mode and spectator settings resolution, and what each mode can fire                               |
 | `src/components/core/layout/MouseFeetHook.ts`         | [mouse-feet](#mouse-feet): the pointer as player 1's feet, and drags as jumps                                      |
 | `src/components/core/logic/GameClickUtils.ts`         | targets, and the state changes for clicks and interactions                                                         |
 | `src/components/core/layout/GameLayersLayout.tsx`     | the layer stack, scene transitions, shared camera state, and the interaction hook                                  |

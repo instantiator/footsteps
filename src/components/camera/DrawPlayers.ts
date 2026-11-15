@@ -6,7 +6,7 @@ import { depthZIndex, drawDepthLine, type PlayerPosition } from "./PlayerPositio
 import type { PlayerFrames, PlayerRegistry } from "./PlayerRegistry";
 import type { StaticLook } from "./PlayerStatic";
 import type { SpectatorReport } from "./Spectators";
-import type { GameSpectatorLook, GameSpectatorsData } from "../../entities/data/scenes/GameSceneData";
+import type { GameSpectatorLook, GameSpectatorsData } from "../../entities/data/scenes/GameSpectatorsData";
 
 /** How spectators are drawn this frame. */
 export interface DrawnSpectators {

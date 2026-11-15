@@ -7,13 +7,13 @@ import type {
   GameSceneBase,
   GameSceneAvatarData,
   GameSceneMode,
-  GameSpectatorsData,
   GameSceneComponentData,
   GameOverviewScene,
   GameOverviewScenePurpose,
   GameStageScene,
   GameStageScenePurpose,
 } from "../../../entities/data/scenes/GameSceneData";
+import type { GameSpectatorsData } from "../../../entities/data/scenes/GameSpectatorsData";
 import type { GameData, GameId } from "../../../entities/data/GameData";
 import type { GameChallengeState } from "../../../entities/state/GameChallengeState";
 import { toGameSnapshot, type GameSnapshot } from "../../../entities/state/GameSnapshot";

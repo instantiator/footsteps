@@ -12,7 +12,7 @@ import { installCameraDrawCounter } from "./fixtures/cameraDraws";
 import { installFakeCamera } from "./fixtures/fakeCamera";
 import { peoplePhotoUrls } from "./fixtures/people/people";
 import type { GameRepository } from "../../src/entities/GameRepository";
-import type { GameSpectatorsData } from "../../src/entities/data/scenes/GameSceneData";
+import type { GameSpectatorsData } from "../../src/entities/data/scenes/GameSpectatorsData";
 
 /** The floor the demo shows with the default calibration, unmirrored, as a new camera choice is, in its scene box. */
 const VIEW: FloorView = {
@@ -390,7 +390,7 @@ const FLOOR_BEHIND_THE_PERSON = {
 };
 
 test("hides a person standing off the floor, as a spectator", async ({ page }) => {
-  await openWalkAround(page, { corners: FLOOR_BEHIND_THE_PERSON });
+  await openWalkAround(page, { corners: FLOOR_BEHIND_THE_PERSON, spectators: { show: "hidden" } });
   const player = page.locator("#character-canvas-container .player").first();
   await expect(player).toBeAttached({ timeout: MODEL_TIMEOUT });
   await expect(player).toBeHidden();
