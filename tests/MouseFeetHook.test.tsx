@@ -1,7 +1,7 @@
 import { fireEvent, render } from "@testing-library/react";
 import { useRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useMouseFeet } from "../src/components/core/layout/MouseFeetHook";
+import { useMouseFeet, type FeetAt } from "../src/components/core/layout/MouseFeetHook";
 import type { CameraRuleEvent, CameraRuleTarget } from "../src/components/core/layout/PlayerInteractionHook";
 import type { CameraInteraction } from "../src/components/camera/PlayerMonitor";
 import { trackPointer } from "../src/util/PointerPosition";
@@ -38,13 +38,13 @@ interface HarnessProps {
   onEvent: (event: CameraRuleEvent) => void;
   enabled?: boolean;
   onClick?: () => void;
-  onPosition?: (point: { x: number; y: number } | null) => void;
+  onFeet?: (at: FeetAt | null) => void;
 }
 
 /** A viewport holding one scene with #a, #b and the #cover over #b, fed to the hook. */
-function Harness({ rules, onEvent, enabled = true, onClick, onPosition }: HarnessProps) {
+function Harness({ rules, onEvent, enabled = true, onClick, onFeet }: HarnessProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
-  useMouseFeet(viewportRef, rules, onEvent, { enabled, onPosition });
+  useMouseFeet(viewportRef, rules, onEvent, { enabled, onFeet });
   return (
     <div ref={viewportRef} data-testid="viewport" onClick={onClick}>
       <div data-scene-scope={SCOPE}>
@@ -108,21 +108,20 @@ afterEach(() => {
 });
 
 describe("useMouseFeet", () => {
-  it("reports where the feet stand, holds it through a jump, and reports nothing as they leave", () => {
-    const onPosition = vi.fn();
-    const { viewport, move, down, up } = setup([], { onPosition });
+  it("reports where the feet are, airborne through a jump, and nothing as they leave", () => {
+    const onFeet = vi.fn();
+    const { viewport, move, down, up } = setup([], { onFeet });
     move(20, 30);
-    expect(onPosition).toHaveBeenLastCalledWith({ x: 20, y: 30 });
+    expect(onFeet).toHaveBeenLastCalledWith({ point: { x: 20, y: 30 }, airborne: false });
 
-    onPosition.mockClear();
     down(20, 30);
     move(60, 30, 1);
-    expect(onPosition).not.toHaveBeenCalled();
-    up(60, 30);
-    expect(onPosition).toHaveBeenLastCalledWith({ x: 60, y: 30 });
+    expect(onFeet).toHaveBeenLastCalledWith({ point: { x: 60, y: 30 }, airborne: true });
+    up(70, 30);
+    expect(onFeet).toHaveBeenLastCalledWith({ point: { x: 70, y: 30 }, airborne: false });
 
     fireEvent.pointerLeave(viewport);
-    expect(onPosition).toHaveBeenLastCalledWith(null);
+    expect(onFeet).toHaveBeenLastCalledWith(null);
   });
 
   it("fires foot-enter and foot-exit once each as the pointer moves over and off", () => {

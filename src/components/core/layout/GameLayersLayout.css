@@ -193,8 +193,65 @@
   }
 }
 
+/*
+ * The pointer's feet in mouse-feet mode: a point at the pointer, with the footprint (or an image standing on it) about
+ * it, sized by --feet-width and --feet-height. Mid-jump the body lifts, leaving a shadow on the floor.
+ */
+.mouse-feet-avatar {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.mouse-feet-avatar[hidden],
+.mouse-feet-avatar:not([data-airborne]) .mouse-feet-shadow {
+  display: none;
+}
+
+.mouse-feet-shadow,
+.mouse-feet-body {
+  position: absolute;
+  left: calc(var(--feet-width) / -2);
+  width: var(--feet-width);
+}
+
+.mouse-feet-shadow,
+div.mouse-feet-body {
+  top: calc(var(--feet-height) / -2);
+  height: var(--feet-height);
+  border-radius: 50%;
+}
+
+.mouse-feet-shadow {
+  background: rgb(0 0 0 / 30%);
+}
+
+div.mouse-feet-body {
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 50%);
+}
+
+img.mouse-feet-body {
+  bottom: 0;
+  height: auto;
+}
+
+.mouse-feet-body {
+  transition: translate 150ms ease-out;
+}
+
+.mouse-feet-avatar[data-airborne] .mouse-feet-body {
+  translate: 0 calc(var(--feet-width) * -1);
+}
+
+/* The pointer hides over the game while the feet show, if the scene asks */
+.gameViewport:has(.mouse-feet-avatar[data-pointer="hidden"]:not([hidden])) {
+  cursor: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .gameScene {
+  .gameScene,
+  .mouse-feet-body {
     transition: none;
   }
   .gameViewportReshaping {

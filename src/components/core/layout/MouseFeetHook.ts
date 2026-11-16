@@ -2,7 +2,9 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import type { SceneScope } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
 import { lastPointer, trackPointer, type ClientPoint } from "../../../util/PointerPosition";
+import { floorToViewport, viewportToFloor, type FloorView } from "../../camera/FloorGeometry";
 import type { CameraInteraction } from "../../camera/PlayerMonitor";
+import type { Point } from "../../../vision/VisionTypes";
 import { MOUSE_FEET_INTERACTIONS } from "../logic/AvatarModeUtils";
 import { FLOOR_AREA_ATTRIBUTE } from "./FloorSurfaceClasses";
 import { sceneRoots } from "../logic/TemplateUtils";
@@ -10,6 +12,42 @@ import { elementKey, type CameraRuleEvent, type CameraRuleTarget } from "./Playe
 
 /** How far, in pixels, the pointer must move with the button down before a press becomes a jump. */
 export const DRAG_PX = 8;
+
+/** The feet's footprint on screen: an ellipse about the pointer, in client pixels. */
+export interface Footprint {
+  /** The pointer, at the footprint's centre. */
+  centre: ClientPoint;
+  /** Half its width. */
+  rx: number;
+  /** Half its height. */
+  ry: number;
+  /** How far forward it stands on a 2.5D scene's floor, 0–100; none in a 2D scene. */
+  depth?: number;
+}
+
+/**
+ * The footprint of feet `size` floor units across at a point: on a 2.5D scene's floor, its width and depth in the
+ * floor's perspective there; in a 2D scene, a circle `size`% of the viewport's width across.
+ * @param viewport the viewport's client rectangle
+ */
+export const footprintAt = (
+  centre: ClientPoint,
+  viewport: Pick<DOMRect, "left" | "top" | "width" | "height">,
+  view: FloorView | undefined,
+  size: number,
+): Footprint => {
+  const { left, top, width, height } = viewport;
+  if (!view || width === 0 || height === 0) return { centre, rx: (size / 200) * width, ry: (size / 200) * width };
+  const floor = viewportToFloor(view, { x: (centre.x - left) / width, y: (centre.y - top) / height });
+  const screen = (x: number, y: number) => floorToViewport(view, { x: floor.x + x, y: floor.y + y });
+  const r = size / 2;
+  const [across, along] = [
+    [screen(-r, 0), screen(r, 0)],
+    [screen(0, -r), screen(0, r)],
+  ];
+  const half = ([a, b]: Point[]) => Math.hypot((b.x - a.x) * width, (b.y - a.y) * height) / 2;
+  return { centre, rx: half(across), ry: half(along), depth: floor.y };
+};
 
 /** The player the pointer's feet belong to. */
 const MOUSE_PLAYER = 1;
@@ -246,28 +284,34 @@ const swallowNextClick = (): void => {
   setTimeout(() => window.removeEventListener("click", swallow, { capture: true }), 0);
 };
 
+/** Where the pointer's feet are, in client pixels, and whether they are in the air, mid-jump. */
+export interface FeetAt {
+  /** The pointer. */
+  point: ClientPoint;
+  /** Whether a drag has made the press a jump. */
+  airborne: boolean;
+}
+
 /**
  * The viewport's pointer listeners that drive the feet: moving, pressing, releasing and leaving.
- * @param onPosition hears where the feet stand, held through a jump, and null as they leave
+ * @param onFeet hears where the feet are as the pointer moves, and null as they leave
  */
 const pointerListeners = (
   feet: MouseFeet,
-  onPosition: ((point: ClientPoint | null) => void) | undefined,
+  onFeet: ((at: FeetAt | null) => void) | undefined,
 ): [string, (event: PointerEvent) => void][] => {
   const at = (event: PointerEvent) => ({ x: event.clientX, y: event.clientY });
-  const stand = (point: ClientPoint | null) => {
-    if (point === null || !feet.airborne) onPosition?.(point);
-  };
+  const report = (event: PointerEvent) => onFeet?.({ point: at(event), airborne: feet.airborne });
   const leave = () => {
     feet.leave();
-    stand(null);
+    onFeet?.(null);
   };
   return [
     [
       "pointermove",
       (event) => {
         feet.move(at(event));
-        stand(at(event));
+        report(event);
       },
     ],
     ["pointerdown", (event) => event.button === 0 && feet.down(at(event))],
@@ -275,7 +319,7 @@ const pointerListeners = (
       "pointerup",
       (event) => {
         if (feet.up(at(event))) swallowNextClick();
-        stand(at(event));
+        report(event);
       },
     ],
     ["pointerleave", leave],
@@ -291,16 +335,16 @@ const pointerListeners = (
  * @param cameraRules the rules the camera (and so the feet) can fire, for the scenes shown now
  * @param onPlayerInteraction called for each interaction that begins
  * @param when whether the feet are on (`mouse-feet` mode), and whether they wait, as during a scene change; switching
- * off or pausing forgets everything without firing exits. `onPosition` hears where the feet stand, in client
- * pixels, held through a jump, and null as they leave the viewport; keep it stable.
+ * off or pausing forgets everything without firing exits. `onFeet` hears where the feet are as the pointer moves,
+ * and null as they leave the viewport; keep it stable.
  */
 export function useMouseFeet(
   viewportRef: RefObject<HTMLElement | null>,
   cameraRules: CameraRuleTarget[] | undefined,
   onPlayerInteraction: ((event: CameraRuleEvent) => void) | undefined,
-  when: { enabled: boolean; paused?: boolean; onPosition?: (point: ClientPoint | null) => void },
+  when: { enabled: boolean; paused?: boolean; onFeet?: (at: FeetAt | null) => void },
 ): void {
-  const { enabled, paused = false, onPosition } = when;
+  const { enabled, paused = false, onFeet } = when;
   const [feet] = useState(() => new MouseFeet());
   const runsRef = useRef(new Map<SceneScope, number>());
 
@@ -317,7 +361,7 @@ export function useMouseFeet(
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!enabled || paused || !viewport) return;
-    const listeners = pointerListeners(feet, onPosition);
+    const listeners = pointerListeners(feet, onFeet);
     const preventDefault = (event: Event) => event.preventDefault();
     listeners.forEach(([type, listener]) => viewport.addEventListener(type, listener as EventListener));
     // A drag is a jump, not a dragged image or a text selection
@@ -338,5 +382,5 @@ export function useMouseFeet(
       viewport.removeEventListener("selectstart", preventDefault);
       feet.stop();
     };
-  }, [enabled, paused, viewportRef, feet, onPosition]);
+  }, [enabled, paused, viewportRef, feet, onFeet]);
 }

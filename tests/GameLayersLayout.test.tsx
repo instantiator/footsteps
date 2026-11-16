@@ -366,6 +366,13 @@ describe("GameLayersLayout without a working camera", () => {
     stubRect(container.querySelector("#overview-thing")!, DOMRect.fromRect({ width: 10, height: 10 }));
     fireEvent.pointerMove(container.querySelector("#game-viewport")!, { clientX: 5, clientY: 5 });
     expect(onPlayerInteraction).toHaveBeenCalledWith(expect.objectContaining({ interaction: "foot-enter", player: 1 }));
+    expect(container.querySelector<HTMLElement>(".mouse-feet-avatar")?.hidden).toBe(false);
+  });
+
+  it("draws no feet by mouse", () => {
+    const { container } = renderLayout();
+    fireEvent.pointerMove(container.querySelector("#game-viewport")!, { clientX: 5, clientY: 5 });
+    expect(container.querySelector(".mouse-feet-avatar")).toBeNull();
   });
 
   it("switches to a mouse-feet fallback, so the pointer fires foot rules", async () => {
