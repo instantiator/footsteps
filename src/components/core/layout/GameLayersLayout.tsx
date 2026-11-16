@@ -46,7 +46,7 @@ import {
   HudLayerWrapper,
 } from "./GameLayerWrappers";
 import { usePlayerInteractions, type CameraRuleEvent, type CameraRuleTarget } from "./PlayerInteractionHook";
-import { useMouseFeet, type FeetAt } from "./MouseFeetHook";
+import { footprintAt, footprintPoints, useMouseFeet, type FeetAt, type FootprintOf } from "./MouseFeetHook";
 import MouseFeetAvatar, { type DrawFeet } from "./MouseFeetAvatar";
 import { useFloorPlacement, useUnreachableWarnings } from "./FloorPlacement";
 import { usePositionVariables, type PublishedPositions } from "../../camera/PositionPublisher";
@@ -420,10 +420,19 @@ function usePlayerInput(
     },
     [reportFeet],
   );
+  const size = look?.size;
+  const footprint = useCallback<FootprintOf>(
+    (point) => {
+      const box = viewportRef.current?.getBoundingClientRect();
+      return box && isDefined(size) ? footprintPoints(footprintAt(point, box, floor, size)) : [point];
+    },
+    [viewportRef, floor, size],
+  );
   useMouseFeet(viewportRef, rules.cameraRules, rules.onPlayerInteraction, {
     enabled: mouseFeet,
     paused: scene.transitioning,
     onFeet,
+    footprint,
   });
   // Whoever stood somewhere before has gone when the way players are followed changes
   const { clear } = positions;

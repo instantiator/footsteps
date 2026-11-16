@@ -49,6 +49,18 @@ export const footprintAt = (
   return { centre, rx: half(across), ry: half(along), depth: floor.y };
 };
 
+/** Where across the footprint its points are, as fractions of its radii: a 5 × 5 grid, inside the ellipse. */
+const FOOTPRINT_GRID = [-0.8, -0.4, 0, 0.4, 0.8].flatMap((u) =>
+  [-0.8, -0.4, 0, 0.4, 0.8].flatMap((v) => (u * u + v * v <= 1 ? [{ u, v }] : [])),
+);
+
+/** The points a footprint covers, in client pixels, for what is under it to be measured. */
+export const footprintPoints = ({ centre, rx, ry }: Footprint): ClientPoint[] =>
+  FOOTPRINT_GRID.map(({ u, v }) => ({ x: centre.x + u * rx, y: centre.y + v * ry }));
+
+/** The points under feet at a pointer. */
+export type FootprintOf = (point: ClientPoint) => ClientPoint[];
+
 /** The player the pointer's feet belong to. */
 const MOUSE_PLAYER = 1;
 
@@ -84,17 +96,18 @@ const feetInteractions = (rule: CameraRuleTarget): CameraInteraction[] =>
   rule.interactions.filter((interaction) => MOUSE_FEET_INTERACTIONS.some((feet) => feet === interaction));
 
 /**
- * The elements the rules watch under the point, by the same keys the camera uses.
- * ponytail: the feet are a point, so thresholds don't apply; give them an area if authors' thresholds need to matter.
+ * The elements the rules watch under the feet, by the same keys the camera uses: those under at least the rule's
+ * `threshold` of the footprint's points.
  */
-const targetsAt = (rules: CameraRuleTarget[], point: ClientPoint): Map<string, FeetTarget> => {
+const targetsAt = (rules: CameraRuleTarget[], points: ClientPoint[]): Map<string, FeetTarget> => {
   const found = new Map<string, FeetTarget>();
   for (const rule of rules) {
     const interactions = feetInteractions(rule);
     const selector = rule.selector;
     if (interactions.length === 0 || !isDefined(selector)) continue;
     for (const element of sceneRoots(rule.scope).flatMap((root) => Array.from(root.querySelectorAll(selector)))) {
-      if (!isUnder(element, point, rule.includeCovered)) continue;
+      const under = points.filter((point) => isUnder(element, point, rule.includeCovered)).length;
+      if (under === 0 || under < Math.min(rule.threshold, 1) * points.length) continue;
       found.set(`${rule.scope}#${rule.ruleIndex}#${elementKey(element)}`, {
         source: { scope: rule.scope, ruleIndex: rule.ruleIndex, element },
         interactions,
@@ -131,15 +144,24 @@ export class MouseFeet {
   private rules: CameraRuleTarget[] = [];
   /** Called for each interaction that begins. */
   private report: ((event: CameraRuleEvent) => void) | undefined;
+  /** The points under the feet at a pointer. */
+  private footprint: FootprintOf = (point) => [point];
 
   /**
    * Gives the feet the rules they can fire now, and what to call when they do.
    * @param rules the rules the camera (and so the feet) can fire, for the scenes shown now
    * @param report called for each interaction that begins
+   * @param footprint the points under the feet at a pointer; just the pointer if not given
    */
-  listen(rules: CameraRuleTarget[], report: (event: CameraRuleEvent) => void): void {
+  listen(rules: CameraRuleTarget[], report: (event: CameraRuleEvent) => void, footprint?: FootprintOf): void {
     this.rules = rules;
     this.report = report;
+    this.footprint = footprint ?? ((point) => [point]);
+  }
+
+  /** The targets under the feet at a pointer. */
+  private targetsAt(point: ClientPoint): Map<string, FeetTarget> {
+    return targetsAt(this.rules, this.footprint(point));
   }
 
   /** Whether the feet are in the air, mid-jump. */
@@ -155,18 +177,18 @@ export class MouseFeet {
       this.leaveAll();
       return;
     }
-    this.standOn(targetsAt(this.rules, point));
+    this.standOn(this.targetsAt(point));
   }
 
   /** The feet stand again where the pointer rests, as what is under it may have moved or rendered since. */
   restand(): void {
     const point = lastPointer();
-    if (isDefined(point) && this.press?.airborne !== true) this.standOn(targetsAt(this.rules, point));
+    if (isDefined(point) && this.press?.airborne !== true) this.standOn(this.targetsAt(point));
   }
 
   /** The button went down: a jump may be starting. */
   down(point: ClientPoint): void {
-    this.press = { at: point, takeoff: targetsAt(this.rules, point), airborne: false };
+    this.press = { at: point, takeoff: this.targetsAt(point), airborne: false };
   }
 
   /**
@@ -177,7 +199,7 @@ export class MouseFeet {
     const press = this.press;
     this.press = undefined;
     if (!isDefined(press) || !press.airborne) return false;
-    const landing = targetsAt(this.rules, point);
+    const landing = this.targetsAt(point);
     for (const key of new Set([...press.takeoff.keys(), ...landing.keys()])) {
       const target = (landing.get(key) ?? press.takeoff.get(key))!;
       for (const interaction of landingInteractions(target.interactions, press.takeoff.has(key), landing.has(key))) {
@@ -336,27 +358,27 @@ const pointerListeners = (
  * @param onPlayerInteraction called for each interaction that begins
  * @param when whether the feet are on (`mouse-feet` mode), and whether they wait, as during a scene change; switching
  * off or pausing forgets everything without firing exits. `onFeet` hears where the feet are as the pointer moves,
- * and null as they leave the viewport; keep it stable.
+ * and null as they leave the viewport; keep it stable. `footprint` gives the points under the feet at a pointer.
  */
 export function useMouseFeet(
   viewportRef: RefObject<HTMLElement | null>,
   cameraRules: CameraRuleTarget[] | undefined,
   onPlayerInteraction: ((event: CameraRuleEvent) => void) | undefined,
-  when: { enabled: boolean; paused?: boolean; onFeet?: (at: FeetAt | null) => void },
+  when: { enabled: boolean; paused?: boolean; onFeet?: (at: FeetAt | null) => void; footprint?: FootprintOf },
 ): void {
-  const { enabled, paused = false, onFeet } = when;
+  const { enabled, paused = false, onFeet, footprint } = when;
   const [feet] = useState(() => new MouseFeet());
   const runsRef = useRef(new Map<SceneScope, number>());
 
   useEffect(() => {
-    feet.listen(cameraRules ?? [], (event) => onPlayerInteraction?.(event));
+    feet.listen(cameraRules ?? [], (event) => onPlayerInteraction?.(event), footprint);
     const runs = new Map((cameraRules ?? []).map(({ scope, run }) => [scope, run]));
     for (const [scope, run] of runs) {
       const before = runsRef.current.get(scope);
       if (isDefined(before) && before !== run) feet.rearm(scope);
     }
     runsRef.current = runs;
-  }, [cameraRules, onPlayerInteraction, feet]);
+  }, [cameraRules, onPlayerInteraction, feet, footprint]);
 
   useEffect(() => {
     const viewport = viewportRef.current;

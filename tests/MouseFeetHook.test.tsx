@@ -1,7 +1,13 @@
 import { fireEvent, render } from "@testing-library/react";
 import { useRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useMouseFeet, type FeetAt } from "../src/components/core/layout/MouseFeetHook";
+import {
+  footprintAt,
+  footprintPoints,
+  useMouseFeet,
+  type FeetAt,
+  type FootprintOf,
+} from "../src/components/core/layout/MouseFeetHook";
 import type { CameraRuleEvent, CameraRuleTarget } from "../src/components/core/layout/PlayerInteractionHook";
 import type { CameraInteraction } from "../src/components/camera/PlayerMonitor";
 import { trackPointer } from "../src/util/PointerPosition";
@@ -39,12 +45,13 @@ interface HarnessProps {
   enabled?: boolean;
   onClick?: () => void;
   onFeet?: (at: FeetAt | null) => void;
+  footprint?: FootprintOf;
 }
 
 /** A viewport holding one scene with #a, #b and the #cover over #b, fed to the hook. */
-function Harness({ rules, onEvent, enabled = true, onClick, onFeet }: HarnessProps) {
+function Harness({ rules, onEvent, enabled = true, onClick, onFeet, footprint }: HarnessProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
-  useMouseFeet(viewportRef, rules, onEvent, { enabled, onFeet });
+  useMouseFeet(viewportRef, rules, onEvent, { enabled, onFeet, footprint });
   return (
     <div ref={viewportRef} data-testid="viewport" onClick={onClick}>
       <div data-scene-scope={SCOPE}>
@@ -105,6 +112,19 @@ beforeEach(() => {
 afterEach(() => {
   Reflect.deleteProperty(document, "elementFromPoint");
   vi.useRealTimers();
+});
+
+/** Feet 40 pixels across, as four points in a row: over #a's right edge at x 100, half of them are on it. */
+const WIDE_FEET: FootprintOf = ({ x, y }) => [-20, -10, 10, 20].map((dx) => ({ x: x + dx, y }));
+
+describe("footprints", () => {
+  it("are a circle size % of the viewport's width across in a 2D scene, its points inside it", () => {
+    const footprint = footprintAt({ x: 500, y: 200 }, { left: 0, top: 0, width: 1000, height: 500 }, undefined, 10);
+    expect(footprint).toEqual({ centre: { x: 500, y: 200 }, rx: 50, ry: 50 });
+    const points = footprintPoints(footprint);
+    expect(points).toHaveLength(21);
+    expect(points.every(({ x, y }) => Math.hypot(x - 500, y - 200) <= 50)).toBe(true);
+  });
 });
 
 describe("useMouseFeet", () => {
@@ -193,6 +213,41 @@ describe("useMouseFeet", () => {
     move(25);
     expect(fired(onEvent)).toEqual(["foot-enter@a"]);
     Reflect.deleteProperty(document, "elementsFromPoint");
+  });
+
+  it("enters only when the rule's threshold of the footprint is over the element", () => {
+    const whole = setup([rule(["foot-enter"], "#a")], { footprint: WIDE_FEET });
+    whole.move(100);
+    expect(fired(whole.onEvent)).toEqual([]);
+    whole.move(50);
+    expect(fired(whole.onEvent)).toEqual(["foot-enter@a"]);
+    whole.view.unmount();
+
+    const half = setup([rule(["foot-enter"], "#a", { threshold: 0.5 })], { footprint: WIDE_FEET });
+    half.move(100);
+    expect(fired(half.onEvent)).toEqual(["foot-enter@a"]);
+  });
+
+  it("counts a covered part of the footprint only if the rule includes covered elements", () => {
+    const covered = setup([rule(["foot-enter"], "#b", { includeCovered: true })], { footprint: WIDE_FEET });
+    covered.move(250);
+    expect(fired(covered.onEvent)).toEqual(["foot-enter@b"]);
+    covered.view.unmount();
+
+    const uncovered = setup([rule(["foot-enter"], "#b")], { footprint: WIDE_FEET });
+    uncovered.move(250);
+    expect(fired(uncovered.onEvent)).toEqual([]);
+  });
+
+  it("lands a jump onto an element only if enough of the footprint lands on it", () => {
+    const whole = setup([rule(["jump-onto"], "#a")], { footprint: WIDE_FEET });
+    whole.drag(150, 100);
+    expect(fired(whole.onEvent)).toEqual([]);
+    whole.view.unmount();
+
+    const half = setup([rule(["jump-onto"], "#a", { threshold: 0.5 })], { footprint: WIDE_FEET });
+    half.drag(150, 100);
+    expect(fired(half.onEvent)).toEqual(["jump-onto@a"]);
   });
 
   it("waits out a rule's hold before entering, and forgets it if the feet move off first", () => {
