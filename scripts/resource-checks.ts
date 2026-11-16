@@ -1,6 +1,7 @@
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import type { GameData } from "../src/entities/data/GameData";
-import type { GameSceneAvatarData, GameSceneBase } from "../src/entities/data/scenes/GameSceneData";
+import type { GameSceneBase } from "../src/entities/data/scenes/GameSceneData";
+import type { GameSceneAvatarData } from "../src/entities/data/scenes/GameAvatarData";
 import type { GameSceneTemplateSourceData } from "../src/entities/data/scenes/GameSceneTemplateComponentData";
 import type { GameRepository } from "../src/entities/GameRepository";
 import { templateMessages } from "../src/components/core/logic/TemplateChecks.ts";

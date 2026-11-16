@@ -14,9 +14,9 @@
 <section class="tsd-panel tsd-comment">
 <div class="tsd-comment tsd-typography"><p>Game-wide settings, which any scene can override.</p>
 </div></section>
-<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">GameModulesData</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#avatar">avatar</a><span class="tsd-signature-symbol">?:</span> <a href="entities_data_scenes_GameSceneData.GameSceneAvatarData.html" class="tsd-signature-type tsd-kind-interface">GameSceneAvatarData</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#scene">scene</a><span class="tsd-signature-symbol">?:</span> <a href="../types/entities_data_scenes_GameSceneData.GameSceneMode.html" class="tsd-signature-type tsd-kind-type-alias">GameSceneMode</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#spectators">spectators</a><span class="tsd-signature-symbol">?:</span> <a href="entities_data_scenes_GameSpectatorsData.GameSpectatorsData.html" class="tsd-signature-type tsd-kind-interface">GameSpectatorsData</a><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
+<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">GameModulesData</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#avatar">avatar</a><span class="tsd-signature-symbol">?:</span> <a href="entities_data_scenes_GameAvatarData.GameSceneAvatarData.html" class="tsd-signature-type tsd-kind-interface">GameSceneAvatarData</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#scene">scene</a><span class="tsd-signature-symbol">?:</span> <a href="../types/entities_data_scenes_GameSceneData.GameSceneMode.html" class="tsd-signature-type tsd-kind-type-alias">GameSceneMode</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#spectators">spectators</a><span class="tsd-signature-symbol">?:</span> <a href="entities_data_scenes_GameSpectatorsData.GameSpectatorsData.html" class="tsd-signature-type tsd-kind-interface">GameSpectatorsData</a><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/GameModuleData.ts#L5">entities/data/GameModuleData.ts:5</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/GameModuleData.ts#L6">entities/data/GameModuleData.ts:6</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -33,25 +33,25 @@
 <section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="avatar"><code class="tsd-tag">Optional</code><span>avatar</span><a href="#avatar" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<div class="tsd-signature"><span class="tsd-kind-property">avatar</span><span class="tsd-signature-symbol">?:</span> <a href="entities_data_scenes_GameSceneData.GameSceneAvatarData.html" class="tsd-signature-type tsd-kind-interface">GameSceneAvatarData</a></div>
+<div class="tsd-signature"><span class="tsd-kind-property">avatar</span><span class="tsd-signature-symbol">?:</span> <a href="entities_data_scenes_GameAvatarData.GameSceneAvatarData.html" class="tsd-signature-type tsd-kind-interface">GameSceneAvatarData</a></div>
 <div class="tsd-comment tsd-typography"><p>What stands in for the player, unless a scene says otherwise. Defaults to <code>mouse</code>.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/GameModuleData.ts#L9">entities/data/GameModuleData.ts:9</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/GameModuleData.ts#L10">entities/data/GameModuleData.ts:10</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="scene"><code class="tsd-tag">Optional</code><span>scene</span><a href="#scene" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">scene</span><span class="tsd-signature-symbol">?:</span> <a href="../types/entities_data_scenes_GameSceneData.GameSceneMode.html" class="tsd-signature-type tsd-kind-type-alias">GameSceneMode</a></div>
 <div class="tsd-comment tsd-typography"><p>How scenes are laid out, unless a scene says otherwise. Defaults to <code>2D</code>.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/GameModuleData.ts#L7">entities/data/GameModuleData.ts:7</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/GameModuleData.ts#L8">entities/data/GameModuleData.ts:8</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="spectators"><code class="tsd-tag">Optional</code><span>spectators</span><a href="#spectators" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">spectators</span><span class="tsd-signature-symbol">?:</span> <a href="entities_data_scenes_GameSpectatorsData.GameSpectatorsData.html" class="tsd-signature-type tsd-kind-interface">GameSpectatorsData</a></div>
 <div class="tsd-comment tsd-typography"><p>How spectators, people standing off a 2.5D scene's floor, are shown, unless a scene says otherwise.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/GameModuleData.ts#L11">entities/data/GameModuleData.ts:11</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/GameModuleData.ts#L12">entities/data/GameModuleData.ts:12</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

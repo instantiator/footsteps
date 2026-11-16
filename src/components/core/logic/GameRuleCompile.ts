@@ -4,14 +4,13 @@ import {
   GAME_INTERACTIONS,
   type GameAction,
   type GameSceneBase,
-  type GameAvatarMode,
-  type GameSceneAvatarData,
   type GameFeedbackAction,
   type GameInteractTrigger,
   type GameRule,
   type GameTrigger,
   type GameWhenTrigger,
 } from "../../../entities/data/scenes/GameSceneData";
+import { type GameAvatarMode, type GameSceneAvatarData } from "../../../entities/data/scenes/GameAvatarData";
 import { isDefined } from "../../../util/ObjectUtils";
 import { compileGameExpression, type GameExpression } from "./GameExpressionUtils";
 import {

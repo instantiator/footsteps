@@ -1,10 +1,9 @@
+import type { GameInteraction, GameSceneMode } from "../../../entities/data/scenes/GameSceneData";
 import type {
+  GameAvatarFeetData,
   GameAvatarMode,
-  GameInteraction,
   GameSceneAvatarData,
-  GameSceneMode,
-} from "../../../entities/data/scenes/GameSceneData";
-import type { GameAvatarFeetData } from "../../../entities/data/scenes/GameAvatarFeetData";
+} from "../../../entities/data/scenes/GameAvatarData";
 import type { GameSpectatorsData } from "../../../entities/data/scenes/GameSpectatorsData";
 import { POINTER_INTERACTIONS } from "../../../entities/data/scenes/GameSceneData";
 import type { GameData } from "../../../entities/data/GameData";

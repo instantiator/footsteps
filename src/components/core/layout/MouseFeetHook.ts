@@ -98,6 +98,8 @@ const feetInteractions = (rule: CameraRuleTarget): CameraInteraction[] =>
 /**
  * The elements the rules watch under the feet, by the same keys the camera uses: those under at least the rule's
  * `threshold` of the footprint's points.
+ * ponytail: up to 21 hit tests per target box the footprint touches, every frame; test the footprint's box against
+ * each target's first if a scene with many targets shows it in profiles.
  */
 const targetsAt = (rules: CameraRuleTarget[], points: ClientPoint[]): Map<string, FeetTarget> => {
   const found = new Map<string, FeetTarget>();

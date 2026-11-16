@@ -9,7 +9,8 @@ import {
   challengesResetOnReturn,
 } from "../src/components/core/logic/AvatarModeUtils";
 import { getLayeredRenderData, type LayeredGameSceneRenderData } from "../src/components/core/logic/RenderDataUtils";
-import type { GameSceneAvatarData, GameSceneMode } from "../src/entities/data/scenes/GameSceneData";
+import type { GameSceneMode } from "../src/entities/data/scenes/GameSceneData";
+import type { GameSceneAvatarData } from "../src/entities/data/scenes/GameAvatarData";
 import type { GameData } from "../src/entities/data/GameData";
 import { createBlankGameState } from "../src/entities/state/GameState";
 import { scroll } from "./data/GameBuilders";
