@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   canModeFire,
   cameraModeOf,
+  FEET_DEFAULTS,
   resolveAvatarMode,
   resolveSceneMode,
   resolveSpectators,
@@ -66,11 +67,16 @@ const CAMERA_OR_MOUSE: GameSceneAvatarData = { mode: "camera", fallback: "mouse"
 
 describe("resolveAvatarMode", () => {
   it("defaults to the mouse, with no preview, when neither the game nor any scene sets it", () => {
-    expect(onOverview()).toEqual({ mode: "mouse", fallback: undefined, preview: false });
+    expect(onOverview()).toEqual({ mode: "mouse", fallback: undefined, preview: false, feet: FEET_DEFAULTS });
   });
 
   it("takes the game's settings when no scene sets them", () => {
-    expect(inStage({ game: CAMERA_OR_MOUSE })).toEqual({ mode: "camera", fallback: "mouse", preview: true });
+    expect(inStage({ game: CAMERA_OR_MOUSE })).toEqual({
+      mode: "camera",
+      fallback: "mouse",
+      preview: true,
+      feet: FEET_DEFAULTS,
+    });
     expect(inStage({ game: { ...CAMERA_OR_MOUSE, preview: false } })).toMatchObject({ preview: false });
   });
 
@@ -109,6 +115,16 @@ describe("resolveAvatarMode", () => {
     ).toMatchObject({
       preview: false,
     });
+  });
+
+  it("takes the feet from the first challenge with them, over the stage's, the overview's and the game's, key by key", () => {
+    const feet = inStage({
+      game: { feet: { size: 4, color: "red", pointer: "hidden" } },
+      overview: { feet: { size: 5 } },
+      stage: { mode: "mouse-feet", feet: { color: "green" } },
+      challenges: [undefined, { feet: { imageResource: "boots" } }, { feet: { size: 9 } }],
+    }).feet;
+    expect(feet).toEqual({ size: 5, color: "green", pointer: "hidden", imageResource: "boots" });
   });
 
   it("forces the preview off unless the mode is camera", () => {

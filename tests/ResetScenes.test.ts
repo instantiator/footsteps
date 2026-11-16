@@ -100,6 +100,13 @@ describe("reset scenes", () => {
     expect(render.avatar).toEqual({ mode: "camera", preview: false });
   });
 
+  it("take their parent's feet key by key, even when they set their own mode", () => {
+    const data = gameWithReset(resetScene("get-ready", { avatar: { mode: "mouse-feet", feet: { color: "red" } } }));
+    data.stages[0].challenges[0].scenes[0].avatar = { mode: "camera", feet: { size: 10, color: "blue" } };
+    const [render] = getLayeredRenderData(playing(data), {}, "reset-test").challengesRenderData!;
+    expect(render.avatar?.feet).toEqual({ size: 10, color: "red" });
+  });
+
   describe("showing again", () => {
     /** Leaves the stage for the overview, and comes back, as the game state provider sees it. */
     const leaveAndReturn = (state: GameState): GameState => {

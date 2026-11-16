@@ -1,6 +1,6 @@
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import type { GameData } from "../src/entities/data/GameData";
-import type { GameSceneBase } from "../src/entities/data/scenes/GameSceneData";
+import type { GameSceneAvatarData, GameSceneBase } from "../src/entities/data/scenes/GameSceneData";
 import type { GameSceneTemplateSourceData } from "../src/entities/data/scenes/GameSceneTemplateComponentData";
 import type { GameRepository } from "../src/entities/GameRepository";
 import { templateMessages } from "../src/components/core/logic/TemplateChecks.ts";
@@ -122,7 +122,7 @@ interface GameReferences {
 }
 
 /** A scene to visit: one of the game's scenes, or a reset scene. */
-type VisitedScene = Pick<GameSceneBase, "component" | "resetScene">;
+type VisitedScene = Pick<GameSceneBase, "component" | "resetScene" | "avatar">;
 
 /**
  * Visits every scene in the game, and their reset scenes, with its path relative to the game, and whether it can show
@@ -194,6 +194,12 @@ function collectReferences(game: GameData): GameReferences {
 
   if (isDefined(game.tileGraphic)) names.push({ path: "tileGraphic", name: game.tileGraphic });
 
+  const addFeet = (avatar: GameSceneAvatarData | undefined, path: string) => {
+    const name = avatar?.feet?.imageResource;
+    if (isDefined(name)) names.push({ path: `${path}.feet.imageResource`, name });
+  };
+  addFeet(game.modules?.avatar, "modules.avatar");
+
   const sounds = game.sounds;
   if (isDefined(sounds)) {
     const soundFields = [
@@ -211,6 +217,7 @@ function collectReferences(game: GameData): GameReferences {
   eachScene(game, (scene, scenePath, can25D) => {
     const { component } = scene;
     const componentPath = `${scenePath}.component`;
+    addFeet(scene.avatar, `${scenePath}.avatar`);
 
     const addTemplate = (template: GameSceneTemplateSourceData | undefined, path: string) => {
       const found = templateReferences(template, path, can25D);

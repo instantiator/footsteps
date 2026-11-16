@@ -1,3 +1,4 @@
+import type { GameAvatarFeetData } from "./GameAvatarFeetData";
 import type { GameSpectatorsData } from "./GameSpectatorsData";
 import type { GameRewardData } from "../GameData";
 import type { GameStageId } from "../GameStageData";
@@ -81,7 +82,7 @@ export type GameAvatarMode = "mouse" | "camera" | "mouse-feet";
 
 /**
  * Avatar settings for one scene. `mode` and `fallback` go together: a scene that sets `mode` doesn't inherit a broader
- * scene's `fallback`. `preview` inherits on its own.
+ * scene's `fallback`. `preview` and `feet` inherit on their own.
  */
 export interface GameSceneAvatarData {
   /** What stands in for the player while this scene shows. */
@@ -90,6 +91,8 @@ export interface GameSceneAvatarData {
   fallback?: Exclude<GameAvatarMode, "camera">;
   /** Whether the webcam preview shows while this scene shows; only in `camera` mode. */
   preview?: boolean;
+  /** How the pointer's feet look in `mouse-feet` mode, including as a fallback. */
+  feet?: GameAvatarFeetData;
 }
 
 /** Fields common to every scene. */
