@@ -404,3 +404,63 @@ test("draws a spectator with their look, when the game shows them", async ({ pag
   await expect(player).toHaveCSS("opacity", "0.4");
   await expect(player).toHaveCSS("filter", "grayscale(1)");
 });
+
+/** Moves the mouse to a floor point of the demo's default floor, with the button down or up as given. */
+const mouseToFloor = async (page: Page, floor: { x: number; y: number }, steps = 1) => {
+  const box = (await page.locator(".floorScene .sceneBox").first().boundingBox())!;
+  const at = floorToViewport(VIEW, floor);
+  const point = { x: box.x + at.x * box.width, y: box.y + at.y * box.height };
+  await page.mouse.move(point.x, point.y, { steps });
+  return point;
+};
+
+/** Where the mouse-feet avatar is drawn: its point, its footprint's size, its body's bottom and its z-index. */
+const avatarDrawn = (page: Page) =>
+  page.locator(".mouse-feet-avatar").evaluate((avatar: HTMLElement) => {
+    const { left, top } = avatar.getBoundingClientRect();
+    const body = avatar.querySelector(".mouse-feet-body")!.getBoundingClientRect();
+    return {
+      x: left,
+      y: top,
+      width: body.width,
+      height: body.height,
+      bottom: body.bottom,
+      z: Number(avatar.style.zIndex),
+    };
+  });
+
+test("draws the mouse's feet at the pointer, flat on the floor, smaller and sorted behind at the back", async ({
+  page,
+}) => {
+  await openWalkAround(page, { camera: false });
+  const front = await mouseToFloor(page, { x: 85, y: 95 });
+  await expect(page.locator(".mouse-feet-avatar .mouse-feet-body")).toBeVisible();
+  const atFront = await avatarDrawn(page);
+  expect(atFront.x).toBeCloseTo(front.x, 0);
+  expect(atFront.y).toBeCloseTo(front.y, 0);
+  expect(atFront.height).toBeLessThan(atFront.width);
+
+  await mouseToFloor(page, { x: 20, y: 20 });
+  const behindPost = await avatarDrawn(page);
+  expect(behindPost.width).toBeLessThan(atFront.width);
+  expect(behindPost.z).toBeLessThan(await zIndexOf(page, "#depth-far"));
+  expect(atFront.z).toBeGreaterThan(await zIndexOf(page, "#depth-far"));
+});
+
+test("lifts the mouse's feet over a shadow through a drag, and lands them where it ends", async ({ page }) => {
+  await openWalkAround(page, { camera: false });
+  const avatar = page.locator(".mouse-feet-avatar");
+  await mouseToFloor(page, { x: 85, y: 95 });
+  await page.mouse.down();
+  const mid = await mouseToFloor(page, { x: 85, y: 40 }, 10);
+  await expect(avatar).toHaveAttribute("data-airborne");
+  await expect(avatar.locator(".mouse-feet-shadow")).toBeVisible();
+  const lifted = await avatarDrawn(page);
+  expect(lifted.y).toBeCloseTo(mid.y, 0);
+  expect(lifted.bottom).toBeLessThan(mid.y);
+
+  await page.mouse.up();
+  await expect(avatar).not.toHaveAttribute("data-airborne");
+  await expect(avatar.locator(".mouse-feet-shadow")).toBeHidden();
+  expect((await avatarDrawn(page)).y).toBeCloseTo(mid.y, 0);
+});
