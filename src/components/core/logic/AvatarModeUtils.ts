@@ -35,7 +35,7 @@ export type ResolvedFeet = Required<Omit<GameAvatarFeetData, "imageResource">> &
   Pick<GameAvatarFeetData, "imageResource">;
 
 /** The feet settings no scene sets. */
-export const FEET_DEFAULTS: ResolvedFeet = { size: 6, color: "rgba(255, 255, 255, 0.6)", pointer: "shown" };
+export const FEET_DEFAULTS: ResolvedFeet = { size: 6, color: "rgba(255, 255, 255, 0.6)", cursor: "shown" };
 
 /** An avatar mode and the fallback that goes with it. */
 type AvatarChoice = Pick<ResolvedAvatarMode, "mode" | "fallback">;

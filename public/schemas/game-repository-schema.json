@@ -179,16 +179,16 @@
                     "description": "The footprint's CSS colour. Defaults to a translucent white.",
                     "type": "string"
                 },
-                "imageResource": {
-                    "description": "An image resource drawn upright, standing on the footprint, instead of the plain footprint.",
-                    "type": "string"
-                },
-                "pointer": {
-                    "description": "Whether the mouse pointer shows over the game while the feet do. Defaults to `shown`.",
+                "cursor": {
+                    "description": "Whether the mouse cursor shows over the game while the feet do. Defaults to `shown`.",
                     "enum": [
                         "hidden",
                         "shown"
                     ],
+                    "type": "string"
+                },
+                "imageResource": {
+                    "description": "An image resource drawn upright, standing on the footprint, instead of the plain footprint.",
                     "type": "string"
                 },
                 "size": {

@@ -244,8 +244,8 @@ img.mouse-feet-body {
   translate: 0 calc(var(--feet-width) * -1);
 }
 
-/* The pointer hides over the game while the feet show, if the scene asks */
-.gameViewport:has(.mouse-feet-avatar[data-pointer="hidden"]:not([hidden])) {
+/* The mouse cursor hides over the game while the feet show, if the scene asks */
+.gameViewport:has(.mouse-feet-avatar[data-cursor="hidden"]:not([hidden])) {
   cursor: none;
 }
 

@@ -41,7 +41,7 @@ const draw = (avatar: HTMLElement | null, at: FeetAt | null, floor: FloorView | 
 export default function MouseFeetAvatar({ look, floor, drawRef }: MouseFeetAvatarProps) {
   const { resources } = useGameData();
   const avatarRef = useRef<HTMLDivElement>(null);
-  const { size, color, imageResource, pointer } = look;
+  const { size, color, imageResource, cursor } = look;
   useEffect(() => {
     drawRef.current = (at) => draw(avatarRef.current, at, floor, size);
     return () => {
@@ -50,7 +50,7 @@ export default function MouseFeetAvatar({ look, floor, drawRef }: MouseFeetAvata
   }, [drawRef, floor, size]);
 
   return (
-    <div ref={avatarRef} className="mouse-feet-avatar" data-pointer={pointer} hidden>
+    <div ref={avatarRef} className="mouse-feet-avatar" data-cursor={cursor} hidden>
       <div className="mouse-feet-shadow" />
       {isDefined(imageResource) ? (
         <img className="mouse-feet-body" src={resources[imageResource]} alt="" draggable={false} />

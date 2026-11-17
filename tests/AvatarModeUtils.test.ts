@@ -120,12 +120,12 @@ describe("resolveAvatarMode", () => {
 
   it("takes the feet from the first challenge with them, over the stage's, the overview's and the game's, key by key", () => {
     const feet = inStage({
-      game: { feet: { size: 4, color: "red", pointer: "hidden" } },
+      game: { feet: { size: 4, color: "red", cursor: "hidden" } },
       overview: { feet: { size: 5 } },
       stage: { mode: "mouse-feet", feet: { color: "green" } },
       challenges: [undefined, { feet: { imageResource: "boots" } }, { feet: { size: 9 } }],
     }).feet;
-    expect(feet).toEqual({ size: 5, color: "green", pointer: "hidden", imageResource: "boots" });
+    expect(feet).toEqual({ size: 5, color: "green", cursor: "hidden", imageResource: "boots" });
   });
 
   it("forces the preview off unless the mode is camera", () => {

@@ -81,8 +81,8 @@ describe("MouseFeetAvatar", () => {
     );
   });
 
-  it("marks whether the pointer hides while it shows", () => {
-    expect(setup().avatar.dataset.pointer).toBe("shown");
-    expect(setup({ pointer: "hidden" }).avatar.dataset.pointer).toBe("hidden");
+  it("marks whether the mouse cursor hides while it shows", () => {
+    expect(setup().avatar.dataset.cursor).toBe("shown");
+    expect(setup({ cursor: "hidden" }).avatar.dataset.cursor).toBe("hidden");
   });
 });

@@ -34,6 +34,6 @@ export interface GameAvatarFeetData {
   color?: string;
   /** An image resource drawn upright, standing on the footprint, instead of the plain footprint. */
   imageResource?: string;
-  /** Whether the mouse pointer shows over the game while the feet do. Defaults to `shown`. */
-  pointer?: "shown" | "hidden";
+  /** Whether the mouse cursor shows over the game while the feet do. Defaults to `shown`. */
+  cursor?: "shown" | "hidden";
 }

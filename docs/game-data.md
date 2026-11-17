@@ -230,7 +230,7 @@ pits" and "The floor is lava" stages lay their pits and stones on the floor.
   | `size`          | `6`                        | The footprint's diameter in floor units (in a 2D scene, % of the screen's width). A rule's `threshold` is the share of it that must be on. |
   | `color`         | `rgba(255, 255, 255, 0.6)` | The footprint's CSS colour.                                                                                                                |
   | `imageResource` | none                       | An image [resource](#resources) drawn upright, standing on the footprint, in its place.                                                    |
-  | `pointer`       | `shown`                    | `hidden` hides the mouse pointer over the game while the feet show.                                                                        |
+  | `cursor`        | `shown`                    | `hidden` hides the mouse cursor over the game while the feet show.                                                                         |
 
   The feet are a `.mouse-feet-avatar` element, with `data-airborne` mid-jump, so a game's stylesheets can restyle
   them: its `.mouse-feet-body` is the footprint (or the image), and `.mouse-feet-shadow` is the shadow left under a
