@@ -11,6 +11,7 @@ import {
   type RuleEnvironment,
   type RuleEvent,
 } from "../src/components/core/logic/GameRuleUtils";
+import { endAction } from "../src/components/core/logic/ActionRuns";
 import { compileGameRules } from "../src/components/core/logic/GameRuleCompile";
 import { startSceneRuns } from "../src/components/core/logic/GameStateUtils";
 import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
@@ -78,6 +79,13 @@ describe("compileGameRules", () => {
     expect(() => compileGameRules(gameWithRules([], [{ on: { start: true }, do: [action] }]))).toThrow(
       `${CHALLENGE}.do[0]: a start rule can't reset`,
     );
+  });
+
+  it("rejects a start rule that resets its scene from inside a group, naming where", () => {
+    const rule: GameRule = { on: { start: true }, do: [{ series: [{ sound: "pop" }, { resetChallenge: true }] }] };
+    const data = gameWithRules([], [rule]);
+    data.resources = { pop: { type: "url", target: "https://sounds.example/pop.mp3" } };
+    expect(() => compileGameRules(data)).toThrow(`${CHALLENGE}.do[0].series[1]: a start rule can't reset`);
   });
 
   it("compiles expression timings and random() at load, leaving their values to play", () => {
@@ -164,6 +172,33 @@ describe("compileGameRules", () => {
   it("rejects a negative duration", () => {
     const rule: GameRule = { on: { after: -1 }, do: [] };
     expect(() => compileGameRules(gameWithRules([rule]))).toThrow("can't be negative");
+  });
+
+  it.each([["start"], ["when"]] as const)(
+    'rejects an "event" target on a %s rule, which fires for no element',
+    (key) => {
+      const on = key === "start" ? { start: true as const } : { when: "true" };
+      expect(() => compileGameRules(gameWithRules([{ on, do: [{ effect: "quake", target: "event" }] }]))).toThrow(
+        `${OVERVIEW}.do[0]: a ${key} rule fires for no element`,
+      );
+    },
+  );
+
+  it("warns about following a named action or raised event that nothing in the game names or raises", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    compileGameRules(
+      gameWithRules([
+        { on: { start: true }, do: [{ set: { a: "1" }, name: "known" }, { raise: "heard" }] },
+        { on: { actionEnd: "known" }, do: [] },
+        { on: { raised: "heard" }, do: [] },
+        { on: { actionStart: "unknown" }, do: [] },
+        { on: { raised: "unheard" }, do: [] },
+      ]),
+    );
+    expect(warn.mock.calls.map(([message]) => message)).toEqual([
+      `scenes[0] (game-overview-stages) › rules[3].on: no action is named "unknown"`,
+      `scenes[0] (game-overview-stages) › rules[4].on: nothing raises "unheard"`,
+    ]);
   });
 
   it("compiles the rules of every game in the local repository", () => {
@@ -440,18 +475,26 @@ describe("rule engine", () => {
       expect(error).toHaveBeenCalledWith(expect.stringContaining("rules[0].do[0].durationMs"));
     });
 
-    it("sends Jump and duck's obstacles at random times, at a speed worked out from the score", () => {
-      vi.spyOn(Math, "random").mockReturnValue(0);
+    it("spawns Jump and duck's obstacles of a random kind, and sends each across at a speed from the score", () => {
+      vi.spyOn(Math, "random").mockReturnValue(0.25);
       const [run] = (localRepository as GameRepository).games["jump-and-duck"].stages[0].challenges[0].scenes;
       const state = playing(run.component.rules!, { ...run.component.initialState, score: 10 });
       Object.assign(state.stages[0].stage.challenges[0].scenes[0].component, { data: run.component.data });
-      const started = fireRules(env, state, SCOPE, (trigger) => ("start" in trigger ? NO_EVENT : undefined));
+      const spawned = fireRules(env, state, SCOPE, (trigger) =>
+        "every" in trigger && trigger.every !== 1000 ? NO_EVENT : undefined,
+      );
 
-      // At the lowest random draw, the first goes at once and the rest at the bottom of their ranges
-      expect(started.session.visualEffects.map(({ effect }) => effect)).toEqual([
-        expect.objectContaining({ target: "#low-1", durationMs: 3500 }),
-      ]);
-      expect(started.session.delayedActions.map(({ delayMs }) => delayMs)).toEqual([1500, 3000, 4500]);
+      // A low draw picks a bat, and the spawn waits on the screen, named so its arrival starts the move
+      expect(stateOf(spawned)).toMatchObject({ high: true });
+      const [queued] = spawned.session.visualEffects;
+      expect(queued.effect).toEqual({ spawn: "#jd-obstacle", into: "#jd-lanes", name: "obstacle" });
+
+      const arrived = endAction(env, spawned, queued.actionId!, { id: "jd-obstacle-1", matches: () => true });
+      expect(arrived.session.visualEffects.at(-1)?.effect).toMatchObject({
+        effect: "item-move",
+        target: '[id="jd-obstacle-1"]',
+        durationMs: 3500,
+      });
     });
 
     it("sets every key from the state before the action", () => {

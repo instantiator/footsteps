@@ -7,6 +7,7 @@ import type {
   GameQuakeEffect,
   Resolved,
 } from "../../../entities/data/scenes/GameEffectData";
+import { isDefined } from "../../../util/ObjectUtils";
 import { easingFunction } from "./EasingProbe";
 import { SCENE_FRAME_CLASS, centreOnScreen, sceneDistance, sceneRect, type ScreenPoint } from "./EffectTargets";
 
@@ -194,6 +195,8 @@ const quakeScale = (element: Element, dx: number, dy: number): number =>
 export interface EffectRun {
   /** Called as the effect finishes on each element. */
   onEnd: (element: Element) => void;
+  /** Called as the effect is cut short on an element, by `stop` or by starting it again; that isn't finishing. */
+  onCancel?: (element: Element) => void;
   /** Whether players prefer reduced motion. */
   reducedMotion: boolean;
   /** Looks for the element a position is measured from, in the scene whose rule started the effect. */
@@ -228,6 +231,8 @@ export interface EffectOn {
  */
 export class ItemEffects {
   private readonly running = new WeakMap<Element, Map<string, EffectAnimation>>();
+  /** What to tell each animation's rule if it is cut short. */
+  private readonly cancelled = new WeakMap<EffectAnimation, () => void>();
   /** How far each element is being shaken vertically, as a % of the scene's height, while it is. */
   private readonly shaking = new WeakMap<Element, number>();
 
@@ -256,7 +261,10 @@ export class ItemEffects {
   /** Plays a series of styles on the elements, after which they return to their own. */
   highlight({ sequence, durationMs }: Resolved<GameHighlightEffect>, elements: Element[], run: EffectRun): void {
     const total = sequenceLength(sequence);
-    if (total <= 0) return;
+    if (total <= 0) {
+      elements.forEach(run.onEnd);
+      return;
+    }
     const iterations = durationMs === "indefinite" ? Infinity : durationMs === undefined ? 1 : durationMs / total;
     const properties = highlightProperties(sequence);
     for (const element of elements) {
@@ -355,6 +363,7 @@ export class ItemEffects {
     this.cancel(element, name);
     const animation = element.animate(keyframes, { composite: "add", ...options });
     animation.onfinish = () => run.onEnd(element);
+    if (isDefined(run.onCancel)) this.cancelled.set(animation, () => run.onCancel?.(element));
     const effects = this.running.get(element) ?? new Map<string, EffectAnimation>();
     effects.set(name, animation);
     this.running.set(element, effects);
@@ -369,5 +378,6 @@ export class ItemEffects {
     animation.onfinish = null;
     animation.cancel();
     effects?.delete(name);
+    this.cancelled.get(animation)?.();
   }
 }

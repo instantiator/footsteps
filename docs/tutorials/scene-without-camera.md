@@ -120,20 +120,32 @@ A rule has a trigger (`on`), an optional condition (`if`), and actions (`do`)
 
 A `when` rule fires when its expression turns true, after any change of state:
 
+<!-- prettier-ignore -->
 ```json [public/game-repository.json]
 {
   "on": { "when": "state.lamp1 and state.lamp2 and state.lamp3" },
   "do": [
     { "set": { "done": "true" } },
-    { "completeChallenge": true, "delayMs": 1000 },
-    { "sound": "fanfare" },
-    { "reward": { "animation": "sparkles", "particleCount": 80 } }
+    {
+      "series": [
+        {
+          "parallel": [
+            { "sound": "fanfare" },
+            { "reward": { "animation": "sparkles", "particleCount": 80 } }
+          ]
+        },
+        { "completeChallenge": true }
+      ]
+    }
   ]
 }
 ```
 
-- `completeChallenge` solves the challenge. `delayMs` waits a second first, so the player sees the lamps lit.
-- `reward` bursts sparkles across the screen ([rewards](../special-effects.md#rewards)).
+- A `do` list's actions all start at once. A [series](../game-data.md#series-and-parallel-groups) runs its actions
+  one after another, each once the one before has ended; a `parallel` group runs them together, and ends with the
+  last.
+- So the fanfare plays as `reward` bursts sparkles across the screen ([rewards](../special-effects.md#rewards)), and
+  once both are over, `completeChallenge` solves the challenge. The player sees the lamps lit meanwhile.
 
 The template's message shows the new state:
 
@@ -142,7 +154,7 @@ The template's message shows the new state:
 <p class="ndc-message">{{#if state.done}}All lit. Well done!{{else}}Click each lamp to light it. Click a lit one to put it out.{{/if}}</p>
 ```
 
-**Look for:** light all three. "All lit. Well done!", a fanfare and sparkles; a second later, the list of stages, with
+**Look for:** light all three. "All lit. Well done!", a fanfare and sparkles; as they finish, the list of stages, with
 "Light the lamps" ticked. The **Menu**'s **Reset** starts the challenge again.
 
 ## The doors

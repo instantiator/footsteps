@@ -40,15 +40,15 @@ Two limits:
 | Property     | Type                   | Meaning                                                                                |
 | ------------ | ---------------------- | -------------------------------------------------------------------------------------- |
 | `effect`     | string                 | Which effect to run.                                                                   |
-| `target`     | CSS selector           | The elements to apply it to. See [Targets](#targets).                                  |
+| `target`     | CSS selector           | The elements to apply it to, or `"event"`. See [Targets](#targets).                    |
 | `durationMs` | `time \| "indefinite"` | How long it runs. See [Duration](#duration).                                           |
 | `cycleMs`    | time                   | The length of one loop, when `durationMs` is `"indefinite"`.                           |
 | `easing`     | CSS easing function    | How it speeds up and slows down.                                                       |
 | `delayMs`    | time                   | How long to wait before starting, on any action. Defaults to `0`. See [Delay](#delay). |
 
 A **time** is a number of milliseconds, or an [expression](game-data.md#expressions) worked out from the scene's
-state: `delayMs` when the rule fires, and `durationMs` and `cycleMs` as the effect starts. This sends an obstacle
-across in a random time, faster as the score rises:
+state: `delayMs` when its action's turn comes, and `durationMs` and `cycleMs` as the effect starts. This sends an
+obstacle across in a random time, faster as the score rises:
 
 ```json
 {
@@ -62,13 +62,14 @@ across in a random time, faster as the score rises:
 ```
 
 An expression that doesn't work out to a number of at least 0 is logged, naming the rule, and that action is
-skipped; the rule's other actions still apply.
+skipped; the rule's other actions still apply, and a [series](game-data.md#series-and-parallel-groups) carries on.
 
 These apply to every effect:
 
 - **Bad values** are an error when the game loads, naming the rule: a negative number for a time, an expression that doesn't parse, an `easing` or `target` the browser can't parse, an effect that doesn't exist, or one of the mistakes listed under each effect.
 - **Firing again:** an effect fired on an element or player already running the same effect restarts it. Different effects run together. A player already leaving ignores another `player-fall` or `player-spin-away`.
-- **Reduced motion:** for players who prefer reduced motion, nothing moves. `quake` doesn't play. `item-fall`, `item-move`, `player-fall` and `player-spin-away` jump straight to their end. `player-static` shows, but doesn't flicker. Game state changes as it would otherwise, and `effectEnd` still fires, so these players can still finish the game.
+- **Reduced motion:** for players who prefer reduced motion, nothing moves. `quake` doesn't play. `item-fall`, `item-move`, `player-fall` and `player-spin-away` jump straight to their end. `player-static` shows, but doesn't flicker. Game state changes as it would otherwise, and `effectEnd` still fires and each effect still ends, so a series runs in order and these players can still finish the game.
+- **Ending, for what waits on it:** a named effect, or one in a [series or parallel group](game-data.md#series-and-parallel-groups), ends as it first finishes, or is stopped or started again, on one of its elements or players; or at once if it found nothing to play on, or chose no players (as in `mouse-feet`). `stop` ends at once. The elements of one effect start together and last as long.
 - **Not saved:** effects and player states last for the session, like rewards. Reloading shows items where their templates put them.
 
 ### Ending with the scene
@@ -110,7 +111,9 @@ Every action takes an optional `delayMs`.
 ```
 
 - A rule's `if` is checked when it fires, and not again after the delay.
-- Later actions don't wait for a delayed one: each counts from when the rule fired.
+- In a plain `do` list, later actions don't wait for a delayed one: each counts from when the rule fired. In a
+  [series](game-data.md#series-and-parallel-groups), a delay counts from when the action before it ended, so the
+  bridge above can be `{ "series": [quake, item-fall, set] }`, with no times matched by hand.
 - A delayed action's expressions are worked out when it runs, from the state at that time, using the `event` from when the rule fired.
 - A delayed action is cancelled if its scene closes or resets first, so a late `completeChallenge` or `set` can't change a scene that has moved on. Sounds and rewards are the exception, as above.
 - `delayMs` can be an expression, worked out when the rule fires, from the state and event at that time.
@@ -129,7 +132,10 @@ A `target` looks inside the scene whose rule fired, so two challenges side by si
 - **Items move, not layers.** An effect on `.scene-foreground` or `.scene-background`, or with no `target`, applies to each top-level item (`.templateBody > *`), never to a container. Moving a container would make it a stacking context, so items inside it could no longer sit between players.
 - **Wrappers around floor items.** A top-level item holding [floor-placed](game-data.md#floor-placed-items) items gives its children instead, recursively, for the same reason. A `target` that names one directly logs a warning, and those items can't sort among players during the effect.
 - **Dialogs and scrolls** give their whole frame, keeping the image, text and controls together, as one motion even with `consistentMotion: false`.
-- **Missing elements:** a `target` matching nothing logs a warning. Effects wait up to 5 s for their scene's elements to reach the screen first, as a scene's state changes before its fade is over.
+- **`"event"`:** the element the rule fired for, by its `event.id`: the one clicked or entered, the copy a named
+  [spawn](game-data.md#spawn-and-despawn) has just added, or the element an `effectEnd` or `animationEnd` fired for.
+  See [the `event` target](game-data.md#the-event-target).
+- **Missing elements:** a `target` matching nothing logs a warning. A `stop` with nothing to stop is fine. Effects wait up to 5 s for their scene's elements to reach the screen first, as a scene's state changes before its fade is over.
 - **Give items an `id`.** An effect stays on its element through template re-renders, but an element without an `id` may be replaced by one.
 
 An effect on an element can't be applied to everything a player's canvas does:
@@ -277,7 +283,9 @@ An item returns to where its template puts it, even from a finished `item-fall` 
 
 ## Effect end trigger
 
-Fires when an effect finishes, so a game can follow one thing with another without matching times by hand.
+Fires when an effect finishes, so a game can follow one thing with another without matching times by hand. For one
+effect after another in a single rule, a [series](game-data.md#series-and-parallel-groups) is simpler; this trigger
+suits following any effect of a kind, eg. removing each spawned obstacle as its move ends.
 
 ```json
 [
@@ -299,7 +307,7 @@ Fires when an effect finishes, so a game can follow one thing with another witho
 
 - **How often:** once per element or player, as `animationEnd` does. `event.id` is the element's id, and `event.player` the player's number.
 - **Where:** it fires rules in the scene whose rule started the effect.
-- **When it doesn't fire:** if the effect was ended early by `stop`, or by its scene closing or resetting. An `"indefinite"` effect has no end.
+- **When it doesn't fire:** if the effect was ended early by `stop`, or by its scene closing or resetting, or if its element has been [despawned](game-data.md#spawn-and-despawn). An `"indefinite"` effect has no end.
 - **Reduced motion:** it still fires, as the effect has jumped to its end.
 - **Player effects:** `game.players.removed` has already changed by the time `player-fall` and `player-spin-away` fire this. `player-freeze` and `player-unfreeze` fire it at once.
 

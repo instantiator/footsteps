@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { SceneScope } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
-import { lastPointer, SCENE_RENDERED_EVENT, trackPointer, type ClientPoint } from "../../../util/PointerPosition";
+import { lastPointer, trackPointer, type ClientPoint } from "../../../util/PointerPosition";
 import type { CameraInteraction } from "../../camera/PlayerMonitor";
 import { MOUSE_FEET_INTERACTIONS } from "../logic/AvatarModeUtils";
 import { FLOOR_AREA_ATTRIBUTE } from "./FloorSurfaceClasses";
@@ -78,8 +78,8 @@ const landingInteractions = (interactions: readonly CameraInteraction[], from: b
 
 /**
  * The pointer as player 1's feet: what they are over, entering after a target's hold, and jumps by dragging.
- * Like the camera's monitor, what is already under the feet when a scene starts or resets enters it then
- * ({@link restand}), without the pointer having to move.
+ * Like the camera's monitor, what comes under feet that aren't moving (a scene starting or resetting, or an element
+ * moving under them) enters it ({@link restand}), without the pointer having to move.
  */
 export class MouseFeet {
   /** Targets the feet have entered. */
@@ -120,7 +120,7 @@ export class MouseFeet {
     this.standOn(targetsAt(this.rules, point));
   }
 
-  /** The feet stand again where the pointer rests, as when a scene has just rendered under it. */
+  /** The feet stand again where the pointer rests, as what is under it may have moved or rendered since. */
   restand(): void {
     const point = lastPointer();
     if (isDefined(point) && this.press?.airborne !== true) this.standOn(targetsAt(this.rules, point));
@@ -319,20 +319,23 @@ export function useMouseFeet(
     if (!enabled || paused || !viewport) return;
     const listeners = pointerListeners(feet, onPosition);
     const preventDefault = (event: Event) => event.preventDefault();
-    const restand = () => feet.restand();
     listeners.forEach(([type, listener]) => viewport.addEventListener(type, listener as EventListener));
-    viewport.addEventListener(SCENE_RENDERED_EVENT, restand);
     // A drag is a jump, not a dragged image or a text selection
     viewport.addEventListener("dragstart", preventDefault);
     viewport.addEventListener("selectstart", preventDefault);
-    // Stands where the pointer rests as the feet start, or start again after a pause
+    // Stands where the pointer rests as the feet start, or start again after a pause, and again each frame, as
+    // elements move under it and scenes render beneath it
     trackPointer();
-    restand();
+    feet.restand();
+    let frame = requestAnimationFrame(function restandEachFrame() {
+      feet.restand();
+      frame = requestAnimationFrame(restandEachFrame);
+    });
     return () => {
+      cancelAnimationFrame(frame);
       listeners.forEach(([type, listener]) => viewport.removeEventListener(type, listener as EventListener));
       viewport.removeEventListener("dragstart", preventDefault);
       viewport.removeEventListener("selectstart", preventDefault);
-      viewport.removeEventListener(SCENE_RENDERED_EVENT, restand);
       feet.stop();
     };
   }, [enabled, paused, viewportRef, feet, onPosition]);

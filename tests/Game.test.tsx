@@ -1,12 +1,12 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ComponentProps } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { GameData } from "../src/entities/data/GameData";
-import type { GameAction } from "../src/entities/data/scenes/GameSceneData";
+import type { GameAction, GameRule } from "../src/entities/data/scenes/GameSceneData";
 import { useGameState } from "../src/providers/GameStateHook";
 import Game from "../src/components/core/Game";
 import type GameLayersLayout from "../src/components/core/layout/GameLayersLayout";
-import { completeChallenge } from "../src/components/core/logic/GameStateUtils";
+import { completeChallenge, startSceneRuns } from "../src/components/core/logic/GameStateUtils";
 import { createBlankGameState } from "../src/entities/state/GameState";
 import { saveGameState } from "../src/entities/state/GameStateStorage";
 import { SMALL_GAME_ID, smallGame, smallRepository } from "./data/SmallGame";
@@ -386,6 +386,178 @@ describe("Game sounds and reward", () => {
       // Dropping them from the queue changed the state, and played nothing again
       expect(opened()).toHaveLength(1);
       expect(rewardSpy).toHaveBeenCalledTimes(1);
+    });
+
+    /**
+     * Stands in for the Web Animations API, which jsdom lacks: each animation finishes straight away, as one of no
+     * length does.
+     * @returns the ids of the elements animated, in order
+     */
+    const stubAnimations = (): string[] => {
+      const animated: string[] = [];
+      Element.prototype.animate = vi.fn<Element["animate"]>(function (this: Element) {
+        animated.push(this.id);
+        const animation = Object.assign(new EventTarget(), {
+          onfinish: null as Animation["onfinish"],
+          cancel: vi.fn(),
+          persist: vi.fn(),
+          finish: vi.fn(),
+        });
+        const finish = () => animation.onfinish as ((event: AnimationPlaybackEvent) => void) | null;
+        setTimeout(() => finish()?.(new Event("finish") as AnimationPlaybackEvent));
+        return animation as EventTarget & Pick<Animation, "cancel" | "persist" | "onfinish" | "finish"> as Animation;
+      });
+      onTestFinished(() => {
+        Reflect.deleteProperty(Element.prototype, "animate");
+      });
+      return animated;
+    };
+
+    describe("spawned copies", () => {
+      const STAGES = "overview:game-overview-stages";
+      const LANE =
+        '<p id="n">{{state.n}}</p><div id="lane"></div>' +
+        '<template id="ob"><i class="ob {{#if state.high}}bat{{else}}ball{{/if}}"></i></template>';
+
+      /** The stages overview, with the lane template, whose start rule does `actions`, with more rules after it. */
+      const renderLane = (actions: GameAction[], rules: GameRule[] = []) => {
+        const data = withEffects(actions);
+        data.scenes[0].component.foregroundTemplate = { sourceType: "embedded", content: LANE };
+        data.scenes[0].component.rules!.push(...rules);
+        function Controls() {
+          const { gameState, setGameState } = useGameState();
+          const state = gameState.sceneStates[STAGES] ?? {};
+          return (
+            <>
+              <output data-testid="state">{JSON.stringify(state)}</output>
+              <button onClick={() => setGameState((previous) => startSceneRuns(previous, [STAGES]))}>reset</button>
+            </>
+          );
+        }
+        const view = render(
+          <GameProviders repository={{ games: { [SMALL_GAME_ID]: data } }} gameId={SMALL_GAME_ID}>
+            <Game />
+            <Controls />
+          </GameProviders>,
+        );
+        const copies = () => Array.from(view.container.querySelectorAll("#lane > *"));
+        const state = () => JSON.parse(screen.getByTestId("state").textContent ?? "{}") as Record<string, unknown>;
+        return { copies, state };
+      };
+
+      it("starts a copy's move as it arrives, by its kind from the same rule's state, and removes it at the end", async () => {
+        const animated = stubAnimations();
+        const { copies, state } = renderLane(
+          [{ set: { high: "true" } }, { spawn: "#ob", into: "#lane", name: "obstacle" }],
+          [
+            {
+              on: { actionEnd: "obstacle", target: ".bat" },
+              do: [{ effect: "item-move", target: "event", end: { left: 0, top: 0 } }],
+            },
+            {
+              on: { effectEnd: "item-move", target: ".ob" },
+              do: [{ despawn: "event" }, { set: { gone: "event.id" } }],
+            },
+          ],
+        );
+        await vi.waitFor(() => expect(state().gone).toMatch(/^ob-\d+$/));
+        expect(animated).toEqual([state().gone]);
+        // The despawn plays from the queue just after the state that records it
+        await vi.waitFor(() => expect(copies()).toEqual([]));
+      });
+
+      it("keeps copies as the template re-renders, finds them by class, and loses them as the scene resets", async () => {
+        const { copies, state } = renderLane(
+          [{ spawn: "#ob", into: "#lane" }],
+          [
+            { on: { after: 100 }, do: [{ set: { n: "1" } }] },
+            { on: { interact: "mouse-enter", target: ".ob" }, do: [{ set: { hit: "event.id" } }] },
+          ],
+        );
+        await vi.waitFor(() => expect(copies()).toHaveLength(1));
+        const [copy] = copies();
+        expect(copy).toHaveClass("ball");
+        await vi.waitFor(() => expect(screen.getByText("1", { selector: "#n" })).toBeInTheDocument());
+        expect(copies()).toEqual([copy]);
+        fireEvent.mouseOver(copy);
+        await vi.waitFor(() => expect(state().hit).toBe(copy.id));
+
+        fireEvent.click(screen.getByText("reset"));
+        await vi.waitFor(() => expect(copy.isConnected).toBe(false));
+      });
+    });
+
+    it("runs a series of effects in order for players who prefer reduced motion, as each still ends", async () => {
+      setReducedMotion(true);
+      const animated = stubAnimations();
+      const data = withEffects([
+        {
+          series: [
+            { effect: "item-fall", target: "#a" },
+            { effect: "item-fall", target: "#b" },
+            { set: { done: "true" } },
+          ],
+        },
+      ]);
+      data.scenes[0].component.foregroundTemplate = { sourceType: "embedded", content: '<p id="a"></p><p id="b"></p>' };
+      function Done() {
+        const { gameState } = useGameState();
+        return (
+          <output data-testid="done">{String(gameState.sceneStates["overview:game-overview-stages"]?.done)}</output>
+        );
+      }
+      render(
+        <GameProviders repository={{ games: { [SMALL_GAME_ID]: data } }} gameId={SMALL_GAME_ID}>
+          <Game />
+          <Done />
+        </GameProviders>,
+      );
+      await vi.waitFor(() => expect(screen.getByTestId("done")).toHaveTextContent("true"));
+      expect(animated).toEqual(["a", "b"]);
+    });
+
+    describe("named, so rules follow their end", () => {
+      /** The stages overview's state, as the rules following the sound and reward set it. */
+      function Ended() {
+        const { gameState } = useGameState();
+        const { chimed, burst } = gameState.sceneStates["overview:game-overview-stages"] ?? {};
+        return <output data-testid="ended">{`chimed:${String(chimed)} burst:${String(burst)}`}</output>;
+      }
+      const renderNamed = () => {
+        const data = withEffects([
+          { sound: "opened", name: "chime" },
+          { reward: { animation: "stars" }, name: "burst" },
+        ]);
+        data.scenes[0].component.rules!.push(
+          { on: { actionEnd: "chime" }, do: [{ set: { chimed: "true" } }] },
+          { on: { actionEnd: "burst" }, do: [{ set: { burst: "true" } }] },
+        );
+        return render(
+          <GameProviders repository={{ games: { [SMALL_GAME_ID]: data } }} gameId={SMALL_GAME_ID}>
+            <Game />
+            <Ended />
+          </GameProviders>,
+        );
+      };
+      const chime = () =>
+        playback.play.mock.contexts.find(
+          (audio): audio is HTMLMediaElement => audio instanceof HTMLMediaElement && audio.src.endsWith("/opened.mp3"),
+        );
+
+      it("ends a sound once it has played, and a reward once it has shown", async () => {
+        setReducedMotion(false);
+        renderNamed();
+        await vi.waitFor(() => expect(screen.getByTestId("ended")).toHaveTextContent("chimed:undefined burst:true"));
+        act(() => chime()!.dispatchEvent(new Event("ended")));
+        await vi.waitFor(() => expect(screen.getByTestId("ended")).toHaveTextContent("chimed:true burst:true"));
+      });
+
+      it("ends a reward at once for players who prefer reduced motion, as it isn't shown", async () => {
+        setReducedMotion(true);
+        renderNamed();
+        await vi.waitFor(() => expect(screen.getByTestId("ended")).toHaveTextContent("burst:true"));
+        expect(rewardSpy).not.toHaveBeenCalled();
+      });
     });
 
     describe("with a target", () => {

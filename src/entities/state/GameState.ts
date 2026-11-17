@@ -3,7 +3,13 @@ import type { PublishedPositions } from "../../components/camera/PositionPublish
 import { GameOverviewPurposeSequence } from "../../components/core/logic/GameClickUtils";
 import { isDefined } from "../../util/ObjectUtils";
 import type { RuleEvent } from "../../components/core/logic/GameRuleUtils";
-import type { GameAction, GameFeedbackAction, GameOverviewScenePurpose } from "../data/scenes/GameSceneData";
+import type {
+  GameAction,
+  GameDespawnAction,
+  GameFeedbackAction,
+  GameOverviewScenePurpose,
+  GameSpawnAction,
+} from "../data/scenes/GameSceneData";
 import type { ResolvedEffect } from "../data/scenes/GameEffectData";
 import type { GameData } from "../data/GameData";
 import type { GameChallengeId } from "../data/GameChallengeData";
@@ -28,6 +34,8 @@ export interface QueuedEffect {
   scope: SceneScope;
   /** The event its rule fired with. */
   event: RuleEvent;
+  /** The running action that ends once it has played, if one waits on it. */
+  actionId?: number;
 }
 
 /** An action with a `delayMs`, waiting for the game to run it. Sounds and rewards are {@link QueuedEffect}s instead. */
@@ -46,6 +54,8 @@ export interface DelayedAction {
   event: RuleEvent;
   /** Where the action is in the game's rules, for error messages. */
   where: string;
+  /** The running action it starts once its wait is over, if it is one. */
+  actionId?: number;
 }
 
 /** An effect a rule has started, waiting for the game to play it. */
@@ -56,12 +66,37 @@ export interface QueuedVisualEffect {
   scope: SceneScope;
   /** Which run of the scene the rule fired in: it is dropped if the scene has moved on from it. */
   run: number;
-  /** What to play, its times worked out. */
-  effect: ResolvedEffect;
+  /** What to play, its times worked out: an effect, or a spawn or despawn. */
+  effect: ResolvedEffect | GameSpawnAction | GameDespawnAction;
   /** The event its rule fired with. */
   event: RuleEvent;
   /** Where the action is in the game's rules, for error messages. */
   where: string;
+  /** The running action that ends with it, if one waits on it. */
+  actionId?: number;
+}
+
+/**
+ * An action that something waits on: one with a `name`, or a group, or one in a group. It ends once what it started
+ * has finished, and then its name's `actionEnd` rules fire and its group moves on.
+ */
+export interface RunningAction {
+  /** Identifies it, from the same sequence as queued effects. */
+  id: number;
+  /** The scene whose rule started it. */
+  scope: SceneScope;
+  /** Which run of the scene: it is dropped, without ending, if the scene has moved on. */
+  run: number;
+  /** The action. */
+  action: GameAction;
+  /** The event its rule fired with. */
+  event: RuleEvent;
+  /** Where the action is in the game's rules, for error messages. */
+  where: string;
+  /** The group it is in, if any. */
+  parent?: number;
+  /** For a series: the index of the action running now. For a parallel group: how many are still running. */
+  progress?: number;
 }
 
 /** What lasts only while the game is open, and is never saved with its progress. */
@@ -74,6 +109,8 @@ export interface GameSession {
   visualEffects: QueuedVisualEffect[];
   /** Actions rules have delayed, until the game starts waiting for them. */
   delayedActions: DelayedAction[];
+  /** Named actions and groups that have started and not yet ended, by id. */
+  runningActions: Record<number, RunningAction>;
   /** How many players there are. Updated only as it changes, as an update re-renders the game. */
   players: PlayerCounts;
   /** Where each player stands, by number, quantised and rate-limited, as an update re-renders the game. */
@@ -103,6 +140,7 @@ export const newGameSession = (): GameSession => ({
   effects: [],
   visualEffects: [],
   delayedActions: [],
+  runningActions: {},
   players: NO_PLAYERS,
   playerPositions: {},
   nextEffectId: 1,

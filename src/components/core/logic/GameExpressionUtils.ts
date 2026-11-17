@@ -16,6 +16,11 @@ export interface ExpressionContext {
     interaction: string;
     /** The number of the player who fired the rule; 0 if no player did. */
     player: number;
+    /**
+     * The player's id in the registry, which (unlike their number) is never given to anyone else, so an effect that
+     * waits still reaches them. Absent if no tracked player fired the rule.
+     */
+    playerId?: number;
   };
 }
 

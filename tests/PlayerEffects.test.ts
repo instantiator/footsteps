@@ -155,6 +155,14 @@ describe("PlayerEffects", () => {
       expect(players.stateOf(ids[1])).toBe("leaving");
     });
 
+    it("finds the player who fired the rule by their id, so a number given to someone else since doesn't count", () => {
+      const { players, ids, effects } = withPlayers(2);
+      expect(effects.play(fall, run({ event: { ...NO_EVENT, player: 2, playerId: ids[0] } }))).toBe(1);
+      expect(ids.map((id) => players.stateOf(id))).toEqual(["leaving", "active"]);
+      expect(effects.play(fall, run({ event: { ...NO_EVENT, player: 2, playerId: 999 } }))).toBe(0);
+      expect(players.stateOf(ids[1])).toBe("active");
+    });
+
     it("does nothing and warns on a rule no player fired", () => {
       const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
       const { players, ids, effects } = withPlayers(1);

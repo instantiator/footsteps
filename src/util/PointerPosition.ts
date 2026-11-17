@@ -22,6 +22,3 @@ export const trackPointer = (): void => {
 
 /** Where the pointer last was over the page, if it is still over it. */
 export const lastPointer = (): ClientPoint | undefined => last;
-
-/** The event a scene's template container dispatches (bubbling) when it renders a new body: a new run, or its first. */
-export const SCENE_RENDERED_EVENT = "scene-rendered";

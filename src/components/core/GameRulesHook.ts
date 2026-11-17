@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+} from "react";
 import type { SceneScope, GameState } from "../../entities/state/GameState";
 import { useGameData } from "../../providers/GameDataHook";
 import { useGameState } from "../../providers/GameStateHook";
@@ -8,9 +17,12 @@ import { useGameEffects } from "./effects/GameEffectsHook";
 import type { PlayerEffects } from "./effects/PlayerEffects";
 import { useDelayedActions, useWhenRules } from "./RuleWaitsHook";
 import { leaveTitleScreen } from "./logic/GameClickUtils";
+import { endAction, type EndedWith } from "./logic/ActionRuns";
+import { EVENT_TARGET } from "./logic/RuleActions";
 import { targetsPlayers } from "./logic/GameEffectCompile";
 import { sceneRun } from "./logic/GameStateUtils";
 import {
+  actionsWithin,
   fireRules,
   matchSceneEvent,
   NO_EVENT,
@@ -28,6 +40,8 @@ import type { PublishedPositions } from "../camera/PositionPublisher";
 import {
   DEFAULT_INTERACTION_THRESHOLD,
   POINTER_INTERACTIONS,
+  type GameAction,
+  type GameSpawnAction,
   type GameTrigger,
 } from "../../entities/data/scenes/GameSceneData";
 
@@ -42,20 +56,41 @@ const isPointerInteraction = (interaction: string): boolean =>
  */
 const SELECTOR_CHECK_DELAY_MS = 2000;
 
-/** Warns about rules whose selectors match nothing in the scene, as that is usually a typo. */
+/** Warns about a spawn whose template isn't a `<template>` in the scene, or whose `into` matches nothing there. */
+const warnUnmatchedSpawn = (roots: Element[], { spawn, into }: GameSpawnAction, at: string): void => {
+  if (!roots.some((root) => root.querySelector(spawn) instanceof HTMLTemplateElement))
+    console.warn(`${at}.spawn: "${spawn}" matches no <template> in the scene`);
+  if (into !== EVENT_TARGET && !roots.some((root) => root.querySelector(into) !== null))
+    console.warn(`${at}.into: "${into}" matches nothing in the scene`);
+};
+
+/** Warns about an action whose target matches nothing in the scene. Players and `"event"` are found as they play. */
+const warnUnmatchedTarget = (scope: SceneScope, action: GameAction, at: string): void => {
+  const target = "target" in action ? action.target : undefined;
+  if (!isDefined(target) || target === EVENT_TARGET || targetsPlayers(target)) return;
+  if (resolveTargets(scope, target, []).length === 0)
+    console.warn(`${at}.target: "${target}" matches nothing in the scene`);
+};
+
+/**
+ * Warns about rules whose selectors match nothing in the scene, as that is usually a typo. A scene that spawns has
+ * elements that come and go, so only its spawns are checked.
+ * ponytail: all or nothing for a spawning scene; check against its templates' markup if typos there go unseen.
+ */
 const warnUnmatchedSelectors = (scene: ShownScene): void => {
   const roots = sceneRoots(scene.scope);
-  (scene.component.rules ?? []).forEach((rule, ruleIndex) => {
+  const rules = scene.component.rules ?? [];
+  const actions = rules.flatMap((rule, ruleIndex) => actionsWithin(rule.do, `${scene.scope} › rules[${ruleIndex}].do`));
+  const spawns = actions.flatMap(([action, at]) => ("spawn" in action ? [{ action, at }] : []));
+  spawns.forEach(({ action, at }) => warnUnmatchedSpawn(roots, action, at));
+  if (spawns.length > 0) return;
+  rules.forEach((rule, ruleIndex) => {
     const selector = "target" in rule.on ? rule.on.target : undefined;
     if (isDefined(selector) && !roots.some((root) => root.querySelector(selector) !== null)) {
       console.warn(`${scene.scope} › rules[${ruleIndex}].on.target: "${selector}" matches nothing in the scene`);
     }
-    rule.do.forEach((action, a) => {
-      const target = "target" in action ? action.target : undefined;
-      if (!isDefined(target) || targetsPlayers(target) || resolveTargets(scene.scope, target, []).length > 0) return;
-      console.warn(`${scene.scope} › rules[${ruleIndex}].do[${a}].target: "${target}" matches nothing in the scene`);
-    });
   });
+  actions.forEach(([action, at]) => warnUnmatchedTarget(scene.scope, action, at));
 };
 
 /** Most times a scene may reset within {@link RESTART_WINDOW_MS}, before it counts as a loop and is stopped. */
@@ -286,6 +321,26 @@ export interface GameRules {
   playerEffects: PlayerEffects;
   /** Gives rules and templates every player's position, in one change. */
   onPlayerPositions: (positions: PublishedPositions) => void;
+  /** Reports that a running action has ended, with the element it ended on, if any. */
+  onActionEnd: (actionId: number, ended?: EndedWith) => void;
+}
+
+/** The game's player registry, and how its counts and positions reach the session, for rules and templates. */
+function usePlayerSession(setGameState: Dispatch<SetStateAction<GameState>>) {
+  const [players] = useState(() => new PlayerRegistry());
+  useEffect(
+    () =>
+      players.onCounts((counts) =>
+        setGameState((state) => ({ ...state, session: { ...state.session, players: counts } })),
+      ),
+    [players, setGameState],
+  );
+  const onPlayerPositions = useCallback(
+    (positions: PublishedPositions) =>
+      setGameState((state) => ({ ...state, session: { ...state.session, playerPositions: positions } })),
+    [setGameState],
+  );
+  return { players, onPlayerPositions };
 }
 
 /**
@@ -301,19 +356,7 @@ export function useGameRules(): GameRules {
   const { gameId, expressions } = useGameData();
   const { gameState, setGameState } = useGameState();
   const env: RuleEnvironment = useMemo(() => ({ gameId, expressions }), [gameId, expressions]);
-  const [players] = useState(() => new PlayerRegistry());
-  useEffect(
-    () =>
-      players.onCounts((counts) =>
-        setGameState((state) => ({ ...state, session: { ...state.session, players: counts } })),
-      ),
-    [players, setGameState],
-  );
-  const onPlayerPositions = useCallback(
-    (positions: PublishedPositions) =>
-      setGameState((state) => ({ ...state, session: { ...state.session, playerPositions: positions } })),
-    [setGameState],
-  );
+  const { players, onPlayerPositions } = usePlayerSession(setGameState);
   const stateRef = useRef(gameState);
   useEffect(() => {
     stateRef.current = gameState;
@@ -323,11 +366,15 @@ export function useGameRules(): GameRules {
     (scope, pick) => setGameState((previous) => fireRules(env, previous, scope, pick)),
     [env, setGameState],
   );
+  const onActionEnd = useCallback(
+    (actionId: number, ended?: EndedWith) => setGameState((previous) => endAction(env, previous, actionId, ended)),
+    [env, setGameState],
+  );
   useSceneLifecycles(env, gameState, stateRef, fire);
   const mouseHolds = useMouseHolds(gameState, stateRef, fire);
   useWhenRules(env, gameState, setGameState, fire);
   useDelayedActions(env, gameState, setGameState);
-  const playerEffects = useGameEffects(gameState, { stateRef, setGameState, fire, players });
+  const playerEffects = useGameEffects(gameState, { stateRef, setGameState, fire, players, onActionEnd });
 
   /** Fires a scene's rules for an event in its template. A click no rule takes moves on from the title screen. */
   const onSceneEvent = useCallback(
@@ -349,13 +396,15 @@ export function useGameRules(): GameRules {
     [fire, setGameState, mouseHolds],
   );
 
-  /** Fires the camera rule that watches the element the player interacted with. */
+  /** Fires the camera rule that watches the element the player interacted with, naming the player for good. */
   const onPlayerInteraction = useCallback(
-    ({ scope, ruleIndex, element, interaction, player }: CameraRuleEvent) =>
-      fire(scope, (_, index) => (index === ruleIndex ? { id: element?.id ?? "", interaction, player } : undefined)),
-    [fire],
+    ({ scope, ruleIndex, element, interaction, player }: CameraRuleEvent) => {
+      const event = { id: element?.id ?? "", interaction, player, playerId: players.idOf(player) };
+      fire(scope, (_, index) => (index === ruleIndex ? event : undefined));
+    },
+    [fire, players],
   );
 
   const cameraRules = useMemo(() => getCameraRules(gameState), [gameState]);
-  return { onSceneEvent, cameraRules, onPlayerInteraction, players, playerEffects, onPlayerPositions };
+  return { onSceneEvent, cameraRules, onPlayerInteraction, players, playerEffects, onPlayerPositions, onActionEnd };
 }

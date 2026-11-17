@@ -243,6 +243,30 @@ export interface GameStartTrigger {
   start: true;
 }
 
+/** A named action starting, in any shown scene, once any `delayMs` of its own is over. */
+export interface GameActionStartTrigger {
+  /** The action's `name`. */
+  actionStart: string;
+}
+
+/**
+ * A named action ending, in any shown scene: see each action for when it ends. Not when its scene closes or resets
+ * first. `event` is the one the action ran with, except that a spawn's end gives the copy, and an effect's end the
+ * element it ended on.
+ */
+export interface GameActionEndTrigger {
+  /** The action's `name`. */
+  actionEnd: string;
+  /** CSS selector: only fire if the element the action ended with matches, eg. a spawned copy. Defaults to any. */
+  target?: string;
+}
+
+/** An event raised by a `raise` action, in any shown scene. */
+export interface GameRaisedTrigger {
+  /** The event's name. */
+  raised: string;
+}
+
 /** What makes a rule fire. */
 export type GameTrigger =
   | GameInteractTrigger
@@ -252,7 +276,10 @@ export type GameTrigger =
   | GameWhenTrigger
   | GameEveryTrigger
   | GameAfterTrigger
-  | GameStartTrigger;
+  | GameStartTrigger
+  | GameActionStartTrigger
+  | GameActionEndTrigger
+  | GameRaisedTrigger;
 
 /** A time in milliseconds: a number, or an expression worked out when it is needed. */
 export type GameTime = number | GameExpressionSource;
@@ -261,9 +288,11 @@ export type GameTime = number | GameExpressionSource;
 export interface GameActionBase {
   /**
    * Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later
-   * actions don't wait for it.
+   * actions in a plain `do` list don't wait for it.
    */
   delayMs?: GameTime;
+  /** A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`). */
+  name?: string;
 }
 
 /** Sets state keys to the values of expressions, all evaluated against the state before the action. */
@@ -330,6 +359,46 @@ export interface GameEnterStageAction extends GameActionBase {
   enterStage: GameStageId;
 }
 
+/**
+ * Runs actions one after another: each starts when the one before it has ended, and the series ends with the last.
+ * A `delayMs` inside waits from when that action's turn comes. If its scene closes or resets, the rest are dropped.
+ */
+export interface GameSeriesAction extends GameActionBase {
+  /** The actions, in order. */
+  series: GameAction[];
+}
+
+/** Runs actions together, as a plain `do` list does; the group ends when the last of them has ended. */
+export interface GameParallelAction extends GameActionBase {
+  /** The actions. */
+  parallel: GameAction[];
+}
+
+/**
+ * Adds a copy of a `<template>`'s content (its first element) to an element of the scene, so any number can be on
+ * screen at once. The copy gets an `id` (`<template id>-<n>`) unless its markup gives one, and is found by selector
+ * like any other element. Copies go when their scene closes or resets, and aren't saved. Ends once the copy is in
+ * place, with the copy as `event` for `actionEnd`. At most 100 copies can be in a scene at once.
+ */
+export interface GameSpawnAction extends GameActionBase {
+  /** CSS selector for the `<template>`. */
+  spawn: string;
+  /** CSS selector for the element the copy goes in, at its end; `"event"` for the element the rule fired for. */
+  into: string;
+}
+
+/** Removes spawned copies; elements that weren't spawned stay. Ends at once. */
+export interface GameDespawnAction extends GameActionBase {
+  /** CSS selector for the copies; `"event"` for the element the rule fired for. */
+  despawn: string;
+}
+
+/** Raises a named event, which `raised` rules in every shown scene hear. Ends at once. */
+export interface GameRaiseAction extends GameActionBase {
+  /** The event's name. */
+  raise: string;
+}
+
 /** Something a rule does. */
 export type GameAction =
   | GameSetAction
@@ -338,6 +407,11 @@ export type GameAction =
   | GameAnswerAction
   | GameResetChallengeAction
   | GameEnterStageAction
+  | GameRaiseAction
+  | GameSeriesAction
+  | GameParallelAction
+  | GameSpawnAction
+  | GameDespawnAction
   | GameFinishResetAction
   | GameSoundAction
   | GameRewardAction
