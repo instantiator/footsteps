@@ -73,3 +73,53 @@
 .setup-warnings {
   color: var(--setup-warning);
 }
+
+.setup-illustration {
+  width: 100%;
+  margin-top: 16px;
+  font-size: 0.16px;
+}
+
+.setup-illustration line,
+.setup-illustration polygon,
+.setup-illustration circle {
+  vector-effect: non-scaling-stroke;
+  stroke-width: 1.5px;
+}
+
+.setup-room {
+  fill: none;
+  stroke: var(--setup-room);
+  stroke-dasharray: 4 3;
+}
+
+.setup-floor {
+  fill: var(--setup-floor);
+  stroke: var(--setup-room);
+}
+
+.setup-camera line,
+.setup-camera circle {
+  stroke: var(--setup-camera);
+  fill: var(--setup-camera);
+}
+
+.setup-camera .setup-ray {
+  stroke-dasharray: 2 2;
+}
+
+.setup-player line,
+.setup-player circle {
+  stroke: var(--setup-player);
+  fill: var(--setup-player);
+}
+
+.setup-dimension line {
+  stroke: currentColor;
+  stroke-width: 1px;
+}
+
+.setup-dimension text {
+  fill: currentColor;
+  text-anchor: middle;
+}

@@ -1,6 +1,7 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { Link } from "react-router";
 import NumberField from "../components/setup/NumberField";
+import SetupIllustration from "../components/setup/SetupIllustration";
 import {
   DEFAULT_SETUP_CONSTANTS,
   DEFAULT_SETUP_INPUTS,
@@ -110,14 +111,15 @@ const metres = (value: number) => `${value.toFixed(2)} m`;
 export default function SetupPlanner() {
   const [values, setValues] = useState<FormValues>(DEFAULT_SETUP_INPUTS);
   const [constants, setConstants] = useState<SetupConstants>(DEFAULT_SETUP_CONSTANTS);
+  const inputs = useMemo(() => inputsOf(values), [values]);
   const plan = useMemo(() => {
     try {
-      return planSetup(inputsOf(values), constants);
+      return planSetup(inputs, constants);
     } catch (error) {
       if (error instanceof RangeError) return error.message;
       throw error;
     }
-  }, [values, constants]);
+  }, [inputs, constants]);
 
   return (
     <div className="setup-planner">
@@ -132,8 +134,14 @@ export default function SetupPlanner() {
           <ConstantFields constants={constants} setConstants={setConstants} />
         </div>
         <div>
-          {typeof plan === "string" ? <p className="setup-warning">{plan}</p> : <Results plan={plan} />}
-          <div id="setup-illustration" />
+          {typeof plan === "string" ? (
+            <p className="setup-warning">{plan}</p>
+          ) : (
+            <>
+              <Results plan={plan} />
+              <SetupIllustration plan={plan} inputs={inputs} />
+            </>
+          )}
         </div>
       </div>
     </div>
