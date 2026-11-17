@@ -12,6 +12,7 @@ import { installCameraDrawCounter } from "./fixtures/cameraDraws";
 import { installFakeCamera } from "./fixtures/fakeCamera";
 import { peoplePhotoUrls } from "./fixtures/people/people";
 import type { GameRepository } from "../../src/entities/GameRepository";
+import type { GameSpectatorsData } from "../../src/entities/data/scenes/GameSpectatorsData";
 
 /** The floor the demo shows with the default calibration, unmirrored, as a new camera choice is, in its scene box. */
 const VIEW: FloorView = {
@@ -24,10 +25,12 @@ const VIEW: FloorView = {
  * Leaves out Walk around's start and its spring, which the fake camera's person can't step on or off: they would
  * hold the room back, or reset it again and again.
  */
-const withoutStartOrSpring = async (page: Page) => {
+const withoutStartOrSpring = async (page: Page, spectators?: GameSpectatorsData) => {
   await page.route("**/game-repository.json", async (route) => {
     const response = await route.fetch();
     const repository = (await response.json()) as GameRepository;
+    const game = repository.games["rules-demo"];
+    if (spectators) game.modules = { ...game.modules, spectators };
     const scene = repository.games["rules-demo"].stages
       .find((stage) => stage.id === "depth")!
       .challenges.find((challenge) => challenge.id === "walk-around")!.scenes[0];
@@ -43,14 +46,22 @@ const withoutStartOrSpring = async (page: Page) => {
  * Opens the demo's "Walk around" stage, past its scroll: with a camera, a fake one showing a person; without one, by
  * mouse-feet, standing on the start.
  */
-const openWalkAround = async (page: Page, { camera = true, query = "" } = {}) => {
+const openWalkAround = async (
+  page: Page,
+  {
+    camera = true,
+    query = "",
+    corners = DEFAULT_CORNERS,
+    spectators = undefined as GameSpectatorsData | undefined,
+  } = {},
+) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   if (camera) {
     await page.context().grantPermissions(["camera"]);
     await installFakeCamera(page, peoplePhotoUrls());
     await installCameraDrawCounter(page);
-    await seedCalibration(page);
-    await withoutStartOrSpring(page);
+    await seedCalibration(page, corners);
+    await withoutStartOrSpring(page, spectators);
   }
   const params = new URLSearchParams(query);
   if (!camera) params.set("noCamera", "true");
@@ -369,3 +380,27 @@ for (const screen of [
     await expect.poll(() => screenCovered(page)).toEqual(allCovered);
   });
 }
+
+/** A floor across the top of the picture, so the photo's person, two thirds of the way down, stands off it. */
+const FLOOR_BEHIND_THE_PERSON = {
+  backLeft: { x: 0.25, y: 0.1 },
+  backRight: { x: 0.75, y: 0.1 },
+  frontRight: { x: 0.9, y: 0.3 },
+  frontLeft: { x: 0.1, y: 0.3 },
+};
+
+test("hides a person standing off the floor, as a spectator", async ({ page }) => {
+  await openWalkAround(page, { corners: FLOOR_BEHIND_THE_PERSON, spectators: { show: "hidden" } });
+  const player = page.locator("#character-canvas-container .player").first();
+  await expect(player).toBeAttached({ timeout: MODEL_TIMEOUT });
+  await expect(player).toBeHidden();
+});
+
+test("draws a spectator with their look, when the game shows them", async ({ page }) => {
+  const spectators: GameSpectatorsData = { show: "shown", look: { opacity: 0.4, filter: "grayscale(1)" } };
+  await openWalkAround(page, { corners: FLOOR_BEHIND_THE_PERSON, spectators });
+  const player = page.locator("#character-canvas-container .player[data-spectator]").first();
+  await expect(player).toBeVisible({ timeout: MODEL_TIMEOUT });
+  await expect(player).toHaveCSS("opacity", "0.4");
+  await expect(player).toHaveCSS("filter", "grayscale(1)");
+});

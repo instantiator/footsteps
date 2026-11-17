@@ -93,6 +93,14 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+/** A floor whose front edge is the frame's bottom, where the fake people stand. */
+const FRAME_FLOOR = {
+  backLeft: { x: 0, y: 0.5 },
+  backRight: { x: 1, y: 0.5 },
+  frontRight: { x: 1, y: 1 },
+  frontLeft: { x: 0, y: 1 },
+};
+
 describe("CharacterCanvas", () => {
   it("reports one player per person found, with their mask and feet", async () => {
     const onPlayersChange = vi.fn<(players: PlayerFrame[], timestamp: number) => void>();
@@ -117,17 +125,20 @@ describe("CharacterCanvas", () => {
     expect(onPlayersChange.mock.calls[0][0][0].position).toEqual({ x: 50, y: 100 });
 
     rerender(
-      <CharacterCanvas
-        video={video}
-        mediaStream={mediaStream}
-        onPlayersChange={onPlayersChange}
-        floor={DEFAULT_CORNERS}
-      />,
+      <CharacterCanvas video={video} mediaStream={mediaStream} onPlayersChange={onPlayersChange} floor={FRAME_FLOOR} />,
     );
     await act(async () => runNextFrame());
     await waitFor(() => expect(onPlayersChange).toHaveBeenCalledTimes(2));
-    const expected = positionMapping(DEFAULT_CORNERS, false)({ x: 0.5, y: 1 });
+    const expected = positionMapping(FRAME_FLOOR, false)({ x: 0.5, y: 1 });
     expect(onPlayersChange.mock.calls[1][0][0].position).toEqual(expected);
+  });
+
+  it("leaves out people standing off the floor, as spectators", async () => {
+    const onPlayersChange = vi.fn<(players: PlayerFrame[], timestamp: number) => void>();
+    // The default floor's front edge is above the frame's bottom, where the fake people stand
+    renderCanvas({ onPlayersChange, floor: DEFAULT_CORNERS });
+    await waitFor(() => expect(onPlayersChange).toHaveBeenCalled());
+    expect(onPlayersChange.mock.calls[0][0]).toEqual([]);
   });
 
   it.each([true, false])("shows the frame-rate readout only when asked (%s)", async (showStats) => {

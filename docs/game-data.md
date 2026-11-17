@@ -76,6 +76,32 @@ resolves most specific first: `2.5D` if any active challenge sets it, else `2D` 
 `shared` scene, the overview scene, the game's `modules`, and finally `2D`. A reset scene's setting is over its
 parent's. Nanny's Magic Trifle and Demo scenes (2.5D) are `2.5D` games; Demo (no camera) and Jump and duck (2D) are `2D`.
 
+#### Spectators
+
+In a `2.5D` scene, someone the camera sees standing off the floor is a **spectator**, not a player: they fire no
+interactions, have no position, and don't count in `game.players`. They keep their player number, and play again as
+they step back on ([player tracking](player-tracking.md#spectators)). `modules.spectators` sets how they show, and any
+scene or reset scene can override it key by key with its own `spectators`. The first active challenge with a setting
+wins, over the stage's `shared` scene, the overview scene, and the game's.
+
+```json
+"spectators": {
+  "show": "shown",
+  "look": { "opacity": 0.3, "filter": "grayscale(calc(var(--spectator-strength) * 100%))" },
+  "fade": { "to": 30 }
+}
+```
+
+| Key             | Meaning                                                                                                                                                                                                                                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `show`          | `hidden` (the default) doesn't draw spectators. `shown` draws them with their `look`.                                                                                                                                                                                                            |
+| `look`          | Any of `opacity` (0–1), a CSS `filter`, and `static` (the proportion of their image made static, 0–1, as [`player-static`](special-effects.md#static) does). `--spectator-strength` (0–1) is set beside the filter, so it can follow the fade. A shown spectator's wrapper has `data-spectator`. |
+| `fade`          | How the look's strength follows how far outside the floor they stand, in floor units: none at `from` (the spectator margin, 5, by default), full at `to`, eased between. Without it, the look is at full strength.                                                                               |
+| `resetOnReturn` | `true` resets the scene's challenge when a spectator steps back on the floor more than 25 floor units from where they left it, so walking round the outside can't skip part of it. Off by default.                                                                                               |
+
+The debug view draws spectators like anyone else. Demo scenes (2.5D) shows spectators faded and grey, and resets
+"Cross the floor" if someone walks round the pits.
+
 #### Floor-placed items
 
 Every room's calibration differs, so items can't be hand-placed on the floor. Instead, give an item in a template
@@ -449,7 +475,7 @@ See [how filtrex works](filtrex.md) for the syntax and why it is safe.
 | `mouse-exit`                                                   | Moves the mouse off the element, or the element moves out from under it       |
 | `hand-enter`                                                   | Puts either hand over the element                                             |
 | `foot-enter`                                                   | Puts either foot over the element                                             |
-| `head-enter`                                                   | Puts either side of their face over the element                               |
+| `head-enter`                                                   | Puts their head over the element                                              |
 | `body-enter`                                                   | Covers the element with their whole silhouette                                |
 | `any-enter`                                                    | Covers it with any single body part                                           |
 | `hand-exit`, `foot-exit`, `head-exit`, `body-exit`, `any-exit` | Stops doing the matching `-enter`, or leaves the camera's view while doing it |
@@ -526,7 +552,7 @@ The **`template`** type renders those templates and nothing more. The **`dialog`
 
 - `text`
 - `showInput` and `label`: an answer box that checks the challenge's solution as the player types
-- `media`: a `GameSceneMediaData` audio clip, with optional `stillImageResource` and `motionImageResource` images that play and stop it
+- `media`: a `GameSceneMediaData` audio clip, with optional `stillImageResource` and `motionImageResource` images that play and stop it, and an `audioDescription` for screen readers (default "audio")
 
 Without its own templates, a dialog or scroll shows the page text one paragraph per line. The text scrolls if it doesn't fit, and the page's audio, answer box and page arrows stay in view below it.
 

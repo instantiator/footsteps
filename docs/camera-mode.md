@@ -184,7 +184,7 @@ enlarges, so they work unchanged.
   It can be hidden with `preview: false`.
 - **The game's artwork** behind them, and a challenge's foreground in front of them, or around them if its items are
   [on the floor](#sorting-players-among-floor-items) of a 2.5D scene.
-- **The HUD** in the top-right: "Close challenge", "To title", and the fullscreen button.
+- **The HUD** in the top-right: **Menu**, "Close challenge", "To title", and the fullscreen button ([the HUD](game-play.md#the-hud)).
 
 An ordinary scene change fades the old scene out over 1s, swaps, then fades the new one in over
 1s. When camera mode turns on or off, the game view instead eases between the container's shape and
@@ -325,20 +325,21 @@ The trigger names the elements (any CSS selector), which interactions it accepts
 must be inside an element. `threshold` defaults to `1`. Any scene that is showing can have them, including a
 stage's shared scene and its challenges.
 
-| Interaction                                                    | Detected from                                       |
-| -------------------------------------------------------------- | --------------------------------------------------- |
-| `click`                                                        | A mouse click, or Enter/Space on a focused element  |
-| `mouse-enter`                                                  | The mouse moving onto the element (not the camera)  |
-| `mouse-exit`                                                   | The mouse moving off the element (not the camera)   |
-| `hand-enter`                                                   | Either hand                                         |
-| `foot-enter`                                                   | Either foot                                         |
-| `head-enter`                                                   | The head                                            |
-| `body-enter`                                                   | The whole silhouette                                |
-| `any-enter`                                                    | Any single body part, or the whole silhouette       |
-| `hand-exit`, `foot-exit`, `head-exit`, `body-exit`, `any-exit` | The matching `-enter` no longer holding             |
-| `jump`                                                         | A jump that takes off from and lands on the element |
-| `jump-from`                                                    | A jump that takes off from the element              |
-| `jump-onto`                                                    | A jump that lands on the element                    |
+| Interaction                                                    | Detected from                                                                                         |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `click`                                                        | A mouse click, or Enter/Space on a focused element                                                    |
+| `mouse-enter`                                                  | The mouse moving onto the element (not the camera)                                                    |
+| `mouse-exit`                                                   | The mouse moving off the element (not the camera)                                                     |
+| `hand-enter`                                                   | Either hand                                                                                           |
+| `foot-enter`                                                   | Either foot                                                                                           |
+| `head-enter`                                                   | The head                                                                                              |
+| `body-enter`                                                   | The whole silhouette                                                                                  |
+| `any-enter`                                                    | Any single body part, or the whole silhouette                                                         |
+| `hand-exit`, `foot-exit`, `head-exit`, `body-exit`, `any-exit` | The matching `-enter` no longer holding                                                               |
+| `jump`                                                         | A jump that takes off from and lands on the element                                                   |
+| `jump-from`                                                    | A jump that takes off from the element                                                                |
+| `jump-onto`                                                    | A jump that lands on the element                                                                      |
+| `near-enter`, `near-exit`                                      | The silhouette coming within, or leaving, `within` of the element ([near](game-data.md#interactions)) |
 
 A **body part** is a region of the player's silhouette. A hand or foot is a disc around its key point, scaled to
 the player's head; the head is the box its top, bottom and sides span; the body is the whole silhouette. A
@@ -390,7 +391,7 @@ ignore whatever holds on their first frame, so a held hand cannot fire as the ne
 ### From frame to event
 
 `CharacterCanvas` calls `onPlayersChange` once per frame with every player's mask, key points and feet,
-and the frame's timestamp. Each frame, `usePlayerInteractions` runs every camera rule's selector inside its
+and the frame's timestamp. [Spectators](player-tracking.md#spectators) are left out. Each frame, `usePlayerInteractions` runs every camera rule's selector inside its
 scene's templates (found by `data-scene-scope`), so elements can appear, move and disappear between frames. It
 builds a mask-space rectangle for each element, keeps one `PlayerMonitor` per player, and passes the monitors'
 events to `useGameRules`. The rectangle conversion mirrors the x axis if the canvas is mirrored, and
@@ -405,7 +406,7 @@ counts as new, so give an `id` to elements whose interactions should carry over.
 In the HUD's **Menu**, **Debug on** switches the debug aids on, and **Debug off** off again. They start off, unless the URL
 has `?debug=true` (the [`debug` setting](configuration.md)). In camera mode they:
 
-- tint each player differently;
+- tint each player differently, and draw [spectators](player-tracking.md#spectators) like any other player;
 - mark each player's head, hands and feet, with the same drawing as the calibration page. In a 2.5D scene, the floor is
   outlined, and each foot is green on it and red off it. A player the tracker is holding while they are missed is
   marked faded (they can't interact until found again);
@@ -431,12 +432,13 @@ toggling it.
 | `src/components/camera/PlayerRegistry.ts`             | stable player ids and numbers, player states, and notes of lost players; see [player tracking](player-tracking.md) |
 | `src/components/camera/PlayerStatic.ts`               | how a player's static changes over time                                                                            |
 | `src/components/camera/PlayerPosition.ts`             | each player's ground point, held through jumps, and their position on the floor or in the scene                    |
+| `src/components/camera/Spectators.ts`                 | who is a [spectator](player-tracking.md#spectators), off the floor, and who has returned elsewhere                 |
 | `src/components/camera/PositionPublisher.ts`          | players' positions for rules and templates: quantised, with hysteresis, rate-limited                               |
 | `src/components/core/layout/FloorPlacement.ts`        | placing, scaling and sorting floor items, kept through re-renders; the debug warning for targets off the floor     |
 | `src/components/core/layout/FloorSurfacePlacement.ts` | drawing floor surfaces onto the screen with a `matrix3d`, sizing their boxes, and their painting order             |
 | `src/components/camera/CharacterCanvas.tsx`           | tracking loop; draws the silhouettes; reports players and feet; the stats readout                                  |
 | `src/components/camera/DrawPeople.ts`                 | cuts the people out of the video, and tints them for debugging                                                     |
-| `src/components/camera/DrawPlayers.ts`                | draws each player on their canvas, frozen or with static, sorted to their floor depth                              |
+| `src/components/camera/DrawPlayers.ts`                | draws each player on their canvas, frozen or with static, sorted to their floor depth; hides or styles spectators  |
 | `src/components/camera/PlayerMonitor.ts`              | turns body-part coverage and feet into edge-triggered interactions                                                 |
 | `src/components/camera/JumpDetector.ts`               | follows a player's feet for jumps                                                                                  |
 | `src/components/camera/CameraSupport.ts`              | camera request and feet position                                                                                   |
@@ -452,7 +454,7 @@ toggling it.
 | `src/vision/Tracking.ts`                              | stable player ids, key-point smoothing, holding lost players, and filling gaps                                     |
 | `src/vision/models/`                                  | BodyPix, MediaPipe Pose and MoveNet, and the tfjs backend choice                                                   |
 | `src/vision/VisionWorkerProxy.ts`, `vision.worker.ts` | runs a model in a web worker                                                                                       |
-| `src/components/core/logic/AvatarModeUtils.ts`        | per-scene avatar mode resolution, and what each mode can fire                                                      |
+| `src/components/core/logic/AvatarModeUtils.ts`        | per-scene avatar mode and spectator settings resolution, and what each mode can fire                               |
 | `src/components/core/layout/MouseFeetHook.ts`         | [mouse-feet](#mouse-feet): the pointer as player 1's feet, and drags as jumps                                      |
 | `src/components/core/logic/GameClickUtils.ts`         | targets, and the state changes for clicks and interactions                                                         |
 | `src/components/core/layout/GameLayersLayout.tsx`     | the layer stack, scene transitions, shared camera state, and the interaction hook                                  |
@@ -463,12 +465,12 @@ toggling it.
 
 ## Testing
 
-Unit tests cover the camera choice (`tests/CameraPicker.test.tsx`), player depth (`tests/Depth.test.ts`), per-player
+Unit tests cover the camera choice (`tests/CameraPicker.test.tsx`), player depth (`tests/PlayerPosition.test.ts`), per-player
 canvases (`tests/PlayerCanvases.test.ts`), the avatar mode resolution (`tests/AvatarModeUtils.test.ts`), mouse-feet (`tests/MouseFeetHook.test.tsx`), the monitor and its jump
 interactions (`tests/PlayerMonitor.test.ts`), jump detection (`tests/JumpDetector.test.ts`), feet (`tests/CameraSupport.test.ts`), the floor geometry and mask rectangles (`tests/FloorGeometry.test.ts`), saved
 floors (`tests/FloorCalibration.test.ts`), the floor overlay (`tests/FloorOverlay.test.tsx`), the calibration page
 (`tests/CalibrationView.test.tsx`), the
-tracking loop (`tests/CharacterCanvas.test.tsx`), the config (`tests/AppConfig*.test.ts*`), each vision
+tracking loop (`tests/CharacterCanvas.test.tsx`), spectators (`tests/Spectators.test.ts`, `tests/DrawPlayers.test.ts`), the config (`tests/AppConfig*.test.ts*`), each vision
 model and the worker proxy (`tests/*Model.test.ts`, `tests/VisionWorkerProxy.test.ts`), the body-part
 queries and tracking (`tests/VisionQueries.test.ts`, `tests/Tracking.test.ts`), and the layout and game
 wiring, including the scene fades and camera reshape timings, waiting for a camera shape, and reduced

@@ -158,8 +158,11 @@ export class PersonTracker {
     this.fillGaps = fillGaps;
   }
 
-  /** The frame with each person's id made stable and their key points smoothed, and anyone held added. */
-  update(frame: VisionFrame): VisionFrame {
+  /**
+   * The frame with each person's id made stable and their key points smoothed, and anyone held added.
+   * @param noFill the ids of tracks not worth filling, as nobody plays with them (eg. spectators)
+   */
+  update(frame: VisionFrame, noFill: ReadonlySet<number> = new Set()): VisionFrame {
     const { width, timestamp } = frame;
     const timeout = Math.max(TRACK_TIMEOUT_MS, this.hold.holdMs + this.hold.fadeMs);
     this.tracks = this.tracks.filter((track) => timestamp - track.lastSeen <= timeout);
@@ -174,7 +177,10 @@ export class PersonTracker {
         track = { id: this.nextId++, centre: { x: 0, y: 0 }, lastSeen: timestamp, last: person, detected, filters: {} };
         this.tracks.push(track);
       }
-      const filled = this.fillGaps && owners.has(index) ? this.fill(person, track, centres[index], width) : undefined;
+      const filled =
+        this.fillGaps && owners.has(index) && !noFill.has(track.id)
+          ? this.fill(person, track, centres[index], width)
+          : undefined;
       track.centre = centres[index] ?? track.centre;
       track.lastSeen = timestamp;
       const keyPoints = this.smooth(track, person.keyPoints, timestamp);

@@ -9,6 +9,7 @@ import type {
   GamePlayerStaticEffect,
 } from "../../../entities/data/scenes/GameEffectData";
 import type { SceneScope } from "../../../entities/state/GameState";
+import { isDefined } from "../../../util/ObjectUtils";
 import { centreOf } from "../../../vision/Tracking";
 import type { PlayerRegistry } from "../../camera/PlayerRegistry";
 import { PlayerStatic } from "../../camera/PlayerStatic";
@@ -68,7 +69,7 @@ const chosenIds = (
   players: PlayerRegistry,
   where: string,
 ): number[] => {
-  if (choice === "all") return Array.from(players.knownIds());
+  if (choice === "all") return players.playingIds();
   if (event.player === 0) {
     console.warn(`${where}: no player fired this rule, so there's nobody for it to apply to; try players: "all"`);
     return [];
@@ -126,6 +127,12 @@ export class PlayerEffects {
       return;
     }
     this.restore(id, wrapper);
+  }
+
+  /** The wrappers of the chosen players: everyone playing, or the one with this number. */
+  wrappersOf(choice: GamePlayerChoice, number: number): HTMLElement[] {
+    const numbers = choice === "all" ? this.players.playingIds().map((id) => this.players.numberOf(id)) : [number];
+    return numbers.map(wrapperOfNumber).filter(isDefined);
   }
 
   /** Where on screen the centre of a player's body is, given the wrapper around their canvas. */

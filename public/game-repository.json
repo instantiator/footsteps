@@ -1226,7 +1226,15 @@
       "id": "rules-demo",
       "title": "Demo scenes (2.5D)",
       "description": "Pop balloons, dodge the pits, walk around a room with a tiled floor, walls and hills, and hop the stones over a floor of lava: a demonstration of 2.5D scenes, rules and state, by camera, or by mouse without one.",
-      "modules": { "scene": "2.5D", "avatar": { "mode": "mouse" } },
+      "modules": {
+        "scene": "2.5D",
+        "avatar": { "mode": "mouse" },
+        "spectators": {
+          "show": "shown",
+          "look": { "opacity": 0.3, "filter": "grayscale(calc(var(--spectator-strength) * 100%))" },
+          "fade": { "to": 30 }
+        }
+      },
       "config": { "sequential": false, "autoAdvanceStages": false },
       "stylesheets": ["demo-css"],
       "resources": {
@@ -1394,6 +1402,7 @@
                 {
                   "purpose": "challenge-in-progress",
                   "avatar": { "mode": "camera", "fallback": "mouse-feet" },
+                  "spectators": { "resetOnReturn": true },
                   "component": {
                     "type": "template",
                     "data": {},

@@ -4,7 +4,7 @@ import { useMediaQuery } from "@uidotdev/usehooks";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { GameOverviewScenePurpose } from "../../entities/data/scenes/GameSceneData";
 import type { GameChallengeId } from "../../entities/data/GameChallengeData";
-import type { GameRewardData } from "../../entities/data/GameData";
+import type { GameData, GameRewardData } from "../../entities/data/GameData";
 import type { GameChallengeAnswerValidation } from "../../entities/data/GameChallengeSolution";
 import type { GameStageId } from "../../entities/data/GameStageData";
 import type { SceneScope, GameState, QueuedEffect } from "../../entities/state/GameState";
@@ -15,16 +15,22 @@ import { useGameState } from "../../providers/GameStateHook";
 import { PlayerRegistryContext } from "../../providers/PlayerRegistryContext";
 import { isDefined } from "../../util/ObjectUtils";
 import GameSceneComponent, { type LayerHint } from "./scene/GameSceneComponent";
-import { centreOnScreen, playerWrappers, resolveTargets } from "./effects/EffectTargets";
+import { centreOnScreen, resolveTargets } from "./effects/EffectTargets";
 import type { PlayerEffects } from "./effects/PlayerEffects";
 import "./Game.css";
 import GameStylesheets from "./GameStylesheets";
 import GameLayersLayout, { type GameLayers } from "./layout/GameLayersLayout";
-import { resolveAvatarMode, resolveSceneMode } from "./logic/AvatarModeUtils";
+import {
+  challengesResetOnReturn,
+  resolveAvatarMode,
+  resolveSceneMode,
+  resolveSpectators,
+} from "./logic/AvatarModeUtils";
+import { SpectatorsContext } from "../../providers/SpectatorsContext";
 import { leaveTitleScreen } from "./logic/GameClickUtils";
 import { findChallengeState } from "./logic/GameDataUtils";
 import type { SceneDomEvent } from "./logic/TemplateUtils";
-import { completeChallenge, validateAnswer } from "./logic/GameStateUtils";
+import { completeChallenge, resetChallenge, validateAnswer } from "./logic/GameStateUtils";
 import {
   getSceneKey,
   getLayeredRenderData,
@@ -122,7 +128,7 @@ const rewardsFor = (
   const selector = "reward" in effect ? effect.target : undefined;
   const choice = "reward" in effect ? effect.players : undefined;
   const elements = isDefined(choice)
-    ? playerWrappers(choice, event.player)
+    ? playerEffects.wrappersOf(choice, event.player)
     : isDefined(selector)
       ? resolveTargets(scope, selector, shownScopes)
       : [];
@@ -303,6 +309,26 @@ function useAnswerHandler(): GameAnswerFunction {
   );
 }
 
+/** The avatar, layout and spectator settings for the scenes shown, the same objects while they are. */
+function useSceneSettings(gameData: GameData, renderData: LayeredGameSceneRenderData) {
+  const { setGameState } = useGameState();
+  return useMemo(() => {
+    const resets = challengesResetOnReturn(gameData, renderData) ?? [];
+    const onReturnElsewhere = () =>
+      setGameState((state) =>
+        resets.reduce((reset, { stageId, challengeId }) => resetChallenge(reset, stageId!, challengeId!), state),
+      );
+    return {
+      avatar: resolveAvatarMode(gameData, renderData),
+      sceneMode: resolveSceneMode(gameData, renderData),
+      spectators: {
+        settings: resolveSpectators(gameData, renderData),
+        ...(resets.length > 0 && { onReturnElsewhere }),
+      },
+    };
+  }, [gameData, renderData, setGameState]);
+}
+
 /**
  * The game itself: builds layered render data from the game state, and hands it to {@link GameLayersLayout}
  * along with the click handling, feedback (music, sound effects, rewards) and title screen keys.
@@ -329,8 +355,7 @@ export default function Game() {
     () => createLayers(renderData, { onAnswer, onSceneEvent }),
     [renderData, onAnswer, onSceneEvent],
   );
-  const avatar = useMemo(() => resolveAvatarMode(gameState.gameData, renderData), [gameState.gameData, renderData]);
-  const sceneMode = useMemo(() => resolveSceneMode(gameState.gameData, renderData), [gameState.gameData, renderData]);
+  const { avatar, sceneMode, spectators } = useSceneSettings(gameState.gameData, renderData);
 
   return (
     <div
@@ -354,17 +379,19 @@ export default function Game() {
         <RewardBurst key={id} id={id} reward={reward} at={at} onDone={() => ruleRewards.done({ id, actionId })} />
       ))}
       <PlayerRegistryContext.Provider value={players}>
-        <GameLayersLayout
-          debug={debug}
-          onToggleDebug={toggleDebug}
-          gameLayers={layers}
-          sceneKey={sceneKey}
-          avatar={avatar}
-          sceneMode={sceneMode}
-          cameraRules={cameraRules}
-          onPlayerInteraction={onPlayerInteraction}
-          onPlayerPositions={onPlayerPositions}
-        />
+        <SpectatorsContext.Provider value={spectators}>
+          <GameLayersLayout
+            debug={debug}
+            onToggleDebug={toggleDebug}
+            gameLayers={layers}
+            sceneKey={sceneKey}
+            avatar={avatar}
+            sceneMode={sceneMode}
+            cameraRules={cameraRules}
+            onPlayerInteraction={onPlayerInteraction}
+            onPlayerPositions={onPlayerPositions}
+          />
+        </SpectatorsContext.Provider>
       </PlayerRegistryContext.Provider>
     </div>
   );

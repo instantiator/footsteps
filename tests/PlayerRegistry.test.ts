@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { PlayerRegistry } from "../src/components/camera/PlayerRegistry";
+import { PlayerRegistry, SPECTATOR_NOTE_MS } from "../src/components/camera/PlayerRegistry";
 import { noKeyPoints, type VisionFrame, type VisionPerson } from "../src/vision/VisionTypes";
 
 const WIDTH = 100;
@@ -220,5 +220,45 @@ describe("PlayerRegistry counts", () => {
     onCounts.mockClear();
     registry.update(frame());
     expect(onCounts).not.toHaveBeenCalled();
+  });
+});
+
+describe("PlayerRegistry spectators", () => {
+  const at = (timestamp: number, ...people: VisionPerson[]): VisionFrame => ({ ...frame(...people), timestamp });
+
+  it("keeps a spectator's number, but leaves them out of the count", () => {
+    const { registry, ids } = registryWith(person(10), person(11));
+    const counts = vi.fn();
+    registry.onCounts(counts);
+    registry.setSpectators(new Set([ids[0]]));
+    expect(counts).toHaveBeenLastCalledWith({ active: 1, removed: 0, frozen: 0 });
+    expect(registry.numberOf(ids[0])).toBe(1);
+    expect(registry.spectatorTrackIds()).toEqual(new Set([10]));
+  });
+
+  it("finds a spectator the tracker lost near where they were, with their id and number", () => {
+    const { registry, ids } = registryWith(person(10), person(11, 90));
+    registry.setSpectators(new Set([ids[0]]));
+    const lost = registry.update(at(1000, person(11, 90)));
+    expect(idsIn(lost.drawn)).toEqual([ids[1]]);
+    expect(lost.knownIds.has(ids[0])).toBe(false);
+    registry.update(at(1000 + SPECTATOR_NOTE_MS, person(12, 52), person(11, 90)));
+    expect(registry.numberOf(ids[0])).toBe(1);
+    expect(registry.lastOf(ids[0])?.mask).toEqual(person(12, 52).mask);
+  });
+
+  it(`forgets a lost spectator after ${SPECTATOR_NOTE_MS} ms, freeing their number`, () => {
+    const { registry, ids } = registryWith(person(10));
+    registry.setSpectators(new Set([ids[0]]));
+    registry.update(at(1000));
+    registry.update(at(1001 + SPECTATOR_NOTE_MS));
+    expect(registry.numberOf(ids[0])).toBeUndefined();
+  });
+
+  it("never makes a frozen player a spectator", () => {
+    const { registry, ids } = registryWith(person(10));
+    registry.freeze(ids[0], "challenge:s:c:challenge-in-progress");
+    registry.setSpectators(new Set(ids));
+    expect(registry.spectatorTrackIds().size).toBe(0);
   });
 });

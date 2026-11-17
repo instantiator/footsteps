@@ -1,3 +1,4 @@
+import type { GameSpectatorsData } from "./GameSpectatorsData";
 import type { GameRewardData } from "../GameData";
 import type { GameStageId } from "../GameStageData";
 import type { GameSceneDialogComponentData } from "./GameSceneDialogComponentData";
@@ -101,6 +102,8 @@ export interface GameSceneBase {
   scene?: GameSceneMode;
   /** What stands in for the player in this scene, over broader scenes' settings. */
   avatar?: GameSceneAvatarData;
+  /** How spectators are shown in this scene, over broader scenes' settings. */
+  spectators?: GameSpectatorsData;
   /** Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it. */
   resetScene?: GameResetScene;
 }
@@ -113,6 +116,8 @@ export interface GameResetScene {
   scene?: GameSceneMode;
   /** What stands in for the player while it shows, over its parent's settings. */
   avatar?: GameSceneAvatarData;
+  /** How spectators are shown while it shows, over its parent's settings. */
+  spectators?: GameSpectatorsData;
   /**
    * When it shows: before its parent is first shown since the game loaded (the default), or before every showing.
    * It always shows again when its parent's challenge is reset. A nested reset scene shows with this one.

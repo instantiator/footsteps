@@ -31,7 +31,9 @@ The game's scenes are 2.5D, and the walk-around challenge plays with the camera,
 the player's feet:
 
 ```json [public/game-repository.json]
-"modules": { "scene": "2.5D", "avatar": { "mode": "mouse" } },
+"modules": {
+  "scene": "2.5D",
+  "avatar": { "mode": "mouse" },
 …
 "purpose": "challenge-in-progress",
 "avatar": { "mode": "camera", "fallback": "mouse-feet" },
@@ -40,6 +42,9 @@ the player's feet:
 With `mouse-feet`, the pointer is player 1's feet: moving it over the floor walks, and it fires the same `foot-enter`
 rules a camera player's feet would ([mouse-feet](../camera-mode.md#mouse-feet)). It's the quickest way to try a 2.5D
 scene: open it with `?noCamera=true` to play by mouse even with a camera.
+
+The game's `modules` also set how [spectators](../game-data.md#spectators), people the camera sees standing off the
+floor, are drawn: faded and grey, and never playing.
 
 ## Step 2: sky, ground and hills
 

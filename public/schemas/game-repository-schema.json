@@ -224,6 +224,10 @@
                         "2D"
                     ],
                     "type": "string"
+                },
+                "spectators": {
+                    "$ref": "#/definitions/GameSpectatorsData",
+                    "description": "How spectators are shown in this scene, over broader scenes' settings."
                 }
             },
             "required": [
@@ -839,6 +843,10 @@
                         "2D"
                     ],
                     "type": "string"
+                },
+                "spectators": {
+                    "$ref": "#/definitions/GameSpectatorsData",
+                    "description": "How spectators, people standing off a 2.5D scene's floor, are shown, unless a scene says otherwise."
                 }
             },
             "type": "object"
@@ -869,6 +877,10 @@
                         "2D"
                     ],
                     "type": "string"
+                },
+                "spectators": {
+                    "$ref": "#/definitions/GameSpectatorsData",
+                    "description": "How spectators are shown in this scene, over broader scenes' settings."
                 }
             },
             "required": [
@@ -1436,6 +1448,10 @@
                         "first-show"
                     ],
                     "type": "string"
+                },
+                "spectators": {
+                    "$ref": "#/definitions/GameSpectatorsData",
+                    "description": "How spectators are shown while it shows, over its parent's settings."
                 }
             },
             "required": [
@@ -2023,6 +2039,67 @@
             ],
             "type": "object"
         },
+        "GameSpectatorFade": {
+            "description": "Where a spectator's look fades in, in floor units outside the floor.",
+            "properties": {
+                "from": {
+                    "description": "Where it starts, at no strength. Defaults to the spectator margin, 5.",
+                    "type": "number"
+                },
+                "to": {
+                    "description": "Where it reaches full strength.",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "to"
+            ],
+            "type": "object"
+        },
+        "GameSpectatorLook": {
+            "description": "How a shown spectator looks, at full strength.",
+            "properties": {
+                "filter": {
+                    "description": "A CSS filter, eg. `grayscale(1)`. `--spectator-strength` (0–1) is set beside it, so it can follow the fade:\n`grayscale(calc(var(--spectator-strength) * 100%))`.",
+                    "type": "string"
+                },
+                "opacity": {
+                    "description": "Their opacity, 0–1.",
+                    "type": "number"
+                },
+                "static": {
+                    "description": "The proportion of their image made static, 0–1, as `player-static` does.",
+                    "type": "number"
+                }
+            },
+            "type": "object"
+        },
+        "GameSpectatorsData": {
+            "description": "How spectators, people the camera sees standing off a 2.5D scene's floor, are shown. They never play: they have no\ninteractions, positions or count, but keep their player number for when they step back on. A narrower scene's\nsetting overrides a broader one's key by key.",
+            "properties": {
+                "fade": {
+                    "$ref": "#/definitions/GameSpectatorFade",
+                    "description": "How the look's strength follows how far outside the floor a spectator stands, in floor units: none at `from`\n(defaults to the spectator margin, 5), full at `to`, eased between. Without it, the look is at full strength."
+                },
+                "look": {
+                    "$ref": "#/definitions/GameSpectatorLook",
+                    "description": "How a shown spectator looks, at full strength. Without it, they look like a player."
+                },
+                "resetOnReturn": {
+                    "description": "Whether this scene's challenge resets when a spectator steps back on the floor far from where they left it, so\nwalking round the outside can't skip part of it. Defaults to false.",
+                    "type": "boolean"
+                },
+                "show": {
+                    "description": "Whether spectators are drawn. Defaults to `hidden`.",
+                    "enum": [
+                        "hidden",
+                        "shown"
+                    ],
+                    "type": "string"
+                }
+            },
+            "type": "object"
+        },
         "GameStageData": {
             "description": "Describes a game stage - including its scenes, and the challenges it contains.\nA stage may contain more than one challenge, and may group its challenges together.",
             "properties": {
@@ -2082,6 +2159,10 @@
                         "2D"
                     ],
                     "type": "string"
+                },
+                "spectators": {
+                    "$ref": "#/definitions/GameSpectatorsData",
+                    "description": "How spectators are shown in this scene, over broader scenes' settings."
                 }
             },
             "required": [

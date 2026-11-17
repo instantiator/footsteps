@@ -16,6 +16,8 @@ import type { PlayerRegistry } from "./PlayerRegistry";
 import { PlayerRegistryContext } from "../../providers/PlayerRegistryContext";
 import { PlayerPositions, positionMapping, type PlayerPosition, type PositionSettings } from "./PlayerPosition";
 import type { PlayerFrame } from "./PlayerMonitor";
+import { NO_SPECTATORS, RETURN_DISTANCE, SpectatorWatch, type SpectatorSettings } from "./Spectators";
+import { SpectatorsContext, type ShownSpectators } from "../../providers/SpectatorsContext";
 
 /** Props for {@link CharacterCanvas}. */
 interface CharacterCanvasProps {
@@ -44,6 +46,21 @@ interface CharacterCanvasProps {
   /** Whether the canvas is shown flipped like a mirror, so positions run from the screen's left. */
   mirrored?: boolean;
 }
+
+/** A ref holding the latest value, for the tracking loop to read each frame without restarting. */
+const useLatest = <T,>(value: T): RefObject<T> => {
+  const ref = useRef(value);
+  useEffect(() => {
+    ref.current = value;
+  }, [value]);
+  return ref;
+};
+
+/** The floor players stand on now, for the tracking loop to read each frame. */
+const usePlayersFloor = (floor: Corners | undefined, mirrored: boolean): RefObject<PlayersFloor> =>
+  useLatest(
+    useMemo(() => ({ toPosition: positionMapping(floor, mirrored), sorted: isDefined(floor) }), [floor, mirrored]),
+  );
 
 /** How often the stats readout updates, in milliseconds; every frame would re-render too often. */
 const STATS_INTERVAL_MS = 500;
@@ -135,6 +152,8 @@ type LoopHandlers = Pick<CharacterCanvasProps, "offScreenThreshold_percent" | "o
   onStats?: (stats: FrameStats) => void;
   /** The floor players stand on now, read each frame as scenes change. */
   floor: RefObject<PlayersFloor>;
+  /** How spectators show now, and what their return does, read each frame as scenes change. */
+  shownSpectators: RefObject<ShownSpectators>;
 };
 
 /** How players' ground points become positions, and whether they are sorted among the foreground by them. */
@@ -159,12 +178,14 @@ interface LoopSettings {
   featherPx: number;
   /** How a player's position follows them. */
   position: PositionSettings;
+  /** Who counts as off the floor. */
+  spectators: SpectatorSettings;
 }
 
 /** The loop's settings from the app config, the same object until one of them changes. */
 const useLoopSettings = (config: AppConfig): LoopSettings => {
   const { visionSmoothing, cameraHoldMs, cameraFadeMs, cameraFillGaps, visionInputWidth, cameraFeatherPx } = config;
-  const { cameraDepthWindowMs, cameraDepthDeadband } = config;
+  const { cameraDepthWindowMs, cameraDepthDeadband, spectatorMargin, spectatorHoldMs } = config;
   return useMemo(
     () => ({
       smoothing: visionSmoothing,
@@ -173,6 +194,7 @@ const useLoopSettings = (config: AppConfig): LoopSettings => {
       inputWidth: visionInputWidth,
       featherPx: cameraFeatherPx,
       position: { windowMs: cameraDepthWindowMs, deadband: cameraDepthDeadband },
+      spectators: { margin: spectatorMargin, holdMs: spectatorHoldMs },
     }),
     [
       visionSmoothing,
@@ -183,6 +205,8 @@ const useLoopSettings = (config: AppConfig): LoopSettings => {
       cameraFeatherPx,
       cameraDepthWindowMs,
       cameraDepthDeadband,
+      spectatorMargin,
+      spectatorHoldMs,
     ],
   );
 };
@@ -196,6 +220,8 @@ const DRAWING_SETTINGS = [
   "cameraFillGaps",
   "cameraDepthWindowMs",
   "cameraDepthDeadband",
+  "spectatorMargin",
+  "spectatorHoldMs",
 ] as const;
 
 /** The config the model is made from, the same object while only {@link DRAWING_SETTINGS} change, so the model is kept. */
@@ -341,9 +367,10 @@ const startTrackingLoop = (
     offScreenThreshold_percent,
     onPlayersChange,
     maskType,
-    settings: { smoothing, hold, fillGaps, inputWidth, featherPx, position },
+    settings: { smoothing, hold, fillGaps, inputWidth, featherPx, position, spectators },
     onStats,
     floor,
+    shownSpectators,
   }: LoopHandlers,
 ): (() => void) => {
   const detections = videoDetections(model, video, inputWidth);
@@ -352,18 +379,31 @@ const startTrackingLoop = (
   canvases.resize();
   registry.resetTracking(video.videoWidth);
   const positions = new PlayerPositions(position);
+  const watch = new SpectatorWatch(spectators);
   const reportStats = statsReporter(onStats);
   const tracker = smoothing ? new PersonTracker(hold, fillGaps) : null;
 
   const reportAndDraw = (timestamp: number, detected: VisionFrame, inferenceEnd: number) => {
-    const frames = registry.update(tracker ? tracker.update(detected) : detected);
+    const frames = registry.update(tracker ? tracker.update(detected, registry.spectatorTrackIds()) : detected);
     const { toPosition, sorted } = floor.current;
     const where = positions.update(frames.drawn, toPosition);
-    const players = playersOf(frames.interactive, where, offScreenThreshold_percent);
+    // Only a floor has an outside to watch from
+    const watching = sorted ? watch.update(where, detected.timestamp, registry.knownIds()) : NO_SPECTATORS;
+    registry.setSpectators(watching.spectators);
+    if (watching.returned.some(({ distance }) => distance > RETURN_DISTANCE))
+      shownSpectators.current.onReturnElsewhere?.();
+    const playing = frames.interactive.people.filter(({ id }) => !watching.spectators.has(id));
+    const players = playersOf({ ...frames.interactive, people: playing }, where, offScreenThreshold_percent);
     const trackEnd = performance.now();
     onPlayersChange?.(players, timestamp);
     const monitorEnd = performance.now();
-    drawPlayers(video, frames, { canvases, positions: where, sorted, players: registry }, { maskType, featherPx });
+    const drawnSpectators = { report: watching, settings: shownSpectators.current.settings, margin: spectators.margin };
+    drawPlayers(
+      video,
+      frames,
+      { canvases, positions: where, sorted, players: registry, spectators: drawnSpectators },
+      { maskType, featherPx },
+    );
     reportStats(detected, timestamp, inferenceEnd, {
       trackMs: trackEnd - inferenceEnd,
       monitorMs: monitorEnd - trackEnd,
@@ -423,14 +463,8 @@ export default function CharacterCanvas({
   const canvasesRef = useRef<PlayerCanvases | null>(null);
   const players = useContext(PlayerRegistryContext);
   const { video, mediaStream, offScreenThreshold_percent, onPlayersChange } = loopProps;
-  const playersFloor = useMemo(
-    (): PlayersFloor => ({ toPosition: positionMapping(floor, mirrored), sorted: isDefined(floor) }),
-    [floor, mirrored],
-  );
-  const floorRef = useRef(playersFloor);
-  useEffect(() => {
-    floorRef.current = playersFloor;
-  }, [playersFloor]);
+  const floorRef = usePlayersFloor(floor, mirrored);
+  const spectatorsRef = useLatest(useContext(SpectatorsContext));
 
   // The stream belongs to CharacterCamera, which stops its tracks; this effect only stops its own loop
   useEffect(() => {
@@ -444,6 +478,7 @@ export default function CharacterCanvas({
       settings,
       onStats,
       floor: floorRef,
+      shownSpectators: spectatorsRef,
     };
     const canvases = (canvasesRef.current ??= new PlayerCanvases(canvasElement));
     return startTrackingLoop(model, video, { reference: canvasElement, canvases, players }, handlers);
@@ -458,6 +493,8 @@ export default function CharacterCanvas({
     maskType,
     settings,
     showStats,
+    floorRef,
+    spectatorsRef,
   ]);
 
   return (

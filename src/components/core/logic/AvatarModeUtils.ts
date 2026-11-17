@@ -4,6 +4,7 @@ import type {
   GameSceneAvatarData,
   GameSceneMode,
 } from "../../../entities/data/scenes/GameSceneData";
+import type { GameSpectatorsData } from "../../../entities/data/scenes/GameSpectatorsData";
 import { POINTER_INTERACTIONS } from "../../../entities/data/scenes/GameSceneData";
 import type { GameData } from "../../../entities/data/GameData";
 import { isDefined } from "../../../util/ObjectUtils";
@@ -120,5 +121,32 @@ export const resolveSceneMode = (gameData: GameData, renderData: LayeredGameScen
   return (
     firstDefined(renderData.stageRenderData?.scene, renderData.overviewRenderData?.scene, gameData.modules?.scene) ??
     "2D"
+  );
+};
+
+/**
+ * Resolves how spectators show in the scenes shown: the first active challenge with a setting over the stage scene's,
+ * the overview scene's and the game's `modules.spectators`, key by key.
+ */
+export const resolveSpectators = (gameData: GameData, renderData: LayeredGameSceneRenderData): GameSpectatorsData => {
+  const challenge = renderData.challengesRenderData?.find(({ spectators }) => isDefined(spectators))?.spectators;
+  return { ...broaderSpectators(gameData, renderData), ...challenge };
+};
+
+/** The spectator settings broader than the challenges': the game's, then the overview scene's and the stage's. */
+const broaderSpectators = (gameData: GameData, renderData: LayeredGameSceneRenderData): GameSpectatorsData => ({
+  ...gameData.modules?.spectators,
+  ...renderData.overviewRenderData?.spectators,
+  ...renderData.stageRenderData?.spectators,
+});
+
+/** The shown challenges whose own settings, over broader ones, reset them as a spectator returns elsewhere. */
+export const challengesResetOnReturn = (
+  gameData: GameData,
+  renderData: LayeredGameSceneRenderData,
+): LayeredGameSceneRenderData["challengesRenderData"] => {
+  const broader = broaderSpectators(gameData, renderData);
+  return renderData.challengesRenderData?.filter(
+    ({ spectators }) => ({ ...broader, ...spectators }).resetOnReturn === true,
   );
 };

@@ -177,6 +177,14 @@ describe("PlayerEffects", () => {
       expect(ids.map((id) => players.stateOf(id))).toEqual(["leaving", "leaving"]);
     });
 
+    it("leaves spectators out of all, for effects and their wrappers", () => {
+      const { players, ids, effects } = withPlayers(2);
+      players.setSpectators(new Set([ids[1]]));
+      expect(effects.wrappersOf("all", 0)).toEqual([wrapperOf(1)]);
+      effects.play({ ...fall, players: "all" }, run({ event: NO_EVENT }));
+      expect(ids.map((id) => players.stateOf(id))).toEqual(["leaving", "active"]);
+    });
+
     it("does nothing with nobody there", () => {
       const { effects } = withPlayers(0);
       expect(() => effects.play({ effect: "player-fall", players: "all" }, run())).not.toThrow();
