@@ -28,12 +28,12 @@ function CameraPreview({
   );
 }
 
-/** Whether the chosen camera has a saved floor, and a link to calibrate it. */
+/** Whether the chosen camera has a saved floor, with links to calibrate it and to plan where the camera goes. */
 function FloorStatus({ cameraKey, calibrateTo }: { cameraKey: string; calibrateTo: string }) {
   return (
     <p>
       {isCalibrated(cameraKey) ? "This camera has a saved floor area. " : "This camera has no saved floor area yet. "}
-      <Link to={calibrateTo}>Calibrate the floor</Link>
+      <Link to={calibrateTo}>Calibrate the floor</Link> · <Link to="/setup">Plan your space</Link>
     </p>
   );
 }
