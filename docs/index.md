@@ -14,7 +14,7 @@ Published as HTML at <https://instantiator.dev/footsteps/docs/>, with the API re
 - [Player tracking](player-tracking.md): how players are followed and numbered, what can happen to them, and how they are restored.
 - [How filtrex works](filtrex.md): the expression language used by scene rules, and why it is safe.
 - [Configuration](configuration.md): app settings, the `.env` files, and URL query parameters.
-- [Camera mode](camera-mode.md): what camera mode is, and how the camera view is layered into the game.
+- [Camera mode](camera-mode.md): what camera mode is, planning the space and calibrating the floor, and how the camera view is layered into the game.
 - [Manual testing](testing/manual-testing.md): camera checks with a real webcam, and how to run the browser suite.
 - [API reference](/tsdoc/){target="_blank"}: generated from the TSDoc comments in `src/` by `npm run docs:api`, and rendered as HTML by TypeDoc.
 - [Code formatting](code-formatting.md): prettier and ESLint setup, and editor integration.

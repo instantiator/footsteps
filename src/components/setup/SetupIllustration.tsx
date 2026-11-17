@@ -1,3 +1,4 @@
+import { useId } from "react";
 import type { SetupInputs, SetupResult } from "./SetupCalculations";
 
 /** A point in the room, in metres: x across from the left wall, y forward from the wall behind the camera, z up. */
@@ -105,6 +106,7 @@ function Dimensions({ scene: { plan, inputs, floor, camera, centre, front, back 
 
 /** The room, floor, camera and players drawn isometrically, with the recommendation's dimensions marked. */
 export default function SetupIllustration({ plan, inputs }: { plan: SetupResult; inputs: SetupInputs }) {
+  const titleId = useId();
   const { floorWidth: w, floorDepth: d, cameraHeight: h, marginLeft, marginBehind } = plan;
   if (w <= 0 || d <= 0) return <p className="setup-illustration-empty">No floor fits, so there is nothing to draw.</p>;
 
@@ -125,7 +127,7 @@ export default function SetupIllustration({ plan, inputs }: { plan: SetupResult;
     [0, roomLength, 0],
   ];
   const scene: Scene = { plan, inputs, floor, camera: [centre, marginBehind, h], centre, front, back };
-  const tilt = plan.tiltDegrees.toFixed(0);
+  const description = `A ${metres(w)} by ${metres(d)} floor, ${metres(plan.nearDistance)} in front of a camera ${metres(h)} high, tilted ${plan.tiltDegrees.toFixed(0)}° down`;
 
   return (
     <svg
@@ -136,9 +138,9 @@ export default function SetupIllustration({ plan, inputs }: { plan: SetupResult;
         [centre, front, inputs.tallestPlayer],
         [centre, back, inputs.tallestPlayer],
       ])}
-      role="img"
-      aria-label={`A ${metres(w)} by ${metres(d)} floor, ${metres(plan.nearDistance)} in front of a camera ${metres(h)} high, tilted ${tilt}° down`}
+      aria-labelledby={titleId}
     >
+      <title id={titleId}>{description}</title>
       <polygon className="setup-room" points={pointsOf(room)} />
       <polygon className="setup-floor" points={pointsOf(floor)} />
       <Camera scene={scene} />

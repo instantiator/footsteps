@@ -498,3 +498,19 @@ Template scenes with `mouse-enter` or `mouse-exit` rules hit-test the resting po
 A copy's classes can depend on Handlebars branches its template hasn't rendered yet (Jump and duck's `.jd-bat`), so a scene with a `spawn` skips the "matches nothing" check for its targets, checking only each `spawn` and `into`. A typo in such a scene's targets goes unwarned.
 
 **Act when:** a typo in a spawning scene's target goes unnoticed. Then check its targets against every branch of its templates' markup.
+
+## The setup planner is not checked against a real room
+
+The [setup planner](camera-mode.md#planning-the-space) is tested against its own geometry, and against the default
+floor's derivation, but nobody has yet set a camera up from its recommendation and calibrated the result. Its
+assumptions (a 10% edge inset, 0.1 m headroom, the floor's size limits, a 35° tilt limit) are reasoned, not measured.
+
+**Act when:** someone sets up from the planner. Then calibrate, walk the floor's corners, and compare the calibrated
+corners with where the planner said the floor's edges would fall in the picture. Tune the assumptions' defaults if
+feet or heads leave the picture, or if the floor could have been larger.
+
+## The setup planner forgets its values
+
+The planner's values reset whenever the page is reloaded.
+
+**Act when:** a user asks for their values to be kept. Then save them in `localStorage`, as the camera choice is.

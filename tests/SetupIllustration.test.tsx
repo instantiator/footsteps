@@ -24,7 +24,7 @@ describe("SetupIllustration", () => {
     ]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
-    expect(screen.getByRole("img")).toHaveAccessibleName(/^A 2\.50 m by .* floor/);
+    expect(document.querySelector(".setup-illustration")).toHaveAccessibleName(/^A 2\.50 m by .* floor/);
   });
 
   it("redraws the floor when its width changes", () => {
