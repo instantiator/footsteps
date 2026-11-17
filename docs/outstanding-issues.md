@@ -514,3 +514,11 @@ feet or heads leave the picture, or if the floor could have been larger.
 The planner's values reset whenever the page is reloaded.
 
 **Act when:** a user asks for their values to be kept. Then save them in `localStorage`, as the camera choice is.
+
+## The setup planner's screen view shows the whole picture
+
+The planner's screen view shows the camera's whole picture, unmirrored, as a 2D scene does. A 2.5D scene crops it to
+the floor's width and mirroring flips it, so the view is only a guide to what a 2.5D game shows.
+
+**Act when:** someone is misled by the difference. Then crop the view to the scene box (`FloorGeometry.ts`) for a
+2.5D game, and add a mirror setting.

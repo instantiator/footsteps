@@ -123,3 +123,56 @@
   fill: currentColor;
   text-anchor: middle;
 }
+
+.setup-screen-view {
+  margin: 16px 0 0;
+}
+
+.setup-screen-view svg {
+  width: 100%;
+}
+
+.setup-screen-view line,
+.setup-screen-view polygon,
+.setup-screen-view rect {
+  vector-effect: non-scaling-stroke;
+}
+
+.setup-screen-bezel {
+  fill: #222;
+}
+
+.setup-screen-glass {
+  fill: #000;
+}
+
+.setup-screen-picture {
+  fill: #101820;
+}
+
+.setup-screen-room {
+  stroke: #9e9e9e;
+  stroke-width: 1px;
+}
+
+.setup-screen-floor {
+  fill: var(--setup-floor);
+  stroke: #81c784;
+  stroke-width: 1.5px;
+}
+
+.setup-screen-player {
+  stroke: var(--setup-player);
+  stroke-width: 3px;
+}
+
+.setup-screen-clear {
+  fill: none;
+  stroke: #ffeb3b;
+  stroke-width: 1px;
+  stroke-dasharray: 4 3;
+}
+
+.setup-screen-view figcaption {
+  font-size: 0.85em;
+}

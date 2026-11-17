@@ -1,8 +1,6 @@
 import { useId } from "react";
 import type { SetupInputs, SetupResult } from "./SetupCalculations";
-
-/** A point in the room, in metres: x across from the left wall, y forward from the wall behind the camera, z up. */
-type RoomPoint = [x: number, y: number, z: number];
+import type { RoomPoint } from "./SetupProjection";
 
 /** Isometric projection from behind the camera: the room's axes at 30° either side of horizontal, and height straight up. */
 const COS30 = Math.sqrt(3) / 2;

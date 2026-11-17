@@ -2,6 +2,7 @@ import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { Link } from "react-router";
 import NumberField from "../components/setup/NumberField";
 import SetupIllustration from "../components/setup/SetupIllustration";
+import SetupScreenView from "../components/setup/SetupScreenView";
 import {
   DEFAULT_SETUP_CONSTANTS,
   DEFAULT_SETUP_INPUTS,
@@ -87,6 +88,8 @@ const CONSTANT_FIELDS: FieldSpec<keyof SetupConstants>[] = [
   { key: "maxFloorDepth", label: "Deepest floor", ...METRES },
   { key: "minFloorMultiple", label: "Smallest floor, × tallest player", step: 0.05 },
   { key: "maxFloorMultiple", label: "Largest floor, × shortest player", step: 0.05 },
+  { key: "screenWidth", label: "Screen width", ...METRES },
+  { key: "screenHeight", label: "Screen height", ...METRES },
 ];
 
 /** The aspect ratios webcams commonly give the browser. */
@@ -140,6 +143,7 @@ export default function SetupPlanner() {
             <>
               <Results plan={plan} />
               <SetupIllustration plan={plan} inputs={inputs} />
+              <SetupScreenView plan={plan} inputs={inputs} constants={constants} />
             </>
           )}
         </div>

@@ -60,6 +60,10 @@ export interface SetupConstants {
   minFloorMultiple: number;
   /** The floor's sides never exceed this multiple of the shortest player's height, so no one looks tiny. */
   maxFloorMultiple: number;
+  /** The width of the screen's picture, for showing what it will look like; it doesn't change the recommendation. */
+  screenWidth: number;
+  /** The height of the screen's picture. */
+  screenHeight: number;
 }
 
 /** A typical room, family and 4:3 webcam (65° diagonal, which is 42° vertical). */
@@ -77,7 +81,10 @@ export const DEFAULT_SETUP_INPUTS: SetupInputs = {
   aspect: 4 / 3,
 };
 
-/** The default assumptions; the default calibration's 22° tilt sits well inside `maxTilt`. */
+/**
+ * The default assumptions; the default calibration's 22° tilt sits well inside `maxTilt`. The screen is a 55-inch 16:9
+ * television's picture, such as the Samsung Frame 55".
+ */
 export const DEFAULT_SETUP_CONSTANTS: SetupConstants = {
   maxCameraHeight: 3,
   minCameraHeight: 1,
@@ -88,6 +95,8 @@ export const DEFAULT_SETUP_CONSTANTS: SetupConstants = {
   maxFloorDepth: 3,
   minFloorMultiple: 0.8,
   maxFloorMultiple: 2.5,
+  screenWidth: 1.22,
+  screenHeight: 0.68,
 };
 
 /** The camera's usable view, as slopes from its axis. */
