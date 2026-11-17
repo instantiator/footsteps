@@ -8,16 +8,16 @@
 <div class="col-content">
 <div class="tsd-page-title">
 <ul class="tsd-breadcrumb" aria-label="Breadcrumb">
-<li><a href="../modules/entities_data_scenes_GameSceneData.html">entities/data/scenes/GameSceneData</a></li>
+<li><a href="../modules/entities_data_scenes_GameAvatarData.html">entities/data/scenes/GameAvatarData</a></li>
 <li><a href="" aria-current="page">GameSceneAvatarData</a></li></ul>
 <h1>Interface GameSceneAvatarData</h1></div>
 <section class="tsd-panel tsd-comment">
 <div class="tsd-comment tsd-typography"><p>Avatar settings for one scene. <code>mode</code> and <code>fallback</code> go together: a scene that sets <code>mode</code> doesn't inherit a broader
-scene's <code>fallback</code>. <code>preview</code> inherits on its own.</p>
+scene's <code>fallback</code>. <code>preview</code> and <code>feet</code> inherit on their own.</p>
 </div></section>
-<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">GameSceneAvatarData</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#fallback">fallback</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">&quot;mouse&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;mouse-feet&quot;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#mode">mode</a><span class="tsd-signature-symbol">?:</span> <a href="../types/entities_data_scenes_GameSceneData.GameAvatarMode.html" class="tsd-signature-type tsd-kind-type-alias">GameAvatarMode</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#preview">preview</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
+<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">GameSceneAvatarData</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#fallback">fallback</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">&quot;mouse&quot;</span> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">&quot;mouse-feet&quot;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#feet">feet</a><span class="tsd-signature-symbol">?:</span> <a href="entities_data_scenes_GameAvatarData.GameAvatarFeetData.html" class="tsd-signature-type tsd-kind-interface">GameAvatarFeetData</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#mode">mode</a><span class="tsd-signature-symbol">?:</span> <a href="../types/entities_data_scenes_GameAvatarData.GameAvatarMode.html" class="tsd-signature-type tsd-kind-type-alias">GameAvatarMode</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#preview">preview</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameSceneData.ts#L86">entities/data/scenes/GameSceneData.ts:86</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameAvatarData.ts#L12">entities/data/scenes/GameAvatarData.ts:12</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -26,6 +26,7 @@ scene's <code>fallback</code>. <code>preview</code> inherits on its own.</p>
 <section class="tsd-index-section">
 <h3 class="tsd-index-heading tsd-anchor-link" id="properties">Properties<a href="#properties" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-index-list"><a href="#fallback" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>fallback?</span></a>
+<a href="#feet" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>feet?</span></a>
 <a href="#mode" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>mode?</span></a>
 <a href="#preview" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>preview?</span></a>
 </div></section></div></details></section></section>
@@ -38,21 +39,28 @@ scene's <code>fallback</code>. <code>preview</code> inherits on its own.</p>
 <div class="tsd-comment tsd-typography"><p>The mode to use when the camera isn't available. Leaving it out of a <code>camera</code> mode means the camera is required.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameSceneData.ts#L90">entities/data/scenes/GameSceneData.ts:90</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameAvatarData.ts#L16">entities/data/scenes/GameAvatarData.ts:16</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="feet"><code class="tsd-tag">Optional</code><span>feet</span><a href="#feet" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">feet</span><span class="tsd-signature-symbol">?:</span> <a href="entities_data_scenes_GameAvatarData.GameAvatarFeetData.html" class="tsd-signature-type tsd-kind-interface">GameAvatarFeetData</a></div>
+<div class="tsd-comment tsd-typography"><p>How the pointer's feet look in <code>mouse-feet</code> mode, including as a fallback.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameAvatarData.ts#L20">entities/data/scenes/GameAvatarData.ts:20</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="mode"><code class="tsd-tag">Optional</code><span>mode</span><a href="#mode" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<div class="tsd-signature"><span class="tsd-kind-property">mode</span><span class="tsd-signature-symbol">?:</span> <a href="../types/entities_data_scenes_GameSceneData.GameAvatarMode.html" class="tsd-signature-type tsd-kind-type-alias">GameAvatarMode</a></div>
+<div class="tsd-signature"><span class="tsd-kind-property">mode</span><span class="tsd-signature-symbol">?:</span> <a href="../types/entities_data_scenes_GameAvatarData.GameAvatarMode.html" class="tsd-signature-type tsd-kind-type-alias">GameAvatarMode</a></div>
 <div class="tsd-comment tsd-typography"><p>What stands in for the player while this scene shows.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameSceneData.ts#L88">entities/data/scenes/GameSceneData.ts:88</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameAvatarData.ts#L14">entities/data/scenes/GameAvatarData.ts:14</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="preview"><code class="tsd-tag">Optional</code><span>preview</span><a href="#preview" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">preview</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
 <div class="tsd-comment tsd-typography"><p>Whether the webcam preview shows while this scene shows; only in <code>camera</code> mode.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameSceneData.ts#L92">entities/data/scenes/GameSceneData.ts:92</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/entities/data/scenes/GameAvatarData.ts#L18">entities/data/scenes/GameAvatarData.ts:18</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -69,7 +77,7 @@ scene's <code>fallback</code>. <code>preview</code> inherits on its own.</p>
 <h3>On This Page</h3></summary>
 <div class="tsd-accordion-details">
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Properties</summary>
-<div><a href="#fallback"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>fallback</span></a><a href="#mode"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>mode</span></a><a href="#preview"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>preview</span></a></div></details></div></details></div>
+<div><a href="#fallback"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>fallback</span></a><a href="#feet"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>feet</span></a><a href="#mode"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>mode</span></a><a href="#preview"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>preview</span></a></div></details></div></details></div>
 <div class="site-menu">
 <nav class="tsd-navigation"><a href="../index.html">Footsteps API</a>
 <ul class="tsd-small-nested-navigation" id="tsd-nav-container">

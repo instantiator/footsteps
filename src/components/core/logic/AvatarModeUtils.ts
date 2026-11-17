@@ -1,9 +1,9 @@
+import type { GameInteraction, GameSceneMode } from "../../../entities/data/scenes/GameSceneData";
 import type {
+  GameAvatarFeetData,
   GameAvatarMode,
-  GameInteraction,
   GameSceneAvatarData,
-  GameSceneMode,
-} from "../../../entities/data/scenes/GameSceneData";
+} from "../../../entities/data/scenes/GameAvatarData";
 import type { GameSpectatorsData } from "../../../entities/data/scenes/GameSpectatorsData";
 import { POINTER_INTERACTIONS } from "../../../entities/data/scenes/GameSceneData";
 import type { GameData } from "../../../entities/data/GameData";
@@ -26,7 +26,16 @@ export interface ResolvedAvatarMode {
   fallback: GameSceneAvatarData["fallback"];
   /** Whether the webcam preview shows; always false unless the mode is `camera`. */
   preview: boolean;
+  /** How the pointer's feet look in `mouse-feet` mode, with every default filled in. */
+  feet: ResolvedFeet;
 }
+
+/** The pointer's feet settings, with every default filled in. */
+export type ResolvedFeet = Required<Omit<GameAvatarFeetData, "imageResource">> &
+  Pick<GameAvatarFeetData, "imageResource">;
+
+/** The feet settings no scene sets. */
+export const FEET_DEFAULTS: ResolvedFeet = { size: 6, color: "rgba(255, 255, 255, 0.6)", cursor: "shown" };
 
 /** An avatar mode and the fallback that goes with it. */
 type AvatarChoice = Pick<ResolvedAvatarMode, "mode" | "fallback">;
@@ -57,14 +66,19 @@ export const canModeFire = (mode: GameAvatarMode, interaction: string): boolean 
 export const declaredChoice = (avatar: GameSceneAvatarData | undefined): AvatarChoice | undefined =>
   isDefined(avatar?.mode) ? { mode: avatar.mode, fallback: avatar.fallback } : undefined;
 
-/** A narrower scene's avatar settings over a broader one's: setting `mode` replaces the broader fallback too. */
+/**
+ * A narrower scene's avatar settings over a broader one's: setting `mode` replaces the broader fallback too, while
+ * `preview` and `feet` (key by key) inherit on their own.
+ */
 export const avatarOver = (
   broader: GameSceneAvatarData | undefined,
   narrower: GameSceneAvatarData | undefined,
 ): GameSceneAvatarData | undefined => {
   if (!isDefined(narrower)) return broader;
   const kept = isDefined(narrower.mode) ? { preview: broader?.preview } : broader;
-  return { ...kept, ...narrower, preview: narrower.preview ?? broader?.preview };
+  const feet =
+    isDefined(broader?.feet) || isDefined(narrower.feet) ? { ...broader?.feet, ...narrower.feet } : undefined;
+  return { ...kept, ...narrower, preview: narrower.preview ?? broader?.preview, feet };
 };
 
 /** The strongest of several choices, if any. */
@@ -96,13 +110,21 @@ const resolvePreview = (
  *
  * Preview: any active challenge turning it on wins, then any turning it off, then the stage, overview and game, and
  * finally on. It is always off unless the mode is `camera`.
+ *
+ * Feet: the first active challenge with a setting, over the stage scene's, the overview scene's and the game's, key by
+ * key, over the defaults.
  */
 export const resolveAvatarMode = (gameData: GameData, renderData: LayeredGameSceneRenderData): ResolvedAvatarMode => {
   const challenges = (renderData.challengesRenderData ?? []).map((challenge) => challenge.avatar);
   const broader = [renderData.stageRenderData?.avatar, renderData.overviewRenderData?.avatar, gameData.modules?.avatar];
   const choice = strongest(challenges.map(declaredChoice).filter(isDefined)) ??
     firstDefined(...broader.map(declaredChoice)) ?? { mode: "mouse", fallback: undefined };
-  return { ...choice, preview: choice.mode === "camera" && resolvePreview(challenges, broader) };
+  const challenge = challenges.find((avatar) => isDefined(avatar?.feet));
+  const feet = [...broader]
+    .reverse()
+    .concat(challenge)
+    .reduce<ResolvedFeet>((resolved, avatar) => ({ ...resolved, ...avatar?.feet }), FEET_DEFAULTS);
+  return { ...choice, preview: choice.mode === "camera" && resolvePreview(challenges, broader), feet };
 };
 
 /** Camera mode for an avatar mode, as the layout's camera layers take it. */

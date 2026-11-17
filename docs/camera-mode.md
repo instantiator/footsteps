@@ -51,18 +51,26 @@ The preview is always off unless the mode is `camera`. The code is `resolveAvata
 `mouse-feet` plays the camera's foot and jump rules with a pointer, so a scene built for walking and jumping works
 without a camera, as a stand-in while designing, or as a camera mode's `fallback`. The pointer is player 1's feet:
 
+- **The feet** are drawn at the pointer: a footprint `avatar.feet.size` floor units across (6 by default), lying
+  flat on a 2.5D scene's floor, so it shrinks and flattens towards the back and passes behind what stands in front of
+  it; or a circle `size`% of the screen's width across in a 2D scene. `avatar.feet` sets its colour or an image
+  ([game data](game-data.md#scene-and-avatar-modes)).
 - **Moving** onto an element fires `foot-enter` and `any-enter` (after the rule's `holdMs`), and moving off it fires
-  `foot-exit` and `any-exit`. The feet are a point, so `threshold` doesn't apply. An element drawn over another
+  `foot-exit` and `any-exit`. The feet are on an element when at least the rule's `threshold` of the footprint is
+  over it, measured at 21 points across it, as a camera foot is: by default, all of it. An element drawn over another
   covers it, unless the rule sets `includeCovered`.
 - **A drag** from A to B is a jump that takes off from whatever is under A and lands on whatever is under B. Taking
   off leaves everything, and landing fires `jump-from` for A, `jump-onto` for B, and `jump` for an element under both
-  (and for a `jump` rule with no target), then enters B. The browser's click at the end of a drag is dropped.
+  (and for a `jump` rule with no target), then enters B. The browser's click at the end of a drag is dropped. Mid-jump
+  the feet are drawn lifted over a shadow, following the pointer; player 1's position stays where they took off until
+  they land.
 - **A press and release** that moves no more than 8 pixels (`DRAG_PX`) is still a `click`.
 - Leaving the game viewport leaves everything. As with the camera, what comes under feet that aren't moving is entered
   then: a scene starting, resetting or being revealed beneath them, or an element moving under them (eg. an obstacle
   sliding along), and what moves out from under them is left. The feet stand again on each animation frame.
 
-Hand, head, body and near interactions never fire in `mouse-feet`, and nor do effects that act on players. Mouse
+Hand, head, body and near interactions never fire in `mouse-feet`, and nor do effects that act on players: the feet
+aren't a player the effects can find. Mouse
 interactions (`click`, `mouse-enter`, `mouse-exit`) work as usual.
 
 ### A still pointer and moving things
@@ -454,8 +462,9 @@ toggling it.
 | `src/vision/Tracking.ts`                              | stable player ids, key-point smoothing, holding lost players, and filling gaps                                     |
 | `src/vision/models/`                                  | BodyPix, MediaPipe Pose and MoveNet, and the tfjs backend choice                                                   |
 | `src/vision/VisionWorkerProxy.ts`, `vision.worker.ts` | runs a model in a web worker                                                                                       |
-| `src/components/core/logic/AvatarModeUtils.ts`        | per-scene avatar mode and spectator settings resolution, and what each mode can fire                               |
-| `src/components/core/layout/MouseFeetHook.ts`         | [mouse-feet](#mouse-feet): the pointer as player 1's feet, and drags as jumps                                      |
+| `src/components/core/logic/AvatarModeUtils.ts`        | per-scene avatar mode, mouse-feet look and spectator settings resolution, and what each mode can fire              |
+| `src/components/core/layout/MouseFeetHook.ts`         | [mouse-feet](#mouse-feet): the pointer as player 1's feet, their footprint, and drags as jumps                     |
+| `src/components/core/layout/MouseFeetAvatar.tsx`      | [mouse-feet](#mouse-feet): the feet drawn at the pointer, and lifted mid-jump                                      |
 | `src/components/core/logic/GameClickUtils.ts`         | targets, and the state changes for clicks and interactions                                                         |
 | `src/components/core/layout/GameLayersLayout.tsx`     | the layer stack, scene transitions, shared camera state, and the interaction hook                                  |
 | `src/components/core/layout/useSceneTransition.ts`    | fades scene changes and times the camera reshape and reduced motion                                                |
@@ -466,7 +475,7 @@ toggling it.
 ## Testing
 
 Unit tests cover the camera choice (`tests/CameraPicker.test.tsx`), player depth (`tests/PlayerPosition.test.ts`), per-player
-canvases (`tests/PlayerCanvases.test.ts`), the avatar mode resolution (`tests/AvatarModeUtils.test.ts`), mouse-feet (`tests/MouseFeetHook.test.tsx`), the monitor and its jump
+canvases (`tests/PlayerCanvases.test.ts`), the avatar mode resolution (`tests/AvatarModeUtils.test.ts`), mouse-feet (`tests/MouseFeetHook.test.tsx`, `tests/MouseFeetAvatar.test.tsx`), the monitor and its jump
 interactions (`tests/PlayerMonitor.test.ts`), jump detection (`tests/JumpDetector.test.ts`), feet (`tests/CameraSupport.test.ts`), the floor geometry and mask rectangles (`tests/FloorGeometry.test.ts`), saved
 floors (`tests/FloorCalibration.test.ts`), the floor overlay (`tests/FloorOverlay.test.tsx`), the calibration page
 (`tests/CalibrationView.test.tsx`), the

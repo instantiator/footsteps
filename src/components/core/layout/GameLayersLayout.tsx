@@ -31,7 +31,12 @@ import {
 } from "../../camera/FloorGeometry";
 import { DEPTH_STACK_CLASS, SCENE_25D_CLASS, UNSORTED_PLAYER_Z_INDEX } from "../../camera/PlayerPosition";
 import type { PlayerFrame } from "../../camera/PlayerMonitor";
-import { cameraModeOf, type ResolvedAvatarMode, type ResolvedCameraMode } from "../logic/AvatarModeUtils";
+import {
+  cameraModeOf,
+  type ResolvedAvatarMode,
+  type ResolvedCameraMode,
+  type ResolvedFeet,
+} from "../logic/AvatarModeUtils";
 import "./GameLayersLayout.css";
 import {
   CharacterCameraLayerWrapper,
@@ -41,7 +46,8 @@ import {
   HudLayerWrapper,
 } from "./GameLayerWrappers";
 import { usePlayerInteractions, type CameraRuleEvent, type CameraRuleTarget } from "./PlayerInteractionHook";
-import { useMouseFeet } from "./MouseFeetHook";
+import { footprintAt, footprintPoints, useMouseFeet, type FeetAt, type FootprintOf } from "./MouseFeetHook";
+import MouseFeetAvatar, { type DrawFeet } from "./MouseFeetAvatar";
 import { useFloorPlacement, useUnreachableWarnings } from "./FloorPlacement";
 import { usePositionVariables, type PublishedPositions } from "../../camera/PositionPublisher";
 import { PlayerRegistryContext } from "../../../providers/PlayerRegistryContext";
@@ -177,6 +183,8 @@ interface SceneProps {
   setAspectRatio: Dispatch<SetStateAction<number | undefined>>;
   /** The floor a 2.5D scene is fitted to; undefined in a 2D scene. */
   floor: FloorView | undefined;
+  /** In `mouse-feet` mode, how the pointer's feet look, and where the avatar puts its draw function. */
+  feet: { look: ResolvedFeet; drawRef: RefObject<DrawFeet | null> } | undefined;
 }
 
 /** The given element's width-to-height ratio, kept up to date as it resizes. */
@@ -235,9 +243,14 @@ function DepthStack({
   mirror,
   debug,
   floor,
-}: Pick<SceneProps, "scene" | "media" | "aspectRatio" | "canvasRef" | "handlePlayers" | "mirror" | "debug" | "floor">) {
+  feet,
+}: Pick<
+  SceneProps,
+  "scene" | "media" | "aspectRatio" | "canvasRef" | "handlePlayers" | "mirror" | "debug" | "floor" | "feet"
+>) {
   return (
     <div className={DEPTH_STACK_CLASS}>
+      {feet && <MouseFeetAvatar look={feet.look} floor={floor} drawRef={feet.drawRef} />}
       {scene.camera.enabled && (
         <CharacterCanvasLayerWrapper
           zIndex={UNSORTED_PLAYER_Z_INDEX}
@@ -355,9 +368,12 @@ function usePositionReports(
     [handlePlayers, report, registry],
   );
   const onFeet = useCallback(
-    (point: Point | null) => {
+    (feet: FeetAt | null) => {
+      // A jump's position stays held at its take-off until it lands
+      if (feet?.airborne === true) return;
       const rect = viewportRef.current?.getBoundingClientRect();
-      if (point === null || !rect || rect.width === 0 || rect.height === 0) return report(new Map());
+      if (feet === null || !rect || rect.width === 0 || rect.height === 0) return report(new Map());
+      const { point } = feet;
       const at = { x: (point.x - rect.left) / rect.width, y: (point.y - rect.top) / rect.height };
       const view = floorRef.current;
       report(new Map([[1, view ? viewportToFloor(view, at) : { x: 100 * at.x, y: 100 * at.y }]]));
@@ -369,8 +385,8 @@ function usePositionReports(
 
 /** What players do and where they are, for {@link usePlayerInput}. */
 interface PlayerInputProps extends Pick<SceneProps, "scene" | "mirror" | "floor" | "debug"> {
-  /** Whether the mouse is player 1's feet. */
-  mouseFeet: boolean;
+  /** How the pointer's feet look, when the mouse is player 1's feet; undefined otherwise. */
+  feet: ResolvedFeet | undefined;
   /** The rules players can fire, and where their positions go. */
   rules: Pick<GameLayersLayoutProps, "cameraRules" | "onPlayerInteraction" | "onPlayerPositions">;
 }
@@ -378,10 +394,15 @@ interface PlayerInputProps extends Pick<SceneProps, "scene" | "mirror" | "floor"
 /**
  * Turns what players do into interactions, and where they are into positions for rules and templates: the camera's
  * players, or the mouse as player 1's feet. While debugging, it also warns of targets no player can stand on.
- * @returns the character canvas's ref, the frame handler to give it, and the players for the debug overlay
+ * @returns the character canvas's ref, the frame handler to give it, the players for the debug overlay, and the
+ * pointer's feet to draw
  */
-function usePlayerInput(viewportRef: RefObject<HTMLElement | null>, props: PlayerInputProps) {
-  const { scene, mirror, mouseFeet, floor, debug, rules } = props;
+function usePlayerInput(
+  viewportRef: RefObject<HTMLElement | null>,
+  props: PlayerInputProps,
+): Pick<SceneProps, "canvasRef" | "debugPlayers" | "handlePlayers" | "feet"> {
+  const { scene, mirror, feet: look, floor, debug, rules } = props;
+  const mouseFeet = isDefined(look);
   const { canvasRef, handlePlayers } = usePlayerInteractions(
     rules.cameraRules,
     rules.onPlayerInteraction,
@@ -390,16 +411,35 @@ function usePlayerInput(viewportRef: RefObject<HTMLElement | null>, props: Playe
   );
   const positions = usePositionReports(viewportRef, { handlePlayers, floor, publish: rules.onPlayerPositions });
   const { debugPlayers, onPlayers } = useDebugPlayers(positions.onCameraPlayers, debug);
+  const drawFeetRef = useRef<DrawFeet | null>(null);
+  const { onFeet: reportFeet } = positions;
+  const onFeet = useCallback(
+    (feet: FeetAt | null) => {
+      reportFeet(feet);
+      drawFeetRef.current?.(feet);
+    },
+    [reportFeet],
+  );
+  const size = look?.size;
+  const footprint = useCallback<FootprintOf>(
+    (point) => {
+      const box = viewportRef.current?.getBoundingClientRect();
+      return box && isDefined(size) ? footprintPoints(footprintAt(point, box, floor, size)) : [point];
+    },
+    [viewportRef, floor, size],
+  );
   useMouseFeet(viewportRef, rules.cameraRules, rules.onPlayerInteraction, {
     enabled: mouseFeet,
     paused: scene.transitioning,
-    onPosition: positions.onFeet,
+    onFeet,
+    footprint,
   });
   // Whoever stood somewhere before has gone when the way players are followed changes
   const { clear } = positions;
   useEffect(() => clear(), [mouseFeet, scene.camera.enabled, clear]);
   useUnreachableWarnings(viewportRef, { view: floor, rules: rules.cameraRules, debug: debug === true });
-  return { canvasRef, debugPlayers, onPlayers };
+  const feet = isDefined(look) ? { look, drawRef: drawFeetRef } : undefined;
+  return { canvasRef, debugPlayers, handlePlayers: onPlayers, feet };
 }
 
 /** The game viewport's ref, and ways to measure it and its container. */
@@ -507,10 +547,10 @@ export default function GameLayersLayout({
   const media = useCameraMedia(camera.enabled || scene.camera.enabled);
 
   const floor = useShownFloor(scene, { corners, mirror }, { screen: viewportRef, camera: cameraAspectRatio });
-  const { canvasRef, debugPlayers, onPlayers } = usePlayerInput(viewportRef, {
+  const input = usePlayerInput(viewportRef, {
     scene,
     mirror,
-    mouseFeet,
+    feet: mouseFeet ? requestedAvatar.feet : undefined,
     floor,
     debug: aids.debug,
     rules: { cameraRules, onPlayerInteraction, onPlayerPositions },
@@ -531,11 +571,9 @@ export default function GameLayersLayout({
         debug={aids.debug}
         media={{ ...media, onCameraError }}
         aspectRatio={cameraAspectRatio}
-        debugPlayers={debugPlayers}
-        canvasRef={canvasRef}
-        handlePlayers={onPlayers}
         setAspectRatio={setCameraAspectRatio}
         floor={floor}
+        {...input}
       />
       <HudLayerWrapper zIndex={10} {...aids} />
     </div>

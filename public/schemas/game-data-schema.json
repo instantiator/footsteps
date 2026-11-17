@@ -172,6 +172,32 @@
             ],
             "type": "object"
         },
+        "GameAvatarFeetData": {
+            "description": "How the pointer's feet look in `mouse-feet` mode, and how much of a target they must cover. A narrower scene's\nsetting overrides a broader one's key by key.",
+            "properties": {
+                "color": {
+                    "description": "The footprint's CSS colour. Defaults to a translucent white.",
+                    "type": "string"
+                },
+                "cursor": {
+                    "description": "Whether the mouse cursor shows over the game while the feet do. Defaults to `shown`.",
+                    "enum": [
+                        "hidden",
+                        "shown"
+                    ],
+                    "type": "string"
+                },
+                "imageResource": {
+                    "description": "An image resource drawn upright, standing on the footprint, instead of the plain footprint.",
+                    "type": "string"
+                },
+                "size": {
+                    "description": "The footprint's diameter, in floor units (a hundredth of the floor's width at its front, or of a 2D scene's).\nA rule's `threshold` is the share of the footprint that must be over its element. Defaults to 6.",
+                    "type": "number"
+                }
+            },
+            "type": "object"
+        },
         "GameChallengeData": {
             "description": "Describes an individual challenge in the game",
             "properties": {
@@ -1467,7 +1493,7 @@
             "type": "object"
         },
         "GameSceneAvatarData": {
-            "description": "Avatar settings for one scene. `mode` and `fallback` go together: a scene that sets `mode` doesn't inherit a broader\nscene's `fallback`. `preview` inherits on its own.",
+            "description": "Avatar settings for one scene. `mode` and `fallback` go together: a scene that sets `mode` doesn't inherit a broader\nscene's `fallback`. `preview` and `feet` inherit on their own.",
             "properties": {
                 "fallback": {
                     "description": "The mode to use when the camera isn't available. Leaving it out of a `camera` mode means the camera is required.",
@@ -1476,6 +1502,10 @@
                         "mouse-feet"
                     ],
                     "type": "string"
+                },
+                "feet": {
+                    "$ref": "#/definitions/GameAvatarFeetData",
+                    "description": "How the pointer's feet look in `mouse-feet` mode, including as a fallback."
                 },
                 "mode": {
                     "description": "What stands in for the player while this scene shows.",

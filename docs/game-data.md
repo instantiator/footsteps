@@ -223,10 +223,24 @@ pits" and "The floor is lava" stages lay their pits and stones on the floor.
   fallback means the camera is required: the game can't start until the camera permission is granted. With a
   fallback, it can start without it.
 - `preview` (default `true`) shows the webcam preview. It is always off unless the mode is `camera`.
+- `feet` is how the pointer's feet look in `mouse-feet` mode, including as a fallback:
+
+  | Key             | Default                    | What it sets                                                                                                                               |
+  | --------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+  | `size`          | `6`                        | The footprint's diameter in floor units (in a 2D scene, % of the screen's width). A rule's `threshold` is the share of it that must be on. |
+  | `color`         | `rgba(255, 255, 255, 0.6)` | The footprint's CSS colour.                                                                                                                |
+  | `imageResource` | none                       | An image [resource](#resources) drawn upright, standing on the footprint, in its place.                                                    |
+  | `cursor`        | `shown`                    | `hidden` hides the mouse cursor over the game while the feet show.                                                                         |
+
+  The feet are a `.mouse-feet-avatar` element, with `data-airborne` mid-jump, so a game's stylesheets can restyle
+  them: its `.mouse-feet-body` is the footprint (or the image), and `.mouse-feet-shadow` is the shadow left under a
+  jump.
 
 `mode` and `fallback` go together: a scene that sets `mode` doesn't inherit a broader `fallback`, so
-`"avatar": { "mode": "camera" }` requires the camera however the game is set. `preview` inherits on its own, so
-`"avatar": { "preview": false }` keeps the broader mode.
+`"avatar": { "mode": "camera" }` requires the camera however the game is set. `preview` and `feet` inherit on their
+own, so `"avatar": { "preview": false }` keeps the broader mode. `feet` inherits key by key: the first active challenge
+with a `feet` setting, over the stage's `shared` scene's, the overview scene's and the game's, so a challenge can change
+the colour and keep the game's size.
 
 The avatar resolves most specific first:
 

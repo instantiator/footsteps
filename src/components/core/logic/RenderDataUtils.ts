@@ -5,7 +5,6 @@ import type {
   GameChallengeScene,
   GameChallengeScenePurpose,
   GameSceneBase,
-  GameSceneAvatarData,
   GameSceneMode,
   GameSceneComponentData,
   GameOverviewScene,
@@ -13,6 +12,7 @@ import type {
   GameStageScene,
   GameStageScenePurpose,
 } from "../../../entities/data/scenes/GameSceneData";
+import type { GameSceneAvatarData } from "../../../entities/data/scenes/GameAvatarData";
 import type { GameSpectatorsData } from "../../../entities/data/scenes/GameSpectatorsData";
 import type { GameData, GameId } from "../../../entities/data/GameData";
 import type { GameChallengeState } from "../../../entities/state/GameChallengeState";

@@ -1716,7 +1716,11 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "avatar": { "mode": "camera", "fallback": "mouse-feet" },
+                  "avatar": {
+                    "mode": "camera",
+                    "fallback": "mouse-feet",
+                    "feet": { "color": "rgb(120 200 255 / 70%)" }
+                  },
                   "component": {
                     "type": "template",
                     "data": {},

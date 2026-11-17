@@ -313,6 +313,24 @@ describe("resource names", () => {
     );
     expect(result.problems.map((problem) => problem.message)).toContain('refers to undefined resource "missing-audio"');
   });
+
+  it("checks the feet's image in the game's avatar settings, a scene's and a reset scene's", async () => {
+    const feet = (imageResource: string) => ({ feet: { imageResource } });
+    const scene: GameOverviewScene = {
+      ...templateScene(undefined),
+      avatar: feet("known"),
+      resetScene: { component: { type: "template", data: {} }, avatar: feet("missing-reset") },
+    };
+    const game = gameWith({ resources, modules: { avatar: feet("missing-game") }, scenes: [scene] });
+
+    const result = await checkGame(game, optionsWith(["/site/games/known.png"]));
+
+    expect(result.problems.map((problem) => problem.path)).toEqual([
+      "modules.avatar.feet.imageResource",
+      "scenes[0].resetScene.avatar.feet.imageResource",
+    ]);
+    expect(result.checked.names).toBe(3);
+  });
 });
 
 describe("checkRepository", () => {

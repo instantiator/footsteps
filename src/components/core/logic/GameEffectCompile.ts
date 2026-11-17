@@ -1,12 +1,12 @@
 import {
   GAME_INTERACTIONS,
   type GameAction,
-  type GameAvatarMode,
   type GameEffectEndTrigger,
   type GameInteractTrigger,
   type GameRewardAction,
   type GameRule,
 } from "../../../entities/data/scenes/GameSceneData";
+import { type GameAvatarMode } from "../../../entities/data/scenes/GameAvatarData";
 import {
   GAME_EFFECT_NAMES,
   type GameEffect,

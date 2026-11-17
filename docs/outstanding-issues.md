@@ -311,24 +311,13 @@ volume setting for a game, a sound, or the player.
 
 ## Mouse-feet has no body for player effects
 
-In `mouse-feet` the pointer is player 1's feet only: there's no silhouette, so effects that act on players
-(`player-fall`, `players`, `.player-*` targets) can't run, and a scene that uses them must be able to be in `camera`
-mode. The session's player count stays 0.
+In `mouse-feet` the pointer's feet are drawn ([002.03.18](prompts/002.03.18.prompt%20-%20mouse-feet%20avatar.md)), but
+they aren't a player in the registry, with a silhouette and states, which is what effects that act on players
+(`player-fall`, `players`, `.player-*` targets) work on. So those effects can't run, and a scene that uses them must
+be able to be in `camera` mode. The session's player count stays 0.
 
-**Act when:** [996 (player avatars)](prompts/996.00.00.prompt%20-%20player%20avatars.md) is planned. Give mouse-feet a
-drawn avatar there, and let player effects act on it.
-
-**Planned in:** [002.03.18 (mouse-feet avatar)](prompts/002.03.18.prompt%20-%20mouse-feet%20avatar.md), which decides whether player effects act on the mouse-feet avatar there or wait for 996.
-
-## Mouse-feet feet are a point
-
-`MouseFeet` (`src/components/core/layout/MouseFeetHook.ts`) treats the feet as the pointer's single point, so a rule's
-`threshold` has no effect in `mouse-feet`.
-
-**Act when:** an author reports a threshold behaving differently by mouse than by camera. Give the feet a small
-area (a foot-sized box under the pointer) and measure coverage against it.
-
-**Planned in:** [002.03.18 (mouse-feet avatar)](prompts/002.03.18.prompt%20-%20mouse-feet%20avatar.md), which gives the feet the avatar's area.
+**Act when:** [996 (player avatars)](prompts/996.00.00.prompt%20-%20player%20avatars.md) is planned. Make the mouse-feet
+avatar a registry player there, and let player effects act on it.
 
 ## The vision model sees the whole camera picture in 2.5D scenes
 

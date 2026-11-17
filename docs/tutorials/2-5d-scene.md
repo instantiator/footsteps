@@ -40,7 +40,8 @@ the player's feet:
 ```
 
 With `mouse-feet`, the pointer is player 1's feet: moving it over the floor walks, and it fires the same `foot-enter`
-rules a camera player's feet would ([mouse-feet](../camera-mode.md#mouse-feet)). It's the quickest way to try a 2.5D
+rules a camera player's feet would ([mouse-feet](../camera-mode.md#mouse-feet)). The feet are drawn as a footprint on
+the floor; `"feet": { "color": "orange" }` beside `mode` changes its colour. It's the quickest way to try a 2.5D
 scene: open it with `?noCamera=true` to play by mouse even with a camera.
 
 The game's `modules` also set how [spectators](../game-data.md#spectators), people the camera sees standing off the

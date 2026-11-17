@@ -47,10 +47,14 @@ const returnToStart = async (page: Page) => {
   await expect(page.locator("#door-base")).toBeVisible({ timeout: 6000 });
 };
 
-/** Moves the mouse just inside the floor's front right corner, which is the scene box's bottom right: on the lava. */
+/**
+ * Moves the mouse inside the floor's front right corner, which is the scene box's bottom right, far enough in for the
+ * feet's whole footprint to be on the lava.
+ */
 const moveToFrontCorner = async (page: Page) => {
   const viewport = (await page.locator(".floorScene .sceneBox").first().boundingBox())!;
-  await page.mouse.move(viewport.x + viewport.width - 5, viewport.y + viewport.height - 5);
+  const inset = viewport.width * 0.06;
+  await page.mouse.move(viewport.x + viewport.width - inset, viewport.y + viewport.height - inset);
 };
 
 /** Puts the mouse on stone hop's first stone in its reset scene. */
