@@ -109,6 +109,7 @@ describe("GameLanding for a game with 2.5D scenes", () => {
     expect(screen.getByRole("button", { name: "New game" })).toBeDisabled();
     expect(await screen.findByText(/This camera has no saved floor area yet/)).toBeInTheDocument();
     expect(document.querySelector(".game-camera-preview polygon")).not.toBeNull();
+    expect(screen.getByRole("link", { name: "Plan your space" })).toHaveAttribute("href", "/setup");
 
     fireEvent.click(screen.getByRole("link", { name: "Calibrate the floor" }));
     expect(screen.getByText("Calibrating")).toBeInTheDocument();

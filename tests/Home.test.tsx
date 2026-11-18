@@ -13,4 +13,13 @@ describe("Home", () => {
     const heading = screen.getByRole("heading", { level: 1, name: /Footsteps/i });
     expect(heading).toBeInTheDocument();
   });
+
+  it("links to the setup planner", () => {
+    render(
+      <MemoryRouter>
+        <Home />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("link", { name: "Plan your space" })).toHaveAttribute("href", "/setup");
+  });
 });

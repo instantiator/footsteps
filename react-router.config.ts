@@ -10,6 +10,7 @@ export default {
   prerender: [
     "/",
     "/scene-renderer",
+    "/setup",
     ...Object.keys(localRepository.games).flatMap((id) => [
       `/game/${id}`,
       `/game/${id}/play`,

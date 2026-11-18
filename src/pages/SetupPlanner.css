@@ -1,0 +1,178 @@
+/* The setup planner is a plain document page, so it sets its own size rather than the game's viewport-scaled one */
+.setup-planner {
+  --setup-floor: #4caf5080;
+  --setup-room: #888;
+  --setup-camera: #1565c0;
+  --setup-player: #e65100;
+  --setup-warning: #b71c1c;
+  font-size: 16px;
+  line-height: 1.4;
+  padding: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  .setup-planner {
+    --setup-camera: #64b5f6;
+    --setup-player: #ffb74d;
+    --setup-warning: #ef9a9a;
+  }
+}
+
+.setup-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 800px) {
+  .setup-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.setup-planner fieldset {
+  margin: 0 0 12px;
+}
+
+.number-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.number-field-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.number-field-controls input {
+  width: 5em;
+}
+
+.number-field-unit {
+  width: 1.5em;
+}
+
+.setup-results th {
+  text-align: left;
+  font-weight: normal;
+  padding-right: 16px;
+}
+
+.setup-results td {
+  font-weight: bold;
+}
+
+.setup-warning,
+.setup-warnings {
+  color: var(--setup-warning);
+}
+
+.setup-illustration {
+  width: 100%;
+  margin-top: 16px;
+  font-size: 0.16px;
+}
+
+.setup-illustration line,
+.setup-illustration polygon,
+.setup-illustration circle {
+  vector-effect: non-scaling-stroke;
+  stroke-width: 1.5px;
+}
+
+.setup-room {
+  fill: none;
+  stroke: var(--setup-room);
+  stroke-dasharray: 4 3;
+}
+
+.setup-floor {
+  fill: var(--setup-floor);
+  stroke: var(--setup-room);
+}
+
+.setup-camera line,
+.setup-camera circle {
+  stroke: var(--setup-camera);
+  fill: var(--setup-camera);
+}
+
+.setup-camera .setup-ray {
+  stroke-dasharray: 2 2;
+}
+
+.setup-player line,
+.setup-player circle {
+  stroke: var(--setup-player);
+  fill: var(--setup-player);
+}
+
+.setup-dimension line {
+  stroke: currentColor;
+  stroke-width: 1px;
+}
+
+.setup-dimension text {
+  fill: currentColor;
+  text-anchor: middle;
+}
+
+.setup-screen-view {
+  margin: 16px 0 0;
+}
+
+.setup-screen-view svg {
+  width: 100%;
+}
+
+.setup-screen-view line,
+.setup-screen-view polygon,
+.setup-screen-view rect {
+  vector-effect: non-scaling-stroke;
+}
+
+.setup-screen-bezel {
+  fill: #222;
+}
+
+.setup-screen-glass {
+  fill: #000;
+}
+
+.setup-screen-picture {
+  fill: #101820;
+}
+
+.setup-screen-room {
+  stroke: #9e9e9e;
+  stroke-width: 1px;
+}
+
+.setup-screen-floor {
+  fill: var(--setup-floor);
+  stroke: #81c784;
+  stroke-width: 1.5px;
+}
+
+.setup-screen-player {
+  stroke: var(--setup-player);
+  stroke-width: 3px;
+}
+
+.setup-screen-clear {
+  fill: none;
+  stroke: #ffeb3b;
+  stroke-width: 1px;
+  stroke-dasharray: 4 3;
+}
+
+.setup-screen-view figcaption {
+  font-size: 0.85em;
+}
