@@ -11,6 +11,7 @@ import { loadGameState, saveGameState } from "../src/entities/state/GameStateSto
 import { GameDataProvider } from "../src/providers/GameDataProvider";
 import GameRepositoryProvider from "../src/providers/GameRepositoryProvider";
 import { simpleGameData } from "./data/SampleGameState";
+import { FakeMediaStream, FakeMediaStreamTrack } from "./helpers/media";
 import { stubGetUserMedia, stubPermissionQuery, type PermissionQueryResult } from "./helpers/permissions";
 
 const GAME_ID = "simple-game";
@@ -114,14 +115,14 @@ describe("GameLanding for a game with 2.5D scenes", () => {
 
     expect(await screen.findByText("Not yet calibrated")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New game" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Reset" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Clear" })).toBeDisabled();
     expect(document.querySelector(".game-camera-preview polygon")).toBeNull();
 
     fireEvent.click(screen.getByRole("link", { name: "Calibrate" }));
     expect(screen.getByText("Calibrating")).toBeInTheDocument();
   });
 
-  it("lets the player start once the camera has a saved floor, drawn on the preview, until it's reset", async () => {
+  it("lets the player start once the camera has a saved floor, drawn on the preview, until it's cleared", async () => {
     saveCalibration(cameraKeyOf({}), DEFAULT_CORNERS);
     permissionQuery("granted");
     getUserMedia();
@@ -131,10 +132,23 @@ describe("GameLanding for a game with 2.5D scenes", () => {
     expect(screen.queryByText("Not yet calibrated")).toBeNull();
     expect(document.querySelector(".game-camera-preview polygon")).not.toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
     expect(screen.getByText("Not yet calibrated")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New game" })).toBeDisabled();
     expect(document.querySelector(".game-camera-preview polygon")).toBeNull();
+  });
+
+  it("lets the player start with the default floor after Reset", async () => {
+    permissionQuery("granted");
+    getUserMedia();
+    renderLanding(floorGame);
+    expect(await screen.findByText("Not yet calibrated")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+
+    expect(screen.queryByText("Not yet calibrated")).toBeNull();
+    expect(screen.getByRole("button", { name: "New game" })).toBeEnabled();
+    expect(document.querySelector(".game-camera-preview polygon")).not.toBeNull();
   });
 
   it("lets a player without the camera start, to play by mouse", async () => {
@@ -294,6 +308,23 @@ describe("GameLanding", () => {
     fireEvent.click(screen.getByRole("button", { name: "New game" }));
     expect(confirm).not.toHaveBeenCalled();
     expect(screen.getByText("Playing the game")).toBeInTheDocument();
+  });
+
+  it("plans the space for the camera in use, once the browser names it", async () => {
+    permissionQuery("granted");
+    const media = getUserMedia();
+    media.getUserMedia.mockResolvedValue(new FakeMediaStream([new FakeMediaStreamTrack({ deviceId: "lifecam" })]));
+    media.enumerateDevices.mockResolvedValue([
+      { deviceId: "lifecam", label: "LifeCam HD-3000", kind: "videoinput", groupId: "g", toJSON: () => ({}) },
+    ]);
+    renderLanding(cameraGame);
+
+    await waitFor(() =>
+      expect(screen.getByRole("link", { name: "Plan space" })).toHaveAttribute(
+        "href",
+        "/setup?camera=LifeCam+HD-3000&size=1280x720",
+      ),
+    );
   });
 
   it("plans the space in a new tab", () => {

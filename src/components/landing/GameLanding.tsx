@@ -4,24 +4,26 @@ import type { GameData } from "../../entities/data/GameData";
 import { clearGameState, loadGameState } from "../../entities/state/GameStateStorage";
 import { useGameData } from "../../providers/GameDataHook";
 import { isDefined } from "../../util/ObjectUtils";
-import { loadCameraChoice } from "../camera/CameraChoice";
+import { loadCameraChoice, sizeOf } from "../camera/CameraChoice";
 import { cameraKeyOf } from "../camera/FloorCalibration";
 import GameStylesheets from "../core/GameStylesheets";
 import { calibrationNeeded, gameCameraRequirement, gameUsesFloor } from "../core/logic/GamePermissionUtils";
 import "./GamePanel.css";
 import "./GameLanding.css";
-import CameraPicker from "./CameraPicker";
+import CameraPicker, { type CameraInUse } from "./CameraPicker";
 import GameBadges from "./GameBadges";
 import GamePermissionPanel from "./GamePermissionPanel";
 import { useGamePermissions } from "./useGamePermissions";
 
 /** The bar along the bottom: planning the space in a new tab, and starting the game. */
 function ActionBar({
+  planTo,
   saved,
   ready,
   onContinue,
   onNewGame,
 }: {
+  planTo: string;
   saved: boolean;
   ready: boolean;
   onContinue: () => void;
@@ -29,7 +31,7 @@ function ActionBar({
 }) {
   return (
     <div className="game-landing-actions">
-      <Link className="game-button" to="/setup" target="_blank" rel="noreferrer">
+      <Link className="game-button" to={planTo} target="_blank" rel="noreferrer">
         Plan space
       </Link>
       <span className="game-landing-actions-gap" />
@@ -55,20 +57,32 @@ function CameraPanel(props: ComponentProps<typeof CameraPicker>) {
   );
 }
 
+/** The setup planner, for the camera in use once the browser has named it, so it starts with that camera's view. */
+const planPath = (camera: CameraInUse | undefined): string => {
+  if (!camera?.label) return "/setup";
+  const { label, size } = camera;
+  return `/setup?${new URLSearchParams({ camera: label, size: `${size.width}x${size.height}` }).toString()}`;
+};
+
 /**
  * Whether the camera is ready to play: granted where it's required, and calibrated where the game uses the floor, unless
  * the player plays without it. What's still needed is given as warnings for the preview.
  */
 const useCameraReadiness = (gameData: GameData, cameraGranted: boolean, canStart: boolean) => {
-  const [cameraKey, setCameraKey] = useState(() => cameraKeyOf(loadCameraChoice()));
-  // Calibrations live in storage, so forgetting one re-renders to read it again
-  const [, calibrationForgotten] = useReducer((count: number) => count + 1, 0);
+  const [camera, setCamera] = useState<CameraInUse>(() => {
+    const choice = loadCameraChoice();
+    return { key: cameraKeyOf(choice), label: "", size: sizeOf(choice) };
+  });
+  // Calibrations live in storage, so resetting or clearing one re-renders to read it again
+  const [, calibrationChanged] = useReducer((count: number) => count + 1, 0);
   const [noCamera, setNoCamera] = useState(false);
-  const needsCalibration = !noCamera && calibrationNeeded(gameData, cameraGranted, cameraKey);
+  const needsCalibration = !noCamera && calibrationNeeded(gameData, cameraGranted, camera.key);
   const warnings = [!canStart && "Camera required", needsCalibration && "Not yet calibrated"].filter(
     (warning) => typeof warning === "string",
   );
-  return { setCameraKey, calibrationForgotten, noCamera, setNoCamera, ready: canStart && !needsCalibration, warnings };
+  const ready = canStart && !needsCalibration;
+  const planTo = planPath(noCamera ? undefined : camera);
+  return { setCamera, calibrationChanged, noCamera, setNoCamera, ready, warnings, planTo };
 };
 
 /**
@@ -86,11 +100,8 @@ export default function GameLanding() {
   const savedState = useMemo(() => loadGameState(gameId, gameData), [gameId, gameData]);
   const cameraRequirement = gameCameraRequirement(gameData);
   const cameraGranted = states.camera === "granted";
-  const { setCameraKey, calibrationForgotten, noCamera, setNoCamera, ready, warnings } = useCameraReadiness(
-    gameData,
-    cameraGranted,
-    canStart,
-  );
+  const readiness = useCameraReadiness(gameData, cameraGranted, canStart);
+  const { noCamera, ready } = readiness;
   const playPath = `/game/${gameId}/play${noCamera ? "?noCamera=true" : ""}`;
 
   const startNewGame = () => {
@@ -120,16 +131,19 @@ export default function GameLanding() {
               <CameraPanel
                 granted={cameraGranted}
                 calibrateTo={gameUsesFloor(gameData) ? `/game/${gameId}/calibrate` : undefined}
-                onCameraKeyChange={setCameraKey}
-                onCalibrationForgotten={calibrationForgotten}
-                noCamera={cameraRequirement === "enabled" ? { checked: noCamera, onChange: setNoCamera } : undefined}
-                warnings={warnings}
+                onCameraChange={readiness.setCamera}
+                onCalibrationChange={readiness.calibrationChanged}
+                noCamera={
+                  cameraRequirement === "enabled" ? { checked: noCamera, onChange: readiness.setNoCamera } : undefined
+                }
+                warnings={readiness.warnings}
               />
             )}
           </div>
         )}
       </div>
       <ActionBar
+        planTo={readiness.planTo}
         saved={isDefined(savedState)}
         ready={ready}
         onContinue={() => navigate(playPath)}

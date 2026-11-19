@@ -55,8 +55,8 @@ describe("the camera's view", () => {
     expect(2 * halfView(sv)).toBeCloseTo(42, 0);
   });
 
-  it("takes the default LifeCam HD-3000 at 16:9 to about 37° vertically", () => {
-    const { sv } = cameraView(DEFAULT_SETUP_INPUTS, constants({ edgeInset: 0 }));
+  it("takes a LifeCam HD-3000 at 16:9 to about 37° vertically", () => {
+    const { sv } = cameraView(inputs({ diagonalFov: 68.5, aspect: 16 / 9 }), constants({ edgeInset: 0 }));
     expect(2 * halfView(sv)).toBeCloseTo(37, 0);
   });
 

@@ -135,9 +135,11 @@ recommends how big a floor to mark and where to put the camera. The user enters 
 optional ceiling height with the space needed above the camera, the shortest and tallest players, the space taken on
 each side of the floor and behind the camera (where the screen stands), and the camera's diagonal field of view and
 picture shape. If the camera has no spec sheet, measuring how much of a wall it shows from a known distance gives the
-field of view instead. The values start at a 5.77 m × 4.27 m room and a Microsoft LifeCam HD-3000 at 1280×720, and
-"Known webcam" fills in the field of view and picture shape of any camera in [known webcams](webcams.md). The page
-shows the floor's size, the camera's distance from the floor, its height and tilt
+field of view instead. The room starts at 5.77 m × 4.27 m. "Known webcam" fills in the field of view and picture shape
+of any camera in [known webcams](webcams.md), or of a generic webcam (65°, 4:3). The page starts with the camera the
+game uses: **Plan space** names it in the query string (`/setup?camera=<label>&size=<width>x<height>`), and otherwise
+the page asks the browser for its default camera, which it names only once the camera has been granted. A camera that
+isn't known, at that size, starts on the generic webcam. The page shows the floor's size, the camera's distance from the floor, its height and tilt
 (and where the picture's centre meets the floor), the margins left over, and an isometric drawing of the result. Every
 value and assumption has − and + buttons, so the effect of a change can be watched.
 
@@ -168,8 +170,8 @@ edge is 2.5 m away, because it keeps more of the picture's bottom clear.
 
 For a game with 2.5D scenes, the landing page's camera preview outlines the chosen configuration's floor once it's
 saved, and says "Not yet calibrated" over the preview until then. **Calibrate**, beside the preview, opens
-`/game/:id/calibrate`, which shows the camera picture with the floor over it and steps on screen. **Reset** forgets
-that configuration's floor.
+`/game/:id/calibrate`, which shows the camera picture with the floor over it and steps on screen. **Reset** saves
+the [default floor](#the-default-floor) for that configuration, and **Clear** forgets its floor.
 
 1. Drag each blue corner to a corner of the space you can walk around in. The floor can be any convex shape. A drag
    that would fold it stops at the limit. With the keyboard, Tab moves between the corners, and the arrow keys move
@@ -480,49 +482,49 @@ toggling it.
 
 ## Where the code lives
 
-| Path                                                  | What it does                                                                                                                             |
-| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/config/AppConfig.ts`                             | the settings, their defaults, and reading them from `.env` and the URL                                                                   |
-| `src/components/camera/CharacterCamera.tsx`           | webcam stream and the preview video                                                                                                      |
-| `src/components/camera/CameraChoice.ts`               | the saved camera choice, its size and mirror setting                                                                                     |
-| `src/components/camera/Webcams.ts`                    | the [known webcams](webcams.md), and the sizes offered for a camera                                                                      |
-| `src/components/landing/CameraPicker.tsx`             | the landing page's camera and configuration dropdowns, checkbox, preview, warnings and floor buttons (`useCameraPicker.ts`)              |
-| `src/components/setup/`                               | the [setup planner](#planning-the-space)'s calculations, number fields, isometric drawing and screen view (`src/pages/SetupPlanner.tsx`) |
-| `src/components/camera/PlayerCanvases.ts`             | one canvas and wrapper per player, and the hidden reference canvas                                                                       |
-| `src/components/camera/PlayerRegistry.ts`             | stable player ids and numbers, player states, and notes of lost players; see [player tracking](player-tracking.md)                       |
-| `src/components/camera/PlayerStatic.ts`               | how a player's static changes over time                                                                                                  |
-| `src/components/camera/PlayerPosition.ts`             | each player's ground point, held through jumps, and their position on the floor or in the scene                                          |
-| `src/components/camera/Spectators.ts`                 | who is a [spectator](player-tracking.md#spectators), off the floor, and who has returned elsewhere                                       |
-| `src/components/camera/PositionPublisher.ts`          | players' positions for rules and templates: quantised, with hysteresis, rate-limited                                                     |
-| `src/components/core/layout/FloorPlacement.ts`        | placing, scaling and sorting floor items, kept through re-renders; the debug warning for targets off the floor                           |
-| `src/components/core/layout/FloorSurfacePlacement.ts` | drawing floor surfaces onto the screen with a `matrix3d`, sizing their boxes, and their painting order                                   |
-| `src/components/camera/CharacterCanvas.tsx`           | tracking loop; draws the silhouettes; reports players and feet; the stats readout                                                        |
-| `src/components/camera/DrawPeople.ts`                 | cuts the people out of the video, and tints them for debugging                                                                           |
-| `src/components/camera/DrawPlayers.ts`                | draws each player on their canvas, frozen or with static, sorted to their floor depth; hides or styles spectators                        |
-| `src/components/camera/PlayerMonitor.ts`              | turns body-part coverage and feet into edge-triggered interactions                                                                       |
-| `src/components/camera/JumpDetector.ts`               | follows a player's feet for jumps                                                                                                        |
-| `src/components/camera/CameraSupport.ts`              | camera request and feet position                                                                                                         |
-| `src/components/camera/FloorGeometry.ts`              | every conversion between the camera picture, the screen and the floor; the crop and the scene box                                        |
-| `src/components/camera/FloorSurfaces.ts`              | where floor tiles, walls, backgrounds, the floor background and the horizon appear on screen                                             |
-| `src/components/camera/FloorCalibration.ts`           | each camera configuration's saved floor                                                                                                  |
-| `src/components/camera/FloorOverlay.tsx`              | the floor outline and body-part markers, for calibration and debugging                                                                   |
-| `src/components/landing/CalibrationView.tsx`          | the calibration page                                                                                                                     |
-| `src/components/camera/FrameStats.ts`                 | frame rate, inference time, and what each frame found                                                                                    |
-| `src/vision/FootstepsVisionModelImplementation.ts`    | the base class every vision model implements, with the body-part queries                                                                 |
-| `src/vision/BodyPart.ts`, `VisionTypes.ts`            | our body parts, and the frames models return                                                                                             |
-| `src/vision/VisionQueries.ts`                         | body parts at a point or in an area; splitting one silhouette between people                                                             |
-| `src/vision/Tracking.ts`                              | stable player ids, key-point smoothing, holding lost players, and filling gaps                                                           |
-| `src/vision/models/`                                  | BodyPix, MediaPipe Pose and MoveNet, and the tfjs backend choice                                                                         |
-| `src/vision/VisionWorkerProxy.ts`, `vision.worker.ts` | runs a model in a web worker                                                                                                             |
-| `src/components/core/logic/AvatarModeUtils.ts`        | per-scene avatar mode, mouse-feet look and spectator settings resolution, and what each mode can fire                                    |
-| `src/components/core/layout/MouseFeetHook.ts`         | [mouse-feet](#mouse-feet): the pointer as player 1's feet, their footprint, and drags as jumps                                           |
-| `src/components/core/layout/MouseFeetAvatar.tsx`      | [mouse-feet](#mouse-feet): the feet drawn at the pointer, and lifted mid-jump                                                            |
-| `src/components/core/logic/GameClickUtils.ts`         | targets, and the state changes for clicks and interactions                                                                               |
-| `src/components/core/layout/GameLayersLayout.tsx`     | the layer stack, scene transitions, shared camera state, and the interaction hook                                                        |
-| `src/components/core/layout/useSceneTransition.ts`    | fades scene changes and times the camera reshape and reduced motion                                                                      |
-| `src/components/core/layout/PlayerInteractionHook.ts` | one monitor per player, and mask-space target rectangles                                                                                 |
-| `src/components/core/layout/GameLayerWrappers.tsx`    | one wrapper component per layer                                                                                                          |
-| `src/components/core/effects/`                        | [special effects](special-effects.md): their targets, and playing them on items and players                                              |
+| Path                                                  | What it does                                                                                                                                              |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/config/AppConfig.ts`                             | the settings, their defaults, and reading them from `.env` and the URL                                                                                    |
+| `src/components/camera/CharacterCamera.tsx`           | webcam stream and the preview video                                                                                                                       |
+| `src/components/camera/CameraChoice.ts`               | the saved camera choice, its size and mirror setting                                                                                                      |
+| `src/components/camera/Webcams.ts`                    | the [known webcams](webcams.md), and the sizes offered for a camera                                                                                       |
+| `src/components/landing/CameraPicker.tsx`             | the landing page's camera and configuration dropdowns, checkbox, preview, warnings and floor buttons (`useCameraPicker.ts`)                               |
+| `src/components/setup/`                               | the [setup planner](#planning-the-space)'s calculations, number fields, starting camera, isometric drawing and screen view (`src/pages/SetupPlanner.tsx`) |
+| `src/components/camera/PlayerCanvases.ts`             | one canvas and wrapper per player, and the hidden reference canvas                                                                                        |
+| `src/components/camera/PlayerRegistry.ts`             | stable player ids and numbers, player states, and notes of lost players; see [player tracking](player-tracking.md)                                        |
+| `src/components/camera/PlayerStatic.ts`               | how a player's static changes over time                                                                                                                   |
+| `src/components/camera/PlayerPosition.ts`             | each player's ground point, held through jumps, and their position on the floor or in the scene                                                           |
+| `src/components/camera/Spectators.ts`                 | who is a [spectator](player-tracking.md#spectators), off the floor, and who has returned elsewhere                                                        |
+| `src/components/camera/PositionPublisher.ts`          | players' positions for rules and templates: quantised, with hysteresis, rate-limited                                                                      |
+| `src/components/core/layout/FloorPlacement.ts`        | placing, scaling and sorting floor items, kept through re-renders; the debug warning for targets off the floor                                            |
+| `src/components/core/layout/FloorSurfacePlacement.ts` | drawing floor surfaces onto the screen with a `matrix3d`, sizing their boxes, and their painting order                                                    |
+| `src/components/camera/CharacterCanvas.tsx`           | tracking loop; draws the silhouettes; reports players and feet; the stats readout                                                                         |
+| `src/components/camera/DrawPeople.ts`                 | cuts the people out of the video, and tints them for debugging                                                                                            |
+| `src/components/camera/DrawPlayers.ts`                | draws each player on their canvas, frozen or with static, sorted to their floor depth; hides or styles spectators                                         |
+| `src/components/camera/PlayerMonitor.ts`              | turns body-part coverage and feet into edge-triggered interactions                                                                                        |
+| `src/components/camera/JumpDetector.ts`               | follows a player's feet for jumps                                                                                                                         |
+| `src/components/camera/CameraSupport.ts`              | camera request and feet position                                                                                                                          |
+| `src/components/camera/FloorGeometry.ts`              | every conversion between the camera picture, the screen and the floor; the crop and the scene box                                                         |
+| `src/components/camera/FloorSurfaces.ts`              | where floor tiles, walls, backgrounds, the floor background and the horizon appear on screen                                                              |
+| `src/components/camera/FloorCalibration.ts`           | each camera configuration's saved floor                                                                                                                   |
+| `src/components/camera/FloorOverlay.tsx`              | the floor outline and body-part markers, for calibration and debugging                                                                                    |
+| `src/components/landing/CalibrationView.tsx`          | the calibration page                                                                                                                                      |
+| `src/components/camera/FrameStats.ts`                 | frame rate, inference time, and what each frame found                                                                                                     |
+| `src/vision/FootstepsVisionModelImplementation.ts`    | the base class every vision model implements, with the body-part queries                                                                                  |
+| `src/vision/BodyPart.ts`, `VisionTypes.ts`            | our body parts, and the frames models return                                                                                                              |
+| `src/vision/VisionQueries.ts`                         | body parts at a point or in an area; splitting one silhouette between people                                                                              |
+| `src/vision/Tracking.ts`                              | stable player ids, key-point smoothing, holding lost players, and filling gaps                                                                            |
+| `src/vision/models/`                                  | BodyPix, MediaPipe Pose and MoveNet, and the tfjs backend choice                                                                                          |
+| `src/vision/VisionWorkerProxy.ts`, `vision.worker.ts` | runs a model in a web worker                                                                                                                              |
+| `src/components/core/logic/AvatarModeUtils.ts`        | per-scene avatar mode, mouse-feet look and spectator settings resolution, and what each mode can fire                                                     |
+| `src/components/core/layout/MouseFeetHook.ts`         | [mouse-feet](#mouse-feet): the pointer as player 1's feet, their footprint, and drags as jumps                                                            |
+| `src/components/core/layout/MouseFeetAvatar.tsx`      | [mouse-feet](#mouse-feet): the feet drawn at the pointer, and lifted mid-jump                                                                             |
+| `src/components/core/logic/GameClickUtils.ts`         | targets, and the state changes for clicks and interactions                                                                                                |
+| `src/components/core/layout/GameLayersLayout.tsx`     | the layer stack, scene transitions, shared camera state, and the interaction hook                                                                         |
+| `src/components/core/layout/useSceneTransition.ts`    | fades scene changes and times the camera reshape and reduced motion                                                                                       |
+| `src/components/core/layout/PlayerInteractionHook.ts` | one monitor per player, and mask-space target rectangles                                                                                                  |
+| `src/components/core/layout/GameLayerWrappers.tsx`    | one wrapper component per layer                                                                                                                           |
+| `src/components/core/effects/`                        | [special effects](special-effects.md): their targets, and playing them on items and players                                                               |
 
 ## Testing
 

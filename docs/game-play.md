@@ -32,8 +32,8 @@ same translucent style as the home-page tiles, in two columns that each scroll i
   [camera and configuration choice](camera-mode.md#choosing-a-camera), with a live preview. What's still needed
   before the game can begin shows over the preview: "Camera required" while a required camera isn't granted, and
   "Not yet calibrated" for a game with [2.5D scenes](game-data.md#scene-and-avatar-modes) until the chosen
-  configuration's floor is [calibrated](camera-mode.md#calibrating-the-floor). **Calibrate** and **Reset** beside
-  the preview calibrate that floor and forget it.
+  configuration's floor is [calibrated](camera-mode.md#calibrating-the-floor). Beside the preview,
+  **Calibrate** calibrates that floor, **Reset** saves the default floor for it, and **Clear** forgets it.
 
 The bar along the bottom has:
 

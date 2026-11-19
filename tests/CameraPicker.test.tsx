@@ -3,7 +3,7 @@ import type { ComponentProps } from "react";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { loadCameraChoice, saveCameraChoice } from "../src/components/camera/CameraChoice";
-import { cameraKeyOf, isCalibrated, saveCalibration } from "../src/components/camera/FloorCalibration";
+import { cameraKeyOf, isCalibrated, loadCalibration, saveCalibration } from "../src/components/camera/FloorCalibration";
 import { DEFAULT_CORNERS } from "../src/components/camera/FloorGeometry";
 import CameraPicker from "../src/components/landing/CameraPicker";
 import { FakeMediaStream, FakeMediaStreamTrack } from "./helpers/media";
@@ -19,6 +19,9 @@ const device = (deviceId: string, label: string): MediaDeviceInfo => ({
 });
 
 const LAPTOP = device("laptop", "Laptop camera");
+
+/** A floor narrower at the front than the default. */
+const NARROW = { ...DEFAULT_CORNERS, frontLeft: { x: 0.2, y: 0.85 }, frontRight: { x: 0.8, y: 0.85 } };
 const LIFECAM = device("lifecam", "Microsoft® LifeCam HD-3000 (045e:0810)");
 const REAR = device("rear", "Rear camera");
 
@@ -250,18 +253,42 @@ describe("the floor buttons and warnings", () => {
     expect(camera.getUserMedia).not.toHaveBeenCalled();
   });
 
-  it("forgets only the chosen configuration's floor", async () => {
+  it("clears only the chosen configuration's floor", async () => {
     const sd = cameraKeyOf({ size: { width: 640, height: 480 } });
-    saveCalibration(cameraKeyOf({}), DEFAULT_CORNERS);
-    saveCalibration(sd, DEFAULT_CORNERS);
-    const onCalibrationForgotten = vi.fn();
-    renderPicker({ onCalibrationForgotten });
+    saveCalibration(cameraKeyOf({}), NARROW);
+    saveCalibration(sd, NARROW);
+    const onCalibrationChange = vi.fn();
+    renderPicker({ onCalibrationChange });
+    await screen.findByRole("option", { name: "Rear camera" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+
+    expect(onCalibrationChange).toHaveBeenCalledOnce();
+    expect(isCalibrated(cameraKeyOf({}))).toBe(false);
+    expect(isCalibrated(sd)).toBe(true);
+  });
+
+  it("resets the chosen configuration's floor to the default floor", async () => {
+    saveCalibration(cameraKeyOf({}), NARROW);
+    const onCalibrationChange = vi.fn();
+    renderPicker({ onCalibrationChange });
     await screen.findByRole("option", { name: "Rear camera" });
 
     fireEvent.click(screen.getByRole("button", { name: "Reset" }));
 
-    expect(onCalibrationForgotten).toHaveBeenCalledOnce();
-    expect(isCalibrated(cameraKeyOf({}))).toBe(false);
-    expect(isCalibrated(sd)).toBe(true);
+    expect(onCalibrationChange).toHaveBeenCalledOnce();
+    expect(loadCalibration(cameraKeyOf({}))).toEqual(DEFAULT_CORNERS);
+  });
+
+  it("tells the landing page which camera is in use, and at what size", async () => {
+    const onCameraChange = vi.fn();
+    renderPicker({ onCameraChange });
+    await waitFor(() =>
+      expect(onCameraChange).toHaveBeenLastCalledWith({
+        key: "default@1280x720",
+        label: "Laptop camera",
+        size: { width: 1280, height: 720 },
+      }),
+    );
   });
 });

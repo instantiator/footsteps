@@ -1,8 +1,8 @@
 import { useEffect, useRef, type RefObject } from "react";
 import { Link } from "react-router";
-import { sizeOf, type CameraChoice } from "../camera/CameraChoice";
-import { cameraKeyOf, forgetCalibration, loadCalibration } from "../camera/FloorCalibration";
-import type { Corners } from "../camera/FloorGeometry";
+import { sizeOf, type CameraChoice, type CameraSize } from "../camera/CameraChoice";
+import { cameraKeyOf, forgetCalibration, loadCalibration, saveCalibration } from "../camera/FloorCalibration";
+import { DEFAULT_CORNERS, type Corners } from "../camera/FloorGeometry";
 import FloorOverlay from "../camera/FloorOverlay";
 import type { CameraOption } from "../camera/Webcams";
 import { useCameraPicker } from "./useCameraPicker";
@@ -78,16 +78,45 @@ function SizeChoice({
   );
 }
 
+/** The camera in use, as the landing page needs it: for its calibration, and to plan the space for it. */
+export interface CameraInUse {
+  /** Its calibration key. */
+  key: string;
+  /** The name the browser gives it; empty until the browser names it. */
+  label: string;
+  /** The size it is opened at. */
+  size: CameraSize;
+}
+
+/**
+ * Tells the landing page which camera is in use, now and whenever it changes.
+ * @returns its calibration key
+ */
+const useCameraInUse = (
+  choice: CameraChoice,
+  active: MediaDeviceInfo | undefined,
+  onCameraChange: ((camera: CameraInUse) => void) | undefined,
+): string => {
+  const key = cameraKeyOf(choice);
+  const label = active?.label ?? "";
+  const { width, height } = sizeOf(choice);
+  useEffect(
+    () => onCameraChange?.({ key, label, size: { width, height } }),
+    [key, label, width, height, onCameraChange],
+  );
+  return key;
+};
+
 /** Props for {@link CameraPicker}. */
 interface CameraPickerProps {
   /** Whether the camera may be opened, as it is granted; true if omitted. */
   granted?: boolean;
   /** Where to calibrate the floor, for a game with 2.5D scenes; the floor isn't shown if not given. */
   calibrateTo?: string;
-  /** Called with the chosen camera's calibration key, now and whenever it changes. Keep it stable. */
-  onCameraKeyChange?: (cameraKey: string) => void;
-  /** Called once the chosen configuration's calibration has been forgotten. */
-  onCalibrationForgotten?: () => void;
+  /** Called with the camera in use, now and whenever it changes. Keep it stable. */
+  onCameraChange?: (camera: CameraInUse) => void;
+  /** Called once the chosen configuration's calibration has been reset or cleared. */
+  onCalibrationChange?: () => void;
   /** Playing without the camera, offered in the camera dropdown for a game that can. */
   noCamera?: { checked: boolean; onChange: (checked: boolean) => void };
   /** What's still needed before the game can begin, shown over the preview. */
@@ -102,8 +131,8 @@ interface CameraPickerProps {
 export default function CameraPicker({
   granted = true,
   calibrateTo,
-  onCameraKeyChange,
-  onCalibrationForgotten,
+  onCameraChange,
+  onCalibrationChange,
   noCamera,
   warnings,
 }: CameraPickerProps) {
@@ -112,10 +141,12 @@ export default function CameraPicker({
     granted && !withoutCamera,
   );
   const videoRef = useRef<HTMLVideoElement>(null);
-  const cameraKey = cameraKeyOf(choice);
+  const cameraKey = useCameraInUse(
+    choice,
+    cameras.find(({ deviceId }) => deviceId === activeDeviceId),
+    onCameraChange,
+  );
   const calibration = calibrateTo ? loadCalibration(cameraKey) : undefined;
-
-  useEffect(() => onCameraKeyChange?.(cameraKey), [cameraKey, onCameraKeyChange]);
 
   useEffect(() => {
     if (videoRef.current) videoRef.current.srcObject = stream ?? null;
@@ -144,9 +175,13 @@ export default function CameraPicker({
           <FloorActions
             calibrateTo={calibrateTo}
             calibrated={calibration !== undefined}
-            onForget={() => {
+            onReset={() => {
+              saveCalibration(cameraKey, DEFAULT_CORNERS);
+              onCalibrationChange?.();
+            }}
+            onClear={() => {
               forgetCalibration(cameraKey);
-              onCalibrationForgotten?.();
+              onCalibrationChange?.();
             }}
           />
         )}
@@ -155,23 +190,28 @@ export default function CameraPicker({
   );
 }
 
-/** Buttons to calibrate the configuration's floor, and to forget its calibration. */
+/** Buttons to calibrate the configuration's floor, to reset it to the default floor, and to clear it. */
 function FloorActions({
   calibrateTo,
   calibrated,
-  onForget,
+  onReset,
+  onClear,
 }: {
   calibrateTo: string;
   calibrated: boolean;
-  onForget: () => void;
+  onReset: () => void;
+  onClear: () => void;
 }) {
   return (
     <div className="game-camera-floor-actions">
       <Link className="game-button" to={calibrateTo}>
         Calibrate
       </Link>
-      <button type="button" className="game-button" disabled={!calibrated} onClick={onForget}>
+      <button type="button" className="game-button" onClick={onReset}>
         Reset
+      </button>
+      <button type="button" className="game-button" disabled={!calibrated} onClick={onClear}>
+        Clear
       </button>
     </div>
   );

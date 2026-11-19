@@ -58,7 +58,7 @@ describe("what the screen shows", () => {
   });
 
   it("fits a 16:9 picture to a screen a little wider than 16:9 by its height", () => {
-    const { picture } = scene(DEFAULT_SETUP_INPUTS);
+    const { picture } = scene({ ...DEFAULT_SETUP_INPUTS, aspect: 16 / 9 });
     expect(picture.height).toBeCloseTo(DEFAULT_SETUP_CONSTANTS.screenHeight);
     expect(picture.width).toBeCloseTo(0.68 * (16 / 9));
     expect(picture.x).toBeGreaterThan(0);

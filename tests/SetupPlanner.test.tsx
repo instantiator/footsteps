@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it } from "vitest";
-import { WEBCAMS, type WebcamConfig } from "../src/components/camera/Webcams";
 import { DEFAULT_SETUP_INPUTS, planSetup } from "../src/components/setup/SetupCalculations";
+import { GENERIC_WEBCAM, SETUP_WEBCAMS, type SetupWebcam } from "../src/components/setup/SetupWebcams";
 import SetupPlanner from "../src/pages/SetupPlanner";
 
 /** The value shown beside a result's label. */
@@ -78,12 +78,18 @@ describe("SetupPlanner", () => {
 });
 
 describe("the known webcam choice", () => {
-  const [lifecamHd, lifecamSd] = WEBCAMS;
-  const useWebcam = (config?: WebcamConfig) => {
+  const named = (text: string) => SETUP_WEBCAMS.find(({ name }) => name.includes(text));
+  const lifecamSd = named("HD-3000 · SD");
+  const useWebcam = (webcam: SetupWebcam | undefined) => {
     const choice = screen.getByLabelText<HTMLSelectElement>("Known webcam");
-    fireEvent.change(choice, { target: { value: String(WEBCAMS.indexOf(config ?? lifecamHd)) } });
+    fireEvent.change(choice, { target: { value: String(SETUP_WEBCAMS.indexOf(webcam ?? GENERIC_WEBCAM)) } });
     fireEvent.click(screen.getByRole("button", { name: "Use this camera" }));
   };
+
+  it("starts on the generic webcam when the camera isn't known", () => {
+    expect(screen.getByLabelText<HTMLSelectElement>("Known webcam").value).toBe("0");
+    expect(field(/Diagonal field of view/).value).toBe(String(GENERIC_WEBCAM.diagonalFov));
+  });
 
   it("fills in a webcam's field of view and shape, and recalculates", () => {
     const before = result("Floor");
@@ -93,7 +99,7 @@ describe("the known webcam choice", () => {
     expect(result("Floor")).not.toBe(before);
   });
 
-  const unknownFov = WEBCAMS.find(({ diagonalFov }) => diagonalFov === undefined);
+  const unknownFov = SETUP_WEBCAMS.find(({ diagonalFov }) => diagonalFov === undefined);
   it.skipIf(!unknownFov)("keeps the field of view for a webcam whose field of view isn't known", () => {
     fireEvent.change(field(/Diagonal field of view/), { target: { value: "70" } });
     useWebcam(unknownFov);
@@ -102,7 +108,7 @@ describe("the known webcam choice", () => {
 
   it("replaces a measurement", () => {
     fireEvent.change(field(/Camera's distance from a wall/), { target: { value: "1" } });
-    useWebcam(lifecamHd);
+    useWebcam(named("HD-3000 · HD"));
     expect(field(/Camera's distance from a wall/).value).toBe("");
   });
 });

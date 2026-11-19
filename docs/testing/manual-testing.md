@@ -231,8 +231,12 @@ floor: on the calibration page, **Forget all saved areas**.
 - [ ] **Configurations:** with a camera that offers more than one (the LifeCam HD-3000 offers HD and SD), switch
       configuration on the landing page. The other configuration shows "Not yet calibrated"; calibrate it too, and
       switching back and forth keeps each floor. Play in each: your feet land on the floor calibrated for it.
-- [ ] **Reset** beside the preview forgets the chosen configuration's floor only: "Not yet calibrated" returns for it,
+- [ ] **Clear** beside the preview forgets the chosen configuration's floor only: "Not yet calibrated" returns for it,
       and the other configuration keeps its floor.
+- [ ] **Reset** saves the default floor: the default outline appears on the preview, and New game is enabled.
+- [ ] **Plan space** opens `/setup` on the camera in use: with the LifeCam on SD, "Known webcam" starts on its SD
+      configuration. Opened from the home page instead, it starts on the browser's default camera if it's known, and
+      on "Generic webcam" if not.
 - [ ] **The fitted view:** open "Walk around". The view has the crop's shape: your feet reach the bottom edge at the
       floor's front, and your head stays in view at the back.
 - [ ] **A small calibration:** calibrate a small floor, about a metre square, and play "Walk around" again. The view

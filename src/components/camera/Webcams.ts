@@ -108,3 +108,12 @@ export const cameraOptionsFor = (label: string, largest?: { width?: number; heig
     ({ width, height }) => width <= (largest?.width ?? Infinity) && height <= (largest?.height ?? Infinity),
   ).map((size) => ({ name: `${size.width}×${size.height}`, ...size }));
 };
+
+/**
+ * The known configuration of the camera with this label: the one at `size` if given, else the first.
+ * @returns undefined for a camera that isn't known, or isn't known at that size
+ */
+export const webcamFor = (label: string, size?: { width: number; height: number }): WebcamConfig | undefined => {
+  const known = webcamConfigsFor(label);
+  return size ? known.find(({ width, height }) => width === size.width && height === size.height) : known[0];
+};

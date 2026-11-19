@@ -66,7 +66,10 @@ export interface SetupConstants {
   screenHeight: number;
 }
 
-/** A family room, and a Microsoft LifeCam HD-3000 at 1280×720 (see `Webcams.ts`). */
+/**
+ * A family room, and a generic 4:3 webcam (65° diagonal, which is 42° vertical). The planner starts with the camera the
+ * game uses instead, where it's known (`SetupWebcams.ts`).
+ */
 export const DEFAULT_SETUP_INPUTS: SetupInputs = {
   roomLength: 5.77,
   roomWidth: 4.27,
@@ -77,8 +80,8 @@ export const DEFAULT_SETUP_INPUTS: SetupInputs = {
   marginRight: 0.3,
   marginFar: 0.3,
   marginBehind: 0.5,
-  diagonalFov: 68.5,
-  aspect: 16 / 9,
+  diagonalFov: 65,
+  aspect: 4 / 3,
 };
 
 /**
