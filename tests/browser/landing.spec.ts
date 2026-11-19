@@ -33,7 +33,7 @@ test("starts the game from the landing page at /play", async ({ page }) => {
   await expect(page.locator("#game-container")).toBeVisible();
 });
 
-test("plays with the camera chosen on the landing page, and shows no picker without a grant", async ({
+test("plays with the camera chosen on the landing page, and opens no camera without a grant", async ({
   page,
   context,
 }) => {
@@ -57,9 +57,12 @@ test("plays with the camera chosen on the landing page, and shows no picker with
     });
   await expect.poll(lastAsked, { timeout: 20_000 }).toEqual({ exact: "fake-rear" });
 
+  // Without a grant, the dropdown offers only the system default and playing without, and lists no cameras
   await context.clearPermissions();
   await page.goto("/game/magic-trifle");
-  await expect(page.getByRole("combobox", { name: "Camera" })).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "Camera" })).toBeVisible();
+  await expect(page.getByRole("option", { name: "Play without the camera" })).toBeAttached();
+  await expect(page.getByRole("option", { name: /Fake rear camera/ })).toHaveCount(0);
 });
 
 test("holds a 2.5D game back until the floor is calibrated, and calibrates it", async ({ page }) => {

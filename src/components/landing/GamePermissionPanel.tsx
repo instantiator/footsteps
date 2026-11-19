@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import {
   gamePermissionLabel,
   type GamePermissionId,
@@ -15,18 +14,10 @@ interface GamePermissionPanelProps {
   granting: GamePermissionId | null;
   /** Requests a permission from the browser. */
   onGrant: (id: GamePermissionId) => void;
-  /** What to show under the permissions, such as controls that need them. */
-  children?: ReactNode;
 }
 
 /** The landing page's permissions panel, if the game uses any: each permission, its state, and a way to grant it. */
-export default function GamePermissionPanel({
-  permissions,
-  states,
-  granting,
-  onGrant,
-  children,
-}: GamePermissionPanelProps) {
+export default function GamePermissionPanel({ permissions, states, granting, onGrant }: GamePermissionPanelProps) {
   if (permissions.length === 0) return null;
 
   return (
@@ -63,7 +54,6 @@ export default function GamePermissionPanel({
           );
         })}
       </ul>
-      {children}
     </div>
   );
 }

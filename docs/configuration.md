@@ -37,11 +37,11 @@ React Router re-reads the query when the URL changes, so a setting can be change
 
 ### General
 
-| Query      | Default | Values  | What it does                                                                                                                               |
-| ---------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `debug`    | `false` | boolean | Debugging aids at the start; the HUD's Debug button switches them. See [camera mode debugging](camera-mode.md#debugging)                   |
-| `showFps`  | `false` | boolean | The vision stats readout alone, without the other debug aids, while a camera is tracked                                                    |
-| `noCamera` | `false` | boolean | Plays without the camera, even where one is available, in each scene's fallback mode. The landing page's "Play without the camera" sets it |
+| Query      | Default | Values  | What it does                                                                                                                                             |
+| ---------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `debug`    | `false` | boolean | Debugging aids at the start; the HUD's Debug button switches them. See [camera mode debugging](camera-mode.md#debugging)                                 |
+| `showFps`  | `false` | boolean | The vision stats readout alone, without the other debug aids, while a camera is tracked                                                                  |
+| `noCamera` | `false` | boolean | Plays without the camera, even where one is available, in each scene's fallback mode. The landing page's "Play without the camera" camera option sets it |
 
 ### Vision
 
@@ -74,20 +74,20 @@ React Router re-reads the query when the URL changes, so a setting can be change
 
 ### Camera
 
-| Query                      | Default | Values       | What it does                                                                                 |
-| -------------------------- | ------- | ------------ | -------------------------------------------------------------------------------------------- |
-| `cameraWidth`              | `1280`  | whole number | The camera resolution asked for; the camera may give something else                          |
-| `cameraHeight`             | `720`   | whole number | See `cameraWidth`                                                                            |
-| `cameraFeatherPx`          | `3`     | whole number | How far the silhouette's edges fade out, in canvas pixels; `0` is hard                       |
-| `cameraHoldMs`             | `400`   | whole number | How long a player the model loses is still shown (needs smoothing)                           |
-| `cameraFadeMs`             | `300`   | whole number | How long a held player then takes to fade out                                                |
-| `cameraFillGaps`           | `false` | boolean      | Fills parts the model missed for a frame from the frame before                               |
-| `cameraDepthWindowMs`      | `700`   | whole number | How long a player's lowest ground point is kept, so a jump doesn't change their position     |
-| `cameraDepthDeadband`      | `2`     | whole number | How far a player's ground point must move to change their position, in % of the camera frame |
-| `spectatorMargin`          | `5`     | whole number | How far outside the floor someone must stand to be a spectator, in floor units               |
-| `spectatorHoldMs`          | `1000`  | whole number | How long someone must stay off the floor to be a spectator, or on it to play again           |
-| `positionCellSize`         | `5`     | whole number | The grid players' positions are rounded to for rules and templates, in position units        |
-| `positionUpdatesPerSecond` | `10`    | whole number | The most times a second players' positions reach rules and templates                         |
+| Query                      | Default | Values       | What it does                                                                                                                       |
+| -------------------------- | ------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `cameraWidth`              | `1280`  | whole number | The camera resolution asked for, unless the player chooses a configuration on the landing page; the camera may give something else |
+| `cameraHeight`             | `720`   | whole number | See `cameraWidth`                                                                                                                  |
+| `cameraFeatherPx`          | `3`     | whole number | How far the silhouette's edges fade out, in canvas pixels; `0` is hard                                                             |
+| `cameraHoldMs`             | `400`   | whole number | How long a player the model loses is still shown (needs smoothing)                                                                 |
+| `cameraFadeMs`             | `300`   | whole number | How long a held player then takes to fade out                                                                                      |
+| `cameraFillGaps`           | `false` | boolean      | Fills parts the model missed for a frame from the frame before                                                                     |
+| `cameraDepthWindowMs`      | `700`   | whole number | How long a player's lowest ground point is kept, so a jump doesn't change their position                                           |
+| `cameraDepthDeadband`      | `2`     | whole number | How far a player's ground point must move to change their position, in % of the camera frame                                       |
+| `spectatorMargin`          | `5`     | whole number | How far outside the floor someone must stand to be a spectator, in floor units                                                     |
+| `spectatorHoldMs`          | `1000`  | whole number | How long someone must stay off the floor to be a spectator, or on it to play again                                                 |
+| `positionCellSize`         | `5`     | whole number | The grid players' positions are rounded to for rules and templates, in position units                                              |
+| `positionUpdatesPerSecond` | `10`    | whole number | The most times a second players' positions reach rules and templates                                                               |
 
 [ADR 0007](ADRs/0007-camera-flicker.md) explains holding, fading and filling gaps, and
 [ADR 0010](ADRs/0010-player-tracking-from-behind.md) how a player's depth is found. Which camera to use, and whether to

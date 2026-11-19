@@ -23,25 +23,33 @@ that the floor is calibrated. It sends the player back to the landing page if ei
 ## Landing page
 
 The landing page fills the viewport with the game's `tileGraphic`, falling back to a plain pale blue
-background when the game names no graphic. The game's title and description sit in the same
-translucent panel style as the home-page tiles, and the page uses the game's
-`gameContainerStyle.fontFamily`.
+background when the game names no graphic, and uses the game's `gameContainerStyle.fontFamily`. Its panels use the
+same translucent style as the home-page tiles, in two columns that each scroll in the space above a bar of buttons
+(stacked, and scrolling together, on narrow screens):
 
-Below the description is a permissions panel, if the game uses the camera, with the
-[camera choice](camera-mode.md#choosing-a-camera) once it is granted. At the bottom right are the game controls:
+- **On the left**, the game's title, its [badges](#badges) and its description.
+- **On the right**, if the game uses the camera, the permissions panel and the **Camera configuration** panel: the
+  [camera and configuration choice](camera-mode.md#choosing-a-camera), with a live preview. What's still needed
+  before the game can begin shows over the preview: "Camera required" while a required camera isn't granted, and
+  "Not yet calibrated" for a game with [2.5D scenes](game-data.md#scene-and-avatar-modes) until the chosen
+  configuration's floor is [calibrated](camera-mode.md#calibrating-the-floor). **Calibrate** and **Reset** beside
+  the preview calibrate that floor and forget it.
 
-- **New game** always appears. It clears this game's saved progress and starts a fresh game.
-- **Continue** appears only when valid saved progress exists, and resumes it.
+The bar along the bottom has:
 
-Both buttons stay disabled until the initial checks have finished, and until every permission the game requires has
-been granted. For a game with [2.5D scenes](game-data.md#scene-and-avatar-modes), with the camera granted, they also
-stay disabled until the chosen camera's floor is [calibrated](camera-mode.md#calibrating-the-floor). The camera
-preview shows the floor, says whether it has been saved, and links to the calibration page.
+- **Plan space**, which opens the [setup planner](camera-mode.md#planning-the-space) in a new tab.
+- **Continue**, only when valid saved progress exists, which resumes it.
+- **New game**, which clears this game's saved progress and starts a fresh game, after asking first if there is
+  saved progress to lose.
 
-A game whose camera is optional also offers **Play without the camera**. Ticked, the game starts at
-`/game/:id/play?noCamera=true` (the [`noCamera`](configuration.md) setting): the camera stays off even where it is
-available, each scene plays in its [fallback mode](game-data.md#scene-and-avatar-modes), and the floor needn't be
-calibrated. It's for playing, or testing, by mouse.
+Both start buttons stay disabled until the initial checks have finished, until every permission the game requires
+has been granted, and, with the camera granted, until the chosen configuration's floor is calibrated for a game with
+2.5D scenes.
+
+A game whose camera is optional also offers **Play without the camera** in the camera dropdown. Chosen, the game
+starts at `/game/:id/play?noCamera=true` (the [`noCamera`](configuration.md) setting): the camera stays off even where
+it is available, each scene plays in its [fallback mode](game-data.md#scene-and-avatar-modes), and the floor needn't
+be calibrated. It's for playing, or testing, by mouse.
 
 ### Badges
 

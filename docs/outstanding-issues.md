@@ -337,8 +337,8 @@ crop plus a margin, map the results back, and compare the bench's people, feet a
 
 ## A camera's "System default" floor stays when the default changes
 
-Floors are saved per camera chosen on the landing page (`cameraKeyOf` in `FloorCalibration.ts`), so "System default"
-is one camera. If the system's default camera changes, its old floor is still used.
+Floors are saved per camera configuration chosen on the landing page (`cameraKeyOf` in `FloorCalibration.ts`), so
+"System default" is one camera. If the system's default camera changes, its old floor is still used.
 
 **Act when:** a player reports a misaligned floor after switching cameras, or the landing page starts saving the
 camera a stream really uses. Key floors by the stream's resolved device id instead.
@@ -522,3 +522,47 @@ the floor's width and mirroring flips it, so the view is only a guide to what a 
 
 **Act when:** someone is misled by the difference. Then crop the view to the scene box (`FloorGeometry.ts`) for a
 2.5D game, and add a mirror setting.
+
+## The MacBook Pro's field of view isn't known
+
+Apple publishes no field of view for the MacBook Pro 13-inch (M1, 2020) FaceTime HD camera, so its row in
+[known webcams](webcams.md) says "Not published", and choosing it on `/setup` leaves the field of view as it was.
+
+**Act when:** it has been measured, as [known webcams](webcams.md#measuring-a-field-of-view) describes. Then add it to
+`src/components/camera/Webcams.ts` with `fovSource: "measured"`.
+
+## The LifeCam HD-3000's SD field of view is an estimate
+
+The ≈58° for the LifeCam HD-3000 at 640×480 assumes the camera takes a 4:3 picture from the middle of its 16:9 sensor,
+keeping its full height. If it scales or crops differently, the figure is wrong, and so is `/setup`'s recommendation
+for it.
+
+**Act when:** the SD configuration is used to plan a room, or a calibrated SD floor doesn't match `/setup`'s plan.
+Measure it, and record it as `measured`.
+
+## Every Mac's FaceTime camera matches the MacBook Pro's rows
+
+The MacBook Pro's `labelPattern` matches any camera labelled "FaceTime HD Camera", which other Macs use too, so they
+are offered its configuration.
+
+**Act when:** another Mac's camera is added to `Webcams.ts`, or one is found to give a different picture. Then tell
+them apart, by the label's USB id if the browser gives one.
+
+## A `cameraWidth` query parameter doesn't follow the calibration key
+
+With no configuration chosen, the game opens the camera at `cameraWidth` × `cameraHeight` from the app config,
+including the URL's query parameters, but the calibration key uses the size from `.env` alone (`sizeOf` in
+`CameraChoice.ts`), which has no access to the URL. A `?cameraWidth=` override can then play at one size with the
+floor calibrated for another.
+
+**Act when:** someone uses those query parameters with a 2.5D game. Then have `sizeOf` take the app config the game
+uses, or drop the query override for the camera size.
+
+## The landing preview's size assumes a 16:9 picture
+
+The landing page's camera preview is limited in width so that a 16:9 picture fits the height left beside the panels
+(`.game-camera-preview` in `GameLanding.css`). A 4:3 camera, or a taller panel, can still push the camera panel past
+the bar, when the column scrolls.
+
+**Act when:** the column scrolls on a common screen size. Then size the preview from the space left, measured in
+script, or with a container query.
