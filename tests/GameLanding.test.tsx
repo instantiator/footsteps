@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { saveCalibration } from "../src/components/camera/FloorCalibration";
+import { cameraKeyOf, saveCalibration } from "../src/components/camera/FloorCalibration";
 import { DEFAULT_CORNERS } from "../src/components/camera/FloorGeometry";
 import GameLanding from "../src/components/landing/GameLanding";
 import { completeChallenge } from "../src/components/core/logic/GameStateUtils";
@@ -116,7 +116,7 @@ describe("GameLanding for a game with 2.5D scenes", () => {
   });
 
   it("lets the player start once the camera has a saved floor", async () => {
-    saveCalibration("default", DEFAULT_CORNERS);
+    saveCalibration(cameraKeyOf({}), DEFAULT_CORNERS);
     permissionQuery("granted");
     getUserMedia();
     renderLanding(floorGame);

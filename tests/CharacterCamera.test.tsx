@@ -53,6 +53,17 @@ describe("CharacterCamera", () => {
     expect(camera.getUserMedia.mock.calls[0][0]).toMatchObject({ video: { deviceId: { exact: "rear" } } });
   });
 
+  it("opens the camera at the size chosen on the landing page", async () => {
+    saveCameraChoice({ deviceId: "rear", size: { width: 640, height: 480 }, mirror: false });
+    camera = stubGetUserMedia();
+    const { setStream } = renderCamera();
+
+    await waitFor(() => expect(setStream).toHaveBeenCalledTimes(1));
+    expect(camera.getUserMedia.mock.calls[0][0]).toMatchObject({
+      video: { width: { ideal: 640 }, height: { ideal: 480 } },
+    });
+  });
+
   it("stays on its camera when the cameras change during play", async () => {
     camera = stubGetUserMedia();
     const { setStream } = renderCamera();

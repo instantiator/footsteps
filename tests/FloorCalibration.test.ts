@@ -3,13 +3,15 @@ import {
   calibrationOrDefault,
   cameraKeyOf,
   forgetAllCalibrations,
+  forgetCalibration,
   isCalibrated,
   loadCalibration,
   saveCalibration,
 } from "../src/components/camera/FloorCalibration";
 import { DEFAULT_CORNERS, type Corners } from "../src/components/camera/FloorGeometry";
 
-const KEY = "footsteps:floor-calibration";
+const KEY = "footsteps:floor-calibrations";
+const OLD_KEY = "footsteps:floor-calibration";
 
 const NARROW: Corners = { ...DEFAULT_CORNERS, frontLeft: { x: 0.2, y: 0.85 }, frontRight: { x: 0.8, y: 0.85 } };
 
@@ -24,9 +26,32 @@ describe("floor calibration storage", () => {
     expect(isCalibrated("other")).toBe(false);
   });
 
-  it("keys the system default camera as default", () => {
-    expect(cameraKeyOf({})).toBe("default");
-    expect(cameraKeyOf({ deviceId: "laptop" })).toBe("laptop");
+  it("keys each camera and size, the system default camera as default, at the configured size unless chosen", () => {
+    expect(cameraKeyOf({})).toBe("default@1280x720");
+    expect(cameraKeyOf({ deviceId: "laptop", size: { width: 640, height: 480 } })).toBe("laptop@640x480");
+  });
+
+  it("keeps one camera's sizes apart", () => {
+    const hd = cameraKeyOf({ deviceId: "lifecam", size: { width: 1280, height: 720 } });
+    const sd = cameraKeyOf({ deviceId: "lifecam", size: { width: 640, height: 480 } });
+    saveCalibration(hd, NARROW);
+    expect(isCalibrated(sd)).toBe(false);
+    saveCalibration(sd, DEFAULT_CORNERS);
+    expect(loadCalibration(hd)).toEqual(NARROW);
+  });
+
+  it("forgets one configuration's corners only", () => {
+    saveCalibration("laptop", NARROW);
+    saveCalibration("rear", NARROW);
+    forgetCalibration("laptop");
+    expect(isCalibrated("laptop")).toBe(false);
+    expect(isCalibrated("rear")).toBe(true);
+  });
+
+  it("drops calibrations saved before they were per configuration", () => {
+    localStorage.setItem(OLD_KEY, JSON.stringify({ default: NARROW }));
+    expect(isCalibrated(cameraKeyOf({}))).toBe(false);
+    expect(localStorage.getItem(OLD_KEY)).toBeNull();
   });
 
   it("falls back to the default corners for a camera never calibrated", () => {

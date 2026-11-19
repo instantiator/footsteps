@@ -74,3 +74,37 @@ export const WEBCAMS: readonly WebcamConfig[] = [
 /** The known configurations of the camera with this label, if it's one we know. */
 export const webcamConfigsFor = (label: string): WebcamConfig[] =>
   WEBCAMS.filter(({ labelPattern }) => labelPattern.test(label));
+
+/** A picture size the landing page offers for a camera, named where the camera is known. */
+export interface CameraOption {
+  /** What the player sees, such as "HD (1280×720)". */
+  name: string;
+  /** Across, in pixels. */
+  width: number;
+  /** Down, in pixels. */
+  height: number;
+}
+
+/** The sizes offered for a camera that isn't known, where it can give them. */
+const PRESETS = [
+  { width: 1280, height: 720 },
+  { width: 640, height: 480 },
+];
+
+/**
+ * The sizes to offer for a camera: a known camera's configurations, or else the presets it is big enough for.
+ * @param largest the camera's largest picture, if the browser says
+ */
+export const cameraOptionsFor = (label: string, largest?: { width?: number; height?: number }): CameraOption[] => {
+  const known = webcamConfigsFor(label);
+  if (known.length > 0) {
+    return known.map(({ configuration, width, height }) => ({
+      name: `${configuration} (${width}×${height})`,
+      width,
+      height,
+    }));
+  }
+  return PRESETS.filter(
+    ({ width, height }) => width <= (largest?.width ?? Infinity) && height <= (largest?.height ?? Infinity),
+  ).map((size) => ({ name: `${size.width}×${size.height}`, ...size }));
+};

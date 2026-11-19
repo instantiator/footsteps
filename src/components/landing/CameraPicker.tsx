@@ -1,8 +1,10 @@
 import { useEffect, useRef, type RefObject } from "react";
 import { Link } from "react-router";
+import { sizeOf, type CameraChoice } from "../camera/CameraChoice";
 import { calibrationOrDefault, cameraKeyOf, isCalibrated } from "../camera/FloorCalibration";
 import type { Corners } from "../camera/FloorGeometry";
 import FloorOverlay from "../camera/FloorOverlay";
+import type { CameraOption } from "../camera/Webcams";
 import { useCameraPicker } from "./useCameraPicker";
 
 /** Marks the current choice in the dropdown. */
@@ -25,6 +27,39 @@ function CameraPreview({
       <video ref={videoRef} aria-label="Camera preview" style={{ transform }} autoPlay muted playsInline />
       {corners && <FloorOverlay corners={corners} style={{ transform }} />}
     </div>
+  );
+}
+
+const sizeKey = ({ width, height }: { width: number; height: number }) => `${width}x${height}`;
+
+/** A choice of the sizes the camera can be opened at, shown only when there's more than one. */
+function SizeChoice({
+  options,
+  choice,
+  choose,
+}: {
+  options: CameraOption[];
+  choice: CameraChoice;
+  choose: (change: Partial<CameraChoice>) => void;
+}) {
+  if (options.length < 2) return null;
+  return (
+    <label>
+      Configuration
+      <select
+        value={sizeKey(sizeOf(choice))}
+        onChange={({ target }) => {
+          const chosen = options.find((option) => sizeKey(option) === target.value);
+          choose({ size: chosen && { width: chosen.width, height: chosen.height } });
+        }}
+      >
+        {options.map((option) => (
+          <option key={sizeKey(option)} value={sizeKey(option)}>
+            {option.name}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -51,7 +86,7 @@ interface CameraPickerProps {
  * scenes, the preview shows the camera's floor, with whether it has been calibrated and a link to calibrate it.
  */
 export default function CameraPicker({ calibrateTo, onCameraKeyChange }: CameraPickerProps) {
-  const { choice, choose, cameras, stream, failed, activeDeviceId } = useCameraPicker();
+  const { choice, choose, cameras, stream, failed, activeDeviceId, options } = useCameraPicker();
   const videoRef = useRef<HTMLVideoElement>(null);
   const cameraKey = cameraKeyOf(choice);
   const floorCorners = calibrateTo ? calibrationOrDefault(cameraKey) : undefined;
@@ -72,7 +107,9 @@ export default function CameraPicker({ calibrateTo, onCameraKeyChange }: CameraP
         Camera
         <select
           value={choice.deviceId ?? ""}
-          onChange={({ target }) => choose({ deviceId: target.value === "" ? undefined : target.value })}
+          onChange={({ target }) =>
+            choose({ deviceId: target.value === "" ? undefined : target.value, size: undefined })
+          }
         >
           <option value="">
             {choice.deviceId === undefined ? MARK : ""}System default{choice.deviceId === undefined ? defaultName : ""}
@@ -85,6 +122,7 @@ export default function CameraPicker({ calibrateTo, onCameraKeyChange }: CameraP
           ))}
         </select>
       </label>
+      <SizeChoice options={options} choice={choice} choose={choose} />
       <label>
         <input type="checkbox" checked={choice.mirror} onChange={({ target }) => choose({ mirror: target.checked })} />
         Mirror picture (for a camera facing the player)
