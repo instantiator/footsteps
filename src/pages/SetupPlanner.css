@@ -45,6 +45,16 @@
   margin: 4px 0;
 }
 
+/* The webcams' names are long, so the choice wraps under its label on narrow screens */
+.setup-webcam {
+  flex-wrap: wrap;
+}
+
+.setup-webcam select {
+  flex: 1;
+  min-width: 0;
+}
+
 .number-field-controls {
   display: flex;
   align-items: center;

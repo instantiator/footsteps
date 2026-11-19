@@ -66,10 +66,10 @@ export interface SetupConstants {
   screenHeight: number;
 }
 
-/** A typical room, family and 4:3 webcam (65° diagonal, which is 42° vertical). */
+/** A family room, and a Microsoft LifeCam HD-3000 at 1280×720 (see `Webcams.ts`). */
 export const DEFAULT_SETUP_INPUTS: SetupInputs = {
-  roomLength: 5,
-  roomWidth: 4,
+  roomLength: 5.77,
+  roomWidth: 4.27,
   clearance: 0.2,
   shortestPlayer: 1,
   tallestPlayer: 1.9,
@@ -77,8 +77,8 @@ export const DEFAULT_SETUP_INPUTS: SetupInputs = {
   marginRight: 0.3,
   marginFar: 0.3,
   marginBehind: 0.5,
-  diagonalFov: 65,
-  aspect: 4 / 3,
+  diagonalFov: 68.5,
+  aspect: 16 / 9,
 };
 
 /**

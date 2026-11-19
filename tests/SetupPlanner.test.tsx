@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it } from "vitest";
+import { WEBCAMS, type WebcamConfig } from "../src/components/camera/Webcams";
 import { DEFAULT_SETUP_INPUTS, planSetup } from "../src/components/setup/SetupCalculations";
 import SetupPlanner from "../src/pages/SetupPlanner";
 
@@ -35,7 +36,7 @@ describe("SetupPlanner", () => {
 
   it("steps values with − and +, rounding to the step and stopping at the minimum", () => {
     fireEvent.click(screen.getByRole("button", { name: "Increase room width" }));
-    expect(field(/Room width/).value).toBe("4.05");
+    expect(field(/Room width/).value).toBe("4.3");
     const decrease = screen.getByRole("button", { name: "Decrease space above the camera" });
     for (let i = 0; i < 6; i++) fireEvent.click(decrease);
     expect(field(/Space above the camera/).value).toBe("0");
@@ -69,8 +70,39 @@ describe("SetupPlanner", () => {
   });
 
   it("shows the field of view a measurement implies", () => {
+    fireEvent.change(screen.getByLabelText("Picture shape"), { target: { value: String(4 / 3) } });
     fireEvent.change(field(/Camera's distance from a wall/), { target: { value: "1" } });
     fireEvent.change(field(/Width of wall it shows/), { target: { value: "1" } });
     expect(result("Diagonal field of view measured")).toBe("64°");
+  });
+});
+
+describe("the known webcam choice", () => {
+  const [lifecamHd, lifecamSd] = WEBCAMS;
+  const useWebcam = (config?: WebcamConfig) => {
+    const choice = screen.getByLabelText<HTMLSelectElement>("Known webcam");
+    fireEvent.change(choice, { target: { value: String(WEBCAMS.indexOf(config ?? lifecamHd)) } });
+    fireEvent.click(screen.getByRole("button", { name: "Use this camera" }));
+  };
+
+  it("fills in a webcam's field of view and shape, and recalculates", () => {
+    const before = result("Floor");
+    useWebcam(lifecamSd);
+    expect(field(/Diagonal field of view/).value).toBe("58");
+    expect(screen.getByLabelText<HTMLSelectElement>("Picture shape").value).toBe(String(4 / 3));
+    expect(result("Floor")).not.toBe(before);
+  });
+
+  const unknownFov = WEBCAMS.find(({ diagonalFov }) => diagonalFov === undefined);
+  it.skipIf(!unknownFov)("keeps the field of view for a webcam whose field of view isn't known", () => {
+    fireEvent.change(field(/Diagonal field of view/), { target: { value: "70" } });
+    useWebcam(unknownFov);
+    expect(field(/Diagonal field of view/).value).toBe("70");
+  });
+
+  it("replaces a measurement", () => {
+    fireEvent.change(field(/Camera's distance from a wall/), { target: { value: "1" } });
+    useWebcam(lifecamHd);
+    expect(field(/Camera's distance from a wall/).value).toBe("");
   });
 });

@@ -1,5 +1,6 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { Link } from "react-router";
+import { WEBCAMS, type WebcamConfig } from "../components/camera/Webcams";
 import NumberField from "../components/setup/NumberField";
 import SetupIllustration from "../components/setup/SetupIllustration";
 import SetupScreenView from "../components/setup/SetupScreenView";
@@ -169,10 +170,13 @@ function InputFields({ values, setValues }: { values: FormValues; setValues: Dis
         />
       ))}
       {legend === "Camera" && (
-        <AspectChoice
-          value={values.aspect ?? DEFAULT_SETUP_INPUTS.aspect}
-          onChange={(aspect) => setValues((old) => ({ ...old, aspect }))}
-        />
+        <>
+          <AspectChoice
+            value={values.aspect ?? DEFAULT_SETUP_INPUTS.aspect}
+            onChange={(aspect) => setValues((old) => ({ ...old, aspect }))}
+          />
+          <WebcamChoice onUse={(config) => setValues((old) => withWebcam(old, config))} />
+        </>
       )}
     </fieldset>
   ));
@@ -204,6 +208,38 @@ function ConstantFields({
         Reset defaults
       </button>
     </fieldset>
+  );
+}
+
+/** The form with a known webcam's field of view, where known, and shape, in place of any measurement. */
+const withWebcam = (values: FormValues, { diagonalFov, width, height }: WebcamConfig): FormValues => ({
+  ...values,
+  diagonalFov: diagonalFov ?? values.diagonalFov,
+  aspect: width / height,
+  measuredDistance: undefined,
+  measuredWidth: undefined,
+});
+
+const webcamName = ({ manufacturer, camera, configuration, width, height }: WebcamConfig) =>
+  `${manufacturer} ${camera} · ${configuration} ${width}×${height}`;
+
+/** A choice of the known webcams, filling in the camera's values when used. */
+function WebcamChoice({ onUse }: { onUse: (config: WebcamConfig) => void }) {
+  const [index, setIndex] = useState(0);
+  return (
+    <div className="number-field setup-webcam">
+      <label htmlFor="setup-webcam">Known webcam</label>
+      <select id="setup-webcam" value={index} onChange={(event) => setIndex(Number(event.target.value))}>
+        {WEBCAMS.map((config, i) => (
+          <option key={webcamName(config)} value={i}>
+            {webcamName(config)}
+          </option>
+        ))}
+      </select>
+      <button type="button" onClick={() => onUse(WEBCAMS[index])}>
+        Use this camera
+      </button>
+    </div>
   );
 }
 

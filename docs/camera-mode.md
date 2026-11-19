@@ -127,7 +127,9 @@ recommends how big a floor to mark and where to put the camera. The user enters 
 optional ceiling height with the space needed above the camera, the shortest and tallest players, the space taken on
 each side of the floor and behind the camera (where the screen stands), and the camera's diagonal field of view and
 picture shape. If the camera has no spec sheet, measuring how much of a wall it shows from a known distance gives the
-field of view instead. The page shows the floor's size, the camera's distance from the floor, its height and tilt
+field of view instead. The values start at a 5.77 m × 4.27 m room and a Microsoft LifeCam HD-3000 at 1280×720, and
+"Known webcam" fills in the field of view and picture shape of any camera in [known webcams](webcams.md). The page
+shows the floor's size, the camera's distance from the floor, its height and tilt
 (and where the picture's centre meets the floor), the margins left over, and an isometric drawing of the result. Every
 value and assumption has − and + buttons, so the effect of a change can be watched.
 
@@ -150,7 +152,7 @@ on the way in and back to degrees on the way out; every step in between is arith
 in `src/components/setup/SetupCalculations.ts` and the plan, `docs/prompts/002.04.01.plan - calculations.md`.
 
 The recommendation is not a calibration: the [default floor](#the-default-floor) stays the same until the player
-calibrates. As a check against the default floor: with the default webcam, a 2 m camera, no picture edge kept clear and
+calibrates. As a check against the default floor: with a 65° 4:3 webcam (the default floor's), a 2 m camera, no picture edge kept clear and
 a tallest player of 1.8 m, the planner puts the front edge about 2.1 m away at a 22° tilt. The default floor's front
 edge is 2.5 m away, because it keeps more of the picture's bottom clear.
 
