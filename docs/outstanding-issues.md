@@ -235,7 +235,7 @@ The HUD's fullscreen toggle (`src/components/core/FullscreenHook.ts`) uses the F
 
 ## Landing tile grid sizes chosen without a device check
 
-The grid uses `repeat(auto-fill, minmax(14rem, 1fr))` with square tiles, which gives about five per row on a 1280px monitor and one or two on a phone, as the prompt asks. That has been verified in the browser at desktop and narrow widths, not on physical phones.
+The grid uses `repeat(auto-fill, minmax(min(14rem, 100%), 1fr))` with square tiles, in the home page's Local repository tab. That gives three or four per row on a laptop, and one on a phone, where a tile shrinks to the panel's width. That has been verified in the browser at desktop and narrow widths, not on physical phones.
 
 **Act when:** the landing page is reviewed on a phone and shows more than two tiles per row, or on a desktop monitor and shows more than six. Then adjust the `minmax` size in `src/components/landing/LocalListing.tsx`.
 

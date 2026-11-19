@@ -8,7 +8,7 @@ awake while the game is incomplete, with a warning on every page when the batter
 
 | Route                 | What it shows                                                                                        |
 | --------------------- | ---------------------------------------------------------------------------------------------------- |
-| `/`                   | The list of games in the local repository                                                            |
+| `/`                   | The [home page](#home-page): the local repository's games, setup and design, and attributions        |
 | `/game/:id`           | The game's landing page                                                                              |
 | `/game/:id/play`      | The game itself                                                                                      |
 | `/game/:id/calibrate` | [Floor calibration](camera-mode.md#calibrating-the-floor) for the chosen camera                      |
@@ -20,6 +20,21 @@ awake while the game is incomplete, with a warning on every page when the batter
 The game routes are prerendered for every game in `public/game-repository.json`. A direct visit
 to `/game/:id/play` checks the game's required permissions first, and for a game with 2.5D scenes played by camera,
 that the floor is calibrated. It sends the player back to the landing page if either is missing.
+
+## Home page
+
+The home page fits the window. Under the 👣 Footsteps title are three tabs, and only the chosen tab's panel scrolls
+when its content is long:
+
+- **Local repository:** a tile for each game in the local repository. A tile glows under the pointer or the
+  keyboard's focus.
+- **Setup and design:** Plan your space (`/setup`) and the Scene designer (`/scene-renderer`).
+- **Attributions:** a link to the dependencies and their licences (`/dependencies`), then each game's credits.
+
+The URL hash records the chosen tab (`#local-repository`, `#setup-and-design`, `#attributions`), so a reload or a
+shared link opens it. Changing tab replaces the hash rather than adding to the history. The arrow keys, Home and End
+move between the tabs. The footer says that Footsteps is open source under the MIT license, with links to the licence
+and the GitHub repository. With `?debug=true`, it also shows the site's base path.
 
 ## Landing page
 

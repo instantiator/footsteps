@@ -26,20 +26,23 @@
 
 /* One row of tabs, which scrolls sideways when the window is too narrow for them all */
 .tabs-list {
+  position: relative;
+  z-index: 1;
   flex-shrink: 0;
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
+  margin-bottom: -1px;
   padding-left: 0.5rem;
 }
 
-/* An unselected tab sits behind the panel; the selected one joins it */
+/*
+ * The row of tabs overlaps the panel's top border by a pixel, inside its own box so its sideways scrolling doesn't
+ * clip it. Each tab draws that border along its bottom, except the selected one, which joins the panel.
+ */
 .tabs-tab {
-  position: relative;
-  bottom: -1px;
   padding: 0.5rem 1.25rem;
   border: 1px solid #22303c55;
-  border-bottom: none;
   border-radius: 0.5rem 0.5rem 0 0;
   background: #eef3fa;
   color: inherit;
@@ -65,7 +68,7 @@
 }
 
 .tabs-tab[aria-selected="true"] {
-  z-index: 1;
+  border-bottom-color: #ffffff;
   background: #ffffff;
 }
 
