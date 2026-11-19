@@ -40,6 +40,13 @@
   flex-shrink: 0;
 }
 
+/* The camera's panel takes the rest of its column; below the preview's smallest size, the panel scrolls */
+.game-landing-side > .game-camera-panel {
+  flex: 1 0 0;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Narrow screens stack the columns at their full height, and scroll them together */
 @media (max-width: 900px) {
   .game-landing-content {
@@ -132,6 +139,8 @@
 
 /* The camera and configuration dropdowns, mirror checkbox, live preview and floor buttons */
 .game-camera-picker {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -147,10 +156,11 @@
   flex: 1 1 12rem;
 }
 
+/* The preview's stage takes the space left in the panel, with the floor buttons stacked to its right */
 .game-camera-row {
+  flex: 1;
+  min-height: 0;
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
   gap: 0.75rem;
 }
 
@@ -172,19 +182,52 @@
   font: inherit;
 }
 
-/* Takes the space beside the buttons, and shrink-wraps the picture so the floor drawn over it lines up with it */
-.game-camera-preview {
-  position: relative;
-  flex: 1 1 14rem;
-  /* As wide as a 16:9 picture that fits the height left beside the panels and the bar, so it all fits without scrolling */
-  max-width: max(14rem, calc((100dvh - 31rem) * 16 / 9));
+/*
+ * The space left in the panel for the preview. The preview inside it is sized inline as the largest picture of the
+ * camera's shape that fits (`min(100cqw, aspect × 100cqh)`), so the floor drawn over it lines up with the picture.
+ */
+.game-camera-stage {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 8rem;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 
-/* Keeps a camera's shape before it starts, or when there's none */
+.game-camera-preview {
+  position: relative;
+}
+
+/* Stacked on a narrow screen, the panel has no height of its own to fill, so the preview takes one, with the buttons under it */
+@media (max-width: 900px) {
+  .game-landing-side > .game-camera-panel {
+    flex: none;
+  }
+
+  .game-camera-row {
+    flex: none;
+    flex-direction: column;
+  }
+
+  .game-camera-stage {
+    flex: none;
+    height: min(56vw, 50dvh);
+  }
+
+  .game-camera-floor-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+/* Fills the preview, which has the camera's shape, so a stream that's slightly off is stretched rather than shifted */
 .game-camera-picker video {
   display: block;
+  box-sizing: border-box;
   width: 100%;
-  aspect-ratio: auto 16 / 9;
+  height: 100%;
   border: 2px solid #22303c;
   border-radius: 0.5rem;
   background: #22303c;

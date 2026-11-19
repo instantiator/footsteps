@@ -160,7 +160,9 @@ describe("GameLanding for a game with 2.5D scenes", () => {
     renderLanding(floorGame);
     await waitFor(() => expect(screen.getByRole("button", { name: "New game" })).toBeEnabled());
 
-    fireEvent.click(screen.getByRole("button", { name: "Clear all calibrations" }));
+    const clearAll = screen.getByRole("button", { name: "Clear all calibrations" });
+    expect(clearAll.closest(".game-button-bar")).not.toBeNull();
+    fireEvent.click(clearAll);
 
     expect(screen.getByText("Not yet calibrated")).toBeInTheDocument();
     expect(isCalibrated(cameraKeyOf({ size: { width: 640, height: 480 } }))).toBe(false);
@@ -340,6 +342,19 @@ describe("GameLanding", () => {
         "/setup?camera=LifeCam+HD-3000&size=1280x720",
       ),
     );
+  });
+
+  it("offers to clear all calibrations only for a game that uses the floor", () => {
+    renderLanding();
+    expect(screen.queryByRole("button", { name: "Clear all calibrations" })).toBeNull();
+  });
+
+  it("starts the bar with a way back to the games", () => {
+    renderLanding();
+    const links = screen.getAllByRole("link");
+    expect(links[0]).toHaveTextContent("Back to games");
+    expect(links[0]).toHaveAttribute("href", "/");
+    expect(links[0].closest(".game-button-bar")).not.toBeNull();
   });
 
   it("plans the space in a new tab", () => {

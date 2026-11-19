@@ -340,7 +340,8 @@ describe("rules demo, the floor is lava, played by mouse-feet", () => {
     await returnToStart();
     pointer.jump(STONE_1, LAVA);
     await returnToStart();
-  });
+    // Two trips back to the start take over 3 s in real time, too close to the default 5 s under a busy full suite
+  }, 15_000);
 
   it("keeps the door shut to a click until the player stands on the last stone", async () => {
     await openStage();

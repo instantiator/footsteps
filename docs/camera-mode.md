@@ -169,20 +169,31 @@ edge is 2.5 m away, because it keeps more of the picture's bottom clear.
 ### Calibrating the floor
 
 For a game with 2.5D scenes, the landing page's camera preview outlines the chosen configuration's floor once it's
-saved, and says "Not yet calibrated" over the preview until then. **Calibrate**, beside the preview, opens
-`/game/:id/calibrate`, which shows the camera picture with the floor over it and steps on screen. **Reset** saves
-the [default floor](#the-default-floor) for that configuration, and **Clear** forgets its floor.
+saved, and says "Not yet calibrated" over the preview until then. To the right of the preview, **Reset** saves the
+[default floor](#the-default-floor) for that configuration, **Clear** forgets its floor, and **Calibrate** opens
+`/game/:id/calibrate`. **Clear all calibrations**, in the bar next to Plan space, forgets every configuration's floor
+after asking.
+
+The calibration page has the landing page's look: the game's title and the steps on the left, with **Plan space**
+(the setup planner for this camera, in a new tab), and on the right the camera picture with the floor over it, headed
+"Calibrating: <camera> · <configuration>". An asterisk follows the heading while the corners aren't saved, which
+includes the default corners an uncalibrated configuration starts on. The picture takes the height left above the
+bar, so the page fits a laptop screen without scrolling; on a narrow screen the columns stack and scroll.
 
 1. Drag each blue corner to a corner of the space you can walk around in. The floor can be any convex shape. A drag
    that would fold it stops at the limit. With the keyboard, Tab moves between the corners, and the arrow keys move
    the focused one (Shift moves it further).
 2. Walk to each corner. Your feet should stay green: each foot is green on the floor and red off it, and the head and
    hands are marked too.
-3. Press **Save** when it fits.
+3. Press **Save and close** when it fits: it saves the floor and goes back to the landing page.
 
-Calibration expects one person. While more are in view, it warns, the feet stop turning green or red, and Save is
-disabled, though everyone is still marked. **Reset to the default area** puts the corners back to the defaults
-until you save. **Forget all saved areas** clears every camera's floor after asking.
+Calibration expects one person. While more are in view, it warns over the picture, the feet stop turning green or red,
+and Save and close is disabled, though everyone is still marked. The bar along the bottom also has:
+
+- **Close**, back to the landing page, after asking if the corners aren't saved;
+- **Reset**, which puts the corners back to the defaults, unsaved;
+- **Clear all calibrations**, which forgets every configuration's floor after asking. The corners stay as they are,
+  unsaved.
 
 Corners are saved in `localStorage` per camera configuration: the camera chosen on the landing page ("System default"
 is one camera) and its size, as `<camera>@<width>x<height>`. Another size may be a different crop of the camera's view,

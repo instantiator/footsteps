@@ -1,5 +1,5 @@
 import { useMemo, useReducer, useState, type ComponentProps } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import type { GameData } from "../../entities/data/GameData";
 import { clearGameState, loadGameState } from "../../entities/state/GameStateStorage";
 import { useGameData } from "../../providers/GameDataHook";
@@ -12,21 +12,27 @@ import "./GamePanel.css";
 import "./GameLanding.css";
 import ButtonBar from "./ButtonBar";
 import CameraPicker, { type CameraInUse } from "./CameraPicker";
+import ClearAllCalibrations from "./ClearAllCalibrations";
 import GameBadges from "./GameBadges";
 import { useGamePageStyle } from "./GamePageStyle";
 import GamePermissionPanel from "./GamePermissionPanel";
 import PlanSpaceLink from "./PlanSpaceLink";
 import { useGamePermissions } from "./useGamePermissions";
 
-/** The bar along the bottom: planning the space in a new tab, and starting the game. */
+/**
+ * The bar along the bottom: back to the games, planning the space in a new tab, clearing the floors where the game
+ * uses one, and starting.
+ */
 function ActionBar({
   planCamera,
+  onClearAll,
   saved,
   ready,
   onContinue,
   onNewGame,
 }: {
   planCamera: CameraInUse | undefined;
+  onClearAll: (() => void) | undefined;
   saved: boolean;
   ready: boolean;
   onContinue: () => void;
@@ -34,7 +40,15 @@ function ActionBar({
 }) {
   return (
     <ButtonBar
-      start={<PlanSpaceLink camera={planCamera} />}
+      start={
+        <>
+          <Link className="game-button" to="/">
+            Back to games
+          </Link>
+          <PlanSpaceLink camera={planCamera} />
+          {onClearAll && <ClearAllCalibrations onCleared={onClearAll} />}
+        </>
+      }
       end={
         <>
           {saved && (
@@ -54,7 +68,7 @@ function ActionBar({
 /** The camera's configuration, in its own panel. */
 function CameraPanel(props: ComponentProps<typeof CameraPicker>) {
   return (
-    <section className="game-panel game-landing-panel" aria-labelledby="camera-configuration">
+    <section className="game-panel game-landing-panel game-camera-panel" aria-labelledby="camera-configuration">
       <h2 id="camera-configuration">Camera configuration</h2>
       <CameraPicker {...props} />
     </section>
@@ -133,6 +147,7 @@ export default function GameLanding() {
       </div>
       <ActionBar
         planCamera={readiness.planCamera}
+        onClearAll={cameraRequirement && gameUsesFloor(gameData) ? readiness.calibrationChanged : undefined}
         saved={isDefined(savedState)}
         ready={ready}
         onContinue={() => navigate(playPath)}

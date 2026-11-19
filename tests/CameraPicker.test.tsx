@@ -292,3 +292,21 @@ describe("the floor buttons and warnings", () => {
     );
   });
 });
+
+describe("the preview's buttons", () => {
+  it("are Reset, Clear and Calibrate, in that order, under the preview", () => {
+    render(
+      <MemoryRouter>
+        <CameraPicker calibrateTo="/calibrate" />
+      </MemoryRouter>,
+    );
+    const buttons = document.querySelectorAll(".game-camera-floor-actions > *");
+    expect([...buttons].map((button) => button.textContent)).toEqual(["Reset", "Clear", "Calibrate"]);
+    expect(screen.queryByRole("button", { name: "Clear all calibrations" })).toBeNull();
+  });
+
+  it("start with the picture unmirrored, for a camera behind the player", () => {
+    render(<CameraPicker />);
+    expect(screen.getByRole("checkbox", { name: /Mirror picture/ })).not.toBeChecked();
+  });
+});
