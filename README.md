@@ -30,3 +30,8 @@ Footsteps is a React application written in Typescript and built with Vite.
 
 - [Documentation](https://instantiator.dev/footsteps/docs/)
 - [API reference](https://instantiator.dev/footsteps/docs/tsdoc/)
+
+## Licence
+
+Footsteps is released under the [MIT license](LICENSE). Its dependencies' licences are listed on the app's
+`/dependencies` page.
