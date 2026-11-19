@@ -26,7 +26,7 @@ describe("Home", () => {
       "Attributions",
     ]);
     expect(screen.getByRole("tab", { name: "Local repository" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("tabpanel")).toHaveTextContent(/Status:/);
+    expect(screen.getByRole("tabpanel")).toHaveTextContent("Status: Loading...");
   });
 
   it("links to the setup planner and the scene designer under Setup and design", () => {

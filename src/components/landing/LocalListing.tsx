@@ -2,13 +2,13 @@ import { useContext } from "react";
 import { GameRepositoryContext } from "../../providers/GameRepositoryContext";
 import GameTile from "./GameTile";
 
-/** The local repository's load status, and once ready a tile for each of its games. */
+/** The local repository's status while it loads or if it fails, and once ready a tile for each of its games. */
 export default function LocalListing() {
   const { repository } = useContext(GameRepositoryContext);
 
   return (
     <>
-      <p>Status: {repository.ready ? "Ready" : (repository.error ?? "Loading...")}</p>
+      {!repository.ready && <p>Status: {repository.error ?? "Loading..."}</p>}
       {repository.ready && (
         <div
           style={{
