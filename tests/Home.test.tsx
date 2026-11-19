@@ -14,6 +14,17 @@ describe("Home", () => {
     expect(heading).toBeInTheDocument();
   });
 
+  it("links to the scene designer, after the setup planner", () => {
+    render(
+      <MemoryRouter>
+        <Home />
+      </MemoryRouter>,
+    );
+    const links = screen.getAllByRole("link").map((link) => link.textContent);
+    expect(screen.getByRole("link", { name: "Scene designer" })).toHaveAttribute("href", "/scene-renderer");
+    expect(links.indexOf("Scene designer")).toBe(links.indexOf("Plan your space") + 1);
+  });
+
   it("links to the setup planner", () => {
     render(
       <MemoryRouter>

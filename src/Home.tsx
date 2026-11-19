@@ -16,6 +16,9 @@ export default function Home() {
       <p>
         <Link to="/setup">Plan your space</Link>: is your room big enough, and where should the camera go?
       </p>
+      <p>
+        <Link to="/scene-renderer">Scene designer</Link>: write a scene's HTML, and play it as you type.
+      </p>
       <h2>Local repository</h2>
       <GameRepositoryProvider source={{ type: "LocalRepository", path: "game-repository.json" }}>
         <LocalListing />

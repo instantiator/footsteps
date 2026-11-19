@@ -91,7 +91,8 @@ Every game in the local repository, `public/game-repository.json`, is prerendere
 
 ## Scene renderer
 
-`/scene-renderer` (<http://localhost:5173/scene-renderer>) is a page for game authors. Paste a scene's HTML on the
+`/scene-renderer` (<http://localhost:5173/scene-renderer>), linked from the home page as "Scene designer", is a page
+for game authors. Paste a scene's HTML on the
 left, and the right shows it as it would play: in 2.5D, with the mouse as the player's feet (`mouse-feet`), on the
 floor saved for the chosen camera or the default floor. It lists, under the HTML, the template problems and warnings
 that the validator would report for a 2.5D scene (`src/components/core/logic/TemplateChecks.ts`, shared with
