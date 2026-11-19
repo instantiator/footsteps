@@ -11,7 +11,7 @@ test("plays the 2D demo to the end by mouse, and shows it complete on its tile",
   await expect(badges).toContainText("No camera");
   await expect(badges).toContainText("3 stages · 3 challenges");
   await expect(badges).toContainText("Sound effects");
-  await expect(page.getByRole("checkbox", { name: "Play without the camera" })).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "Camera" })).toHaveCount(0);
   await page.getByRole("button", { name: "New game" }).click();
   await expect(page.locator("#character-camera-layer")).toHaveCount(0);
 

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cameraKeyOf, saveCalibration } from "../src/components/camera/FloorCalibration";
@@ -65,24 +65,31 @@ const renderLanding = (game: GameData = simpleGameData) =>
     </MemoryRouter>,
   );
 
+/** The landing page's camera dropdown, which also offers playing without the camera. */
+const cameraDropdown = () => screen.getByRole<HTMLSelectElement>("combobox", { name: "Camera" });
+
+const withoutCameraOption = () => screen.queryByRole("option", { name: /Play without the camera/ });
+
 describe("GameLanding without the camera", () => {
   it("offers to play without the camera only for a game that can do without it", () => {
     renderLanding(cameraGame).unmount();
-    expect(screen.queryByRole("checkbox", { name: "Play without the camera" })).toBeNull();
+    expect(withoutCameraOption()).toBeNull();
     renderLanding(simpleGameData).unmount();
-    expect(screen.queryByRole("checkbox", { name: "Play without the camera" })).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Camera" })).toBeNull();
     renderLanding(optionalCameraGame);
-    expect(screen.getByRole("checkbox", { name: "Play without the camera" })).not.toBeChecked();
+    expect(withoutCameraOption()).not.toBeNull();
+    expect(cameraDropdown().value).not.toBe("none");
   });
 
   it("starts without needing the floor calibrated, and tells the game to leave the camera off", async () => {
     permissionQuery("granted");
     getUserMedia();
     renderLanding(floorGame);
-    expect(await screen.findByText("Calibrate the floor before you start.")).toBeInTheDocument();
+    expect(await screen.findByText("Not yet calibrated")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("checkbox", { name: "Play without the camera" }));
-    expect(screen.queryByText("Calibrate the floor before you start.")).toBeNull();
+    fireEvent.change(cameraDropdown(), { target: { value: "none" } });
+    expect(screen.queryByText("Not yet calibrated")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Calibrate" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "New game" }));
     expect(screen.getByText("Playing the game?noCamera=true")).toBeInTheDocument();
   });
@@ -105,24 +112,29 @@ describe("GameLanding for a game with 2.5D scenes", () => {
     getUserMedia();
     renderLanding(floorGame);
 
-    expect(await screen.findByText("Calibrate the floor before you start.")).toBeInTheDocument();
+    expect(await screen.findByText("Not yet calibrated")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New game" })).toBeDisabled();
-    expect(await screen.findByText(/This camera has no saved floor area yet/)).toBeInTheDocument();
-    expect(document.querySelector(".game-camera-preview polygon")).not.toBeNull();
-    expect(screen.getByRole("link", { name: "Plan your space" })).toHaveAttribute("href", "/setup");
+    expect(screen.getByRole("button", { name: "Reset" })).toBeDisabled();
+    expect(document.querySelector(".game-camera-preview polygon")).toBeNull();
 
-    fireEvent.click(screen.getByRole("link", { name: "Calibrate the floor" }));
+    fireEvent.click(screen.getByRole("link", { name: "Calibrate" }));
     expect(screen.getByText("Calibrating")).toBeInTheDocument();
   });
 
-  it("lets the player start once the camera has a saved floor", async () => {
+  it("lets the player start once the camera has a saved floor, drawn on the preview, until it's reset", async () => {
     saveCalibration(cameraKeyOf({}), DEFAULT_CORNERS);
     permissionQuery("granted");
     getUserMedia();
     renderLanding(floorGame);
 
-    expect(await screen.findByText(/This camera has a saved floor area/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "New game" })).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole("button", { name: "New game" })).toBeEnabled());
+    expect(screen.queryByText("Not yet calibrated")).toBeNull();
+    expect(document.querySelector(".game-camera-preview polygon")).not.toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    expect(screen.getByText("Not yet calibrated")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New game" })).toBeDisabled();
+    expect(document.querySelector(".game-camera-preview polygon")).toBeNull();
   });
 
   it("lets a player without the camera start, to play by mouse", async () => {
@@ -131,7 +143,13 @@ describe("GameLanding for a game with 2.5D scenes", () => {
 
     expect(await screen.findByText("Not granted")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New game" })).toBeEnabled();
-    expect(screen.queryByText("Calibrate the floor before you start.")).toBeNull();
+    expect(screen.queryByText("Not yet calibrated")).toBeNull();
+  });
+
+  it("says a required camera is needed over the preview", async () => {
+    permissionQuery("prompt");
+    renderLanding(cameraGame);
+    expect(await screen.findByText("Camera required")).toBeInTheDocument();
   });
 });
 
@@ -256,14 +274,33 @@ describe("GameLanding", () => {
     expect(screen.getByText("Playing the game")).toBeInTheDocument();
   });
 
-  it("clears saved progress when starting a new game", () => {
+  it("clears saved progress when starting a new game, once the player confirms", () => {
     saveGameState(GAME_ID, partlyComplete());
+    const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
     renderLanding();
 
     fireEvent.click(screen.getByRole("button", { name: "New game" }));
+    expect(loadGameState(GAME_ID, simpleGameData)).toBeDefined();
+    fireEvent.click(screen.getByRole("button", { name: "New game" }));
 
+    expect(confirm).toHaveBeenCalledTimes(2);
     expect(screen.getByText("Playing the game")).toBeInTheDocument();
     expect(loadGameState(GAME_ID, simpleGameData)).toBeUndefined();
+  });
+
+  it("starts a new game without asking when there's nothing saved", () => {
+    const confirm = vi.spyOn(window, "confirm");
+    renderLanding();
+    fireEvent.click(screen.getByRole("button", { name: "New game" }));
+    expect(confirm).not.toHaveBeenCalled();
+    expect(screen.getByText("Playing the game")).toBeInTheDocument();
+  });
+
+  it("plans the space in a new tab", () => {
+    renderLanding();
+    const plan = screen.getByRole("link", { name: "Plan space" });
+    expect(plan).toHaveAttribute("href", "/setup");
+    expect(plan).toHaveAttribute("target", "_blank");
   });
 
   it("keeps Continue disabled until required permissions are granted", async () => {

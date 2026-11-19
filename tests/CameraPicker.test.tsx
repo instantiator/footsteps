@@ -1,6 +1,10 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ComponentProps } from "react";
+import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { loadCameraChoice, saveCameraChoice } from "../src/components/camera/CameraChoice";
+import { cameraKeyOf, isCalibrated, saveCalibration } from "../src/components/camera/FloorCalibration";
+import { DEFAULT_CORNERS } from "../src/components/camera/FloorGeometry";
 import CameraPicker from "../src/components/landing/CameraPicker";
 import { FakeMediaStream, FakeMediaStreamTrack } from "./helpers/media";
 import { stubGetUserMedia } from "./helpers/permissions";
@@ -229,5 +233,35 @@ describe("the configuration choice", () => {
     render(<CameraPicker />);
     await screen.findByRole("option", { name: "Rear camera" });
     expect(sizes()).toBeNull();
+  });
+});
+
+describe("the floor buttons and warnings", () => {
+  const renderPicker = (props: ComponentProps<typeof CameraPicker> = {}) =>
+    render(
+      <MemoryRouter>
+        <CameraPicker calibrateTo="/calibrate" {...props} />
+      </MemoryRouter>,
+    );
+
+  it("shows what's still needed over the preview", () => {
+    renderPicker({ granted: false, warnings: ["Camera required"] });
+    expect(screen.getByText("Camera required").closest(".game-camera-preview")).not.toBeNull();
+    expect(camera.getUserMedia).not.toHaveBeenCalled();
+  });
+
+  it("forgets only the chosen configuration's floor", async () => {
+    const sd = cameraKeyOf({ size: { width: 640, height: 480 } });
+    saveCalibration(cameraKeyOf({}), DEFAULT_CORNERS);
+    saveCalibration(sd, DEFAULT_CORNERS);
+    const onCalibrationForgotten = vi.fn();
+    renderPicker({ onCalibrationForgotten });
+    await screen.findByRole("option", { name: "Rear camera" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+
+    expect(onCalibrationForgotten).toHaveBeenCalledOnce();
+    expect(isCalibrated(cameraKeyOf({}))).toBe(false);
+    expect(isCalibrated(sd)).toBe(true);
   });
 });

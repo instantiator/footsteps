@@ -1,7 +1,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 import { Link } from "react-router";
 import { sizeOf, type CameraChoice } from "../camera/CameraChoice";
-import { calibrationOrDefault, cameraKeyOf, isCalibrated } from "../camera/FloorCalibration";
+import { cameraKeyOf, forgetCalibration, loadCalibration } from "../camera/FloorCalibration";
 import type { Corners } from "../camera/FloorGeometry";
 import FloorOverlay from "../camera/FloorOverlay";
 import type { CameraOption } from "../camera/Webcams";
@@ -10,15 +10,20 @@ import { useCameraPicker } from "./useCameraPicker";
 /** Marks the current choice in the dropdown. */
 const MARK = "✓ ";
 
-/** The live preview, mirrored as chosen, with the floor over it when given. */
+/** The camera dropdown's value for playing without the camera. */
+const NO_CAMERA = "none";
+
+/** The live preview, mirrored as chosen, with the floor over it when given and what's still needed on top. */
 function CameraPreview({
   videoRef,
   mirror,
   corners,
+  warnings,
 }: {
   videoRef: RefObject<HTMLVideoElement | null>;
   mirror: boolean;
   corners: Corners | undefined;
+  warnings: string[] | undefined;
 }) {
   const transform = mirror ? "scaleX(-1)" : undefined;
   return (
@@ -26,6 +31,16 @@ function CameraPreview({
       {/* oxlint-disable-next-line jsx-a11y/media-has-caption -- a live, silent preview of the player: nothing to caption */}
       <video ref={videoRef} aria-label="Camera preview" style={{ transform }} autoPlay muted playsInline />
       {corners && <FloorOverlay corners={corners} style={{ transform }} />}
+      {warnings && warnings.length > 0 && (
+        <ul className="game-camera-warnings">
+          {warnings.map((warning) => (
+            <li key={warning}>
+              <span aria-hidden="true">⚠️ </span>
+              {warning}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -63,33 +78,42 @@ function SizeChoice({
   );
 }
 
-/** Whether the chosen camera has a saved floor, with links to calibrate it and to plan where the camera goes. */
-function FloorStatus({ cameraKey, calibrateTo }: { cameraKey: string; calibrateTo: string }) {
-  return (
-    <p>
-      {isCalibrated(cameraKey) ? "This camera has a saved floor area. " : "This camera has no saved floor area yet. "}
-      <Link to={calibrateTo}>Calibrate the floor</Link> · <Link to="/setup">Plan your space</Link>
-    </p>
-  );
-}
-
 /** Props for {@link CameraPicker}. */
 interface CameraPickerProps {
+  /** Whether the camera may be opened, as it is granted; true if omitted. */
+  granted?: boolean;
   /** Where to calibrate the floor, for a game with 2.5D scenes; the floor isn't shown if not given. */
   calibrateTo?: string;
   /** Called with the chosen camera's calibration key, now and whenever it changes. Keep it stable. */
   onCameraKeyChange?: (cameraKey: string) => void;
+  /** Called once the chosen configuration's calibration has been forgotten. */
+  onCalibrationForgotten?: () => void;
+  /** Playing without the camera, offered in the camera dropdown for a game that can. */
+  noCamera?: { checked: boolean; onChange: (checked: boolean) => void };
+  /** What's still needed before the game can begin, shown over the preview. */
+  warnings?: string[];
 }
 
 /**
- * Lets the player choose a camera and whether to mirror it, with a live preview of the result. For a game with 2.5D
- * scenes, the preview shows the camera's floor, with whether it has been calibrated and a link to calibrate it.
+ * Lets the player choose a camera, its configuration and whether to mirror it, with a live preview of the result. For
+ * a game with 2.5D scenes, the preview shows the configuration's floor once it's calibrated, with buttons to calibrate
+ * it and to forget it.
  */
-export default function CameraPicker({ calibrateTo, onCameraKeyChange }: CameraPickerProps) {
-  const { choice, choose, cameras, stream, failed, activeDeviceId, options } = useCameraPicker();
+export default function CameraPicker({
+  granted = true,
+  calibrateTo,
+  onCameraKeyChange,
+  onCalibrationForgotten,
+  noCamera,
+  warnings,
+}: CameraPickerProps) {
+  const withoutCamera = noCamera?.checked === true;
+  const { choice, choose, cameras, stream, failed, activeDeviceId, options } = useCameraPicker(
+    granted && !withoutCamera,
+  );
   const videoRef = useRef<HTMLVideoElement>(null);
   const cameraKey = cameraKeyOf(choice);
-  const floorCorners = calibrateTo ? calibrationOrDefault(cameraKey) : undefined;
+  const calibration = calibrateTo ? loadCalibration(cameraKey) : undefined;
 
   useEffect(() => onCameraKeyChange?.(cameraKey), [cameraKey, onCameraKeyChange]);
 
@@ -97,39 +121,103 @@ export default function CameraPicker({ calibrateTo, onCameraKeyChange }: CameraP
     if (videoRef.current) videoRef.current.srcObject = stream ?? null;
   }, [stream]);
 
-  const labelOf = ({ label }: MediaDeviceInfo, index: number) => label || `Camera ${index + 1}`;
-  const defaultCamera = cameras.find(({ deviceId }) => deviceId === activeDeviceId) ?? cameras[0];
-  const defaultName = defaultCamera ? ` (${labelOf(defaultCamera, cameras.indexOf(defaultCamera))})` : "";
-
   return (
     <div className="game-camera-picker">
-      <label>
-        Camera
-        <select
-          value={choice.deviceId ?? ""}
-          onChange={({ target }) =>
-            choose({ deviceId: target.value === "" ? undefined : target.value, size: undefined })
-          }
-        >
-          <option value="">
-            {choice.deviceId === undefined ? MARK : ""}System default{choice.deviceId === undefined ? defaultName : ""}
-          </option>
-          {cameras.map((camera, index) => (
-            <option key={camera.deviceId} value={camera.deviceId}>
-              {choice.deviceId === camera.deviceId ? MARK : ""}
-              {labelOf(camera, index)}
-            </option>
-          ))}
-        </select>
-      </label>
-      <SizeChoice options={options} choice={choice} choose={choose} />
+      <div className="game-camera-choices">
+        <CameraSelect
+          choice={choice}
+          cameras={cameras}
+          activeDeviceId={activeDeviceId}
+          noCamera={noCamera}
+          onChoose={(deviceId) => choose({ deviceId, size: undefined })}
+        />
+        {!withoutCamera && <SizeChoice options={options} choice={choice} choose={choose} />}
+      </div>
       <label>
         <input type="checkbox" checked={choice.mirror} onChange={({ target }) => choose({ mirror: target.checked })} />
         Mirror picture (for a camera facing the player)
       </label>
       {failed && <p role="alert">This camera could not start. It may be in use by another app.</p>}
-      <CameraPreview videoRef={videoRef} mirror={choice.mirror} corners={floorCorners} />
-      {calibrateTo && <FloorStatus cameraKey={cameraKey} calibrateTo={calibrateTo} />}
+      <div className="game-camera-row">
+        <CameraPreview videoRef={videoRef} mirror={choice.mirror} corners={calibration} warnings={warnings} />
+        {calibrateTo && !withoutCamera && (
+          <FloorActions
+            calibrateTo={calibrateTo}
+            calibrated={calibration !== undefined}
+            onForget={() => {
+              forgetCalibration(cameraKey);
+              onCalibrationForgotten?.();
+            }}
+          />
+        )}
+      </div>
     </div>
+  );
+}
+
+/** Buttons to calibrate the configuration's floor, and to forget its calibration. */
+function FloorActions({
+  calibrateTo,
+  calibrated,
+  onForget,
+}: {
+  calibrateTo: string;
+  calibrated: boolean;
+  onForget: () => void;
+}) {
+  return (
+    <div className="game-camera-floor-actions">
+      <Link className="game-button" to={calibrateTo}>
+        Calibrate
+      </Link>
+      <button type="button" className="game-button" disabled={!calibrated} onClick={onForget}>
+        Reset
+      </button>
+    </div>
+  );
+}
+
+/** The camera dropdown: the system default, each camera the browser lists, and playing without one where offered. */
+function CameraSelect({
+  choice,
+  cameras,
+  activeDeviceId,
+  noCamera,
+  onChoose,
+}: {
+  choice: CameraChoice;
+  cameras: MediaDeviceInfo[];
+  activeDeviceId: string | undefined;
+  noCamera: CameraPickerProps["noCamera"];
+  onChoose: (deviceId: string | undefined) => void;
+}) {
+  const labelOf = ({ label }: MediaDeviceInfo, index: number) => label || `Camera ${index + 1}`;
+  const defaultCamera = cameras.find(({ deviceId }) => deviceId === activeDeviceId) ?? cameras[0];
+  const defaultName = defaultCamera ? ` (${labelOf(defaultCamera, cameras.indexOf(defaultCamera))})` : "";
+  const value = noCamera?.checked ? NO_CAMERA : (choice.deviceId ?? "");
+  const mark = (option: string) => (value === option ? MARK : "");
+
+  return (
+    <label>
+      Camera
+      <select
+        value={value}
+        onChange={({ target }) => {
+          noCamera?.onChange(target.value === NO_CAMERA);
+          if (target.value !== NO_CAMERA) onChoose(target.value === "" ? undefined : target.value);
+        }}
+      >
+        <option value="">
+          {mark("")}System default{value === "" ? defaultName : ""}
+        </option>
+        {cameras.map((camera, index) => (
+          <option key={camera.deviceId} value={camera.deviceId}>
+            {mark(camera.deviceId)}
+            {labelOf(camera, index)}
+          </option>
+        ))}
+        {noCamera && <option value={NO_CAMERA}>{mark(NO_CAMERA)}Play without the camera</option>}
+      </select>
+    </label>
   );
 }

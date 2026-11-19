@@ -68,20 +68,20 @@ const useCameraChoice = () => {
   return { choice, choose };
 };
 
-/** Holds the player's camera choice, keeps a live stream from it, and follows changes in the system's cameras. */
-export const useCameraPicker = (): CameraPicker => {
-  const { choice, choose } = useCameraChoice();
-  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
+/**
+ * A live stream from a camera at a size, while enabled, reopened when `openCount` changes. Once it opens, the cameras
+ * are listed, as browsers only name them after a stream has opened.
+ */
+const useCameraStream = (
+  enabled: boolean,
+  { deviceId, width, height }: { deviceId?: string; width: number; height: number },
+  openCount: number,
+  onListed: (listed: MediaDeviceInfo[]) => void,
+) => {
   const [stream, setStream] = useState<MediaStream>();
   const [failed, setFailed] = useState(false);
-  const [openCount, setOpenCount] = useState(0);
-  // Browsers name no default camera, but list it first, so a new first camera means the default changed
-  const firstCameraRef = useRef<string>(undefined);
-
-  const { deviceId } = choice;
-  const { width, height } = sizeOf(choice);
-
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     let opened: MediaStream | undefined;
     const open = async () => {
@@ -90,9 +90,7 @@ export const useCameraPicker = (): CameraPicker => {
       setStream(opened);
       setFailed(false);
       const listed = await listCameras();
-      if (cancelled) return;
-      setCameras(listed);
-      firstCameraRef.current = listed[0]?.deviceId;
+      if (!cancelled) onListed(listed);
     };
     open().catch(() => {
       if (cancelled) return;
@@ -103,7 +101,27 @@ export const useCameraPicker = (): CameraPicker => {
       cancelled = true;
       if (opened) stopTracks(opened);
     };
-  }, [deviceId, width, height, openCount]);
+  }, [enabled, deviceId, width, height, openCount, onListed]);
+  // A closed camera's last stream has been stopped, so it isn't shown
+  return enabled ? { stream, failed } : { stream: undefined, failed: false };
+};
+
+/**
+ * Holds the player's camera choice, keeps a live stream from it, and follows changes in the system's cameras.
+ * @param enabled whether to open the camera at all; the choice can still be changed while it's closed
+ */
+export const useCameraPicker = (enabled = true): CameraPicker => {
+  const { choice, choose } = useCameraChoice();
+  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
+  const [openCount, setOpenCount] = useState(0);
+  // Browsers name no default camera, but list it first, so a new first camera means the default changed
+  const firstCameraRef = useRef<string>(undefined);
+  const onListed = useCallback((listed: MediaDeviceInfo[]) => {
+    setCameras(listed);
+    firstCameraRef.current = listed[0]?.deviceId;
+  }, []);
+  const { deviceId } = choice;
+  const { stream, failed } = useCameraStream(enabled, { deviceId, ...sizeOf(choice) }, openCount, onListed);
 
   const refresh = useCallback(() => {
     listCameras()
