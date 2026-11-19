@@ -13,7 +13,8 @@ export default function LocalListing() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(14rem, 1fr))",
+            // Tiles at least 14rem wide, unless the panel itself is narrower
+            gridTemplateColumns: "repeat(auto-fill, minmax(min(14rem, 100%), 1fr))",
             gap: "1rem",
           }}
         >
