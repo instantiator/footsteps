@@ -1,10 +1,13 @@
 import { useEffect, useRef, type RefObject } from "react";
 import { Link } from "react-router";
-import { sizeOf, type CameraChoice, type CameraSize } from "../camera/CameraChoice";
+import { sizeOf, type CameraChoice } from "../camera/CameraChoice";
 import { cameraKeyOf, forgetCalibration, loadCalibration, saveCalibration } from "../camera/FloorCalibration";
 import { DEFAULT_CORNERS, type Corners } from "../camera/FloorGeometry";
 import FloorOverlay from "../camera/FloorOverlay";
 import type { CameraOption } from "../camera/Webcams";
+import ClearAllCalibrations from "./ClearAllCalibrations";
+import PictureWarnings from "./PictureWarnings";
+import type { PlannedCamera } from "./PlanSpaceLink";
 import { useCameraPicker } from "./useCameraPicker";
 
 /** Marks the current choice in the dropdown. */
@@ -31,16 +34,7 @@ function CameraPreview({
       {/* oxlint-disable-next-line jsx-a11y/media-has-caption -- a live, silent preview of the player: nothing to caption */}
       <video ref={videoRef} aria-label="Camera preview" style={{ transform }} autoPlay muted playsInline />
       {corners && <FloorOverlay corners={corners} style={{ transform }} />}
-      {warnings && warnings.length > 0 && (
-        <ul className="game-camera-warnings">
-          {warnings.map((warning) => (
-            <li key={warning}>
-              <span aria-hidden="true">⚠️ </span>
-              {warning}
-            </li>
-          ))}
-        </ul>
-      )}
+      <PictureWarnings warnings={warnings} />
     </div>
   );
 }
@@ -79,13 +73,9 @@ function SizeChoice({
 }
 
 /** The camera in use, as the landing page needs it: for its calibration, and to plan the space for it. */
-export interface CameraInUse {
+export interface CameraInUse extends PlannedCamera {
   /** Its calibration key. */
   key: string;
-  /** The name the browser gives it; empty until the browser names it. */
-  label: string;
-  /** The size it is opened at. */
-  size: CameraSize;
 }
 
 /**
@@ -183,6 +173,7 @@ export default function CameraPicker({
               forgetCalibration(cameraKey);
               onCalibrationChange?.();
             }}
+            onClearAll={() => onCalibrationChange?.()}
           />
         )}
       </div>
@@ -196,11 +187,13 @@ function FloorActions({
   calibrated,
   onReset,
   onClear,
+  onClearAll,
 }: {
   calibrateTo: string;
   calibrated: boolean;
   onReset: () => void;
   onClear: () => void;
+  onClearAll: () => void;
 }) {
   return (
     <div className="game-camera-floor-actions">
@@ -213,6 +206,7 @@ function FloorActions({
       <button type="button" className="game-button" disabled={!calibrated} onClick={onClear}>
         Clear
       </button>
+      <ClearAllCalibrations onCleared={onClearAll} />
     </div>
   );
 }

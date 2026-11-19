@@ -1,20 +1,88 @@
-/* The floor calibration page: the camera picture with the floor over it, the steps, and the buttons */
+/*
+ * The floor calibration page, like the landing page: the game's graphic behind panels for the title, the steps and
+ * the picture, over a bar of buttons. The picture's panel takes the height left, so it fits a laptop without scrolling.
+ */
 .calibration {
   position: fixed;
   inset: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  overflow: auto;
-  padding: 1rem;
-  background: #22303c;
-  color: white;
+  background-color: #dce8f5;
+  background-position: center;
+  background-size: cover;
+  color: #22303c;
 }
 
-.calibration ol {
+/* Two columns above the bar: the title and steps on the left, a third wide, and the picture's panel on the right */
+.calibration-content {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+}
+
+.calibration-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.calibration-side > .game-panel {
+  flex-shrink: 0;
+}
+
+.calibration-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: normal;
+  line-height: 1.2;
+}
+
+.calibration-steps {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.calibration-steps ol {
   margin: 0;
   padding-left: 1.5rem;
+}
+
+/* Takes the column's height, and scrolls only when the picture is at its smallest */
+.calibration-panel {
+  min-height: 0;
+}
+
+/* Narrow screens stack the columns, and scroll them together */
+@media (max-width: 900px) {
+  .calibration-content {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .calibration-content > * {
+    flex-shrink: 0;
+    overflow: visible;
+  }
+}
+
+.calibration-panel h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+/* Holds the picture, and the warnings over it, which aren't mirrored with it */
+.calibration-frame {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
 }
 
 .calibration li {
@@ -33,10 +101,13 @@
   max-width: 100%;
 }
 
+/* As tall as the space above the bar allows, but never smaller than a usable picture */
 .calibration-picture video {
   display: block;
   max-width: 100%;
-  max-height: 65vh;
+  max-height: max(14rem, calc(100dvh - 12rem));
+  border-radius: 0.4rem;
+  background: #22303c;
 }
 
 .calibration-picture .floorOverlay {
@@ -65,28 +136,4 @@
 .calibration-corner:focus-visible {
   outline: 3px solid #ffd54f;
   outline-offset: 2px;
-}
-
-.calibration-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: center;
-}
-
-.calibration-actions button,
-.calibration-actions a {
-  padding: 0.5rem 1rem;
-  border: 2px solid white;
-  border-radius: 0.5rem;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.calibration-actions button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
 }

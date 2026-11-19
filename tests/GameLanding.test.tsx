@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cameraKeyOf, saveCalibration } from "../src/components/camera/FloorCalibration";
+import { cameraKeyOf, isCalibrated, saveCalibration } from "../src/components/camera/FloorCalibration";
 import { DEFAULT_CORNERS } from "../src/components/camera/FloorGeometry";
 import GameLanding from "../src/components/landing/GameLanding";
 import { completeChallenge } from "../src/components/core/logic/GameStateUtils";
@@ -149,6 +149,21 @@ describe("GameLanding for a game with 2.5D scenes", () => {
     expect(screen.queryByText("Not yet calibrated")).toBeNull();
     expect(screen.getByRole("button", { name: "New game" })).toBeEnabled();
     expect(document.querySelector(".game-camera-preview polygon")).not.toBeNull();
+  });
+
+  it("clears every configuration's floor once the player confirms", async () => {
+    saveCalibration(cameraKeyOf({}), DEFAULT_CORNERS);
+    saveCalibration(cameraKeyOf({ size: { width: 640, height: 480 } }), DEFAULT_CORNERS);
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    permissionQuery("granted");
+    getUserMedia();
+    renderLanding(floorGame);
+    await waitFor(() => expect(screen.getByRole("button", { name: "New game" })).toBeEnabled());
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear all calibrations" }));
+
+    expect(screen.getByText("Not yet calibrated")).toBeInTheDocument();
+    expect(isCalibrated(cameraKeyOf({ size: { width: 640, height: 480 } }))).toBe(false);
   });
 
   it("lets a player without the camera start, to play by mouse", async () => {

@@ -130,49 +130,6 @@
   opacity: 0.5;
 }
 
-/* The bar of buttons along the bottom: planning on the left, starting on the right */
-.game-landing-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  padding: 0.75rem 1.5rem;
-  border-top: 1px solid #22303c55;
-  background: #ffffffcc;
-}
-
-.game-landing-actions-gap {
-  flex: 1;
-}
-
-/* A landing page button, or a link that acts as one */
-.game-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.6rem 1.2rem;
-  border: 2px solid #22303c;
-  border-radius: 0.5rem;
-  background: #ffffffe6;
-  color: inherit;
-  font: inherit;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.game-button:hover {
-  border-color: #b00020;
-}
-
-.game-button:focus-visible {
-  outline: 2px solid #b00020;
-  outline-offset: 2px;
-}
-
-.game-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
 /* The camera and configuration dropdowns, mirror checkbox, live preview and floor buttons */
 .game-camera-picker {
   display: flex;
@@ -221,32 +178,6 @@
   flex: 1 1 14rem;
   /* As wide as a 16:9 picture that fits the height left beside the panels and the bar, so it all fits without scrolling */
   max-width: max(14rem, calc((100dvh - 31rem) * 16 / 9));
-}
-
-/* What's still needed before the game can begin, over the bottom of the preview */
-.game-camera-warnings {
-  position: absolute;
-  left: 0.5rem;
-  bottom: 0.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.4rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.game-camera-warnings li {
-  padding: 0.3rem 0.6rem;
-  border: 1px solid #22303c55;
-  border-radius: 0.4rem;
-  background: #eeeeeef0;
-}
-
-.game-camera-preview .floorOverlay {
-  position: absolute;
-  inset: 2px;
 }
 
 /* Keeps a camera's shape before it starts, or when there's none */

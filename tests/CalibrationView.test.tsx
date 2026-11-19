@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
-import { MemoryRouter } from "react-router";
+import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CameraChoice } from "../src/components/camera/CameraChoice";
 import type CharacterCanvas from "../src/components/camera/CharacterCanvas";
@@ -19,7 +19,13 @@ const camera = vi.hoisted(() => ({
 }));
 
 vi.mock("../src/components/landing/useCameraPicker", () => ({
-  useCameraPicker: () => ({ choice: camera.choice, stream: undefined }),
+  useCameraPicker: () => ({
+    choice: camera.choice,
+    stream: undefined,
+    cameras: [{ deviceId: "lifecam", label: "LifeCam HD-3000", kind: "videoinput", groupId: "g", toJSON: () => ({}) }],
+    activeDeviceId: "lifecam",
+    options: [{ name: "HD (1280×720)", width: 1280, height: 720 }],
+  }),
 }));
 
 vi.mock("../src/components/camera/CharacterCanvas", () => ({
@@ -46,10 +52,16 @@ const personWithFeetAt = (id: number, x: number, y: number): PlayerFrame => ({
 
 const renderView = () =>
   render(
-    <MemoryRouter>
-      <CalibrationView backTo="/game/demo" />
+    <MemoryRouter initialEntries={["/game/demo/calibrate"]}>
+      <Routes>
+        <Route path="/game/demo/calibrate" element={<CalibrationView backTo="/game/demo" title="Demo scenes" />} />
+        <Route path="/game/demo" element={<p>The landing page</p>} />
+      </Routes>
     </MemoryRouter>,
   );
+
+/** The calibrating panel's heading. */
+const heading = () => screen.getByRole("heading", { level: 2 });
 
 const corner = (name: string) => screen.getByRole("button", { name });
 const positionOf = (element: HTMLElement) => ({
@@ -124,63 +136,107 @@ describe("CalibrationView", () => {
     expect(positionOf(backRight).x).not.toBe(0.6);
   });
 
-  it("warns, pauses the walking check and disables Save while more than one person is in view", () => {
+  it("warns over the picture, pauses the walking check and disables saving while more than one person is in view", () => {
     const { container } = renderView();
     seePlayers([personWithFeetAt(1, 50, 70), personWithFeetAt(2, 50, 95)]);
-    expect(screen.getByRole("alert")).toHaveTextContent("Only one person");
-    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+    expect(screen.getByText(/Only one person/).closest(".calibration-frame")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Save and close" })).toBeDisabled();
     expect(container.querySelectorAll(".floorMarkerOn, .floorMarkerOff")).toHaveLength(0);
     expect(container.querySelectorAll(".floorMarker")).toHaveLength(4);
 
     seePlayers([personWithFeetAt(1, 50, 70)]);
-    expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
+    expect(screen.queryByText(/Only one person/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Save and close" })).toBeEnabled();
     expect(container.querySelectorAll(".floorMarkerOn")).toHaveLength(2);
   });
 
-  it("asks for Save once the player has stood on the floor", () => {
+  it("asks for Save and close once the player has stood on the floor", () => {
     renderView();
     fireEvent.keyDown(corner("Back left corner"), { key: "ArrowLeft" });
     seePlayers([personWithFeetAt(1, 50, 70)]);
-    expect(screen.getByText(/Press Save/).closest("li")).toHaveAttribute("aria-current", "step");
+    expect(screen.getByText(/Press Save and close/).closest("li")).toHaveAttribute("aria-current", "step");
   });
 
-  it("saves the corners for the chosen camera, and says so", () => {
+  it("titles the page with the game, and names the camera and configuration being calibrated", () => {
+    renderView();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Demo scenes: Floor calibration");
+    expect(heading()).toHaveTextContent(/^Calibrating: LifeCam HD-3000 · HD \(1280×720\)/);
+  });
+
+  it("marks an uncalibrated configuration's default corners as unsaved, until saved", () => {
+    renderView();
+    expect(heading()).toHaveTextContent(/\*$/);
+  });
+
+  it("marks a saved configuration unsaved only once a corner moves", () => {
+    saveCalibration(cameraKeyOf({}), DEFAULT_CORNERS);
+    renderView();
+    expect(heading()).not.toHaveTextContent(/\*$/);
+    fireEvent.keyDown(corner("Back left corner"), { key: "ArrowLeft" });
+    expect(heading()).toHaveTextContent(/\*$/);
+  });
+
+  it("saves the corners for the chosen configuration, and goes back to the game", () => {
     camera.choice = { deviceId: "rear", mirror: false };
     renderView();
-    expect(screen.getByRole("status")).toHaveTextContent("Not saved yet");
     fireEvent.keyDown(corner("Back left corner"), { key: "ArrowLeft" });
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save and close" }));
 
-    expect(screen.getByRole("status")).toHaveTextContent("Saved");
     expect(loadCalibration(cameraKeyOf({ deviceId: "rear" }))?.backLeft.x).toBeCloseTo(0.24, 6);
     expect(loadCalibration(cameraKeyOf({}))).toBeUndefined();
-
-    fireEvent.keyDown(corner("Back left corner"), { key: "ArrowLeft" });
-    expect(screen.getByRole("status")).toHaveTextContent("Changes not saved yet");
+    expect(screen.getByText("The landing page")).toBeInTheDocument();
   });
 
-  it("resets to the default area without saving", () => {
+  it("closes without asking when nothing is unsaved", () => {
+    saveCalibration(cameraKeyOf({}), DEFAULT_CORNERS);
+    const confirm = vi.spyOn(window, "confirm");
+    renderView();
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(confirm).not.toHaveBeenCalled();
+    expect(screen.getByText("The landing page")).toBeInTheDocument();
+  });
+
+  it("asks before closing with unsaved changes, and stays if the player cancels", () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    renderView();
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByText("The landing page")).toBeNull();
+
+    confirm.mockReturnValue(true);
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.getByText("The landing page")).toBeInTheDocument();
+    expect(loadCalibration(cameraKeyOf({}))).toBeUndefined();
+  });
+
+  it("resets to the default corners without saving", () => {
     saveCalibration(cameraKeyOf({}), { ...DEFAULT_CORNERS, backLeft: { x: 0.3, y: 0.5 } });
     renderView();
     expect(positionOf(corner("Back left corner"))).toEqual({ x: 0.3, y: 0.5 });
-    fireEvent.click(screen.getByRole("button", { name: "Reset to the default area" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
     expect(positionOf(corner("Back left corner"))).toEqual(DEFAULT_CORNERS.backLeft);
+    expect(heading()).toHaveTextContent(/\*$/);
     expect(loadCalibration(cameraKeyOf({}))?.backLeft).toEqual({ x: 0.3, y: 0.5 });
   });
 
-  it("forgets every saved area only once the player confirms", () => {
+  it("clears every saved floor only once the player confirms, leaving the corners unsaved", () => {
     saveCalibration(cameraKeyOf({}), DEFAULT_CORNERS);
     saveCalibration("rear", DEFAULT_CORNERS);
     renderView();
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
-    fireEvent.click(screen.getByRole("button", { name: "Forget all saved areas" }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear all calibrations" }));
     expect(loadCalibration("rear")).toBeDefined();
 
     confirm.mockReturnValue(true);
-    fireEvent.click(screen.getByRole("button", { name: "Forget all saved areas" }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear all calibrations" }));
     expect(loadCalibration("rear")).toBeUndefined();
     expect(loadCalibration(cameraKeyOf({}))).toBeUndefined();
-    expect(screen.getByRole("status")).toHaveTextContent("Not saved yet");
+    expect(heading()).toHaveTextContent(/\*$/);
+  });
+
+  it("plans the space for this camera in a new tab", () => {
+    renderView();
+    const plan = screen.getByRole("link", { name: "Plan space" });
+    expect(plan).toHaveAttribute("href", "/setup?camera=LifeCam+HD-3000&size=1280x720");
+    expect(plan).toHaveAttribute("target", "_blank");
   });
 });
