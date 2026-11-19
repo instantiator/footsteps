@@ -129,7 +129,7 @@ because it describes the room rather than a game.
 
 ### Planning the space
 
-Before calibrating, `/setup` ("Plan your space" on the home page, and **Plan space** on a game's landing page, which
+Before calibrating, `/setup` ("Plan your space" under "Setup and design" on the home page, and **Plan space** on a game's landing page, which
 opens it in a new tab)
 recommends how big a floor to mark and where to put the camera. The user enters the room's length and width, an
 optional ceiling height with the space needed above the camera, the shortest and tallest players, the space taken on
