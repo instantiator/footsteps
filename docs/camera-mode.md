@@ -112,6 +112,8 @@ none of this shows before one. The choice is saved in `localStorage`, and only t
 **Mirroring** is off by default, for a camera behind the player: they see themselves from behind, and step right to
 move right. Turn it on for a camera facing the player, so the picture behaves like a mirror.
 
+The cameras whose specs are known, with their configurations, are listed in [known webcams](webcams.md).
+
 ## The floor and 2.5D scenes
 
 A [2.5D scene](game-data.md#scene-and-avatar-modes) is fitted to the floor the player can walk around on, so their

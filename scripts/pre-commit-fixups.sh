@@ -1,7 +1,7 @@
 #!/bin/bash
 # Run by dev-qual's pre-commit hook after the fast gate. Runs the project's own
 # checks (scripts/pre-commit-checks.sh), then regenerates the API docs and the
-# JSON schemas and licence report when their sources are staged, and stages the
+# JSON schemas, licence report and webcams doc when their sources are staged, and stages the
 # result with the commit.
 # TypeDoc treats warnings as errors, so an undocumented export blocks the commit.
 
@@ -25,4 +25,9 @@ fi
 if grep -qE '^(package(-lock)?\.json$|generate-license-report\.sh$)' <<<"$STAGED"; then
   bash generate-license-report.sh >/dev/null
   git add src/assets/license-report.json
+fi
+
+if grep -qE '^(src/components/camera/Webcams\.ts|scripts/webcams-doc\.ts)$' <<<"$STAGED"; then
+  node scripts/webcams-doc.ts
+  git add docs/webcams.md
 fi

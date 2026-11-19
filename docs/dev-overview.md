@@ -42,7 +42,7 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 | `npm run docs:build`           | Build the documentation site into `docs-static/`                                                                        |
 | `npm run format`               | Prettier, rewriting files (`format:check` only reports)                                                                 |
 
-`dev`, `build`, `lint`, `preview`, and `test` first run `pre-build.sh`, which regenerates the JSON schemas. `test` also validates the game data. `src/assets/license-report.json` is regenerated at commit time, when `package.json` or `package-lock.json` is staged.
+`dev`, `build`, `lint`, `preview`, and `test` first run `pre-build.sh`, which regenerates the JSON schemas. `test` also validates the game data. `src/assets/license-report.json` is regenerated at commit time, when `package.json` or `package-lock.json` is staged, and [`docs/webcams.md`](webcams.md) when `src/components/camera/Webcams.ts` or `scripts/webcams-doc.ts` is (`tests/Webcams.test.ts` fails if they disagree).
 
 ## Documentation
 
