@@ -11,17 +11,17 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 
 ## Layout
 
-| Path                         | What it is                                                                                                             |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `react-router.config.ts`     | Static build settings: no server, the routes to prerender, the base path                                               |
-| `src/root.tsx`               | The HTML document every page renders into (head tags, security policy)                                                 |
-| `src/routes.ts`              | Route config: `/`, `/game/:id`, `/game/:id/play`, `/game/:id/calibrate`, `/game/:id/json`, `/scene-renderer`, `/setup` |
-| `src/pages/`, `src/Home.tsx` | Route modules (one page each)                                                                                          |
-| `src/components/`            | Game engine UI: layers, scenes, camera, and the game logic in `core/logic/`                                            |
-| `src/config/`                | App config; see [Configuration](configuration.md)                                                                      |
-| `src/vision/`                | Vision models behind one interface, body-part queries, tracking, the worker                                            |
-| `src/providers/`             | React contexts: repository, game data, game state, content cache, music, app config, player registry, spectators       |
-| `tests/`                     | Vitest unit and component tests                                                                                        |
+| Path                         | What it is                                                                                                                              |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `react-router.config.ts`     | Static build settings: no server, the routes to prerender, the base path                                                                |
+| `src/root.tsx`               | The HTML document every page renders into (head tags, security policy)                                                                  |
+| `src/routes.ts`              | Route config: `/`, `/game/:id`, `/game/:id/play`, `/game/:id/calibrate`, `/game/:id/json`, `/scene-renderer`, `/setup`, `/dependencies` |
+| `src/pages/`, `src/Home.tsx` | Route modules (one page each)                                                                                                           |
+| `src/components/`            | Game engine UI: layers, scenes, camera, and the game logic in `core/logic/`                                                             |
+| `src/config/`                | App config; see [Configuration](configuration.md)                                                                                       |
+| `src/vision/`                | Vision models behind one interface, body-part queries, tracking, the worker                                                             |
+| `src/providers/`             | React contexts: repository, game data, game state, content cache, music, app config, player registry, spectators                        |
+| `tests/`                     | Vitest unit and component tests                                                                                                         |
 
 ## Invocations
 
@@ -42,7 +42,7 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 | `npm run docs:build`           | Build the documentation site into `docs-static/`                                                                        |
 | `npm run format`               | Prettier, rewriting files (`format:check` only reports)                                                                 |
 
-`dev`, `build`, `lint`, `preview`, and `test` first run `pre-build.sh`, which regenerates the JSON schemas. `test` also validates the game data. `src/assets/license-report.json` is regenerated at commit time, when `package.json` or `package-lock.json` is staged, and [`docs/webcams.md`](webcams.md) when `src/components/camera/Webcams.ts` or `scripts/webcams-doc.ts` is (`tests/Webcams.test.ts` fails if they disagree).
+`dev`, `build`, `lint`, `preview`, and `test` first run `pre-build.sh`, which regenerates the JSON schemas. `test` also validates the game data. `src/assets/license-report.json`, listed at `/dependencies`, is regenerated at commit time, when `package.json` or `package-lock.json` is staged, and [`docs/webcams.md`](webcams.md) when `src/components/camera/Webcams.ts` or `scripts/webcams-doc.ts` is (`tests/Webcams.test.ts` fails if they disagree).
 
 ## Documentation
 

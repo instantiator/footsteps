@@ -15,6 +15,7 @@ awake while the game is incomplete, with a warning on every page when the batter
 | `/game/:id/json`      | The game's resolved JSON, for debugging                                                              |
 | `/scene-renderer`     | A scene's HTML rendered in 2.5D, for game authors ([scene renderer](dev-overview.md#scene-renderer)) |
 | `/setup`              | [Plans the space](camera-mode.md#planning-the-space): floor size and where to put the camera         |
+| `/dependencies`       | The app's dependencies and their licences, from `src/assets/license-report.json`                     |
 
 The game routes are prerendered for every game in `public/game-repository.json`. A direct visit
 to `/game/:id/play` checks the game's required permissions first, and for a game with 2.5D scenes played by camera,
