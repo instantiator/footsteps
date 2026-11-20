@@ -148,30 +148,59 @@ test.describe("rules demo", () => {
     await expect(page.locator("#switch")).toHaveClass(/position-2/);
   });
 
-  test("plays each item effect on the effects stage with the mouse", async ({ page }) => {
+  /** Rests the mouse in the sky, off every item and tile. */
+  const moveToSky = (page: Page) => page.mouse.move(640, 150);
+
+  /** Opens the effects stage, and waits out its Start reset. */
+  const openEffects = async (page: Page) => {
     await openDemo(page);
     await page.locator("#stage-link-effects").click();
-    await expect(page.locator("#rock")).toBeVisible();
+    await expect(page.locator("#reset-message")).toBeVisible();
+    await page.locator("#reset-start").hover();
+    await expect(page.locator("#rock")).toBeVisible({ timeout: 6000 });
+  };
+
+  test("clicking each floating item fires its effect", async ({ page }) => {
+    await openEffects(page);
 
     const animationsOn = (selector: string) =>
       page.locator(selector).evaluate((element) => element.getAnimations().length);
 
-    await page.locator("#lift").click();
+    await clickNow(page, "#lift");
     await expect.poll(() => animationsOn("#lift")).toBe(1);
 
-    await page.locator("#lamp").hover();
+    await moveTo(page, "#lamp");
     await expect.poll(() => animationsOn("#lamp")).toBe(1);
-    await page.locator("#effects-message").hover();
+    await moveToSky(page);
     await expect.poll(() => animationsOn("#lamp")).toBe(0);
 
-    await page.locator("#crate").click();
+    await clickNow(page, "#crate");
     await expect(page.locator("#effects-message")).toContainText("The crate has fallen");
-    await page.locator("#prize").click();
-    await page.locator("#bridge").click();
+    await clickNow(page, "#prize");
+    await clickNow(page, "#bridge");
     await expect(page.locator("#effects-message")).toContainText("The bridge has gone");
 
     await page.locator("#effects-done").click();
     await expect(page.locator("#stage-link-effects")).toHaveClass(/completed/);
+  });
+
+  test("walking onto each tile fires its rule", async ({ page }) => {
+    await openEffects(page);
+    const message = page.locator("#effects-message");
+
+    // Each tile's rule says what it did, as the player's own effects aren't drawn without the camera
+    for (const [tile, said] of [
+      [".effects-tile.boulder", "Boulder: spun away"],
+      [".effects-tile.ice", "Ice: frozen"],
+      ["#ghost", "Ghost: invisible"],
+      ["#fuzz", "Fuzz: static"],
+      ["#restore", "Restored"],
+      [".effects-tile.pit", "Pit: fell"],
+    ]) {
+      await moveToSky(page); // off every tile, so the next is a fresh entry
+      await moveTo(page, tile);
+      await expect(message).toContainText(said);
+    }
   });
 
   test("rebuilds a scene's template when it resets, restarting its animations", async ({ page }) => {

@@ -230,7 +230,10 @@ Play it once with the camera (`?debug=true` shows where your hands and feet are 
       [From behind](#from-behind). Its scroll opens first: page on, type "walk", and you are asked to stand on the start, in the front left
       corner. Step on it and the posts appear. Step on the spring in the middle: you spin away, and about 1.5 s later
       you are back at the start. "Done" completes the stage.
-- [ ] **Effects:** see [Player effects](#player-effects). The top row also works by mouse. "Done" completes the stage.
+- [ ] **Effects:** see [Player effects](#player-effects). After standing on Start, six items float across the upper scene
+      and six tiles lie on a bordered floor. Clicking an item, or waving a hand into it from anywhere on the floor,
+      fires its effect; walking onto a tile (or putting the mouse on it) fires that tile's effect and shows what it did.
+      There is room to walk around and between the tiles. "Done" completes the stage.
 - [ ] **Reduced motion:** with the system's reduce-motion setting on, the sounds still play but there are no
       sparkles or fireworks.
 - [ ] **Covering:** with the HUD over part of the game, a hand under the HUD's buttons does not count.
@@ -318,16 +321,16 @@ If any of these fail, tune the settings as "Spectator margin and hold aren't pro
 
 ## Player effects
 
-The rules demo's Effects stage has one thing to touch for each effect, and shows how many players there are. The automated fake camera shows one photo at a time, so it can't show any of this.
+The rules demo's Effects stage has floating items to wave a hand into for the item effects, and tiles on the floor to walk onto for the player effects, and shows how many players there are. The automated fake camera shows one photo at a time, so it can't show any of this.
 
 - [ ] **Two people crossing:** freeze one of two people on the ice, then have them cross. Note whether the freeze stays with the right person. They can swap ([player tracking](../player-tracking.md#limits)), but note how often.
-- [ ] **Removal surviving a lost track:** fall into the pit, then step out of shot briefly and back to about the same place. You stay removed, and the count says so. Further away, you rejoin as someone new.
+- [ ] **Removal surviving a lost track:** walk onto the pit, then step out of shot briefly and back to about the same place. You stay removed, and the count says so. Further away, you rejoin as someone new.
 - [ ] **Falling:** you fall straight down from where you stood, and your image stops following you as it starts. With everyone removed, the stage starts again after 2 s, and everyone returns.
-- [ ] **Spin away:** with "Mirror picture" both on and off, touch the boulder. You turn about your body, not the middle of the screen, and leave upwards.
-- [ ] **Freeze and unfreeze:** touch the ice. Your image stops, and things you were over act as if you had left. After 3 s you return to the live camera, and must leave and come back to anything you are already over.
-- [ ] **Near at the boundary:** stand at the edge of the lamp's range and sway. It doesn't flicker on and off.
-- [ ] **Static at distance:** touch the static square near the camera and far from it. The blocks are the same size on screen, and it flickers, unless reduced motion is on.
-- [ ] **Invisible:** touch the ghost: you fade out, and can still set off other things, and return after 3 s.
+- [ ] **Spin away:** with "Mirror picture" both on and off, walk onto the boulder tile. You turn about your body, not the middle of the screen, and leave upwards.
+- [ ] **Freeze and unfreeze:** walk onto the ice tile. Your image stops, and things you were over act as if you had left. After 3 s you return to the live camera, and must leave and come back to anything you are already over.
+- [ ] **Lamp at the boundary:** hold a hand at the edge of the lamp and sway it. It doesn't flicker on and off.
+- [ ] **Static at distance:** walk onto the static tile near the camera and far from it. The blocks are the same size on screen, and it flickers, unless reduced motion is on.
+- [ ] **Invisible:** walk onto the ghost tile: you fade out, and can still set off other things, and return after 3 s.
 - [ ] **Quake on a jump:** jump. Everything shakes, and you can still walk behind and in front of floor items while it does.
 - [ ] **Speed:** with `?showFps=true` (the readout without the debug aids), quake a player's image, or give them a filter highlight, in a large window. Look for stutter that the frame rate readout doesn't show, as a filter's cost falls on the browser's drawing rather than on the vision loop.
 - [ ] **Reduced motion:** with the system's reduce-motion setting on, falls and spins jump to their end, nothing shakes, static holds still, and the stage can still be finished.

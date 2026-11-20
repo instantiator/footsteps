@@ -391,9 +391,17 @@
   transform: translateX(-50%);
 }
 
-/* One thing to touch or click for each effect: items along the top, and what happens to players along the bottom */
+/* Floating items to wave a hand into along the top, and tiles on a bordered floor whose effects play on whoever walks onto them */
+.effects-floor {
+  background: #2d4a5e;
+  border: 2cqh solid #f4d35e;
+}
+
+/* Below the HUD's buttons, clear of the Done button at the bottom */
 .effects-message {
-  inset: 36cqh 0 auto;
+  position: absolute;
+  inset: 12cqh 0 auto;
+  margin: 0;
   color: #fff;
   font-size: 3.5cqh;
   text-align: center;
@@ -414,8 +422,21 @@
   text-align: center;
 }
 
-.effects-player {
+.effects-tile {
+  display: grid;
+  place-items: center;
   background: #99615b;
+  color: #fff;
+  /* A floor area's box is drawn shrunk onto its tile, so its text is sized for the whole scene */
+  font-size: 26cqw;
+  line-height: 1.1;
+  font-weight: bold;
+  text-align: center;
+}
+/* The pit is a hole, not a coloured tile */
+.effects-tile.pit {
+  border-radius: 0;
+  background: #0b0b14;
 }
 
 /* The bridge's cavern: dark rock behind, and a floor of lava whose glow repeats every 20 floor units */

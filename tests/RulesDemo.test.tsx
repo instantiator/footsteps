@@ -76,7 +76,7 @@ const touch = (selector: string, interaction: CameraInteraction) => {
   const element = document.querySelector(selector);
   const layout = receivedLayout.at(-1)!;
   const rule = layout.cameraRules!.find(
-    (r) => element?.matches(r.selector ?? "") && r.interactions.includes(interaction),
+    (r) => r.selector && element?.matches(r.selector) && r.interactions.includes(interaction),
   );
   expect(rule, `a camera rule for ${interaction} on ${selector}`).toBeDefined();
   act(() =>
@@ -261,6 +261,34 @@ describe("rules demo, played by camera", () => {
     await waitFor(() => expect($("#ring-1")).not.toBeNull());
     expect($(".rings-scroll")).toHaveTextContent("Collected 1 ring");
     expect($("#ring-gone-1")).not.toBeNull();
+  });
+
+  it("a hand touching a floating item fires it, and a foot on a tile fires its rule", async () => {
+    await start();
+    touch("#stage-link-effects", "hand-enter");
+    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Stand on Start"));
+    touch("#reset-start", "foot-enter");
+    await wait(3000);
+    await waitFor(() => expect($("#crate")).not.toBeNull());
+
+    // jsdom lacks the Web Animations API: this stand-in records what was animated, and never finishes
+    const animated: string[] = [];
+    Element.prototype.animate = vi.fn<Element["animate"]>(function (this: Element) {
+      animated.push(this.id);
+      const animation = Object.assign(new EventTarget(), {
+        onfinish: null as Animation["onfinish"],
+        cancel: vi.fn(),
+        persist: vi.fn(),
+        finish: vi.fn(),
+      });
+      return animation as EventTarget & Pick<Animation, "cancel" | "persist" | "onfinish" | "finish"> as Animation;
+    });
+    onTestFinished(() => void Reflect.deleteProperty(Element.prototype, "animate"));
+
+    touch("#crate", "hand-enter");
+    await waitFor(() => expect(animated).toContain("crate"));
+    touch("#restore", "foot-enter");
+    await waitFor(() => expect($("#effects-message")).toHaveTextContent("Restored"));
   });
 
   it("asks the camera not to count covered elements, as clicks don't", async () => {
