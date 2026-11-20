@@ -11,6 +11,7 @@ export default {
     "/",
     "/scene-renderer",
     "/setup",
+    "/dependencies",
     ...Object.keys(localRepository.games).flatMap((id) => [
       `/game/${id}`,
       `/game/${id}/play`,

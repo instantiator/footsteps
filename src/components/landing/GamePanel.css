@@ -1,4 +1,4 @@
-/* A translucent panel over a game's artwork, used by the game tile and the game landing page. */
+/* A translucent panel over a game's artwork, used by the game tile, the landing page and the calibration page. */
 .game-panel {
   padding: 0.5rem;
   overflow-y: auto;
@@ -23,4 +23,89 @@
   border-radius: 999px;
   background: #22303c;
   color: #fff;
+}
+
+/* The bar of buttons along the bottom of a game's pages: one group at the start, one at the end */
+.game-button-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  border-top: 1px solid #22303c55;
+  background: #ffffffcc;
+}
+
+.game-button-bar-gap {
+  flex: 1;
+}
+
+/* A button on a game's pages, or a link that acts as one */
+.game-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.2rem;
+  border: 2px solid #22303c;
+  border-radius: 0.5rem;
+  background: #ffffffe6;
+  color: inherit;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.game-button:hover {
+  border-color: #b00020;
+}
+
+.game-button:focus-visible {
+  outline: 2px solid #b00020;
+  outline-offset: 2px;
+}
+
+.game-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* What's still needed, over the bottom of a camera picture (its parent is positioned) */
+.game-picture-warnings {
+  position: absolute;
+  left: 0.5rem;
+  bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.game-picture-warnings li {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #22303c55;
+  border-radius: 0.4rem;
+  background: #eeeeeef0;
+}
+
+.game-camera-preview .floorOverlay {
+  position: absolute;
+  inset: 2px;
+}
+
+/* Narrow screens keep the bar short, so the panels above it have room */
+@media (max-width: 600px) {
+  .game-button-bar {
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .game-button-bar .game-button {
+    padding: 0.4rem 0.7rem;
+  }
+
+  .game-button-bar-gap {
+    display: none;
+  }
 }

@@ -1,10 +1,12 @@
 import { useEffect, useRef, type RefObject } from "react";
 import { Link } from "react-router";
-import { sizeOf, type CameraChoice, type CameraSize } from "../camera/CameraChoice";
+import { sizeOf, type CameraChoice } from "../camera/CameraChoice";
 import { cameraKeyOf, forgetCalibration, loadCalibration, saveCalibration } from "../camera/FloorCalibration";
 import { DEFAULT_CORNERS, type Corners } from "../camera/FloorGeometry";
 import FloorOverlay from "../camera/FloorOverlay";
 import type { CameraOption } from "../camera/Webcams";
+import PictureWarnings from "./PictureWarnings";
+import type { PlannedCamera } from "./PlanSpaceLink";
 import { useCameraPicker } from "./useCameraPicker";
 
 /** Marks the current choice in the dropdown. */
@@ -13,34 +15,32 @@ const MARK = "✓ ";
 /** The camera dropdown's value for playing without the camera. */
 const NO_CAMERA = "none";
 
-/** The live preview, mirrored as chosen, with the floor over it when given and what's still needed on top. */
+/**
+ * The live preview, mirrored as chosen, with the floor over it when given and what's still needed on top. The stage
+ * takes the space left in the panel; the preview is the largest picture of the camera's shape that fits in it.
+ */
 function CameraPreview({
   videoRef,
-  mirror,
+  choice,
   corners,
   warnings,
 }: {
   videoRef: RefObject<HTMLVideoElement | null>;
-  mirror: boolean;
+  choice: CameraChoice;
   corners: Corners | undefined;
   warnings: string[] | undefined;
 }) {
-  const transform = mirror ? "scaleX(-1)" : undefined;
+  const transform = choice.mirror ? "scaleX(-1)" : undefined;
+  const { width, height } = sizeOf(choice);
+  const aspect = width / height;
   return (
-    <div className="game-camera-preview">
-      {/* oxlint-disable-next-line jsx-a11y/media-has-caption -- a live, silent preview of the player: nothing to caption */}
-      <video ref={videoRef} aria-label="Camera preview" style={{ transform }} autoPlay muted playsInline />
-      {corners && <FloorOverlay corners={corners} style={{ transform }} />}
-      {warnings && warnings.length > 0 && (
-        <ul className="game-camera-warnings">
-          {warnings.map((warning) => (
-            <li key={warning}>
-              <span aria-hidden="true">⚠️ </span>
-              {warning}
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className="game-camera-stage">
+      <div className="game-camera-preview" style={{ aspectRatio: aspect, width: `min(100cqw, ${aspect} * 100cqh)` }}>
+        {/* oxlint-disable-next-line jsx-a11y/media-has-caption -- a live, silent preview of the player: nothing to caption */}
+        <video ref={videoRef} aria-label="Camera preview" style={{ transform }} autoPlay muted playsInline />
+        {corners && <FloorOverlay corners={corners} style={{ transform }} />}
+        <PictureWarnings warnings={warnings} />
+      </div>
     </div>
   );
 }
@@ -79,13 +79,9 @@ function SizeChoice({
 }
 
 /** The camera in use, as the landing page needs it: for its calibration, and to plan the space for it. */
-export interface CameraInUse {
+export interface CameraInUse extends PlannedCamera {
   /** Its calibration key. */
   key: string;
-  /** The name the browser gives it; empty until the browser names it. */
-  label: string;
-  /** The size it is opened at. */
-  size: CameraSize;
 }
 
 /**
@@ -170,7 +166,7 @@ export default function CameraPicker({
       </label>
       {failed && <p role="alert">This camera could not start. It may be in use by another app.</p>}
       <div className="game-camera-row">
-        <CameraPreview videoRef={videoRef} mirror={choice.mirror} corners={calibration} warnings={warnings} />
+        <CameraPreview videoRef={videoRef} choice={choice} corners={calibration} warnings={warnings} />
         {calibrateTo && !withoutCamera && (
           <FloorActions
             calibrateTo={calibrateTo}
@@ -190,7 +186,7 @@ export default function CameraPicker({
   );
 }
 
-/** Buttons to calibrate the configuration's floor, to reset it to the default floor, and to clear it. */
+/** Buttons beside the preview to reset the configuration's floor to the default floor, to clear it, and to calibrate it. */
 function FloorActions({
   calibrateTo,
   calibrated,
@@ -204,15 +200,15 @@ function FloorActions({
 }) {
   return (
     <div className="game-camera-floor-actions">
-      <Link className="game-button" to={calibrateTo}>
-        Calibrate
-      </Link>
       <button type="button" className="game-button" onClick={onReset}>
         Reset
       </button>
       <button type="button" className="game-button" disabled={!calibrated} onClick={onClear}>
         Clear
       </button>
+      <Link className="game-button" to={calibrateTo}>
+        Calibrate
+      </Link>
     </div>
   );
 }

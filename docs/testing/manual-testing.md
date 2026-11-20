@@ -64,6 +64,7 @@ on, so changing only the module is not enough.
       camera, and without asking to calibrate a 2.5D game's floor.
 - [ ] With saved progress, New game asks before clearing it; cancelling keeps it. Without saved progress, it doesn't
       ask.
+- [ ] **Back to games**, at the far left of the bar, returns to the home page.
 - [ ] **Plan space** opens `/setup` in a new tab.
 - [ ] **Layout:** at desktop size, the title is on the left, the permissions and camera configuration on the right,
       and the buttons in a bar along the bottom, with nothing hidden behind the bar. At phone width the panels stack
@@ -215,23 +216,28 @@ Play it once with the camera (`?debug=true` shows where your hands and feet are 
 ## The floor and 2.5D scenes
 
 Use the demo (`rules-demo`, "Demo scenes (2.5D)"), a 2.5D game, with the camera granted on its landing page. Start with no saved
-floor: on the calibration page, **Forget all saved areas**.
+floor: on the landing page, **Clear all calibrations**.
 
 - [ ] The landing page draws no floor on the preview, shows "Not yet calibrated" over it, and New game is disabled.
 - [ ] **Default corners:** with the camera set up as the defaults assume (about 2 m high, tilted down a little), the
       outline lines up roughly with a floor about 2.6 m wide and 2 m deep, starting 2.5 m from the camera.
-- [ ] **Calibrate:** press **Calibrate** beside the preview, and drag each corner to a corner of the real floor, then try the
+- [ ] **Calibrate:** press **Calibrate** to the right of the preview, and drag each corner to a corner of the real floor, then try the
       arrow keys on a corner. A drag that would fold the shape stops. The outline lines up with the real floor.
 - [ ] **Walking the edges:** walk to every edge and corner of the calibrated floor. Your feet stay tracked and
       green, red just past an edge, and your whole body stays in view at the back.
 - [ ] **A second person:** someone else stepping into view shows "Only one person should be in view", the feet
-      stop turning green or red, and Save is disabled, until they step out again.
-- [ ] Save, then go back: the landing page outlines the saved floor on the preview, "Not yet calibrated" has gone,
+      stop turning green or red, and Save and close is disabled, until they step out again.
+- [ ] **The page fits:** on a laptop screen, the title and steps sit on the left and the picture on the right, with
+      the bar along the bottom and nothing scrolling. The heading names the camera and configuration, with an asterisk
+      while unsaved.
+- [ ] **Close** with a moved corner asks first; cancel stays. **Plan space** opens `/setup` for this camera in a new
+      tab.
+- [ ] Save and close: the landing page outlines the saved floor on the preview, "Not yet calibrated" has gone,
       and New game is enabled.
 - [ ] **Configurations:** with a camera that offers more than one (the LifeCam HD-3000 offers HD and SD), switch
       configuration on the landing page. The other configuration shows "Not yet calibrated"; calibrate it too, and
       switching back and forth keeps each floor. Play in each: your feet land on the floor calibrated for it.
-- [ ] **Clear** beside the preview forgets the chosen configuration's floor only: "Not yet calibrated" returns for it,
+- [ ] **Clear** to the right of the preview forgets the chosen configuration's floor only: "Not yet calibrated" returns for it,
       and the other configuration keeps its floor.
 - [ ] **Reset** saves the default floor: the default outline appears on the preview, and New game is enabled.
 - [ ] **Plan space** opens `/setup` on the camera in use: with the LifeCam on SD, "Known webcam" starts on its SD

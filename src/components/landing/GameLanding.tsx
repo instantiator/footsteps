@@ -1,4 +1,4 @@
-import { useMemo, useReducer, useState, type ComponentProps, type CSSProperties } from "react";
+import { useMemo, useReducer, useState, type ComponentProps } from "react";
 import { Link, useNavigate } from "react-router";
 import type { GameData } from "../../entities/data/GameData";
 import { clearGameState, loadGameState } from "../../entities/state/GameStateStorage";
@@ -10,59 +10,70 @@ import GameStylesheets from "../core/GameStylesheets";
 import { calibrationNeeded, gameCameraRequirement, gameUsesFloor } from "../core/logic/GamePermissionUtils";
 import "./GamePanel.css";
 import "./GameLanding.css";
+import ButtonBar from "./ButtonBar";
 import CameraPicker, { type CameraInUse } from "./CameraPicker";
+import ClearAllCalibrations from "./ClearAllCalibrations";
 import GameBadges from "./GameBadges";
+import { useGamePageStyle } from "./GamePageStyle";
 import GamePermissionPanel from "./GamePermissionPanel";
+import PlanSpaceLink from "./PlanSpaceLink";
 import { useGamePermissions } from "./useGamePermissions";
 
-/** The bar along the bottom: planning the space in a new tab, and starting the game. */
+/**
+ * The bar along the bottom: back to the games, planning the space in a new tab, clearing the floors where the game
+ * uses one, and starting.
+ */
 function ActionBar({
-  planTo,
+  planCamera,
+  onClearAll,
   saved,
   ready,
   onContinue,
   onNewGame,
 }: {
-  planTo: string;
+  planCamera: CameraInUse | undefined;
+  onClearAll: (() => void) | undefined;
   saved: boolean;
   ready: boolean;
   onContinue: () => void;
   onNewGame: () => void;
 }) {
   return (
-    <div className="game-landing-actions">
-      <Link className="game-button" to={planTo} target="_blank" rel="noreferrer">
-        Plan space
-      </Link>
-      <span className="game-landing-actions-gap" />
-      {saved && (
-        <button type="button" className="game-button" disabled={!ready} onClick={onContinue}>
-          Continue
-        </button>
-      )}
-      <button type="button" className="game-button" disabled={!ready} onClick={onNewGame}>
-        New game
-      </button>
-    </div>
+    <ButtonBar
+      start={
+        <>
+          <Link className="game-button" to="/">
+            Back to games
+          </Link>
+          <PlanSpaceLink camera={planCamera} />
+          {onClearAll && <ClearAllCalibrations onCleared={onClearAll} />}
+        </>
+      }
+      end={
+        <>
+          {saved && (
+            <button type="button" className="game-button" disabled={!ready} onClick={onContinue}>
+              Continue
+            </button>
+          )}
+          <button type="button" className="game-button" disabled={!ready} onClick={onNewGame}>
+            New game
+          </button>
+        </>
+      }
+    />
   );
 }
 
 /** The camera's configuration, in its own panel. */
 function CameraPanel(props: ComponentProps<typeof CameraPicker>) {
   return (
-    <section className="game-panel game-landing-panel" aria-labelledby="camera-configuration">
+    <section className="game-panel game-landing-panel game-camera-panel" aria-labelledby="camera-configuration">
       <h2 id="camera-configuration">Camera configuration</h2>
       <CameraPicker {...props} />
     </section>
   );
 }
-
-/** The setup planner, for the camera in use once the browser has named it, so it starts with that camera's view. */
-const planPath = (camera: CameraInUse | undefined): string => {
-  if (!camera?.label) return "/setup";
-  const { label, size } = camera;
-  return `/setup?${new URLSearchParams({ camera: label, size: `${size.width}x${size.height}` }).toString()}`;
-};
 
 /**
  * Whether the camera is ready to play: granted where it's required, and calibrated where the game uses the floor, unless
@@ -81,8 +92,8 @@ const useCameraReadiness = (gameData: GameData, cameraGranted: boolean, canStart
     (warning) => typeof warning === "string",
   );
   const ready = canStart && !needsCalibration;
-  const planTo = planPath(noCamera ? undefined : camera);
-  return { setCamera, calibrationChanged, noCamera, setNoCamera, ready, warnings, planTo };
+  const planCamera = noCamera ? undefined : camera;
+  return { setCamera, calibrationChanged, noCamera, setNoCamera, ready, warnings, planCamera };
 };
 
 /**
@@ -90,12 +101,9 @@ const useCameraReadiness = (gameData: GameData, cameraGranted: boolean, canStart
  * configuration, over a bar of buttons to plan the space and to start.
  */
 export default function GameLanding() {
-  const { gameId, gameData, resources } = useGameData();
+  const { gameId, gameData } = useGameData();
   const navigate = useNavigate();
-  const graphic = useMemo(
-    () => (isDefined(gameData.tileGraphic) ? resources[gameData.tileGraphic] : undefined),
-    [gameData.tileGraphic, resources],
-  );
+  const pageStyle = useGamePageStyle();
   const { permissions, states, granting, grant, canStart } = useGamePermissions(gameData);
   const savedState = useMemo(() => loadGameState(gameId, gameData), [gameId, gameData]);
   const cameraRequirement = gameCameraRequirement(gameData);
@@ -108,11 +116,6 @@ export default function GameLanding() {
     if (isDefined(savedState) && !window.confirm("Start a new game? The saved game will be lost.")) return;
     clearGameState(gameId);
     navigate(playPath);
-  };
-
-  const pageStyle: CSSProperties = {
-    backgroundImage: isDefined(graphic) ? `url("${graphic}")` : undefined,
-    fontFamily: gameData.gameContainerStyle.fontFamily,
   };
 
   return (
@@ -143,7 +146,8 @@ export default function GameLanding() {
         )}
       </div>
       <ActionBar
-        planTo={readiness.planTo}
+        planCamera={readiness.planCamera}
+        onClearAll={cameraRequirement && gameUsesFloor(gameData) ? readiness.calibrationChanged : undefined}
         saved={isDefined(savedState)}
         ready={ready}
         onContinue={() => navigate(playPath)}

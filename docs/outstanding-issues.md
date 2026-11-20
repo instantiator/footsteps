@@ -550,11 +550,12 @@ floor calibrated for another.
 **Act when:** someone uses those query parameters with a 2.5D game. Then have `sizeOf` take the app config the game
 uses, or drop the query override for the camera size.
 
-## The landing preview's size assumes a 16:9 picture
+## The calibration picture is sized from an estimated panel height
 
-The landing page's camera preview is limited in width so that a 16:9 picture fits the height left beside the panels
-(`.game-camera-preview` in `GameLanding.css`). A 4:3 camera, or a taller panel, can still push the camera panel past
-the bar, when the column scrolls.
+The calibration page's picture is sized in CSS from the window's height less an estimate of the heading and bar around
+it (`.calibration-picture video` in `CalibrationView.css`). The landing page's preview no longer estimates: it fills
+the space left with a container query. A wrapped bar or heading can still push the calibration picture past the space
+left, when its panel scrolls.
 
-**Act when:** the column scrolls on a common screen size. Then size the preview from the space left, measured in
-script, or with a container query.
+**Act when:** the calibration panel scrolls on a common laptop screen. Then size it as the landing preview is, with a
+container query.

@@ -77,9 +77,10 @@ test("holds a 2.5D game back until the floor is calibrated, and calibrates it", 
   await expect(page.locator(".game-camera-preview polygon")).toHaveCount(0);
 
   await page.getByRole("link", { name: "Calibrate", exact: true }).click();
-  const saved = page.locator(".calibration-actions").getByRole("status");
+  const calibrating = page.getByRole("heading", { level: 2, name: /^Calibrating:/ });
   await expect(page).toHaveURL(/\/game\/rules-demo\/calibrate$/);
-  await expect(saved).toHaveText("Not saved yet");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Floor calibration");
+  await expect(calibrating).toHaveText(/\*$/);
   // One person in view has their head, hands and feet marked
   await page.evaluate(() => window.__fakeCamera.setImage("photo:jumping-side-on"));
   await expect(page.locator(".calibration .floorMarker").first()).toBeAttached({ timeout: MODEL_TIMEOUT });
@@ -87,10 +88,8 @@ test("holds a 2.5D game back until the floor is calibrated, and calibrates it", 
   const backLeft = page.getByRole("button", { name: "Back left corner" });
   await backLeft.focus();
   await page.keyboard.press("ArrowLeft");
-  await page.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(saved).toHaveText("Saved");
-
-  await page.getByRole("link", { name: "Back to the game" }).click();
+  await page.getByRole("button", { name: "Save and close" }).click();
+  await expect(page).toHaveURL(/\/game\/rules-demo$/);
   await expect(page.locator(".game-camera-preview polygon")).toBeAttached();
   await expect(page.getByText("Not yet calibrated")).toHaveCount(0);
   await expect(newGame).toBeEnabled();

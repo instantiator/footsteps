@@ -15,6 +15,7 @@ awake while the game is incomplete, with a warning on every page when the batter
 | `/game/:id/json`      | The game's resolved JSON, for debugging                                                              |
 | `/scene-renderer`     | A scene's HTML rendered in 2.5D, for game authors ([scene renderer](dev-overview.md#scene-renderer)) |
 | `/setup`              | [Plans the space](camera-mode.md#planning-the-space): floor size and where to put the camera         |
+| `/dependencies`       | The app's dependencies and their licences, from `src/assets/license-report.json`                     |
 
 The game routes are prerendered for every game in `public/game-repository.json`. A direct visit
 to `/game/:id/play` checks the game's required permissions first, and for a game with 2.5D scenes played by camera,
@@ -29,15 +30,20 @@ same translucent style as the home-page tiles, in two columns that each scroll i
 
 - **On the left**, the game's title, its [badges](#badges) and its description.
 - **On the right**, if the game uses the camera, the permissions panel and the **Camera configuration** panel: the
-  [camera and configuration choice](camera-mode.md#choosing-a-camera), with a live preview. What's still needed
+  [camera and configuration choice](camera-mode.md#choosing-a-camera), with a live preview. The panel takes the rest
+  of its column, and the preview is as large as fits in it, in the camera's shape. What's still needed
   before the game can begin shows over the preview: "Camera required" while a required camera isn't granted, and
   "Not yet calibrated" for a game with [2.5D scenes](game-data.md#scene-and-avatar-modes) until the chosen
-  configuration's floor is [calibrated](camera-mode.md#calibrating-the-floor). Beside the preview,
-  **Calibrate** calibrates that floor, **Reset** saves the default floor for it, and **Clear** forgets it.
+  configuration's floor is [calibrated](camera-mode.md#calibrating-the-floor). To the right of
+  the preview (under it on a narrow screen), **Reset** saves the default floor for that configuration, **Clear**
+  forgets it, and **Calibrate** calibrates it.
 
 The bar along the bottom has:
 
+- **Back to games**, on the far left, which returns to the home page's list of games.
 - **Plan space**, which opens the [setup planner](camera-mode.md#planning-the-space) in a new tab.
+- **Clear all calibrations**, for a game with 2.5D scenes, which forgets every camera configuration's floor after
+  asking.
 - **Continue**, only when valid saved progress exists, which resumes it.
 - **New game**, which clears this game's saved progress and starts a fresh game, after asking first if there is
   saved progress to lose.
@@ -143,20 +149,25 @@ unlocked.
 
 ## Where the code lives
 
-| Path                                               | What it does                                                 |
-| -------------------------------------------------- | ------------------------------------------------------------ |
-| `src/pages/LocalGameLanding.tsx`                   | Loads the local repository and game for the landing route    |
-| `src/components/landing/GameLanding.tsx`           | Landing layout, background, and New/Continue controls        |
-| `src/components/landing/GameBadges.tsx`            | A game's badges, on its tile and landing page                |
-| `src/components/core/logic/GameBadgeUtils.ts`      | Works out the badges from the game's data and saved progress |
-| `src/components/landing/GamePermissionPanel.tsx`   | Permission list, states, and Grant buttons                   |
-| `src/components/landing/CameraPicker.tsx`          | Camera dropdown, mirror checkbox, and live preview           |
-| `src/components/landing/useGamePermissions.ts`     | Checks, grants, and gates the landing controls               |
-| `src/components/core/logic/GamePermissionUtils.ts` | Camera requirement scan, permission query, and request       |
-| `src/components/core/GamePermissionGuard.tsx`      | Direct-play permission guard and landing redirect            |
-| `src/entities/state/GameStateStorage.ts`           | Versioned local-storage projection, validation, and clearing |
-| `src/providers/GameStateProvider.tsx`              | Loads saved progress and saves each change                   |
-| `src/components/core/WakeLockHook.ts`              | Screen wake lock lifecycle                                   |
-| `src/components/core/HeadsUpDisplay.tsx`           | The HUD's controls                                           |
-| `src/components/core/logic/HudNavigation.ts`       | What Go to and Reset offer, and where each entry leads       |
-| `src/components/core/BatteryWarning.tsx`           | Low-battery banner on every page                             |
+| Path                                               | What it does                                                                         |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `src/pages/LocalGameLanding.tsx`                   | Loads the local repository and game for the landing route                            |
+| `src/components/landing/GameLanding.tsx`           | Landing layout, and the Continue and New game controls                               |
+| `src/components/landing/GameBadges.tsx`            | A game's badges, on its tile and landing page                                        |
+| `src/components/core/logic/GameBadgeUtils.ts`      | Works out the badges from the game's data and saved progress                         |
+| `src/components/landing/GamePermissionPanel.tsx`   | Permission list, states, and Grant buttons                                           |
+| `src/components/landing/CameraPicker.tsx`          | Camera and configuration dropdowns, mirror checkbox, live preview, and floor buttons |
+| `src/components/landing/ButtonBar.tsx`             | The bar of buttons along the bottom of the landing and calibration pages             |
+| `src/components/landing/PlanSpaceLink.tsx`         | **Plan space**: the setup planner for the camera in use, in a new tab                |
+| `src/components/landing/PictureWarnings.tsx`       | What's still needed, over a camera picture                                           |
+| `src/components/landing/ClearAllCalibrations.tsx`  | **Clear all calibrations**, after asking                                             |
+| `src/components/landing/GamePageStyle.ts`          | A game's background and font, for its landing and calibration pages                  |
+| `src/components/landing/useGamePermissions.ts`     | Checks, grants, and gates the landing controls                                       |
+| `src/components/core/logic/GamePermissionUtils.ts` | Camera requirement scan, permission query, and request                               |
+| `src/components/core/GamePermissionGuard.tsx`      | Direct-play permission guard and landing redirect                                    |
+| `src/entities/state/GameStateStorage.ts`           | Versioned local-storage projection, validation, and clearing                         |
+| `src/providers/GameStateProvider.tsx`              | Loads saved progress and saves each change                                           |
+| `src/components/core/WakeLockHook.ts`              | Screen wake lock lifecycle                                                           |
+| `src/components/core/HeadsUpDisplay.tsx`           | The HUD's controls                                                                   |
+| `src/components/core/logic/HudNavigation.ts`       | What Go to and Reset offer, and where each entry leads                               |
+| `src/components/core/BatteryWarning.tsx`           | Low-battery banner on every page                                                     |
