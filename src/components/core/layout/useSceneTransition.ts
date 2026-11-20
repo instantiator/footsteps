@@ -258,8 +258,15 @@ export default function useSceneTransition<T>({
     run,
     transitioningRef,
   ]);
+  // A content update within the shown scene renders at once, not a commit later once the run has caught up with it, so
+  // effects that rules start straight after changing state find the elements that state renders
+  const passesThrough =
+    !transitioning &&
+    target.sceneKey === shown.sceneKey &&
+    target.shape === shown.shape &&
+    target.sceneMode === shown.sceneMode;
   return {
-    layers: shown.layers,
+    layers: passesThrough ? target.layers : shown.layers,
     camera: shown.camera,
     sceneMode: shown.sceneMode,
     viewport,

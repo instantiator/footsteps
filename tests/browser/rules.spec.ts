@@ -599,6 +599,20 @@ test.describe("rules demo", () => {
         .toBeGreaterThan(20);
     });
 
+    test("every collected ring spins away, not only the first", async ({ page }) => {
+      await startRings(page);
+      for (let collected = 1; collected <= 3; collected++) {
+        await moveTo(page, `#ring-near-${collected - 1}`);
+        await page.clock.runFor(100);
+        const gone = page.locator(`#ring-gone-${collected}`);
+        await expect(gone).toBeAttached();
+        await expect.poll(() => gone.evaluate((element) => element.getAnimations().length)).toBeGreaterThan(0);
+        // Off the new ring, so the next move is a fresh step onto it
+        await page.mouse.move(5, 5);
+        await page.clock.runFor(100);
+      }
+    });
+
     test("the timer counts down from 30, a second at a time", async ({ page }) => {
       await startRings(page);
       const before = Number(await page.locator(".rings-timer").textContent());
