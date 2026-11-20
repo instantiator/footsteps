@@ -3,7 +3,7 @@
 Published as HTML at <https://instantiator.dev/footsteps/docs/>, with the API reference under `/tsdoc/`.
 
 - [Developer overview](dev-overview.md): running locally, schemas, and validating game data.
-- [Playing a game](game-play.md): routes, the landing page, permissions, saved progress, and keep-awake.
+- [Playing a game](game-play.md): routes, the home page, the landing page, permissions, saved progress, and keep-awake.
 - [Deployment](deployment.md): deployment details.
 - [Tutorials](tutorials/index.md): building games and scenes, step by step, with sample elements and the scene
   renderer.

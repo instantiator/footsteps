@@ -50,7 +50,7 @@ describe("LocalListing", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText("Status: Ready")).toBeInTheDocument();
+    expect(screen.queryByText(/^Status:/)).toBeNull();
     expect(screen.getByRole("link", { name: "Play Simple Game" })).toHaveAttribute("href", "/game/simple-game");
     expect(screen.getByRole("link", { name: "Play Other Game" })).toHaveAttribute("href", "/game/other-game");
     expect(screen.getByText("simple-game")).toBeInTheDocument();

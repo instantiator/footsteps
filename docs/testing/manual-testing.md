@@ -44,6 +44,16 @@ Now add `?debug=true` to the URL and reload ([Configuration](../configuration.md
       2 feet, at 10 fps or more.
 - [ ] The console still shows no errors.
 
+## Home page
+
+- [ ] `/` fits a laptop screen without scrolling: the 👣 title, the three tabs and the footer all show, and only the
+      panel scrolls when there are more games than fit.
+- [ ] Clicking a tab, or the arrow keys on the tabs, switches the panel and the URL hash; reloading opens the same
+      tab; Back doesn't step through tab changes.
+- [ ] A game tile glows under the pointer, and when it has the keyboard's focus.
+- [ ] The footer's links open the MIT licence and the GitHub repository; `?debug=true` adds the base path.
+- [ ] At phone width the tabs scroll sideways in one row, and the tiles fit the panel.
+
 ## Landing, progress, and keep-awake
 
 Turn camera mode off everywhere for this section: set `modules.avatar` and every scene's `avatar` to

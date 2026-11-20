@@ -1,0 +1,98 @@
+/* The home page, sized to the window: the title, the tabs over a panel that takes the height left, and the footer */
+.home {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 1.5rem 0;
+  background: #dce8f5;
+  color: #22303c;
+}
+
+.home-title {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0.5rem 1rem;
+  font-size: 1.6rem;
+}
+
+.home-tabs {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* One row of tabs, which scrolls sideways when the window is too narrow for them all */
+.tabs-list {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  margin-bottom: -1px;
+  padding-left: 0.5rem;
+}
+
+/*
+ * The row of tabs overlaps the panel's top border by a pixel, inside its own box so its sideways scrolling doesn't
+ * clip it. Each tab draws that border along its bottom, except the selected one, which joins the panel.
+ */
+.tabs-tab {
+  padding: 0.5rem 1.25rem;
+  border: 1px solid #22303c55;
+  border-radius: 0.5rem 0.5rem 0 0;
+  background: #eef3fa;
+  color: inherit;
+  font: inherit;
+  font-weight: bold;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .home {
+    padding: 0.75rem 0.75rem 0;
+  }
+
+  .home-footer {
+    margin: 0 -0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .tabs-tab {
+    padding: 0.4rem 0.75rem;
+  }
+}
+
+.tabs-tab[aria-selected="true"] {
+  border-bottom-color: #ffffff;
+  background: #ffffff;
+}
+
+.tabs-tab:focus-visible {
+  outline: 2px solid #b00020;
+  outline-offset: 2px;
+}
+
+/* Only the panel scrolls, so the page itself fits the window */
+.tabs-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem;
+  border: 1px solid #22303c55;
+  border-radius: 0.5rem;
+  background: #ffffff;
+}
+
+.home-footer {
+  flex-shrink: 0;
+  margin: 0 -1.5rem;
+  padding: 0.75rem 1.5rem;
+  border-top: 1px solid #22303c55;
+  background: #ffffffcc;
+  font-size: 0.9rem;
+}
