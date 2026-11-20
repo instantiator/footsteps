@@ -188,7 +188,7 @@ Play the rules demo with `?debug=true`:
 ## The rules demo
 
 `rules-demo` exercises scene rules and state, reset scenes, sounds and rewards, and turns the camera on for its stages overview and all its stages, each falling back to the mouse.
-Play it once with the camera (`?debug=true` shows where your hands and feet are found), and once with "Play without the camera" ticked on its landing page: the pits, the floor is lava, and walk around then play by mouse-feet.
+Play it once with the camera (`?debug=true` shows where your hands and feet are found), and once with "Play without the camera" ticked on its landing page: the pits, bridge across lava, and walk around then play by mouse-feet.
 
 - [ ] **Toggle:** click the yellow switch on the stages overview, then touch it with a hand. It slides between two
       places each time, rather than jumping.
@@ -210,12 +210,13 @@ Play it once with the camera (`?debug=true` shows where your hands and feet are 
       about 3 s later the floor fades in. Step into a pit: you fall out of view, and about 1.5 s later you are
       asked back to Start. Step on the door's base: fireworks and a fanfare, and the stage completes. Reload
       partway: you are asked for the start again. By mouse-feet, the same works by moving the mouse, without the fall.
-- [ ] **The floor is lava:** you are asked to stand on the first stone. Jump to the second: a chime, and the first
-      stone falls. Jump to the third: the second falls, and the hatch in it opens. Stand on the hatch for a second, or
-      click it: fireworks and a fanfare, and the stage completes. Touching the lava, or jumping from the first stone
-      straight to the third, dissolves you into static and, about 1.2 s later, sends you back to the first stone with
-      the stones back and the hatch shut. The hatch doesn't open before then. By mouse-feet, drag between the stones;
-      nothing gets selected or dragged while you drag.
+- [ ] **Bridge across lava:** you are asked to stand on Start, in the front left cell, and the bridge appears under
+      you, curving from there to a black door. Step onto each next section: the one behind quakes for a second, then
+      falls, and stepping back where it was is stepping on lava. Put a foot on the lava: the edge of the screen glows
+      red, and you fizzle into static with a red glow. Step back on the bridge within 2 s: the warning goes. Stay on the
+      lava for 2 s: you fall out of view, and about 0.5 s later you are asked back to Start. Stand on the door (or click
+      it) from the last section for a second: fireworks and a fanfare, and the stage completes. The door does nothing
+      from an earlier section. By mouse-feet, move the mouse along the bridge.
 - [ ] **Walk around:** see [The floor and 2.5D scenes](#the-floor-and-25d-scenes) first, then
       [From behind](#from-behind). Its scroll opens first: page on, type "walk", and you are asked to stand on the start, in the front left
       corner. Step on it and the posts appear. Step on the spring in the middle: you spin away, and about 1.5 s later
@@ -331,7 +332,7 @@ The rules demo's Effects stage has one thing to touch for each effect, and shows
       mouse fires its foot and jump rules.
 - [ ] In the rules demo's Walk around, with `?noCamera=true`: a footprint follows the mouse, shrinking and flattening
       towards the back, and passes behind the posts; a drag lifts it over a shadow and lands it where the drag ends.
-      In The floor is lava it is blue, and standing half on a stone doesn't count as on it.
+      In Bridge across lava it is blue, and a foot barely touching a section counts as on it.
 - [ ] With the camera free again, reload: camera mode works as before.
 
 ## The HUD
@@ -379,7 +380,7 @@ What the suite proves:
 | Camera-off scene stops, returning reacquires        | The track ends on the camera-off scene, and a live stream returns                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | Switching the fake camera image changes the preview | The harness controls the image the app receives                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Effects (`effects.spec.ts`)                         | Item effects at two sizes, in a second column, through re-renders, resets and fades, with reduced motion; a fake camera for falling, spinning, freezing, static, rewards, and a removed player staying removed                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| Rules demo (`rules.spec.ts`)                        | The toggle, bulb, balloons and pits play by mouse; the balloons and pits show the shared grid reset first, counting 3-2-1 after Start, again after a pit and a reload; mouse-feet resting on a reset scene's start finish it without moving; the floor is lava hops by drags; scene state is kept, and resets on show; the mouse passes through empty foreground but not through drawn elements; a pit laid on the floor counts only where it is drawn                                                                                                                                                                                                 |
+| Rules demo (`rules.spec.ts`)                        | The toggle, bulb, balloons and pits play by mouse; the balloons and pits show the shared grid reset first, counting 3-2-1 after Start, again after a pit and a reload; mouse-feet resting on a reset scene's start finish it without moving; bridge across lava is walked by mouse-feet, with the warning, the fall and the door; scene state is kept, and resets on show; the mouse passes through empty foreground but not through drawn elements; a pit laid on the floor counts only where it is drawn                                                                                                                                             |
 | Landing (`landing.spec.ts`)                         | Badges show on tiles and landing pages; "Play without the camera" starts a camera-optional game with the camera off                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | Demo scenes, 2D stages (`demo-no-camera.spec.ts`)   | The 2D demo stages play through by mouse, without the camera                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | Jump and duck (`jump-and-duck.spec.ts`)             | Obstacles cross and the score rises; the pointer meeting one costs a life; three lost restart the run; the target completes it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |

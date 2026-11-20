@@ -464,7 +464,7 @@
     "rules-demo": {
       "id": "rules-demo",
       "title": "Demo scenes",
-      "description": "Pop balloons, dodge the pits, walk around a room with a tiled floor, walls and hills, and hop the stones over a floor of lava: a demonstration of 2.5D scenes, rules and state, by camera, or by mouse without one.",
+      "description": "Pop balloons, dodge the pits, walk around a room with a tiled floor, walls and hills, and cross a bridge over a floor of lava: a demonstration of 2.5D scenes, rules and state, by camera, or by mouse without one.",
       "tileGraphic": "tile",
       "modules": {
         "scene": "2.5D",
@@ -539,7 +539,7 @@
                 "pits": "Avoid the pits",
                 "depth": "Walk around",
                 "effects": "Effects",
-                "floor-is-lava": "The floor is lava",
+                "bridge-across-lava": "Bridge across lava",
                 "warm-up": "Jump and duck: warm-up",
                 "long-run": "Jump and duck: long run",
                 "lamps": "Light the lamps",
@@ -576,10 +576,10 @@
               {
                 "on": {
                   "interact": ["click", "hand-enter"],
-                  "target": "#stage-link-floor-is-lava",
+                  "target": "#stage-link-bridge-across-lava",
                   "threshold": 0.5
                 },
-                "do": [{ "enterStage": "floor-is-lava" }]
+                "do": [{ "enterStage": "bridge-across-lava" }]
               },
               {
                 "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-warm-up", "threshold": 0.5 },
@@ -948,10 +948,10 @@
           ]
         },
         {
-          "id": "floor-is-lava",
+          "id": "bridge-across-lava",
           "challenges": [
             {
-              "id": "hop-the-stones",
+              "id": "cross-the-bridge",
               "solution": { "answers": [] },
               "scenes": [
                 {
@@ -964,48 +964,136 @@
                   "component": {
                     "type": "template",
                     "data": {},
-                    "initialState": { "on": 1, "doorOpen": false, "burning": false, "done": false },
+                    "initialState": {
+                      "on": 1,
+                      "warning": false,
+                      "falling": false,
+                      "done": false,
+                      "gone1": false,
+                      "gone2": false,
+                      "gone3": false,
+                      "gone4": false
+                    },
                     "resetStateOnShow": true,
                     "rules": [
                       {
-                        "on": { "interact": ["foot-enter"], "target": "#lava" },
-                        "if": "not state.burning",
+                        "on": { "interact": ["foot-enter"], "target": "#lava", "threshold": 0.05 },
+                        "if": "not state.warning and not state.falling",
                         "do": [
-                          { "set": { "burning": "true" } },
+                          { "set": { "warning": "true" } },
                           { "effect": "player-static", "pixelSize": 2, "proportion": 1, "easeMs": 800 },
-                          { "resetChallenge": true, "delayMs": 1200 }
+                          {
+                            "effect": "highlight",
+                            "target": ".player",
+                            "durationMs": "indefinite",
+                            "sequence": [
+                              { "filter": "drop-shadow(0 0 1cqw red)", "durationMs": 400 },
+                              { "filter": "drop-shadow(0 0 3cqw red)", "durationMs": 400 }
+                            ]
+                          }
                         ]
                       },
                       {
-                        "on": { "interact": ["jump-onto"], "target": "#stone-2" },
+                        "on": { "interact": ["foot-exit"], "target": "#lava", "threshold": 0.05 },
+                        "if": "state.warning and not state.falling",
+                        "do": [
+                          { "set": { "warning": "false" } },
+                          { "effect": "stop", "players": "triggering", "stop": "player-static" },
+                          { "effect": "stop", "target": ".player", "stop": "highlight" }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": "#lava", "threshold": 0.05, "holdMs": 2000 },
+                        "if": "not state.falling",
+                        "do": [
+                          { "set": { "falling": "true" } },
+                          {
+                            "series": [
+                              { "effect": "player-fall", "durationMs": 1000, "easing": "ease-in" },
+                              { "resetChallenge": true, "delayMs": 500 }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": "#bridge-2", "threshold": 0.05 },
                         "if": "state.on == 1",
                         "do": [
                           { "set": { "on": "2" } },
-                          { "effect": "item-fall", "target": "#stone-1", "easing": "ease-in" },
-                          { "sound": "chime" }
+                          {
+                            "series": [
+                              { "effect": "quake", "target": "#bridge-1", "dx": 0.3, "durationMs": 1000 },
+                              {
+                                "parallel": [
+                                  { "effect": "quake", "target": "#bridge-1", "dx": 0.3, "durationMs": 800 },
+                                  { "effect": "item-fall", "target": "#bridge-1", "easing": "ease-in" }
+                                ]
+                              },
+                              { "set": { "gone1": "true" } }
+                            ]
+                          }
                         ]
                       },
                       {
-                        "on": { "interact": ["jump-onto"], "target": "#stone-3" },
+                        "on": { "interact": ["foot-enter"], "target": "#bridge-3", "threshold": 0.05 },
                         "if": "state.on == 2",
                         "do": [
-                          { "set": { "on": "3", "doorOpen": "true" } },
-                          { "effect": "item-fall", "target": "#stone-2", "easing": "ease-in" },
-                          { "sound": "chime" }
+                          { "set": { "on": "3" } },
+                          {
+                            "series": [
+                              { "effect": "quake", "target": "#bridge-2", "dx": 0.3, "durationMs": 1000 },
+                              {
+                                "parallel": [
+                                  { "effect": "quake", "target": "#bridge-2", "dx": 0.3, "durationMs": 800 },
+                                  { "effect": "item-fall", "target": "#bridge-2", "easing": "ease-in" }
+                                ]
+                              },
+                              { "set": { "gone2": "true" } }
+                            ]
+                          }
                         ]
                       },
                       {
-                        "on": { "interact": ["jump-onto"], "target": "#stone-3" },
-                        "if": "state.on == 1 and not state.burning",
+                        "on": { "interact": ["foot-enter"], "target": "#bridge-4", "threshold": 0.05 },
+                        "if": "state.on == 3",
                         "do": [
-                          { "set": { "burning": "true" } },
-                          { "effect": "player-static", "pixelSize": 2, "proportion": 1, "easeMs": 800 },
-                          { "resetChallenge": true, "delayMs": 1200 }
+                          { "set": { "on": "4" } },
+                          {
+                            "series": [
+                              { "effect": "quake", "target": "#bridge-3", "dx": 0.3, "durationMs": 1000 },
+                              {
+                                "parallel": [
+                                  { "effect": "quake", "target": "#bridge-3", "dx": 0.3, "durationMs": 800 },
+                                  { "effect": "item-fall", "target": "#bridge-3", "easing": "ease-in" }
+                                ]
+                              },
+                              { "set": { "gone3": "true" } }
+                            ]
+                          }
                         ]
                       },
                       {
-                        "on": { "interact": ["foot-enter"], "target": "#door", "holdMs": 1000 },
-                        "if": "state.doorOpen and not state.done",
+                        "on": { "interact": ["foot-enter"], "target": "#bridge-5", "threshold": 0.05 },
+                        "if": "state.on == 4",
+                        "do": [
+                          { "set": { "on": "5" } },
+                          {
+                            "series": [
+                              { "effect": "quake", "target": "#bridge-4", "dx": 0.3, "durationMs": 1000 },
+                              {
+                                "parallel": [
+                                  { "effect": "quake", "target": "#bridge-4", "dx": 0.3, "durationMs": 800 },
+                                  { "effect": "item-fall", "target": "#bridge-4", "easing": "ease-in" }
+                                ]
+                              },
+                              { "set": { "gone4": "true" } }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": "#door", "threshold": 0.05, "holdMs": 1000 },
+                        "if": "state.on == 5 and not state.done",
                         "do": [
                           { "set": { "done": "true" } },
                           { "completeChallenge": true },
@@ -1015,7 +1103,7 @@
                       },
                       {
                         "on": { "interact": ["click"], "target": "#door" },
-                        "if": "state.doorOpen and not state.done",
+                        "if": "state.on == 5 and not state.done",
                         "do": [
                           { "set": { "done": "true" } },
                           { "completeChallenge": true },
@@ -1026,27 +1114,11 @@
                     ],
                     "backgroundTemplate": {
                       "sourceType": "relative",
-                      "templateSource": "games/rules-demo/stones.html"
+                      "templateSource": "games/rules-demo/bridge.html"
                     },
                     "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
                   },
-                  "resetScene": {
-                    "component": {
-                      "type": "template",
-                      "data": {},
-                      "rules": [
-                        {
-                          "on": { "interact": ["foot-enter"], "target": "#reset-start" },
-                          "do": [{ "sound": "chime" }, { "finishReset": true }]
-                        }
-                      ],
-                      "backgroundTemplate": {
-                        "sourceType": "relative",
-                        "templateSource": "games/rules-demo/stones-reset.html"
-                      },
-                      "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
-                    }
-                  }
+                  "resetScene": "start"
                 }
               ]
             }

@@ -212,7 +212,7 @@ element holds (colour, images, text) is drawn in perspective.
 Nanny's Magic Trifle's stepping stones cross a river that runs across the screen, with its far bank and a forest just
 beyond, and the sky behind. Its title has a blurred copy of its picture as a screen background. The demo's "Walk
 around" stage has a tiled floor (with a spring in it), low walls, hills across the screen, and the sky. Its "Avoid the
-pits" and "The floor is lava" stages lay their pits and stones on the floor.
+pits" and "Bridge across lava" stages lay their pits and bridge sections on the floor.
 
 **`avatar`** is what stands in for the player:
 

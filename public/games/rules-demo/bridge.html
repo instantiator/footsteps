@@ -1,0 +1,20 @@
+<div class="noClicks demo-screen">
+  <div class="screen-background cavern-dark"></div>
+  <div class="rear-background cavern-rock" data-fill-width></div>
+  <div id="lava" class="floor-background lava"></div>
+  <!-- One curved bridge in five sections, drawn in floor percentages; only its painted shapes catch feet -->
+  <div class="bridge-floor" data-floor-area="0 0 100 100">
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+    <path id="bridge-1" class="bridge-section{{#if state.gone1}} gone{{/if}}" d="M0.00 74.00 C7.60 74.00 13.76 72.08 19.07 68.80 L26.34 93.57 C18.96 97.60 10.40 100.00 0.00 100.00Z" />
+    <path id="bridge-2" class="bridge-section{{#if state.gone2}} gone{{/if}}" d="M19.07 68.80 C24.38 65.52 28.85 60.88 33.06 55.44 L45.57 77.34 C39.90 83.87 33.71 89.54 26.34 93.57Z" />
+    <path id="bridge-3" class="bridge-section{{#if state.gone3}} gone{{/if}}" d="M33.06 55.44 C37.26 50.00 41.22 43.76 45.50 37.28 L61.63 55.94 C56.37 63.42 51.23 70.82 45.57 77.34Z" />
+    <path id="bridge-4" class="bridge-section{{#if state.gone4}} gone{{/if}}" d="M45.50 37.28 C49.79 30.80 54.42 24.08 59.97 17.68 L78.46 33.95 C72.29 40.86 66.90 48.45 61.63 55.94Z" />
+    <path id="bridge-5" class="bridge-section{{#if state.gone5}} gone{{/if}}" d="M59.97 17.68 C65.52 11.28 72.00 5.20 80.00 0.00 L100.00 16.00 C91.60 20.80 84.64 27.04 78.46 33.95Z" />
+    </svg>
+  </div>
+  <div id="door" class="bridge-door" data-floor-x="90" data-floor-y="12" data-floor-thickness="4" role="button" tabindex="0"></div>
+  {{#if state.warning}}<div class="bridge-glow"></div>{{/if}}
+  <p id="bridge-message" class="demo-score bridge-message">
+    {{#if state.warning}}Get off the lava!{{else}}Cross the bridge to the door.{{/if}}
+  </p>
+</div>

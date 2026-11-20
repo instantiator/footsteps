@@ -47,19 +47,25 @@ const returnToStart = async (page: Page) => {
   await expect(page.locator("#door-base")).toBeVisible({ timeout: 6000 });
 };
 
-/**
- * Moves the mouse inside the floor's front right corner, which is the scene box's bottom right, far enough in for the
- * feet's whole footprint to be on the lava.
- */
-const moveToFrontCorner = async (page: Page) => {
+/** Puts the mouse on the shared reset's Start, and waits out its countdown for the bridge. */
+const crossingStart = async (page: Page) => {
+  await page.locator("#stage-link-bridge-across-lava").click();
+  await expect(page.locator("#reset-message")).toHaveText("Stand on Start, or put your mouse on it");
+  await page.locator("#reset-start").hover();
+  await expect(page.locator("#bridge-1")).toBeVisible({ timeout: 6000 });
+};
+
+/** Moves the mouse onto lava: the floor, in its front right corner, clear of the bridge. */
+const moveOntoLava = async (page: Page) => {
   const viewport = (await page.locator(".floorScene .sceneBox").first().boundingBox())!;
   const inset = viewport.width * 0.06;
   await page.mouse.move(viewport.x + viewport.width - inset, viewport.y + viewport.height - inset);
 };
 
-/** Puts the mouse on stone hop's first stone in its reset scene. */
-const standOnFirstStoneOf = (page: Page) => async () => {
-  await moveTo(page, "#reset-start");
+/** Walks the mouse onto a section of the bridge, and waits for the section behind it to fall away. */
+const walkOnto = async (page: Page, n: number) => {
+  await moveTo(page, `#bridge-${n}`);
+  if (n > 1) await expect(page.locator(`#bridge-${n - 1}`)).toHaveClass(/gone/, { timeout: 4000 });
 };
 
 /** Opens the balloons stage, and waits out its countdown. */
@@ -255,29 +261,27 @@ test.describe("rules demo", () => {
   test("finishes the reset for mouse-feet already resting where the start appears, without them moving", async ({
     page,
   }) => {
-    // A jump on the spot on the first stone resets the challenge, leaving the feet where the reset scene's start appears
+    // A jump on the spot on the first section resets the challenge, leaving the feet where the reset scene's start appears
     await openDemo(page, (game) =>
-      challengeOf(game, "floor-is-lava").rules!.push({
-        on: { interact: "jump", target: "#stone-1" },
+      challengeOf(game, "bridge-across-lava").rules!.push({
+        on: { interact: "jump", target: "#bridge-1" },
         do: [{ resetChallenge: true }],
       }),
     );
-    await page.locator("#stage-link-floor-is-lava").click();
-    await standOnFirstStoneOf(page)();
+    await crossingStart(page);
     const run = () =>
       page.locator("[data-scene-scope^='challenge:'] .templateBody").first().getAttribute("data-scene-run");
-    await expect(page.locator("#stone-1")).toBeVisible();
     const before = await run();
 
-    const stone = (await page.locator("#stone-1").boundingBox())!;
-    await page.mouse.move(stone.x + stone.width / 2, stone.y + stone.height / 2);
+    const section = (await page.locator("#bridge-1").boundingBox())!;
+    await page.mouse.move(section.x + section.width / 2, section.y + section.height / 2);
     await page.mouse.down();
-    await page.mouse.move(stone.x + stone.width / 2 + 15, stone.y + stone.height / 2, { steps: 3 });
+    await page.mouse.move(section.x + section.width / 2 + 15, section.y + section.height / 2, { steps: 3 });
     await page.mouse.up();
 
     await expect.poll(run).not.toBe(before);
     await expect(page.locator("#reset-message")).toHaveCount(0);
-    await expect(page.locator("#stone-1")).toBeVisible();
+    await expect(page.locator("#bridge-1")).toBeVisible();
   });
 
   test("takes a pit laid on the floor only where it is drawn, not anywhere in its box", async ({ page }) => {
@@ -295,40 +299,106 @@ test.describe("rules demo", () => {
     await expect(page.locator("#reset-message")).toBeVisible();
   });
 
-  test("hops the stones over the lava in mouse-feet by dragging, then clicks the open door", async ({ page }) => {
-    const standOnFirstStone = standOnFirstStoneOf(page);
-    /** Drags the mouse from one element to another, through the moves between, as a jump. */
-    const jump = async (from: string, to: string) => {
-      await moveTo(page, from);
-      await page.mouse.down();
-      const box = (await page.locator(to).boundingBox())!;
-      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 10 });
-      await page.mouse.up();
-    };
-
+  test("walks the bridge by mouse-feet, each section falling behind, and the door completes from the last", async ({
+    page,
+  }) => {
     await openDemo(page);
-    await page.locator("#stage-link-floor-is-lava").click();
-    await expect(page.locator("#reset-message")).toHaveText("Stand on the first stone, or put your mouse on it");
-    await standOnFirstStone();
-    await expect(page.locator("#stones-message")).toContainText("With the mouse, drag from one to the next");
+    await crossingStart(page);
 
-    await jump("#stone-1", "#stone-2");
-    await expect(page.locator("#reset-message")).toHaveCount(0);
-    await jump("#stone-2", "#stone-3");
-    await expect(page.locator("#door")).toHaveClass(/open/);
+    for (const n of [2, 3, 4, 5]) await walkOnto(page, n);
+    await expect(page.locator("#bridge-5")).toBeVisible();
 
-    await clickNow(page, "#door");
-    await expect(page.locator("#stage-link-floor-is-lava")).toHaveClass(/completed/);
+    await moveTo(page, "#door");
+    await expect(page.locator("#stage-link-bridge-across-lava")).toHaveClass(/completed/, { timeout: 4000 });
   });
 
-  test("sends the mouse back to the first stone for stepping onto the lava", async ({ page }) => {
-    const standOnFirstStone = standOnFirstStoneOf(page);
+  test("walking from the last section onto the door shows no warning", async ({ page }) => {
     await openDemo(page);
-    await page.locator("#stage-link-floor-is-lava").click();
-    await standOnFirstStone();
-    await expect(page.locator("#stone-1")).toBeVisible();
-    await moveToFrontCorner(page);
-    await expect(page.locator("#reset-message")).toHaveText("Stand on the first stone, or put your mouse on it");
+    await crossingStart(page);
+    for (const n of [2, 3, 4, 5]) await walkOnto(page, n);
+    // Any appearance of the warning, however brief
+    await page.evaluate(() => {
+      const seen = { warned: false };
+      Object.assign(window, { seen });
+      new MutationObserver(() => {
+        if (document.querySelector(".bridge-glow")) seen.warned = true;
+      }).observe(document.body, { subtree: true, childList: true });
+    });
+
+    // Down the door's base, in steps, as a foot approaching it would
+    const door = (await page.locator("#door").boundingBox())!;
+    await page.mouse.move(door.x + door.width / 2, door.y + door.height - 3, { steps: 15 });
+
+    await expect(page.locator("#stage-link-bridge-across-lava")).toHaveClass(/completed/, { timeout: 4000 });
+    expect(await page.evaluate(() => Reflect.get(window, "seen").warned)).toBe(false);
+  });
+
+  test("shows the warning for a foot on lava, and clears it on return to the bridge", async ({ page }) => {
+    await openDemo(page);
+    await crossingStart(page);
+
+    await moveOntoLava(page);
+    await expect(page.locator(".bridge-glow")).toBeVisible();
+    await expect(page.locator("#bridge-message")).toContainText("Get off the lava");
+
+    await moveTo(page, "#bridge-1");
+    await expect(page.locator(".bridge-glow")).toHaveCount(0);
+    await page.waitForTimeout(2500); // past the 2 s it would have taken to fall
+    await expect(page.locator("#reset-message")).toHaveCount(0);
+  });
+
+  test("falls and resets for a foot left on lava for 2 s", async ({ page }) => {
+    await openDemo(page);
+    await crossingStart(page);
+
+    await moveOntoLava(page);
+    await expect(page.locator("#reset-message")).toHaveText("Stand on Start, or put your mouse on it", {
+      timeout: 5000,
+    });
+  });
+
+  test("keeps the door shut until the player reaches the last section", async ({ page }) => {
+    await openDemo(page);
+    await crossingStart(page);
+
+    await moveTo(page, "#door");
+    await page.waitForTimeout(1500);
+    await clickNow(page, "#door");
+    await page.waitForTimeout(500);
+    await expect(page.locator("#stage-link-bridge-across-lava")).toHaveCount(0); // still in the stage
+    await expect(page.locator("#reset-message")).toHaveCount(0);
+  });
+
+  test("catches feet by the bridge's curve: just outside is lava, just inside is bridge", async ({ page }) => {
+    await openDemo(page);
+    await crossingStart(page);
+
+    // Along a row through the middle of section 3 (which the curve may share with its neighbours), what is under each point
+    const row = await page.evaluate(() => {
+      const box = document.querySelector("#bridge-3")!.getBoundingClientRect();
+      const y = box.y + box.height / 2;
+      const ids: string[] = [];
+      for (let x = box.x - 40; x < box.x + box.width + 40; x += 1) {
+        const id = document.elementFromPoint(x, y)?.id ?? "";
+        if (id !== ids.at(-1)) ids.push(id);
+      }
+      return ids;
+    });
+    expect(row).toContain("bridge-3");
+    // Lava on both sides of it, and only bridge sections between: no gap in the curve, and nothing else catching feet
+    expect([row[0], row.at(-1)]).toEqual(["lava", "lava"]);
+    expect(row.slice(1, -1).every((id) => id.startsWith("bridge-"))).toBe(true);
+  });
+
+  test("counts a fallen section as lava", async ({ page }) => {
+    await openDemo(page);
+    await crossingStart(page);
+    const first = (await page.locator("#bridge-1").boundingBox())!;
+
+    await walkOnto(page, 2);
+    await page.mouse.move(first.x + first.width / 2, first.y + first.height / 2);
+
+    await expect(page.locator(".bridge-glow")).toBeVisible();
   });
 
   test("asks for the start again when the game is reloaded", async ({ page }) => {
