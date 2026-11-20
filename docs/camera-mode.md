@@ -176,7 +176,7 @@ after asking.
 
 The calibration page has the landing page's look: the game's title and the steps on the left, with **Plan space**
 (the setup planner for this camera, in a new tab), and on the right the camera picture with the floor over it, headed
-"Calibrating: <camera> · <configuration>". An asterisk follows the heading while the corners aren't saved, which
+`Calibrating: <camera> · <configuration>`. An asterisk follows the heading while the corners aren't saved, which
 includes the default corners an uncalibrated configuration starts on. The picture takes the height left above the
 bar, so the page fits a laptop screen without scrolling; on a narrow screen the columns stack and scroll.
 
