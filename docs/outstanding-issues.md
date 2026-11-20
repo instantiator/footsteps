@@ -523,14 +523,6 @@ the floor's width and mirroring flips it, so the view is only a guide to what a 
 **Act when:** someone is misled by the difference. Then crop the view to the scene box (`FloorGeometry.ts`) for a
 2.5D game, and add a mirror setting.
 
-## The MacBook Pro's field of view isn't known
-
-Apple publishes no field of view for the MacBook Pro 13-inch (M1, 2020) FaceTime HD camera, so its row in
-[known webcams](webcams.md) says "Not published", and choosing it on `/setup` leaves the field of view as it was.
-
-**Act when:** it has been measured, as [known webcams](webcams.md#measuring-a-field-of-view) describes. Then add it to
-`src/components/camera/Webcams.ts` with `fovSource: "measured"`.
-
 ## The LifeCam HD-3000's SD field of view is an estimate
 
 The ≈58° for the LifeCam HD-3000 at 640×480 assumes the camera takes a 4:3 picture from the middle of its 16:9 sensor,
