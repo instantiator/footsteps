@@ -5,15 +5,81 @@
   <!-- One curved bridge in five sections, drawn in floor percentages; only its painted shapes catch feet -->
   <div class="bridge-floor" data-floor-area="0 0 100 100">
     <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+    <defs>
+      <!-- Frames of TV static: each shows more of the stone through grey speckle, for section 4 to flicker through as it appears -->
+      <filter id="bridge-static-0" filterUnits="userSpaceOnUse" x="0" y="0" width="100" height="100" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.4 0.8" numOctaves="1" seed="3" result="noise" />
+        <feColorMatrix in="noise" type="matrix" values="5 0 0 0 -1.8  5 0 0 0 -1.8  5 0 0 0 -1.8  30 0 0 0 -16.50" result="grey" />
+        <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  30 0 0 0 -24.00" result="mask" />
+        <feComposite in="SourceGraphic" in2="mask" operator="in" result="stone" />
+        <feComposite in="grey" in2="SourceAlpha" operator="in" result="speckle" />
+        <feMerge><feMergeNode in="speckle" /><feMergeNode in="stone" /></feMerge>
+      </filter>
+      <filter id="bridge-static-1" filterUnits="userSpaceOnUse" x="0" y="0" width="100" height="100" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.4 0.8" numOctaves="1" seed="4" result="noise" />
+        <feColorMatrix in="noise" type="matrix" values="5 0 0 0 -1.8  5 0 0 0 -1.8  5 0 0 0 -1.8  30 0 0 0 -13.93" result="grey" />
+        <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  30 0 0 0 -21.43" result="mask" />
+        <feComposite in="SourceGraphic" in2="mask" operator="in" result="stone" />
+        <feComposite in="grey" in2="SourceAlpha" operator="in" result="speckle" />
+        <feMerge><feMergeNode in="speckle" /><feMergeNode in="stone" /></feMerge>
+      </filter>
+      <filter id="bridge-static-2" filterUnits="userSpaceOnUse" x="0" y="0" width="100" height="100" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.4 0.8" numOctaves="1" seed="5" result="noise" />
+        <feColorMatrix in="noise" type="matrix" values="5 0 0 0 -1.8  5 0 0 0 -1.8  5 0 0 0 -1.8  30 0 0 0 -11.36" result="grey" />
+        <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  30 0 0 0 -18.86" result="mask" />
+        <feComposite in="SourceGraphic" in2="mask" operator="in" result="stone" />
+        <feComposite in="grey" in2="SourceAlpha" operator="in" result="speckle" />
+        <feMerge><feMergeNode in="speckle" /><feMergeNode in="stone" /></feMerge>
+      </filter>
+      <filter id="bridge-static-3" filterUnits="userSpaceOnUse" x="0" y="0" width="100" height="100" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.4 0.8" numOctaves="1" seed="6" result="noise" />
+        <feColorMatrix in="noise" type="matrix" values="5 0 0 0 -1.8  5 0 0 0 -1.8  5 0 0 0 -1.8  30 0 0 0 -8.79" result="grey" />
+        <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  30 0 0 0 -16.29" result="mask" />
+        <feComposite in="SourceGraphic" in2="mask" operator="in" result="stone" />
+        <feComposite in="grey" in2="SourceAlpha" operator="in" result="speckle" />
+        <feMerge><feMergeNode in="speckle" /><feMergeNode in="stone" /></feMerge>
+      </filter>
+      <filter id="bridge-static-4" filterUnits="userSpaceOnUse" x="0" y="0" width="100" height="100" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.4 0.8" numOctaves="1" seed="7" result="noise" />
+        <feColorMatrix in="noise" type="matrix" values="5 0 0 0 -1.8  5 0 0 0 -1.8  5 0 0 0 -1.8  30 0 0 0 -6.21" result="grey" />
+        <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  30 0 0 0 -13.71" result="mask" />
+        <feComposite in="SourceGraphic" in2="mask" operator="in" result="stone" />
+        <feComposite in="grey" in2="SourceAlpha" operator="in" result="speckle" />
+        <feMerge><feMergeNode in="speckle" /><feMergeNode in="stone" /></feMerge>
+      </filter>
+      <filter id="bridge-static-5" filterUnits="userSpaceOnUse" x="0" y="0" width="100" height="100" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.4 0.8" numOctaves="1" seed="8" result="noise" />
+        <feColorMatrix in="noise" type="matrix" values="5 0 0 0 -1.8  5 0 0 0 -1.8  5 0 0 0 -1.8  30 0 0 0 -3.64" result="grey" />
+        <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  30 0 0 0 -11.14" result="mask" />
+        <feComposite in="SourceGraphic" in2="mask" operator="in" result="stone" />
+        <feComposite in="grey" in2="SourceAlpha" operator="in" result="speckle" />
+        <feMerge><feMergeNode in="speckle" /><feMergeNode in="stone" /></feMerge>
+      </filter>
+      <filter id="bridge-static-6" filterUnits="userSpaceOnUse" x="0" y="0" width="100" height="100" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.4 0.8" numOctaves="1" seed="9" result="noise" />
+        <feColorMatrix in="noise" type="matrix" values="5 0 0 0 -1.8  5 0 0 0 -1.8  5 0 0 0 -1.8  30 0 0 0 -1.07" result="grey" />
+        <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  30 0 0 0 -8.57" result="mask" />
+        <feComposite in="SourceGraphic" in2="mask" operator="in" result="stone" />
+        <feComposite in="grey" in2="SourceAlpha" operator="in" result="speckle" />
+        <feMerge><feMergeNode in="speckle" /><feMergeNode in="stone" /></feMerge>
+      </filter>
+      <filter id="bridge-static-7" filterUnits="userSpaceOnUse" x="0" y="0" width="100" height="100" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.4 0.8" numOctaves="1" seed="10" result="noise" />
+        <feColorMatrix in="noise" type="matrix" values="5 0 0 0 -1.8  5 0 0 0 -1.8  5 0 0 0 -1.8  30 0 0 0 1.50" result="grey" />
+        <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  30 0 0 0 -6.00" result="mask" />
+        <feComposite in="SourceGraphic" in2="mask" operator="in" result="stone" />
+        <feComposite in="grey" in2="SourceAlpha" operator="in" result="speckle" />
+        <feMerge><feMergeNode in="speckle" /><feMergeNode in="stone" /></feMerge>
+      </filter>
+    </defs>
     <path id="bridge-1" class="bridge-section{{#if state.gone1}} gone{{/if}}" d="M0.00 74.00 C7.60 74.00 13.76 72.08 19.07 68.80 L26.34 93.57 C18.96 97.60 10.40 100.00 0.00 100.00Z" />
     <path id="bridge-2" class="bridge-section{{#if state.gone2}} gone{{/if}}" d="M19.07 68.80 C24.38 65.52 28.85 60.88 33.06 55.44 L45.57 77.34 C39.90 83.87 33.71 89.54 26.34 93.57Z" />
     <path id="bridge-3" class="bridge-section{{#if state.gone3}} gone{{/if}}" d="M33.06 55.44 C37.26 50.00 41.22 43.76 45.50 37.28 L61.63 55.94 C56.37 63.42 51.23 70.82 45.57 77.34Z" />
-    <path id="bridge-4" class="bridge-section{{#if state.gone4}} gone{{/if}}" d="M45.50 37.28 C49.79 30.80 54.42 24.08 59.97 17.68 L78.46 33.95 C72.29 40.86 66.90 48.45 61.63 55.94Z" />
+    <path id="bridge-4" class="bridge-section{{#unless state.appearing4}} unseen{{else}}{{#unless state.solid4}} appearing{{/unless}}{{/unless}}{{#if state.gone4}} gone{{/if}}" d="M45.50 37.28 C49.79 30.80 54.42 24.08 59.97 17.68 L78.46 33.95 C72.29 40.86 66.90 48.45 61.63 55.94Z" />
     <path id="bridge-5" class="bridge-section{{#if state.gone5}} gone{{/if}}" d="M59.97 17.68 C65.52 11.28 72.00 5.20 80.00 0.00 L100.00 16.00 C91.60 20.80 84.64 27.04 78.46 33.95Z" />
     </svg>
   </div>
   <div id="door" class="bridge-door" data-floor-x="90" data-floor-y="12" data-floor-thickness="4" role="button" tabindex="0"></div>
-  {{#if state.warning}}<div class="bridge-glow"></div>{{/if}}
   <p id="bridge-message" class="demo-score bridge-message">
     {{#if state.warning}}Get off the lava!{{else}}Cross the bridge to the door.{{/if}}
   </p>

@@ -290,8 +290,9 @@ describe("rules demo, the bridge across lava, played by mouse-feet", { timeout: 
   const elementAt = (x: number, y: number): Element | null => {
     const hits = BOXES.filter(([id, [l, t, r, b]]) => {
       const element = document.getElementById(id);
-      // A fallen section is hidden, so it is no longer there to touch
-      return element && !element.classList.contains("gone") && x >= l && x < r && y >= t && y < b;
+      // A fallen section is hidden, and one yet to appear (or still appearing) takes no feet, so none is there to touch
+      const absent = ["gone", "unseen", "appearing"].some((name) => element?.classList.contains(name));
+      return element && !absent && x >= l && x < r && y >= t && y < b;
     });
     const top = hits.at(-1);
     return top ? document.getElementById(top[0]) : null;
@@ -365,6 +366,38 @@ describe("rules demo, the bridge across lava, played by mouse-feet", { timeout: 
     await wait(2500);
   };
 
+  /** Ends section 4's appearance, which jsdom has no animations to do. */
+  const solidify4 = async () => {
+    // jsdom has no AnimationEvent, so the event is made by hand, under the name React listens for there
+    const ended = Object.assign(new Event("webkitAnimationEnd", { bubbles: true }), { animationName: "appear-static" });
+    fireEvent($("#bridge-4")!, ended);
+    await waitFor(() => expect($("#bridge-4")).not.toHaveClass("appearing"));
+  };
+
+  it("hides section 4 as lava until section 3 is reached, then shows it appearing, and solid once it ends", async () => {
+    await openStage();
+    expect($("#bridge-4")).toHaveClass("unseen");
+    expect($("#bridge-4")).not.toHaveClass("appearing");
+
+    await walkTo(2);
+    expect($("#bridge-4")).toHaveClass("unseen");
+    await walkTo(3);
+    expect($("#bridge-4")).toHaveClass("appearing");
+    expect($("#bridge-4")).not.toHaveClass("unseen");
+
+    // Until the static ends, a foot where it is is on lava
+    moveTo(LAVA);
+    moveTo(SECTION(4));
+    await waitFor(() => expect($(".bridge-glow")).not.toBeNull());
+    moveTo(SECTION(3));
+    await waitFor(() => expect($(".bridge-glow")).toBeNull());
+
+    await solidify4();
+    moveTo(LAVA);
+    moveTo(SECTION(4)); // now a section like the others
+    await waitFor(() => expect($(".bridge-glow")).toBeNull());
+  });
+
   it("walks the bridge section by section, and each section left quakes then falls", async () => {
     await openStage();
     expect(animated).toEqual([]);
@@ -375,7 +408,9 @@ describe("rules demo, the bridge across lava, played by mouse-feet", { timeout: 
     await waitFor(() => expect($("#bridge-1")).toHaveClass("gone"));
     expect($("#bridge-2")).not.toHaveClass("gone");
 
-    for (const n of [3, 4, 5]) await walkTo(n);
+    await walkTo(3);
+    await solidify4();
+    for (const n of [4, 5]) await walkTo(n);
     await waitFor(() => expect($("#bridge-4")).toHaveClass("gone"));
     expect($("#bridge-5")).not.toHaveClass("gone");
     expect(animated).toEqual(["bridge-1", "bridge-2", "bridge-3", "bridge-4"]);
@@ -415,7 +450,9 @@ describe("rules demo, the bridge across lava, played by mouse-feet", { timeout: 
     await wait(500);
     expect($("#stage-link-bridge-across-lava")).toBeNull(); // still in the stage, so not back on the overview
 
-    for (const n of [2, 3, 4, 5]) await walkTo(n);
+    for (const n of [2, 3]) await walkTo(n);
+    await solidify4();
+    for (const n of [4, 5]) await walkTo(n);
     moveTo(DOOR);
     await wait(1500);
     expect($(".bridge-glow")).toBeNull(); // the door stands on the bridge, so reaching it never touches lava

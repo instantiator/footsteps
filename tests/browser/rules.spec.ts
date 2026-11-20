@@ -28,6 +28,12 @@ const challengeOf = (game: GameData, stageId: string) =>
   game.stages.find((stage) => stage.id === stageId)!.challenges[0].scenes[0].component;
 
 /** Clicks the middle of an element wherever it is now, as a moving element is never stable enough to wait for. */
+/** The middle of an element, on the page. */
+const centreOf = async (page: Page, selector: string): Promise<[number, number]> => {
+  const box = (await page.locator(selector).boundingBox())!;
+  return [box.x + box.width / 2, box.y + box.height / 2];
+};
+
 /** Moves the mouse to the middle of an element, whatever is drawn over it. */
 const moveTo = async (page: Page, selector: string) => {
   const box = (await page.locator(selector).boundingBox())!;
@@ -64,6 +70,8 @@ const moveOntoLava = async (page: Page) => {
 
 /** Walks the mouse onto a section of the bridge, and waits for the section behind it to fall away. */
 const walkOnto = async (page: Page, n: number) => {
+  // Section 4 only turns solid once it has appeared, so a foot put there sooner would be on lava
+  if (n === 4) await expect(page.locator("#bridge-4")).not.toHaveClass(/unseen|appearing/, { timeout: 4000 });
   await moveTo(page, `#bridge-${n}`);
   if (n > 1) await expect(page.locator(`#bridge-${n - 1}`)).toHaveClass(/gone/, { timeout: 4000 });
 };
@@ -429,6 +437,65 @@ test.describe("rules demo", () => {
     // Lava on both sides of it, and only bridge sections between: no gap in the curve, and nothing else catching feet
     expect([row[0], row.at(-1)]).toEqual(["lava", "lava"]);
     expect(row.slice(1, -1).every((id) => id.startsWith("bridge-"))).toBe(true);
+  });
+
+  test("hides section 4 as lava until the player reaches section 3", async ({ page }) => {
+    await openDemo(page);
+    await crossingStart(page);
+    await expect(page.locator("#bridge-4")).toBeHidden();
+
+    await walkOnto(page, 2);
+    await expect(page.locator("#bridge-4")).toBeHidden();
+    // Where it will be, a foot is on lava
+    const [x, y] = await centreOf(page, "#bridge-4");
+    expect(await page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.id, [x, y])).toBe("lava");
+  });
+
+  test("section 4 appears through static over 2 s, then can be stood on", async ({ page }) => {
+    await openDemo(page);
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await crossingStart(page);
+    await walkOnto(page, 2);
+    await moveTo(page, "#bridge-3"); // not waiting for section 2 to fall, as that outlasts the static
+    await expect(page.locator("#bridge-4")).toHaveClass(/appearing/);
+    const started = Date.now();
+    const [x, y] = await centreOf(page, "#bridge-4");
+    // Static, not stone: lava still takes the foot while it appears
+    expect(await page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.id, [x, y])).toBe("lava");
+
+    await expect(page.locator("#bridge-4")).not.toHaveClass(/appearing/, { timeout: 4000 });
+    expect(Date.now() - started).toBeGreaterThan(1000);
+    expect(await page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.id, [x, y])).toBe("bridge-4");
+
+    await walkOnto(page, 4);
+    await expect(page.locator(".bridge-glow")).toHaveCount(0);
+  });
+
+  test("a foot where section 4 is, before it turns solid, is on lava", async ({ page }) => {
+    await openDemo(page);
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await crossingStart(page);
+    await walkOnto(page, 2);
+    await moveTo(page, "#bridge-3");
+    await expect(page.locator("#bridge-4")).toHaveClass(/appearing/);
+
+    await moveTo(page, "#bridge-4");
+    await expect(page.locator(".bridge-glow")).toBeVisible();
+    await expect(page.locator("#bridge-message")).toContainText("Get off the lava");
+  });
+
+  test("tints the whole screen while the warning shows", async ({ page }) => {
+    await openDemo(page);
+    await crossingStart(page);
+    await moveOntoLava(page);
+    await expect(page.locator(".bridge-glow")).toBeVisible();
+
+    const glow = (await page.locator(".bridge-glow").boundingBox())!;
+    const viewport = (await page.locator(".gameViewport").boundingBox())!;
+    expect(glow.x).toBeCloseTo(viewport.x, 0);
+    expect(glow.y).toBeCloseTo(viewport.y, 0);
+    expect(glow.width).toBeCloseTo(viewport.width, 0);
+    expect(glow.height).toBeCloseTo(viewport.height, 0);
   });
 
   test("counts a fallen section as lava", async ({ page }) => {

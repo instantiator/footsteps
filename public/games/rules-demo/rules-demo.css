@@ -456,8 +456,47 @@
   pointer-events: visiblePainted;
   filter: drop-shadow(0 2px 0 #a8651a);
 }
-.bridge-section.gone {
+.bridge-section.gone,
+.bridge-section.unseen {
   visibility: hidden;
+}
+
+/* Section 4 flickers in through frames of TV static over 2 s, and is not somewhere to stand until it ends */
+.bridge-section.appearing {
+  pointer-events: none;
+  animation: appear-static 2s linear;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Not a blink of static, but still an animation, so that it ends and the section turns solid */
+  .bridge-section.appearing {
+    animation-duration: 0.01s;
+  }
+}
+@keyframes appear-static {
+  0% {
+    filter: url(#bridge-static-0);
+  }
+  14% {
+    filter: url(#bridge-static-1);
+  }
+  29% {
+    filter: url(#bridge-static-2);
+  }
+  43% {
+    filter: url(#bridge-static-3);
+  }
+  57% {
+    filter: url(#bridge-static-4);
+  }
+  71% {
+    filter: url(#bridge-static-5);
+  }
+  86% {
+    filter: url(#bridge-static-6);
+  }
+  100% {
+    filter: url(#bridge-static-7);
+  }
 }
 
 /* The black door at the bridge's far end, standing on the floor */
@@ -472,12 +511,19 @@
   cursor: pointer;
 }
 
-/* A red glow round the screen's edge while a foot is on the lava */
+/* A red tint and edge glow over the whole screen, pulsing gently, while a foot is on the lava */
 .bridge-glow {
-  position: absolute;
-  inset: 0;
-  box-shadow: inset 0 0 12cqh 2cqh #ff2a1a;
-  pointer-events: none;
+  background: rgba(255, 42, 26, 0.12);
+  box-shadow: inset 0 0 14vmin 3vmin #ff2a1a;
+  animation: bridge-glow-pulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes bridge-glow-pulse {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Text over the cavern is not somewhere to stand */
