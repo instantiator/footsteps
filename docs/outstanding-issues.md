@@ -575,3 +575,29 @@ left, when its panel scrolls.
 
 **Act when:** the calibration panel scrolls on a common laptop screen. Then size it as the landing preview is, with a
 container query.
+
+## The 003.00.00 demo stages aren't proven on a real camera
+
+The browser suite plays the new and changed Demo scenes stages by mouse and mouse-feet, or with a still photo as the
+camera. Real camera checks are still owed for these:
+
+- **Balloons:** hands pop them.
+- **Bridge across lava:** a foot on lava shows the full-screen warning, and keeping it there drops the player.
+  Section 4 appears through static, then takes feet.
+- **Ring collection:** standing near a ring, or touching it with a hand, collects it.
+- **Effects:** the floating items are within reach of a raised hand from anywhere on the floor, including the back.
+- **Overview:** a hand over a candle's tip lights it.
+
+The hand-height of the effects stage's floating band (`top: 28cqh`) and the 0.05 thresholds are first guesses.
+
+**Act when:** the next real-camera session. Follow the rules demo checklist in
+[manual testing](testing/manual-testing.md), and tune the band's height and the thresholds from what you see.
+
+## The test game's title background points at a missing path
+
+`public/test-repository.json` gives the test game's title `backgroundImage: url('/samples/test-game/lava-cave-01.jpeg')`.
+The image is at `public/games/test-game/lava-cave-01.jpeg`, and nothing serves `/samples/`. Its licence is unchecked,
+which is why the bridge stage draws its cavern with gradients instead.
+
+**Act when:** the test game's title is next looked at. Then point the path at `games/test-game/`, or drop the image
+if its licence can't be confirmed.
