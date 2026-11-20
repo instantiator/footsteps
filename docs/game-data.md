@@ -8,6 +8,7 @@ A game is one `GameData` object (`src/entities/data/GameData.ts`), authored as J
 GameData
 ├── title, description                 shown as-is; the description goes on the landing-page tile
 ├── tileGraphic?                       resource name of the tile's background image (see Landing tile)
+├── promoted?                          listed before other games on the home page (default false)
 ├── gameContainerStyle                 applied to the game's outer container
 ├── config?                            { sequential, autoAdvanceStages }
 ├── modules?                           { scene?, avatar? }: how scenes are laid out, and what stands in for the player
@@ -620,6 +621,9 @@ If a resource can't be resolved, the game's loading state becomes `resource-erro
 The landing page shows each game as a square tile with its `title`, its id, its `description`, and `tileGraphic` as the background image behind them. `tileGraphic` is a resource name (see [Resources](#resources)); a game without one, or whose graphic can't be resolved, gets a plain tinted tile instead.
 
 Magic-trifle uses its title background: `"tileGraphic": "title-background"`.
+
+The home page lists games in the repository's order, except that games with `"promoted": true` come first. Magic-trifle
+is promoted.
 
 ## Sounds
 

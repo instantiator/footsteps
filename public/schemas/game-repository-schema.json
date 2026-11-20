@@ -387,6 +387,10 @@
                     "$ref": "#/definitions/GameModulesData",
                     "description": "Game-wide scene and avatar settings."
                 },
+                "promoted": {
+                    "description": "Listed before other games on the home page. Default: false.",
+                    "type": "boolean"
+                },
                 "resetScenes": {
                     "$ref": "#/definitions/Record%3Cstring%2CGameResetScene%3E",
                     "description": "Named reset scenes, which scenes share by giving the name as their `resetScene`."

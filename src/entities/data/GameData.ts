@@ -51,6 +51,8 @@ export interface GameData {
   description: string;
   /** Resource name (a key of `resources`) of the image shown behind the game's landing-page tile. */
   tileGraphic?: string;
+  /** Listed before other games on the home page. Default: false. */
+  promoted?: boolean;
   /** Overview scenes (title, stages, complete), shown when no stage is active. */
   scenes: GameOverviewScene[];
   /** The stages of the game, in order. */
