@@ -5,6 +5,7 @@ import type { GameRepository } from "../src/entities/GameRepository";
 import type { GameSource } from "../src/entities/GameSource";
 import { GameRepositoryContext, type GameRepositoryContextType } from "../src/providers/GameRepositoryContext";
 import GameRepositoryProvider from "../src/providers/GameRepositoryProvider";
+import { resolveRepositoryResets } from "../src/components/core/logic/NamedResets";
 import { getBaseURL } from "../src/util/ObjectUtils";
 import { server } from "./mocks/server";
 
@@ -43,8 +44,9 @@ describe("GameRepositoryProvider", () => {
       expect(contextValue!.repository.ready).toBe(true);
     });
 
+    // Games' named reset scenes are resolved as the repository loads
     expect(contextValue!.repository).toEqual({
-      ...localRepository,
+      ...resolveRepositoryResets(localRepository),
       ready: true,
       loading: false,
     });

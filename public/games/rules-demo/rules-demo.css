@@ -205,23 +205,57 @@
   pointer-events: auto;
 }
 
-/* Reset scenes: a dark screen with the start picked out, and a countdown before the balloons */
-.demo-reset,
-.demo-reset-backdrop {
-  background: #1b1b2f;
-}
+/* The start tile that stones-reset.html still uses */
 .demo-start-bright {
   background: #ffd166;
   box-shadow: 0 0 3cqh #ffd166;
 }
-.demo-countdown {
+
+/*
+ * The shared grid reset: a dark room with a 5 x 5 grid of thin lines laid on the floor rectangle, whose front-left
+ * cell is the start. Each cell is a fifth of the floor, so the lines fall on the cells' edges.
+ */
+.grid-backdrop {
+  background: #0b132b;
+}
+.grid-ground {
+  background: #1c2541;
+}
+.grid-floor {
+  background:
+    linear-gradient(90deg, #8fa3c8 2px, transparent 2px),
+    linear-gradient(#8fa3c8 2px, transparent 2px);
+  background-size: 20% 20%;
+  aspect-ratio: 1;
+  box-shadow: inset -2px -2px #8fa3c8;
+}
+.grid-start {
+  display: grid;
+  place-items: center;
+  background: #ffd166;
+  box-shadow: 0 0 3cqh #ffd166;
+  color: #0b132b;
+  font-size: 20cqw;
+  font-weight: bold;
+}
+/* Text is not somewhere to stand, so the instruction sits at the top of the screen, clear of the floor */
+.grid-message {
+  position: absolute;
+  inset: 3cqh 0 auto;
+  margin: 0;
+  font-size: 4cqh;
+  pointer-events: none;
+}
+.grid-count {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
   margin: 0;
-  color: #1d3557;
-  font-size: 10cqh;
+  font-size: 30cqh;
+  font-weight: bold;
+  text-shadow: 0 0 4cqh #ffd166;
+  pointer-events: none;
 }
 
 /* A bulb that lights while something is over it */

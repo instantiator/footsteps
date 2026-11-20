@@ -313,55 +313,24 @@ Running out of lives does the same, but after a pause for its message, resets th
 ## Step 7: a countdown before each run
 
 A **reset scene** shows in place of its scene until one of its rules finishes it
-([reset scenes](../game-data.md#reset-scenes)). Until then, the run's rules and timers wait. With
-`"showOn": "every-show"`, the countdown comes back each time the run starts, including after `resetChallenge`.
+([reset scenes](../game-data.md#reset-scenes)). Until then, the run's rules and timers wait. Both runs use the demo's
+shared **grid reset**, named in the game's `resetScenes` and asked for by name:
 
 ```json [public/game-repository.json]
-"resetScene": {
-  "scene": "2D",
-  "showOn": "every-show",
-  "component": {
-    "type": "template",
-    "data": {},
-    "initialState": {
-      "count": 3
-    },
-    "rules": [
-      {
-        "on": {
-          "every": 1000
-        },
-        "do": [
-          {
-            "set": {
-              "count": "state.count - 1"
-            }
-          },
-          {
-            "sound": "tick"
-          }
-        ]
-      },
-      {
-        "on": {
-          "after": 3500
-        },
-        "do": [
-          {
-            "finishReset": true
-          }
-        ]
-      }
-    ],
+"resetScene": "start"
 ```
 
-<!-- prettier-ignore -->
-```html [public/games/rules-demo/jump-and-duck/ready.html]
-<p id="jd-countdown" class="jd-countdown">{{#if state.count}}{{state.count}}{{else}}Go!{{/if}}</p>
+It has `"showOn": "every-show"`, so it comes back each time the run starts, including after `resetChallenge`. The player
+stands on Start (or puts the mouse on it), and the reset counts down from 3 with a tick each second before finishing:
+
+```json [public/game-repository.json]
+"on": { "every": 1000 },
+"if": "state.ready and state.count > 0",
+"do": [{ "set": { "count": "state.count - 1" } }, { "sound": "tick" }]
 ```
 
-**Look for:** 3, 2, 1, Go!, then the run. Lose all your lives, and after "Ouch! Back to the start…" the countdown
-begins again. Reach 15, and fireworks.
+**Look for:** Start, then 3, 2, 1, then the run. Lose all your lives, and after "Ouch! Back to the start…" the grid
+returns. Reach 15, and fireworks.
 
 ## Next
 

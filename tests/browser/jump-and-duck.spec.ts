@@ -27,7 +27,14 @@ const openWarmUp = async (page: Page, target?: number, { feet = false } = {}) =>
   await page.goto(`/game/${GAME_ID}/play?noCamera=true`);
   await page.locator("#demo-title").click();
   await page.locator("#stage-link-warm-up").click();
-  await expect(page.locator("#jd-countdown")).toBeVisible();
+  await startRun(page);
+};
+
+/** Stands on the shared reset's Start, and waits out its countdown until the run is under way. */
+const startRun = async (page: Page) => {
+  await expect(page.locator("#reset-message")).toBeVisible();
+  await page.locator("#reset-start").hover({ force: true });
+  await expect(page.locator("#reset-count")).toBeVisible();
   await expect(page.locator("#jd-status")).toBeVisible({ timeout: 10_000 });
 };
 
@@ -56,7 +63,7 @@ const firstInLaneCostsALife = async (page: Page, lane: keyof typeof LANES, movin
   await page.goto(`/game/${GAME_ID}/play?noCamera=true`);
   await page.locator("#demo-title").click();
   await page.locator("#stage-link-warm-up").click();
-  await expect(page.locator("#jd-countdown")).toBeVisible();
+  await startRun(page);
   const spot = await laneSpot(page, lane);
   await page.mouse.move(spot.x, spot.y);
 
@@ -126,7 +133,7 @@ const loseEveryLife = async (page: Page, options: { feet?: boolean } = {}) => {
   await expect.poll(lives, { timeout: 15_000 }).toBe("2");
   await expect.poll(lives, { timeout: 30_000 }).toBe("0");
   await expect(page.locator("#jd-message")).toContainText("Ouch");
-  await expect(page.locator("#jd-countdown")).toBeVisible({ timeout: 5_000 });
+  await expect(page.locator("#reset-message")).toBeVisible({ timeout: 5_000 });
 };
 
 test("scores a run as obstacles cross, costs a life for each one a still pointer meets, and restarts at none", async ({

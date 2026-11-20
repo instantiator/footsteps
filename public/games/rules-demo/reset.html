@@ -1,0 +1,8 @@
+<div class="noClicks demo-screen">
+  <div class="screen-background grid-backdrop"></div>
+  <div class="floor-background grid-ground"></div>
+  <div class="grid-floor" data-floor-area="0 0 100 100"></div>
+  <div id="reset-start" class="grid-start" data-floor-area="0 80 20 100">Start</div>
+  <p id="reset-message" class="grid-message">{{#if state.ready}}Get ready!{{else}}Stand on Start, or put your mouse on it{{/if}}</p>
+  {{#if state.ready}}<p id="reset-count" class="grid-count">{{state.count}}</p>{{/if}}
+</div>

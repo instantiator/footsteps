@@ -234,28 +234,28 @@ opens with a scroll that introduces the room, as a challenge of its own before t
 
 ## Step 7: start in the right place
 
-A reset scene waits for the player to stand on the start tile before the room appears
-([reset scenes](../game-data.md#reset-scenes)). Its template is the same room, with the front-left tile lit up:
+Like the other stages, this one shares the demo's **grid reset**, a reset scene that waits for the player to stand on
+Start before the room appears ([reset scenes](../game-data.md#reset-scenes)). Its template is a dark grid, with the
+front-left cell lit up:
 
-```html [public/games/rules-demo/depth-reset.html]
-<div id="reset-start" class="demo-start-bright" data-floor-area="0 75 25 100"></div>
-<p id="reset-message" class="noClicks demo-depth-hint">Stand on the start, or put your mouse on it</p>
+<!-- prettier-ignore -->
+```html [public/games/rules-demo/reset.html]
+<div id="reset-start" class="grid-start" data-floor-area="0 80 20 100">Start</div>
+<p id="reset-message" class="grid-message">{{#if state.ready}}Get ready!{{else}}Stand on Start, or put your mouse on it{{/if}}</p>
 ```
+
+The game defines it once, by name, and each stage asks for it:
 
 ```json [public/game-repository.json]
-"resetScene": {
-  "component": {
-    "type": "template",
-    "data": {},
-    "rules": [
-      {
-        "on": { "interact": ["foot-enter"], "target": "#reset-start" },
-        "do": [{ "sound": "chime" }, { "finishReset": true }]
-      }
-    ],
+"resetScenes": {
+  "start": {
+    "showOn": "every-show",
+    "scene": "2.5D",
+    "avatar": { "mode": "camera", "fallback": "mouse-feet" },
 ```
 
-**Look for:** "Stand on the start". Put the pointer on the yellow tile: a chime, and the posts appear.
+**Look for:** "Stand on Start, or put your mouse on it". Put the pointer on the yellow cell: a chime and sparkles, a
+countdown from 3, and then the posts appear.
 
 ## The floor is lava
 

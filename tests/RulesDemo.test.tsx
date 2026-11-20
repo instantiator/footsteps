@@ -118,12 +118,14 @@ describe("rules demo, played by camera", () => {
     await waitFor(() => expect($("#switch")).toHaveClass("position-2"));
   });
 
-  /** Enters the balloons stage, and waits out its countdown. */
+  /** Enters the balloons stage, stands on the shared reset's Start, and waits out its countdown. */
   const startBalloons = async () => {
     touch("#stage-link-balloons", "hand-enter");
-    await waitFor(() => expect($("#countdown")).toHaveTextContent("Get ready… 3"));
+    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Stand on Start"));
+    touch("#reset-start", "foot-enter");
+    await waitFor(() => expect($("#reset-count")).toHaveTextContent("3"));
     await wait(1000);
-    expect($("#countdown")).toHaveTextContent("Get ready… 2");
+    expect($("#reset-count")).toHaveTextContent("2");
     await wait(2000);
     await waitFor(() => expect($("#balloon-0")).not.toBeNull());
   };
@@ -134,6 +136,19 @@ describe("rules demo, played by camera", () => {
     await waitFor(() => expect($("#bulb")).toHaveClass("lit"));
     touch("#bulb", "hand-exit");
     await waitFor(() => expect($("#bulb")).not.toHaveClass("lit"));
+  });
+
+  it("keeps the shared reset showing until Start is touched, then counts 3-2-1", async () => {
+    await start();
+    touch("#stage-link-balloons", "hand-enter");
+    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Stand on Start"));
+    await wait(1500);
+    expect($("#reset-count")).toBeNull();
+
+    touch("#reset-start", "foot-enter");
+    await waitFor(() => expect($("#reset-count")).toHaveTextContent("3"));
+    await wait(1000);
+    expect($("#reset-count")).toHaveTextContent("2");
   });
 
   it("counts down before the balloons, then pops a balloon a hand touches, and scores it", async () => {
@@ -175,7 +190,7 @@ describe("rules demo, played by camera", () => {
 
   /** Stands on the pits' reset scene's start, and waits for the floor to be revealed. */
   const returnToStart = async () => {
-    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Return to the start"));
+    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Stand on Start, or put your mouse on it"));
     touch("#reset-start", "foot-enter");
     await waitFor(() => expect($("#reset-message")).toHaveTextContent("Get ready!"));
     await wait(3000);
@@ -205,8 +220,9 @@ describe("rules demo, played by camera", () => {
     fireEvent.click($("[aria-label='Next page']")!);
     await waitFor(() => expect($("input[name='answer']")).not.toBeNull());
     fireEvent.change($("input[name='answer']")!, { target: { value: "walk" } });
-    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Stand on the start"));
+    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Stand on Start"));
     touch("#reset-start", "foot-enter");
+    await wait(3000);
     await waitFor(() => expect($("#depth-spring")).not.toBeNull());
 
     touch("#depth-spring", "foot-enter");

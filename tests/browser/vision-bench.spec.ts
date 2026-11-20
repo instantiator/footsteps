@@ -109,6 +109,8 @@ const openRulesDemoWithCamera = async (page: Page, query: string): Promise<void>
     const repository = (await response.json()) as GameRepository;
     const game = repository.games["rules-demo"];
     game.modules = { avatar: { mode: "camera", fallback: "mouse", preview: false } };
+    // Measure the balloons playing, not the shared reset waiting for someone to stand on Start
+    delete game.stages.find(({ id }) => id === "balloons")!.challenges[0].scenes[0].resetScene;
     if (process.env.VISION_BENCH_STATIC) {
       const [{ component }] = game.stages.find(({ id }) => id === "balloons")!.challenges[0].scenes;
       const again = { on: { every: 500 }, do: [{ effect: "player-static" as const, players: "all" as const }] };

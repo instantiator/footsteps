@@ -310,7 +310,7 @@ a countdown before balloons fall. Until then, the scene's own rules, timers and 
       { "on": { "every": 1000 }, "do": [{ "set": { "count": "state.count - 1" } }] },
       { "on": { "after": 3000 }, "do": [{ "finishReset": true }] }
     ],
-    "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/balloons-ready.html" }
+    "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/my-game/countdown.html" }
   }
 }
 ```
@@ -323,7 +323,8 @@ a countdown before balloons fall. Until then, the scene's own rules, timers and 
 - It inherits the scene's `scene` and `avatar` settings, and may override them with its own.
 - A reset scene can have a reset scene of its own, shown first.
 - Scenes can share one reset scene: define it by name in the game's `resetScenes`, and give the name as each scene's
-  `resetScene`. A name the game doesn't define stops the game loading, naming the scene that uses it.
+  `resetScene`. A name the game doesn't define stops the game loading, naming the scene that uses it. The Demo scenes
+  game shares one this way: a grid reset, where the player stands on Start, then watches a 3-2-1 countdown.
 
 ```json
 "resetScenes": {

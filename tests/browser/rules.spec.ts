@@ -41,7 +41,7 @@ const clickNow = async (page: Page, selector: string) => {
 
 /** Stands the mouse on the pits' reset scene's start, and waits for the floor to be revealed. */
 const returnToStart = async (page: Page) => {
-  await expect(page.locator("#reset-message")).toHaveText("Return to the start");
+  await expect(page.locator("#reset-message")).toHaveText("Stand on Start, or put your mouse on it");
   await page.locator("#reset-start").hover();
   await expect(page.locator("#reset-message")).toHaveText("Get ready!");
   await expect(page.locator("#door-base")).toBeVisible({ timeout: 6000 });
@@ -65,7 +65,9 @@ const standOnFirstStoneOf = (page: Page) => async () => {
 /** Opens the balloons stage, and waits out its countdown. */
 const startBalloons = async (page: Page) => {
   await page.locator("#stage-link-balloons").click();
-  await expect(page.locator("#countdown")).toContainText("Get ready");
+  await expect(page.locator("#reset-message")).toBeVisible();
+  await page.locator("#reset-start").hover();
+  await expect(page.locator("#reset-count")).toBeVisible();
   await expect(page.locator("#balloon-0")).toBeVisible({ timeout: 6000 });
 };
 
@@ -90,6 +92,34 @@ test.describe("rules demo", () => {
     const during = (await page.locator("#switch").boundingBox())!;
     await expect.poll(async () => (await page.locator("#switch").boundingBox())!.x).toBeGreaterThan(during.x);
     expect(during.x).toBeGreaterThanOrEqual(before.x);
+  });
+
+  test("stands on Start, counts 3-2-1, then starts the stage", async ({ page }) => {
+    await openDemo(page);
+    await page.locator("#stage-link-balloons").click();
+    await expect(page.locator("#reset-message")).toHaveText("Stand on Start, or put your mouse on it");
+
+    await page.locator("#reset-start").hover();
+
+    await expect(page.locator("#reset-message")).toHaveText("Get ready!");
+    await expect(page.locator("#reset-count")).toHaveText("3");
+    await expect(page.locator("#reset-count")).toHaveText("2");
+    await expect(page.locator("#reset-count")).toHaveText("1");
+    await expect(page.locator("#balloon-0")).toBeVisible({ timeout: 6000 });
+    await expect(page.locator("#reset-message")).toHaveCount(0);
+  });
+
+  test("a pointer off Start leaves the reset showing", async ({ page }) => {
+    await openDemo(page);
+    // Opened without the mouse, which would otherwise rest wherever the stage's link is, perhaps on Start
+    await page.locator("#stage-link-balloons").dispatchEvent("click");
+    await expect(page.locator("#reset-message")).toBeVisible();
+
+    await page.mouse.move(5, 5);
+    await page.waitForTimeout(1500);
+
+    await expect(page.locator("#reset-message")).toHaveText("Stand on Start, or put your mouse on it");
+    await expect(page.locator("#reset-count")).toHaveCount(0);
   });
 
   test("keeps a scene's state while it is hidden", async ({ page }) => {
@@ -308,7 +338,7 @@ test.describe("rules demo", () => {
 
     await page.reload();
 
-    await expect(page.locator("#reset-message")).toHaveText("Return to the start");
+    await expect(page.locator("#reset-message")).toHaveText("Stand on Start, or put your mouse on it");
   });
 
   test("lights the bulb while the mouse is over it", async ({ page }) => {

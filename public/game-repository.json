@@ -476,6 +476,37 @@
       },
       "config": { "sequential": false, "autoAdvanceStages": false },
       "stylesheets": ["demo-css", "jd-css", "ndc-css"],
+      "resetScenes": {
+        "start": {
+          "showOn": "every-show",
+          "scene": "2.5D",
+          "avatar": { "mode": "camera", "fallback": "mouse-feet" },
+          "component": {
+            "type": "template",
+            "data": {},
+            "initialState": { "ready": false, "count": 3 },
+            "rules": [
+              {
+                "on": { "interact": ["foot-enter"], "target": "#reset-start", "threshold": 0.05 },
+                "if": "not state.ready",
+                "do": [
+                  { "set": { "ready": "true" } },
+                  { "sound": "chime" },
+                  { "reward": { "animation": "sparkles", "particleCount": 60 } }
+                ]
+              },
+              {
+                "on": { "every": 1000 },
+                "if": "state.ready and state.count > 0",
+                "do": [{ "set": { "count": "state.count - 1" } }, { "sound": "tick" }]
+              },
+              { "on": { "when": "state.ready and state.count <= 0" }, "do": [{ "finishReset": true }] }
+            ],
+            "backgroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/reset.html" },
+            "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
+          }
+        }
+      },
       "resources": {
         "demo-css": { "type": "local", "target": "games/rules-demo/rules-demo.css" },
         "chime": { "type": "local", "target": "games/rules-demo/chime.wav" },
@@ -633,27 +664,7 @@
                     },
                     "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
                   },
-                  "resetScene": {
-                    "showOn": "every-show",
-                    "component": {
-                      "type": "template",
-                      "data": {},
-                      "initialState": { "count": 3 },
-                      "rules": [
-                        { "on": { "start": true }, "do": [{ "sound": "tick" }] },
-                        {
-                          "on": { "every": 1000 },
-                          "do": [{ "set": { "count": "state.count - 1" } }, { "sound": "tick" }]
-                        },
-                        { "on": { "after": 3000 }, "do": [{ "finishReset": true }] }
-                      ],
-                      "foregroundTemplate": {
-                        "sourceType": "relative",
-                        "templateSource": "games/rules-demo/balloons-ready.html"
-                      },
-                      "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
-                    }
-                  }
+                  "resetScene": "start"
                 }
               ]
             }
@@ -703,30 +714,7 @@
                     "backgroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/pits.html" },
                     "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
                   },
-                  "resetScene": {
-                    "component": {
-                      "type": "template",
-                      "data": {},
-                      "initialState": { "ready": false },
-                      "rules": [
-                        {
-                          "on": { "interact": ["foot-enter"], "target": "#reset-start", "threshold": 0.3 },
-                          "if": "not state.ready",
-                          "do": [
-                            { "set": { "ready": "true" } },
-                            { "sound": "chime" },
-                            { "reward": { "animation": "sparkles", "particleCount": 60 } }
-                          ]
-                        },
-                        { "on": { "when": "state.ready", "forMs": 3000 }, "do": [{ "finishReset": true }] }
-                      ],
-                      "backgroundTemplate": {
-                        "sourceType": "relative",
-                        "templateSource": "games/rules-demo/pits-reset.html"
-                      },
-                      "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
-                    }
-                  }
+                  "resetScene": "start"
                 }
               ]
             }
@@ -800,23 +788,7 @@
                     "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/depth.html" },
                     "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
                   },
-                  "resetScene": {
-                    "component": {
-                      "type": "template",
-                      "data": {},
-                      "rules": [
-                        {
-                          "on": { "interact": ["foot-enter"], "target": "#reset-start" },
-                          "do": [{ "sound": "chime" }, { "finishReset": true }]
-                        }
-                      ],
-                      "foregroundTemplate": {
-                        "sourceType": "relative",
-                        "templateSource": "games/rules-demo/depth-reset.html"
-                      },
-                      "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
-                    }
-                  }
+                  "resetScene": "start"
                 }
               ]
             }
@@ -1279,52 +1251,7 @@
                       "height": "100%"
                     }
                   },
-                  "resetScene": {
-                    "scene": "2D",
-                    "showOn": "every-show",
-                    "component": {
-                      "type": "template",
-                      "data": {},
-                      "initialState": {
-                        "count": 3
-                      },
-                      "rules": [
-                        {
-                          "on": {
-                            "every": 1000
-                          },
-                          "do": [
-                            {
-                              "set": {
-                                "count": "state.count - 1"
-                              }
-                            },
-                            {
-                              "sound": "tick"
-                            }
-                          ]
-                        },
-                        {
-                          "on": {
-                            "after": 3500
-                          },
-                          "do": [
-                            {
-                              "finishReset": true
-                            }
-                          ]
-                        }
-                      ],
-                      "foregroundTemplate": {
-                        "sourceType": "relative",
-                        "templateSource": "games/rules-demo/jump-and-duck/ready.html"
-                      },
-                      "foregroundTemplateStyle": {
-                        "width": "100%",
-                        "height": "100%"
-                      }
-                    }
-                  }
+                  "resetScene": "start"
                 }
               ]
             }
@@ -1530,52 +1457,7 @@
                       "height": "100%"
                     }
                   },
-                  "resetScene": {
-                    "scene": "2D",
-                    "showOn": "every-show",
-                    "component": {
-                      "type": "template",
-                      "data": {},
-                      "initialState": {
-                        "count": 3
-                      },
-                      "rules": [
-                        {
-                          "on": {
-                            "every": 1000
-                          },
-                          "do": [
-                            {
-                              "set": {
-                                "count": "state.count - 1"
-                              }
-                            },
-                            {
-                              "sound": "tick"
-                            }
-                          ]
-                        },
-                        {
-                          "on": {
-                            "after": 3500
-                          },
-                          "do": [
-                            {
-                              "finishReset": true
-                            }
-                          ]
-                        }
-                      ],
-                      "foregroundTemplate": {
-                        "sourceType": "relative",
-                        "templateSource": "games/rules-demo/jump-and-duck/ready.html"
-                      },
-                      "foregroundTemplateStyle": {
-                        "width": "100%",
-                        "height": "100%"
-                      }
-                    }
-                  }
+                  "resetScene": "start"
                 }
               ]
             }
