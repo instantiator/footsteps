@@ -3,6 +3,7 @@ import type { GameData } from "../../../entities/data/GameData";
 import { isDefined } from "../../../util/ObjectUtils";
 import { getCameraStream } from "../../camera/CameraSupport";
 import { isCalibrated } from "../../camera/FloorCalibration";
+import { resetSceneOf } from "./NamedResets";
 
 /** A browser permission a game may need before it starts. */
 export type GamePermissionId = "camera";
@@ -22,10 +23,10 @@ export const gamePermissionLabel = (id: GamePermissionId): string => PERMISSION_
 type SceneSettings = Pick<GameSceneBase, "avatar" | "scene" | "resetScene" | "component">;
 
 /** A scene, then each reset scene nested in it. */
-const withResets = (scene: SceneSettings): SceneSettings[] => [
-  scene,
-  ...(scene.resetScene ? withResets(scene.resetScene) : []),
-];
+const withResets = (scene: SceneSettings): SceneSettings[] => {
+  const reset = resetSceneOf(scene);
+  return [scene, ...(reset ? withResets(reset) : [])];
+};
 
 /** Every scene in the game, with the reset scenes nested in them. */
 export const allScenes = (gameData: GameData): SceneSettings[] =>

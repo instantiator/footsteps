@@ -240,8 +240,15 @@
                     "description": "When this scene is shown."
                 },
                 "resetScene": {
-                    "$ref": "#/definitions/GameResetScene",
-                    "description": "Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it."
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/GameResetScene"
+                        },
+                        {
+                            "type": "string"
+                        }
+                    ],
+                    "description": "Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it: the\nscene itself, or the name of one of the game's `resetScenes`."
                 },
                 "scene": {
                     "description": "How this scene is laid out, over broader scenes' setting.",
@@ -771,8 +778,15 @@
                     "description": "When this scene is shown."
                 },
                 "resetScene": {
-                    "$ref": "#/definitions/GameResetScene",
-                    "description": "Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it."
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/GameResetScene"
+                        },
+                        {
+                            "type": "string"
+                        }
+                    ],
+                    "description": "Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it: the\nscene itself, or the name of one of the game's `resetScenes`."
                 },
                 "scene": {
                     "description": "How this scene is laid out, over broader scenes' setting.",
@@ -2061,8 +2075,15 @@
                     "type": "string"
                 },
                 "resetScene": {
-                    "$ref": "#/definitions/GameResetScene",
-                    "description": "Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it."
+                    "anyOf": [
+                        {
+                            "$ref": "#/definitions/GameResetScene"
+                        },
+                        {
+                            "type": "string"
+                        }
+                    ],
+                    "description": "Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it: the\nscene itself, or the name of one of the game's `resetScenes`."
                 },
                 "scene": {
                     "description": "How this scene is laid out, over broader scenes' setting.",
@@ -2215,6 +2236,9 @@
         "React.CSSProperties": {
             "type": "object"
         },
+        "Record<string,GameResetScene>": {
+            "type": "object"
+        },
         "Record<string,string>": {
             "type": "object"
         },
@@ -2312,6 +2336,10 @@
         "modules": {
             "$ref": "#/definitions/GameModulesData",
             "description": "Game-wide scene and avatar settings."
+        },
+        "resetScenes": {
+            "$ref": "#/definitions/Record%3Cstring%2CGameResetScene%3E",
+            "description": "Named reset scenes, which scenes share by giving the name as their `resetScene`."
         },
         "resources": {
             "$ref": "#/definitions/GameResourceDefinitions",

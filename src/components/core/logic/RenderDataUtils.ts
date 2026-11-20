@@ -20,6 +20,7 @@ import { toGameSnapshot, type GameSnapshot } from "../../../entities/state/GameS
 import type { SceneScope, GameState } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
 import { avatarOver } from "./AvatarModeUtils";
+import { resetSceneOf } from "./NamedResets";
 import { sceneRun, getActiveStageStateChallenges, getStageState } from "./GameStateUtils";
 import { decorateGameState, type DecoratedGameState } from "./TemplateUtils";
 
@@ -159,7 +160,7 @@ export const resolveResets = (
     spectators: scene.spectators,
     isReset: false,
   };
-  for (let reset = scene.resetScene; isDefined(reset); reset = reset.resetScene) {
+  for (let reset = resetSceneOf(scene); isDefined(reset); reset = reset.resetScene) {
     const nextScope = resetScope(shown.scope);
     if (state.session.finishedResets.includes(nextScope)) break;
     shown = {

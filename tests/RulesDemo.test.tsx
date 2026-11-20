@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import localRepository from "../public/game-repository.json";
 import type { CameraInteraction } from "../src/components/camera/PlayerMonitor";
 import Game from "../src/components/core/Game";
+import { resetSceneOf, resolveNamedResets } from "../src/components/core/logic/NamedResets";
 import type GameLayersLayout from "../src/components/core/layout/GameLayersLayout";
 import type { GameData } from "../src/entities/data/GameData";
 import type { GameSceneBase, GameResetScene } from "../src/entities/data/scenes/GameSceneData";
@@ -41,10 +42,12 @@ const inline = (source: GameSceneTemplateSourceData | undefined): GameSceneTempl
  * none: scenes use their fallback modes, and the rules the camera can fire don't depend on it.
  */
 const demo = (change: (game: GameData) => void): GameData => {
-  const game: GameData = structuredClone((localRepository as GameRepository).games["rules-demo"]);
+  const game = resolveNamedResets(structuredClone((localRepository as GameRepository).games["rules-demo"]));
   change(game);
-  const withResets = (scene: GameResetScene | GameSceneBase): (GameResetScene | GameSceneBase)[] =>
-    scene.resetScene ? [scene, ...withResets(scene.resetScene)] : [scene];
+  const withResets = (scene: GameResetScene | GameSceneBase): (GameResetScene | GameSceneBase)[] => {
+    const reset = resetSceneOf(scene);
+    return reset ? [scene, ...withResets(reset)] : [scene];
+  };
   for (const scene of [
     ...game.scenes,
     ...game.stages.flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),

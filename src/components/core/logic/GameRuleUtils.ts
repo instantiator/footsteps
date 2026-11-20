@@ -9,6 +9,7 @@ import type { SceneScope, GameState } from "../../../entities/state/GameState";
 import { applyRule } from "./ActionRuns";
 import { forgetFinishedResets, sceneRun, startSceneRuns } from "./GameStateUtils";
 import { getSceneSlots, getShownScenes, type ShownScene } from "./RenderDataUtils";
+import { resetSceneOf } from "./NamedResets";
 import { evaluate, NO_EVENT, timeOf, type RuleEnvironment, type RuleEvent } from "./RuleActions";
 import { matchTarget, type SceneDomEvent } from "./TemplateUtils";
 import { isDefined } from "../../../util/ObjectUtils";
@@ -23,7 +24,7 @@ export const isEntering = (interaction: GameInteraction): boolean => interaction
 const showEveryShowResets = (previous: GameState | undefined, next: GameState): GameState => {
   const wasSlot = new Set(isDefined(previous) ? getSceneSlots(previous).map((slot) => slot.scope) : []);
   const showAgain = getSceneSlots(next)
-    .filter(({ scope, scene }) => scene.resetScene?.showOn === "every-show" && !wasSlot.has(scope))
+    .filter(({ scope, scene }) => resetSceneOf(scene)?.showOn === "every-show" && !wasSlot.has(scope))
     .map(({ scope }) => scope);
   return showAgain.length > 0 ? forgetFinishedResets(next, showAgain) : next;
 };

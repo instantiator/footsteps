@@ -12,6 +12,7 @@ import type { GameStageCompletionState, GameStageState } from "../../../entities
 import type { SceneScope, GameState } from "../../../entities/state/GameState";
 import { isDefined } from "../../../util/ObjectUtils";
 import { challengeScope, resetScope } from "./RenderDataUtils";
+import { resetSceneOf } from "./NamedResets";
 
 /**
  * Validates an answer for a given challenge, applying the solution's case and whitespace rules (all on by default).
@@ -233,8 +234,10 @@ export const startSceneRuns = (state: GameState, scopes: Iterable<SceneScope>): 
 };
 
 /** A scene's scope, followed by those of its reset scene, and theirs. */
-const withResetScopes = (scope: SceneScope, scene: GameSceneBase | GameResetScene): SceneScope[] =>
-  isDefined(scene.resetScene) ? [scope, ...withResetScopes(resetScope(scope), scene.resetScene)] : [scope];
+const withResetScopes = (scope: SceneScope, scene: GameSceneBase | GameResetScene): SceneScope[] => {
+  const reset = resetSceneOf(scene);
+  return isDefined(reset) ? [scope, ...withResetScopes(resetScope(scope), reset)] : [scope];
+};
 
 /**
  * Clears a challenge: it is unsolved again, its stage's completion follows, and its scenes' states are removed so

@@ -12,6 +12,7 @@ GameData
 ├── config?                            { sequential, autoAdvanceStages }
 ├── modules?                           { scene?, avatar? }: how scenes are laid out, and what stands in for the player
 ├── resources?                         name → { type, target }        (see Resources)
+├── resetScenes?                       name → reset scene, shared by name (see Reset scenes)
 ├── sounds?                            resource names of music and sound effects (see Sounds)
 ├── reward?                            { animation, particleCount? }: celebration on stage completion
 ├── credits?                           [{ text, url? }]: credits for third-party media (see Credits)
@@ -321,6 +322,19 @@ a countdown before balloons fall. Until then, the scene's own rules, timers and 
 - A reset scene's state starts from its `initialState` each time it is shown.
 - It inherits the scene's `scene` and `avatar` settings, and may override them with its own.
 - A reset scene can have a reset scene of its own, shown first.
+- Scenes can share one reset scene: define it by name in the game's `resetScenes`, and give the name as each scene's
+  `resetScene`. A name the game doesn't define stops the game loading, naming the scene that uses it.
+
+```json
+"resetScenes": {
+  "start": { "showOn": "every-show", "component": { "type": "template", "rules": [] } }
+},
+```
+
+```json
+"resetScene": "start"
+```
+
 - Revealing the scene fades, like any scene change. Camera interactions pause during the fade. Once it is over, a
   player (or the mouse) already on one of the revealed scene's elements enters it, as if they had just arrived.
 

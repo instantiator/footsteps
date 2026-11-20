@@ -25,6 +25,7 @@ import {
 import { avatarOver, declaredChoice } from "./AvatarModeUtils";
 import { actionsWithin, isEntering, triggerInteractions, type GameExpressions } from "./GameRuleUtils";
 import { renamedKeyProblems } from "./RenamedKeys";
+import { resetSceneOf, resolveNamedResets, unknownResetNames } from "./NamedResets";
 import { EVENT_TARGET } from "./RuleActions";
 
 /** Actions that act on the scene's own challenge, so only make sense on challenge scenes. */
@@ -64,7 +65,7 @@ const possibleModes = (avatar: GameSceneAvatarData | undefined, { inherited, alo
 
 /** A scene, followed by its reset scene, and theirs, each using its own avatar setting over its parent's. */
 const withResets = (target: SceneToCompile, inheritance: ModeInheritance): SceneToCompile[] => {
-  const reset = target.scene.resetScene;
+  const reset = resetSceneOf(target.scene);
   if (!isDefined(reset)) return [target];
   const merged = avatarOver(target.scene.avatar, reset.avatar);
   return [
@@ -311,12 +312,15 @@ const ruleSources = (rule: GameRule, where: string, target: SceneToCompile, game
  * Compiles and checks every rule in a game, so a mistake is reported when the game loads, naming the
  * scene and rule it is in.
  * @returns the compiled expressions, by source text
- * @throws on the first expression that doesn't parse, invalid selector, negative duration, challenge action
+ * @throws on a reset scene name the game doesn't have, the first expression that doesn't parse, invalid selector, negative duration, challenge action
  * outside a challenge scene, or `enterStage` to a stage the game doesn't have
  */
-export const compileGameRules = (gameData: GameData): GameExpressions => {
-  const [renamed] = renamedKeyProblems(gameData);
+export const compileGameRules = (authored: GameData): GameExpressions => {
+  const [renamed] = renamedKeyProblems(authored);
   if (isDefined(renamed)) throw new Error(renamed);
+  const gameData = resolveNamedResets(authored);
+  const [unknown] = unknownResetNames(gameData);
+  if (isDefined(unknown)) throw new Error(unknown);
   const expressions = new Map<string, GameExpression>();
   const scenes = allScenes(gameData);
   for (const target of scenes) {
