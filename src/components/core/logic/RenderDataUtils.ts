@@ -225,8 +225,8 @@ export const getSceneSlots = (state: GameState): SceneSlot[] => {
 };
 
 /**
- * The scenes whose rules are live: what shows in each slot, which is a reset scene until it is finished. (The
- * overview still renders behind a stage, but doesn't respond.)
+ * The scenes whose rules are live: what shows in each slot, which is a reset scene until it is finished. (An
+ * overview shown behind a stage doesn't respond.)
  */
 export const getShownScenes = (state: GameState): ShownScene[] =>
   getSceneSlots(state).map(({ scope, scene, stageId, challengeId }) => {
@@ -266,8 +266,15 @@ export const getLayeredRenderData = (
   };
 };
 
-/** The overview layer: undefined if the game has no suitable overview scene. */
+/** Whether the overview shows: always while no stage is open, and behind a stage only if that stage asks for it. */
+export const showsOverview = (state: GameState): boolean => {
+  const { stageId } = state.current;
+  return !isDefined(stageId) || getStageState(state, stageId)?.stage.showOverview === true;
+};
+
+/** The overview layer: undefined if it isn't showing, or the game has no suitable overview scene. */
 const getOverviewRenderData = (gameState: GameState, shared: SharedTemplateData): GameSceneRenderData | undefined => {
+  if (!showsOverview(gameState)) return undefined;
   const overviewScene = calcOverviewScene(gameState);
   if (!isDefined(overviewScene)) return undefined;
   const { scope, component, avatar, scene, spectators } = resolveResets(

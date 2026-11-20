@@ -20,6 +20,7 @@ GameData
 └── stages: GameStageData[]
     ├── id
     ├── scenes?: GameStageScene[]  a "shared" scene behind the stage's challenges
+    ├── showOverview?                  show the overview behind this stage (default false)
     ├── challengeChunking?             how many challenges show at once (default 1)
     └── challenges: GameChallengeData[]
         ├── id
@@ -538,7 +539,7 @@ animations: a simple way to replace one. To have any number at once, [spawn](#sp
 
 The screen is a stack of layers, and each scene renders into two of them: background and foreground. From back to front:
 
-1. overview
+1. overview, while no stage is open, or behind a stage that sets `showOverview`
 2. the open stage's `shared` scene
 3. the active challenges' backgrounds
 4. the camera silhouette

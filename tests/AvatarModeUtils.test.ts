@@ -37,6 +37,7 @@ const gameWithAvatar = ({ game, overview, stage, challenges = [undefined] }: Ava
   stages: [
     {
       id: "stage-1",
+      showOverview: true,
       scenes: [{ purpose: "shared", component: scroll(), avatar: stage }],
       challengeChunking: challenges.length,
       challenges: challenges.map((avatar, index) => ({
@@ -87,6 +88,13 @@ describe("resolveAvatarMode", () => {
       mode: "mouse-feet",
     });
     expect(inStage({ stage: CAMERA_OR_MOUSE, challenges: [{ mode: "mouse" }] })).toMatchObject({ mode: "mouse" });
+  });
+
+  it("doesn't inherit from an overview the stage doesn't show", () => {
+    const gameData = gameWithAvatar({ game: { mode: "mouse" }, overview: CAMERA_OR_MOUSE });
+    gameData.stages[0].showOverview = false;
+    const state = { ...createBlankGameState(gameData), current: { stageId: "stage-1", overviewScene: null } };
+    expect(resolveAvatarMode(gameData, getLayeredRenderData(state, {}, "game"))).toMatchObject({ mode: "mouse" });
   });
 
   it("takes the fallback with its mode, not from a broader setting", () => {

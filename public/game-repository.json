@@ -215,6 +215,7 @@
         },
         {
           "id": "stage-2",
+          "showOverview": true,
           "challenges": [
             {
               "id": "stage-2-challenge-1",
@@ -249,6 +250,7 @@
         },
         {
           "id": "stage-3",
+          "showOverview": true,
           "challengeChunking": 2,
           "challenges": [
             {
@@ -307,6 +309,7 @@
         },
         {
           "id": "stage-4",
+          "showOverview": true,
           "challenges": [
             {
               "id": "stage-4-challenge-1",
@@ -342,6 +345,7 @@
 
         {
           "id": "stage-5",
+          "showOverview": true,
           "challenges": [
             {
               "id": "stage-5-challenge-1",
@@ -373,6 +377,7 @@
         },
         {
           "id": "stage-6",
+          "showOverview": true,
           "challenges": [
             {
               "id": "stage-6-challenge-1",
@@ -404,6 +409,7 @@
         },
         {
           "id": "stage-7",
+          "showOverview": true,
           "challenges": [
             {
               "id": "stage-7-challenge-1",

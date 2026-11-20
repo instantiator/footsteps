@@ -139,7 +139,9 @@ const allScenes = (gameData: GameData): SceneToCompile[] => {
         alongside: [],
       }),
     ),
-    ...gameData.stages.flatMap((stage, s) => stageScenes(stage, s, fromOverview)),
+    ...gameData.stages.flatMap((stage, s) =>
+      stageScenes(stage, s, stage.showOverview === true ? fromOverview : fromGame),
+    ),
   ];
 };
 

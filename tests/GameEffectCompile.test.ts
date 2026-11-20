@@ -247,12 +247,21 @@ describe("the camera when the game loads", () => {
       ).not.toThrow();
     });
 
-    it("follows an overview, as it renders behind a stage", () => {
+    it("follows an overview a stage shows behind it", () => {
+      expect(
+        compiled((data) => {
+          data.scenes[0].avatar = ON_CAMERA;
+          data.stages[0].showOverview = true;
+        }),
+      ).not.toThrow();
+    });
+
+    it("ignores an overview the stage doesn't show", () => {
       expect(
         compiled((data) => {
           data.scenes[0].avatar = ON_CAMERA;
         }),
-      ).not.toThrow();
+      ).toThrow("needs a player");
     });
 
     it("follows the stage's shared scene over the overview", () => {

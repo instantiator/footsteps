@@ -15,6 +15,9 @@ export interface GameStageData {
   /** Scenes shown behind this stage's challenges (purpose `shared`). Optional. */
   scenes?: GameStageScene[];
 
+  /** Whether the game's overview shows behind this stage, for stages drawn over it. Default: false. */
+  showOverview?: boolean;
+
   /** How many challenges to show together at once in the stage layout. Default: 1. */
   challengeChunking?: number;
 

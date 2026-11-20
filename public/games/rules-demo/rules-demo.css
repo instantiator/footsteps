@@ -19,17 +19,19 @@
   opacity: 0.8;
 }
 
+/* Six stages to a row, wrapping onto more rows as stages are added, so every stage fits on the screen */
 .demo-stages {
-  display: flex;
-  justify-content: center;
-  gap: 4cqw;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2cqh 2cqw;
+  margin: 0 4cqw;
 }
 
 .demo-stage-link {
-  padding: 2cqh 4cqw;
+  padding: 1.5cqh 1cqw;
   border-radius: 1cqh;
   background: #e63946;
-  font-size: 4cqh;
+  font-size: 3cqh;
   cursor: pointer;
 }
 

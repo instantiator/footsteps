@@ -2154,6 +2154,10 @@
                         "$ref": "#/definitions/GameStageScene"
                     },
                     "type": "array"
+                },
+                "showOverview": {
+                    "description": "Whether the game's overview shows behind this stage, for stages drawn over it. Default: false.",
+                    "type": "boolean"
                 }
             },
             "required": [

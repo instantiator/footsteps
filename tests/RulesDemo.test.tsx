@@ -348,6 +348,6 @@ describe("rules demo, the floor is lava, played by mouse-feet", { timeout: 15_00
     fireEvent.click($("#door")!);
     await wait(1000);
     expect($("#door")).not.toHaveClass("open");
-    expect($("#stage-link-floor-is-lava")).not.toHaveClass("completed");
+    expect($("#stage-link-floor-is-lava")).toBeNull(); // still in the stage, so not back on the overview
   });
 });
