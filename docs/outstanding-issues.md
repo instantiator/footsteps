@@ -438,6 +438,17 @@ uses; it plays the game by mouse.
 [Landing, progress, and keep-awake](testing/manual-testing.md#landing-progress-and-keep-awake)), and tune the
 thresholds, the lanes' heights and the obstacles' sizes.
 
+## Jump and duck's first obstacles missed by a still mouse: not reproduced
+
+Manual testing (003.00.00) found the first two snowballs and the first two bats passing under a still mouse without
+costing a life. The browser suite couldn't reproduce this, with the pointer parked in a lane before the run or moving
+in it (`tests/browser/jump-and-duck.spec.ts`). It did find that one obstacle could cost several lives, as a pointer
+crossed its edge or the bat's notched outline more than once. Obstacles now pop on a hit, so each costs one life at
+most.
+
+**Act when:** the next manual session. Play a run with a still mouse and note whether the first obstacles still pass
+without a hit, and whether the camera was on, the game full screen, or the mouse untouched since the stage opened.
+
 ## Overview and stage dialogs sit behind players
 
 A dialog or scroll draws its image and text together in its scene's foreground (prompt 002.03.10). For a challenge

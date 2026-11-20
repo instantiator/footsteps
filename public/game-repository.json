@@ -1183,6 +1183,9 @@
                           },
                           {
                             "sound": "pop"
+                          },
+                          {
+                            "despawn": "event"
                           }
                         ]
                       },
@@ -1201,6 +1204,9 @@
                           },
                           {
                             "sound": "pop"
+                          },
+                          {
+                            "despawn": "event"
                           }
                         ]
                       },
@@ -1428,6 +1434,9 @@
                           },
                           {
                             "sound": "pop"
+                          },
+                          {
+                            "despawn": "event"
                           }
                         ]
                       },
@@ -1446,6 +1455,9 @@
                           },
                           {
                             "sound": "pop"
+                          },
+                          {
+                            "despawn": "event"
                           }
                         ]
                       },

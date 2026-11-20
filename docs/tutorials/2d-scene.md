@@ -209,6 +209,9 @@ under bats.
     },
     {
       "sound": "pop"
+    },
+    {
+      "despawn": "event"
     }
   ]
 },
@@ -220,6 +223,7 @@ under bats.
   },
 ```
 
+- `despawn: "event"` pops the obstacle that hit, so it costs one life however often the player brushes against it.
 - `threshold` is how much of the body part must be inside the element: a tenth of the body for a snowball, which is
   small next to a whole silhouette, and almost a third of the head for a bat.
 - `mouse-enter` is the mouse's stand-in: moving the pointer onto an obstacle costs a life too, so the mouse player
