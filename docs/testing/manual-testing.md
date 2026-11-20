@@ -207,7 +207,8 @@ Play it once with the camera (`?debug=true` shows where your hands and feet are 
 - [ ] **Start already in place:** leave the mouse (or stand) where a reset scene's start appears, and trigger the
       reset: the start is taken at once, without moving.
 - [ ] **Avoid the pits:** opening it shows the grid reset. Step on Start: a chime and sparkles, "Get ready!", and
-      about 3 s later the floor fades in. Step into a pit: you fall out of view, and about 1.5 s later you are
+      about 3 s later the floor fades in: three deep pits, each with a skull sign leaning a different way beside it, and a
+      clear path up between them to the door. The signs don't catch your hand or mouse. Step into a pit: you fall out of view, and about 1.5 s later you are
       asked back to Start. Step on the door's base: fireworks and a fanfare, and the stage completes. Reload
       partway: you are asked for the start again. By mouse-feet, the same works by moving the mouse, without the fall.
 - [ ] **Bridge across lava:** you are asked to stand on Start, in the front left cell, and the bridge appears under

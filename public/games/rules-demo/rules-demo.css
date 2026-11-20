@@ -172,6 +172,46 @@
   box-shadow: inset 0 1cqh 2cqh #000;
 }
 
+/* A post pushed into the floor, anchored at its foot; the lean pivots about that foot */
+.pit-sign,
+.pit-sign * {
+  pointer-events: none;
+}
+.pit-sign {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 6cqw;
+  height: 12cqh;
+}
+.pit-sign-lean {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-origin: center bottom;
+}
+.pit-sign-lean::before {
+  content: "";
+  position: absolute;
+  left: 44%;
+  width: 12%;
+  top: 40%;
+  bottom: 0;
+  background: #8d5524;
+}
+.pit-sign-board {
+  position: absolute;
+  inset: 0 0 45%;
+  display: grid;
+  place-items: center;
+  border-radius: 8%;
+  background: #1b1b2f;
+  border: 0.3cqh solid #f1faee;
+  color: #f1faee;
+  font-size: 6cqh;
+  line-height: 1;
+}
+
 .demo-start {
   position: absolute;
   left: 4cqw;
@@ -186,22 +226,40 @@
   font-size: 3cqh;
 }
 
-/* Stands at the back of the floor, where the engine places it */
+/* An arched wooden door in a frame, with two panels and a handle; stands at the back of the floor, where the engine places it */
 .pits-door {
   position: absolute;
   left: 0;
   top: 0;
   width: 10cqw;
   height: 30cqh;
-  border-radius: 1cqh 1cqh 0 0;
-  background: #8d5524;
+  box-sizing: border-box;
+  border: 0.8cqh solid #4a2c10;
+  border-bottom: 0;
+  border-radius: 5cqw 5cqw 0 0;
+  background:
+    linear-gradient(#6b3f17, #6b3f17) 50% 18% / 60% 30% no-repeat,
+    linear-gradient(#6b3f17, #6b3f17) 50% 62% / 60% 30% no-repeat,
+    #8d5524;
+  box-shadow: inset 0 0 1cqh #3a200a;
   pointer-events: none;
 }
-/* Only the door's base counts as reaching it */
+.pits-door::before {
+  content: "";
+  position: absolute;
+  right: 12%;
+  top: 55%;
+  width: 1.2cqh;
+  height: 1.2cqh;
+  border-radius: 50%;
+  background: #ffd166;
+}
+/* The threshold step at the door's foot: only it counts as reaching the door */
 .pits-door-base {
   position: absolute;
-  inset: 80% 0 0;
-  background: #c68642;
+  inset: 80% -0.8cqh 0;
+  background: #b8a58c;
+  border-top: 0.5cqh solid #d8c9b0;
   pointer-events: auto;
 }
 

@@ -258,6 +258,47 @@ test.describe("rules demo", () => {
     await expect(page.locator("#stage-link-pits")).toHaveClass(/completed/);
   });
 
+  test("walks the clear path to the door without falling", async ({ page }) => {
+    await openDemo(page);
+    await page.locator("#stage-link-pits").click();
+    await returnToStart(page);
+
+    const centre = async (selector: string) => {
+      const box = (await page.locator(selector).boundingBox())!;
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    };
+    const [start, one, two, three, door] = await Promise.all(
+      ["#start", "#pit-1", "#pit-2", "#pit-3", "#door-base"].map(centre),
+    );
+    // Up the channel between the first two pits, then across the gap in front of the third, then to the door
+    const channelX = (one.x + two.x) / 2;
+    const gapY = (two.y + three.y) / 2;
+    const gapX = (two.x + three.x) / 2;
+    const path = [{ x: channelX, y: start.y }, { x: channelX, y: gapY }, { x: gapX, y: gapY }, door];
+
+    await page.mouse.move(start.x, start.y);
+    for (const point of path) await page.mouse.move(point.x, point.y, { steps: 25 });
+
+    await expect(page.locator("#stage-link-pits")).toHaveClass(/completed/);
+    await expect(page.locator("#reset-message")).toHaveCount(0);
+  });
+
+  test("lets the mouse pass through the warning signs", async ({ page }) => {
+    await openDemo(page);
+    await page.locator("#stage-link-pits").click();
+    await returnToStart(page);
+
+    await expect(page.locator(".pit-sign")).toHaveCount(3);
+    for (const sign of await page.locator(".pit-sign-board").all()) {
+      const box = (await sign.boundingBox())!;
+      const caught = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest(".pit-sign") !== null, {
+        x: box.x + box.width / 2,
+        y: box.y + box.height / 2,
+      });
+      expect(caught).toBe(false);
+    }
+  });
+
   test("finishes the reset for mouse-feet already resting where the start appears, without them moving", async ({
     page,
   }) => {
