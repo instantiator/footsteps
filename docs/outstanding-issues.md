@@ -84,6 +84,8 @@ the screen (nearer the camera), the feet may not have reached it yet on that fra
 them. Then wait for the feet to settle (still for a frame, or level with the ground they left) before picking the
 landing element, at the cost of a frame of delay.
 
+See also [prompt 993.00.00](prompts/993.00.00.prompt%20-%20jump%20detection%20review.md).
+
 ## A quick step back and forth can look like a jump
 
 Jumps are told from walking by the feet's movement alone. A quick step back then forward rises and falls like a
@@ -91,6 +93,9 @@ jump.
 
 **Act when:** players report jumps they didn't make. Then also require the head to rise with the feet, for models
 that place the head ([ADR 0008](ADRs/0008-jump-detection.md), option 3).
+
+See also [prompt 993.00.00](prompts/993.00.00.prompt%20-%20jump%20detection%20review.md), which plans a wider review of
+jump detection.
 
 ## Gap filling is off by default
 
