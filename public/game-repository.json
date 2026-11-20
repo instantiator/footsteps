@@ -544,7 +544,8 @@
                 "long-run": "Jump and duck: long run",
                 "lamps": "Light the lamps",
                 "riddle": "A riddle",
-                "doors": "Pick a door"
+                "doors": "Pick a door",
+                "rings": "Ring collection"
               }
             },
             "initialState": { "position": 1, "lit": false },
@@ -600,6 +601,10 @@
               {
                 "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-doors", "threshold": 0.5 },
                 "do": [{ "enterStage": "doors" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-rings", "threshold": 0.5 },
+                "do": [{ "enterStage": "rings" }]
               },
               {
                 "on": { "interact": ["click", "hand-enter"], "target": "#switch", "threshold": 0.5 },
@@ -1666,6 +1671,211 @@
                     },
                     "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
                   }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "rings",
+          "challenges": [
+            {
+              "id": "collect-rings",
+              "solution": {
+                "answers": []
+              },
+              "scenes": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "scene": "2.5D",
+                  "avatar": {
+                    "mode": "camera",
+                    "fallback": "mouse-feet"
+                  },
+                  "spectators": {
+                    "resetOnReturn": true
+                  },
+                  "component": {
+                    "type": "template",
+                    "data": {},
+                    "initialState": {
+                      "t": 30,
+                      "score": 0,
+                      "index": 0,
+                      "x": 60,
+                      "y": 30,
+                      "left": 52,
+                      "back": 22,
+                      "right": 68,
+                      "front": 38,
+                      "goneIndex": 0,
+                      "goneX": 0,
+                      "goneY": 0,
+                      "one": false,
+                      "done": false
+                    },
+                    "resetStateOnShow": true,
+                    "rules": [
+                      {
+                        "on": {
+                          "interact": ["foot-enter"],
+                          "target": ".ring-near",
+                          "threshold": 0.05
+                        },
+                        "if": "not state.done",
+                        "do": [
+                          {
+                            "series": [
+                              {
+                                "set": {
+                                  "score": "state.score + 1",
+                                  "one": "state.score == 0",
+                                  "goneIndex": "state.index + 1",
+                                  "goneX": "state.x",
+                                  "goneY": "state.y",
+                                  "index": "state.index + 1",
+                                  "x": "round(random(10, 90))",
+                                  "y": "round(random(10, 65))"
+                                }
+                              },
+                              {
+                                "set": {
+                                  "left": "state.x - 8",
+                                  "right": "state.x + 8",
+                                  "back": "state.y - 8",
+                                  "front": "state.y + 8"
+                                }
+                              },
+                              {
+                                "parallel": [
+                                  {
+                                    "effect": "item-spin-away",
+                                    "target": ".ring-gone",
+                                    "durationMs": 600,
+                                    "opacity": 0,
+                                    "zoom": 1.5
+                                  },
+                                  {
+                                    "reward": {
+                                      "animation": "sparkles",
+                                      "particleCount": 40
+                                    },
+                                    "target": ".ring-gone"
+                                  },
+                                  {
+                                    "sound": "chime"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "interact": ["hand-enter"],
+                          "target": ".ring",
+                          "threshold": 0.05
+                        },
+                        "if": "not state.done",
+                        "do": [
+                          {
+                            "series": [
+                              {
+                                "set": {
+                                  "score": "state.score + 1",
+                                  "one": "state.score == 0",
+                                  "goneIndex": "state.index + 1",
+                                  "goneX": "state.x",
+                                  "goneY": "state.y",
+                                  "index": "state.index + 1",
+                                  "x": "round(random(10, 90))",
+                                  "y": "round(random(10, 65))"
+                                }
+                              },
+                              {
+                                "set": {
+                                  "left": "state.x - 8",
+                                  "right": "state.x + 8",
+                                  "back": "state.y - 8",
+                                  "front": "state.y + 8"
+                                }
+                              },
+                              {
+                                "parallel": [
+                                  {
+                                    "effect": "item-spin-away",
+                                    "target": ".ring-gone",
+                                    "durationMs": 600,
+                                    "opacity": 0,
+                                    "zoom": 1.5
+                                  },
+                                  {
+                                    "reward": {
+                                      "animation": "sparkles",
+                                      "particleCount": 40
+                                    },
+                                    "target": ".ring-gone"
+                                  },
+                                  {
+                                    "sound": "chime"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "every": 1000
+                        },
+                        "if": "not state.done and state.t > 0",
+                        "do": [
+                          {
+                            "set": {
+                              "t": "state.t - 1"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "when": "state.t <= 0 and not state.done"
+                        },
+                        "do": [
+                          {
+                            "set": {
+                              "done": "true"
+                            }
+                          },
+                          {
+                            "sound": "fanfare"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "when": "state.done",
+                          "forMs": 10000
+                        },
+                        "do": [
+                          {
+                            "completeChallenge": true
+                          }
+                        ]
+                      }
+                    ],
+                    "backgroundTemplate": {
+                      "sourceType": "relative",
+                      "templateSource": "games/rules-demo/rings.html"
+                    },
+                    "backgroundTemplateStyle": {
+                      "width": "100%",
+                      "height": "100%"
+                    }
+                  },
+                  "resetScene": "start"
                 }
               ]
             }

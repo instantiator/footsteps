@@ -513,3 +513,115 @@
     radial-gradient(ellipse 40% 25% at 70% 100%, #40916c 98%, transparent);
   background-size: calc(var(--floor-unit, 1cqw) * 200) 100%;
 }
+
+/* Ring collection: a purple tiled floor with a soft glow, on dark grey */
+.rings-dark {
+  background: #3b3b3b;
+}
+.rings-floor {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.14) 2px, transparent 2px) 0 0 / 10% 10%,
+    linear-gradient(rgba(255, 255, 255, 0.14) 2px, transparent 2px) 0 0 / 10% 10%,
+    #6a4fa8;
+  border: 0.4cqh solid #3a2486;
+  box-shadow: 0 0 6cqh 3cqh rgba(255, 255, 255, 0.45);
+}
+/* Where the player starts, and where no ring appears */
+.rings-start {
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 3cqh;
+}
+
+/* Floating rings and their shadows are scenery: only the shadow's floor area, and the ring itself, are touched */
+.ring,
+.ring-gone {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 12cqw;
+  height: 12cqw;
+}
+.ring-bob {
+  width: 100%;
+  height: 100%;
+  animation: ring-bob 2.4s ease-in-out infinite alternate;
+}
+/* A gold ring seen face on, with an occasional glint across it */
+.ring-body {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(#ffc800, #8a5a00);
+  mask: radial-gradient(circle, transparent 28%, #000 29%);
+}
+.ring .ring-body::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 25%, #fff 0, transparent 22%);
+  opacity: 0;
+  animation: ring-sparkle 6s ease-in-out infinite;
+}
+/* The shadow is on the floor, so the floor's perspective makes the circle an ellipse */
+.ring-near {
+  background: radial-gradient(circle, #000 0, rgba(0, 0, 0, 0.55) 25%, transparent 62%);
+}
+@keyframes ring-bob {
+  from {
+    transform: translateY(-4%);
+  }
+  to {
+    transform: translateY(4%);
+  }
+}
+@keyframes ring-sparkle {
+  0%,
+  88%,
+  100% {
+    opacity: 0;
+  }
+  94% {
+    opacity: 1;
+  }
+}
+
+.rings-scroll {
+  position: absolute;
+  inset: 3cqh 0 auto;
+  margin: 0 auto;
+  width: 40cqw;
+  padding: 1.5cqh 0;
+  border-radius: 1.5cqh;
+  background: #f9cb9c;
+  color: #1d1d1d;
+  font-size: 3.5cqh;
+  border: 0.3cqh solid #b8895a;
+  pointer-events: none;
+}
+.rings-timer {
+  position: absolute;
+  right: 4cqw;
+  bottom: 4cqh;
+  margin: 0;
+  width: 14cqw;
+  padding: 1cqh 0;
+  background: rgba(20, 20, 50, 0.6);
+  border: 0.5cqh solid rgba(255, 255, 255, 0.6);
+  font-size: 7cqh;
+  font-weight: bold;
+  pointer-events: none;
+}
+/* The final score, large and central */
+.rings-final {
+  position: absolute;
+  inset: 25cqh 0 auto;
+  margin: 0;
+  font-size: 40cqh;
+  font-weight: bold;
+  color: #ffc800;
+  text-shadow: 0 0 2cqh #000;
+  pointer-events: none;
+}

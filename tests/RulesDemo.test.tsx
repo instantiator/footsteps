@@ -1,7 +1,7 @@
 import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import type { ComponentProps } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import localRepository from "../public/game-repository.json";
 import type { CameraInteraction } from "../src/components/camera/PlayerMonitor";
 import Game from "../src/components/core/Game";
@@ -230,6 +230,37 @@ describe("rules demo, played by camera", () => {
     await wait(200);
     expect($("#reset-start")).toBeNull();
     await waitFor(() => expect($("#reset-start")).not.toBeNull(), { timeout: 3000 });
+  });
+
+  it("collects a ring a hand touches, and brings the next one", async () => {
+    await start();
+    touch("#stage-link-rings", "hand-enter");
+    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Stand on Start"));
+    touch("#reset-start", "foot-enter");
+    await wait(3000);
+    await waitFor(() => expect($("#ring-0")).not.toBeNull());
+    expect($(".rings-scroll")).toHaveTextContent("Collected 0 rings");
+
+    // jsdom lacks the Web Animations API: this stand-in records what was animated, and never finishes
+    const animated: string[] = [];
+    Element.prototype.animate = vi.fn<Element["animate"]>(function (this: Element) {
+      animated.push(this.id);
+      const animation = Object.assign(new EventTarget(), {
+        onfinish: null as Animation["onfinish"],
+        cancel: vi.fn(),
+        persist: vi.fn(),
+        finish: vi.fn(),
+      });
+      return animation as EventTarget & Pick<Animation, "cancel" | "persist" | "onfinish" | "finish"> as Animation;
+    });
+    onTestFinished(() => void Reflect.deleteProperty(Element.prototype, "animate"));
+
+    touch("#ring-0", "hand-enter");
+
+    await waitFor(() => expect(animated).toContain("ring-gone-1"));
+    await waitFor(() => expect($("#ring-1")).not.toBeNull());
+    expect($(".rings-scroll")).toHaveTextContent("Collected 1 ring");
+    expect($("#ring-gone-1")).not.toBeNull();
   });
 
   it("asks the camera not to count covered elements, as clicks don't", async () => {

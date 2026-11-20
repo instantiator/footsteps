@@ -485,4 +485,74 @@ test.describe("rules demo", () => {
     await moveTo(page, "#pit-2");
     await expect(page.locator("#reset-message")).toBeVisible();
   });
+
+  test.describe("ring collection", () => {
+    /** Opens the stage under a controllable clock, stands on Start, and runs out the 3-2-1 for the first ring. */
+    const startRings = async (page: Page) => {
+      await page.clock.install();
+      await openDemo(page);
+      await page.locator("#stage-link-rings").click();
+      await page.locator("#reset-start").hover();
+      await expect(page.locator("#reset-count")).toBeVisible();
+      await page.clock.runFor(4000);
+      await expect(page.locator("#ring-0")).toBeVisible();
+      // From here only the test moves time
+      await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 10);
+    };
+
+    test("collects a ring by standing near it; the score rises and a new ring appears elsewhere", async ({ page }) => {
+      await startRings(page);
+      await expect(page.locator(".rings-scroll")).toHaveText("Collected 0 rings");
+      const first = (await page.locator("#ring-0").boundingBox())!;
+
+      await moveTo(page, "#ring-near-0");
+
+      await expect(page.locator(".rings-scroll")).toHaveText("Collected 1 ring");
+      await expect(page.locator("#ring-1")).toBeVisible();
+      await expect(page.locator("#ring-0")).toHaveCount(0);
+      const second = (await page.locator("#ring-1").boundingBox())!;
+      expect(Math.abs(second.x - first.x) + Math.abs(second.y - first.y)).toBeGreaterThan(1);
+    });
+
+    test("the collected ring spins away", async ({ page }) => {
+      await startRings(page);
+
+      await moveTo(page, "#ring-near-0");
+
+      const gone = page.locator("#ring-gone-1");
+      await expect(gone).toBeVisible();
+      const start = (await gone.boundingBox())!;
+      await page.clock.runFor(100);
+      await expect.poll(() => gone.evaluate((element) => element.getAnimations().length)).toBeGreaterThan(0);
+      await expect
+        .poll(
+          async () =>
+            Math.abs((await gone.boundingBox())!.x - start.x) + Math.abs((await gone.boundingBox())!.y - start.y),
+        )
+        .toBeGreaterThan(20);
+    });
+
+    test("the timer counts down from 30, a second at a time", async ({ page }) => {
+      await startRings(page);
+      const before = Number(await page.locator(".rings-timer").textContent());
+      expect(before).toBeLessThanOrEqual(30);
+
+      await page.clock.runFor(5000);
+
+      await expect(page.locator(".rings-timer")).toHaveText(String(before - 5));
+    });
+
+    test("at 0 the ring goes and the score shows large, then the stage completes after 10 s", async ({ page }) => {
+      await startRings(page);
+      await moveTo(page, "#ring-near-0");
+      await expect(page.locator("#ring-1")).toBeVisible();
+
+      await page.clock.runFor(31_000);
+
+      await expect(page.locator("#rings-final")).toHaveText("1");
+      await expect(page.locator(".ring, .ring-gone")).toHaveCount(0);
+      await page.clock.runFor(10_500);
+      await expect(page.locator("#stage-link-rings")).toHaveClass(/completed/);
+    });
+  });
 });
