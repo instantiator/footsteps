@@ -187,7 +187,9 @@ element holds (colour, images, text) is drawn in perspective.
 - **Distance.** `data-wall-distance` is how far beyond the floor's edge an upright surface stands, in floor units: y
   units for the rear and front, x units for the sides. Walls default to `0`, on the edge; backgrounds to `50`.
 - **Painting order**, back to front: `screen-background`, `horizon-background`, `floor-background`, the rear, left and
-  right backgrounds, floor areas, then walls. Transparent parts of a surface show what's behind it.
+  right backgrounds, floor areas, walls, then `screen-foreground`, which covers the whole screen in front of the rest of
+  its template (and, in a challenge's foreground, in front of the players) without taking the pointer. Transparent
+  parts of a surface show what's behind it.
 - **Surfaces paint beneath the rest of their template.** An element wrapped around them is above them, and takes the
   pointer first, so give the wrapper the `noClicks` class if anything should react to the surfaces. What's inside it
   still takes the pointer. A wrapper mustn't clip with `overflow: hidden`, or the surfaces stop at the scene box. Each

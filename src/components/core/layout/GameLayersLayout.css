@@ -88,7 +88,8 @@
   .rear-wall,
   .left-wall,
   .right-wall,
-  .front-wall
+  .front-wall,
+  .screen-foreground
 ) {
   position: absolute;
   left: 0;
@@ -133,9 +134,15 @@
     .rear-wall,
     .left-wall,
     .right-wall,
-    .front-wall
+    .front-wall,
+    .screen-foreground
   ) {
   visibility: hidden;
+}
+
+/* An overlay over the whole screen lets the pointer through to the scene, unless its author says otherwise */
+:where(.screen-foreground) {
+  pointer-events: none;
 }
 
 /* Each challenge's column clips its scene, except in a 2.5D scene, whose surfaces reach the screen's edges */
