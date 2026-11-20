@@ -74,7 +74,7 @@ A game with any `2.5D` scene asks a player using the camera to calibrate the flo
 items can be [placed on the floor](#floor-placed-items), and players pass in front of and behind them. The scene mode
 resolves most specific first: `2.5D` if any active challenge sets it, else `2D` if one does, then the open stage's
 `shared` scene, the overview scene, the game's `modules`, and finally `2D`. A reset scene's setting is over its
-parent's. Nanny's Magic Trifle and Demo scenes (2.5D) are `2.5D` games; Demo (no camera) and Jump and duck (2D) are `2D`.
+parent's. Nanny's Magic Trifle and Demo scenes are `2.5D` games; Demo scenes' jump and duck, lamps, riddle and doors stages set `2D` for their own scenes.
 
 #### Spectators
 
@@ -99,7 +99,7 @@ wins, over the stage's `shared` scene, the overview scene, and the game's.
 | `fade`          | How the look's strength follows how far outside the floor they stand, in floor units: none at `from` (the spectator margin, 5, by default), full at `to`, eased between. Without it, the look is at full strength.                                                                               |
 | `resetOnReturn` | `true` resets the scene's challenge when a spectator steps back on the floor more than 25 floor units from where they left it, so walking round the outside can't skip part of it. Off by default.                                                                                               |
 
-The debug view draws spectators like anyone else. Demo scenes (2.5D) shows spectators faded and grey, and resets
+The debug view draws spectators like anyone else. Demo scenes shows spectators faded and grey, and resets
 "Cross the floor" if someone walks round the pits.
 
 #### Floor-placed items

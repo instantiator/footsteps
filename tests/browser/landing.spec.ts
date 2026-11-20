@@ -101,9 +101,10 @@ test("shows each game's badges on its tile and its landing page, and plays witho
   page,
 }) => {
   await page.goto("/");
-  const tile = page.getByRole("link", { name: "Play Demo scenes (2.5D)" });
+  const tile = page.getByRole("link", { name: "Play Demo scenes" });
   const tileBadges = tile.getByRole("list", { name: "About this game" });
   await expect(tileBadges).toContainText("2.5D");
+  await expect(tileBadges).toContainText("2D"); // the moved 2D stages
   await expect(tileBadges).toContainText("Camera optional");
   await expect(tileBadges).toContainText(/\d+ stages · \d+ challenges/);
   await expect(tileBadges).not.toContainText("% complete");

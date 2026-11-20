@@ -3,8 +3,8 @@
 This tutorial builds a runner played with the camera: snowballs roll along the ground and bats swoop at head height,
 and the player jumps and ducks to keep clear of them until the score is reached. It covers the camera avatar and its
 mouse fallback, how players are drawn between a scene's background and foreground, spawning copies of a template,
-body-part interactions, timers, effects that move things, a series of actions, and a countdown before each run. It follows the **Jump and duck (2D)** game's "Warm-up"
-stage; every snippet is quoted from `public/game-repository.json` and `public/games/jump-and-duck/`.
+body-part interactions, timers, effects that move things, a series of actions, and a countdown before each run. It follows the "Warm-up" stage of the **Demo scenes** game's
+Jump and duck; every snippet is quoted from `public/game-repository.json` and `public/games/rules-demo/jump-and-duck/`.
 
 Start from [your first game](your-first-game.md) and [a scene without a camera](scene-without-camera.md), which
 cover the game's structure, rules and state. [Camera mode](../camera-mode.md) explains what the camera does.
@@ -12,15 +12,12 @@ cover the game's structure, rules and state. [Camera mode](../camera-mode.md) ex
 ## Step 1: the camera, with the mouse as a fallback
 
 ```json [public/game-repository.json]
-"modules": {
-  "scene": "2D",
-  "avatar": {
-    "mode": "camera",
-    "fallback": "mouse",
-    "preview": false
-  }
-},
+"scene": "2D",
+"avatar": { "mode": "camera", "fallback": "mouse", "preview": false },
 ```
+
+These go on the stage's challenge scene. The Demo scenes game is 2.5D and mouse-played as a whole, so this scene sets its
+own modes; a whole game can set them in `modules` instead.
 
 - `"mode": "camera"` plays with the player's silhouette, cut out of the webcam picture and drawn into the game.
 - `"fallback": "mouse"` lets the game start without a camera, played with the mouse instead. Its landing page says
@@ -38,7 +35,7 @@ Each scene draws a background and a foreground. The camera's players are drawn b
 foreground, in front of everything else ([layers](../game-data.md#layers)). The run is a foreground template whose
 screen is see-through, so the player shows behind the obstacles.
 
-```css [public/games/jump-and-duck/jump-and-duck.css]
+```css [public/games/rules-demo/jump-and-duck/jump-and-duck.css]
 /* The run: see-through, so the player's camera image shows behind the obstacles */
 .jd-run {
   background: linear-gradient(#14213d33, #3a506b33);
@@ -56,7 +53,7 @@ The template has the ground, a status line, a message for the end of the run, so
 `<template>` for an obstacle, which the rules copy:
 
 <!-- prettier-ignore -->
-```html [public/games/jump-and-duck/run.html]
+```html [public/games/rules-demo/jump-and-duck/run.html]
 <div class="jd-screen jd-run">
   <div class="jd-ground"></div>
   <p id="jd-status" class="jd-status">Score {{state.score}} of {{data.target}} · Lives {{state.lives}}</p>
@@ -71,7 +68,7 @@ The template has the ground, a status line, a message for the end of the run, so
 A `<template>` isn't shown. Its content is rendered with the rest of the template, so `state.high` picks the
 obstacle's kind. Each copy waits off the right edge, at its height: snowballs low, bats high.
 
-```css [public/games/jump-and-duck/jump-and-duck.css]
+```css [public/games/rules-demo/jump-and-duck/jump-and-duck.css]
 .jd-obstacle {
   position: absolute;
   left: 110%;
@@ -317,6 +314,7 @@ A **reset scene** shows in place of its scene until one of its rules finishes it
 
 ```json [public/game-repository.json]
 "resetScene": {
+  "scene": "2D",
   "showOn": "every-show",
   "component": {
     "type": "template",
@@ -354,7 +352,7 @@ A **reset scene** shows in place of its scene until one of its rules finishes it
 ```
 
 <!-- prettier-ignore -->
-```html [public/games/jump-and-duck/ready.html]
+```html [public/games/rules-demo/jump-and-duck/ready.html]
 <p id="jd-countdown" class="jd-countdown">{{#if state.count}}{{state.count}}{{else}}Go!{{/if}}</p>
 ```
 

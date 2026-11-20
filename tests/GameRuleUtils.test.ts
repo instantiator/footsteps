@@ -477,7 +477,9 @@ describe("rule engine", () => {
 
     it("spawns Jump and duck's obstacles of a random kind, and sends each across at a speed from the score", () => {
       vi.spyOn(Math, "random").mockReturnValue(0.25);
-      const [run] = (localRepository as GameRepository).games["jump-and-duck"].stages[0].challenges[0].scenes;
+      const [run] = (localRepository as GameRepository).games["rules-demo"].stages.find(
+        (stage) => stage.id === "warm-up",
+      )!.challenges[0].scenes;
       const state = playing(run.component.rules!, { ...run.component.initialState, score: 10 });
       Object.assign(state.stages[0].stage.challenges[0].scenes[0].component, { data: run.component.data });
       const spawned = fireRules(env, state, SCOPE, (trigger) =>

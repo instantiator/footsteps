@@ -454,778 +454,11 @@
         "boxShadow": "rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px"
       }
     },
-    "demo-no-camera": {
-      "id": "demo-no-camera",
-      "title": "Demo (no camera)",
-      "description": "Light the lamps, answer a riddle on a scroll, and pick the right door: a demonstration of 2D scenes, played with the mouse alone.",
-      "tileGraphic": "tile",
-      "modules": { "scene": "2D", "avatar": { "mode": "mouse" } },
-      "config": { "sequential": false, "autoAdvanceStages": false },
-      "stylesheets": ["ndc-css"],
-      "resources": {
-        "ndc-css": { "type": "local", "target": "games/demo-no-camera/demo-no-camera.css" },
-        "tile": { "type": "local", "target": "games/demo-no-camera/tile.svg" },
-        "chime": { "type": "local", "target": "games/rules-demo/chime.wav" },
-        "fanfare": { "type": "local", "target": "games/rules-demo/fanfare.wav" }
-      },
-      "scenes": [
-        {
-          "purpose": "game-overview-title",
-          "component": {
-            "type": "template",
-            "data": {},
-            "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/demo-no-camera/title.html" },
-            "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
-          }
-        },
-        {
-          "purpose": "game-overview-stages",
-          "component": {
-            "type": "template",
-            "data": { "names": { "lamps": "Light the lamps", "riddle": "A riddle", "doors": "Pick a door" } },
-            "rules": [
-              { "on": { "interact": "click", "target": "#stage-link-lamps" }, "do": [{ "enterStage": "lamps" }] },
-              { "on": { "interact": "click", "target": "#stage-link-riddle" }, "do": [{ "enterStage": "riddle" }] },
-              { "on": { "interact": "click", "target": "#stage-link-doors" }, "do": [{ "enterStage": "doors" }] }
-            ],
-            "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/demo-no-camera/stages.html" },
-            "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
-          }
-        }
-      ],
-      "stages": [
-        {
-          "id": "lamps",
-          "challenges": [
-            {
-              "id": "light-the-lamps",
-              "solution": { "answers": [] },
-              "scenes": [
-                {
-                  "purpose": "challenge-in-progress",
-                  "component": {
-                    "type": "template",
-                    "data": {},
-                    "initialState": { "lamp1": false, "lamp2": false, "lamp3": false, "done": false },
-                    "resetStateOnShow": true,
-                    "rules": [
-                      {
-                        "on": { "interact": "click", "target": "#lamp-1" },
-                        "if": "not state.done",
-                        "do": [{ "set": { "lamp1": "not state.lamp1" } }, { "sound": "chime" }]
-                      },
-                      {
-                        "on": { "interact": "click", "target": "#lamp-2" },
-                        "if": "not state.done",
-                        "do": [{ "set": { "lamp2": "not state.lamp2" } }, { "sound": "chime" }]
-                      },
-                      {
-                        "on": { "interact": "click", "target": "#lamp-3" },
-                        "if": "not state.done",
-                        "do": [{ "set": { "lamp3": "not state.lamp3" } }, { "sound": "chime" }]
-                      },
-                      {
-                        "on": { "when": "state.lamp1 and state.lamp2 and state.lamp3" },
-                        "do": [
-                          { "set": { "done": "true" } },
-                          {
-                            "series": [
-                              {
-                                "parallel": [
-                                  { "sound": "fanfare" },
-                                  { "reward": { "animation": "sparkles", "particleCount": 80 } }
-                                ]
-                              },
-                              { "completeChallenge": true }
-                            ]
-                          }
-                        ]
-                      }
-                    ],
-                    "foregroundTemplate": {
-                      "sourceType": "relative",
-                      "templateSource": "games/demo-no-camera/lamps.html"
-                    },
-                    "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "riddle",
-          "challenges": [
-            {
-              "id": "answer-the-riddle",
-              "solution": { "answers": ["keyboard", "a keyboard"] },
-              "scenes": [
-                {
-                  "purpose": "challenge-in-progress",
-                  "component": {
-                    "type": "scroll",
-                    "data": {},
-                    "contents": [
-                      {
-                        "text": "I have keys, but open no locks.\nI have space, but no room.\nYou can enter, but you can't go in."
-                      },
-                      { "text": "What am I?", "showInput": true, "label": "Your answer" }
-                    ]
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "doors",
-          "challenges": [
-            {
-              "id": "pick-a-door",
-              "solution": { "answers": [] },
-              "scenes": [
-                {
-                  "purpose": "challenge-in-progress",
-                  "component": {
-                    "type": "template",
-                    "data": {},
-                    "initialState": { "wrong": false },
-                    "resetStateOnShow": true,
-                    "rules": [
-                      {
-                        "on": { "interact": "click", "target": "#door-1" },
-                        "do": [
-                          { "set": { "wrong": "true" } },
-                          { "effect": "quake", "target": "#door-1", "dx": 1, "durationMs": 400 }
-                        ]
-                      },
-                      {
-                        "on": { "interact": "click", "target": "#door-3" },
-                        "do": [
-                          { "set": { "wrong": "true" } },
-                          { "effect": "quake", "target": "#door-3", "dx": 1, "durationMs": 400 }
-                        ]
-                      },
-                      {
-                        "on": { "interact": "click", "target": "#door-2" },
-                        "do": [
-                          { "completeChallenge": true },
-                          { "sound": "fanfare" },
-                          { "reward": { "animation": "fireworks", "particleCount": 150 } }
-                        ]
-                      }
-                    ],
-                    "foregroundTemplate": {
-                      "sourceType": "relative",
-                      "templateSource": "games/demo-no-camera/doors.html"
-                    },
-                    "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ],
-      "gameContainerStyle": { "fontFamily": "system-ui, sans-serif" }
-    },
-    "jump-and-duck": {
-      "id": "jump-and-duck",
-      "title": "Jump and duck (2D)",
-      "description": "Snowballs roll along the ground and bats swoop at head height: jump the snowballs and duck the bats until the score is reached. Best with a camera; with the mouse, keep your pointer clear of them.",
-      "tileGraphic": "tile",
-      "modules": {
-        "scene": "2D",
-        "avatar": {
-          "mode": "camera",
-          "fallback": "mouse",
-          "preview": false
-        }
-      },
-      "config": {
-        "sequential": true,
-        "autoAdvanceStages": false
-      },
-      "stylesheets": ["jd-css"],
-      "resources": {
-        "jd-css": {
-          "type": "local",
-          "target": "games/jump-and-duck/jump-and-duck.css"
-        },
-        "tile": {
-          "type": "local",
-          "target": "games/jump-and-duck/tile.svg"
-        },
-        "pop": {
-          "type": "local",
-          "target": "games/rules-demo/pop.wav"
-        },
-        "tick": {
-          "type": "local",
-          "target": "games/rules-demo/tick.wav"
-        },
-        "fanfare": {
-          "type": "local",
-          "target": "games/rules-demo/fanfare.wav"
-        }
-      },
-      "scenes": [
-        {
-          "purpose": "game-overview-title",
-          "component": {
-            "type": "template",
-            "data": {},
-            "foregroundTemplate": {
-              "sourceType": "relative",
-              "templateSource": "games/jump-and-duck/title.html"
-            },
-            "foregroundTemplateStyle": {
-              "width": "100%",
-              "height": "100%"
-            }
-          }
-        },
-        {
-          "purpose": "game-overview-stages",
-          "component": {
-            "type": "template",
-            "data": {
-              "names": {
-                "warm-up": "Warm-up",
-                "long-run": "Long run"
-              }
-            },
-            "rules": [
-              {
-                "on": {
-                  "interact": ["click", "hand-enter"],
-                  "target": "#stage-link-warm-up",
-                  "threshold": 0.5
-                },
-                "do": [
-                  {
-                    "enterStage": "warm-up"
-                  }
-                ]
-              },
-              {
-                "on": {
-                  "interact": ["click", "hand-enter"],
-                  "target": "#stage-link-long-run",
-                  "threshold": 0.5
-                },
-                "do": [
-                  {
-                    "enterStage": "long-run"
-                  }
-                ]
-              }
-            ],
-            "foregroundTemplate": {
-              "sourceType": "relative",
-              "templateSource": "games/jump-and-duck/stages.html"
-            },
-            "foregroundTemplateStyle": {
-              "width": "100%",
-              "height": "100%"
-            }
-          }
-        }
-      ],
-      "stages": [
-        {
-          "id": "warm-up",
-          "challenges": [
-            {
-              "id": "warm-up-run",
-              "solution": {
-                "answers": []
-              },
-              "scenes": [
-                {
-                  "purpose": "challenge-in-progress",
-                  "component": {
-                    "type": "template",
-                    "data": {
-                      "target": 15,
-                      "baseMs": 4000,
-                      "minMs": 2500,
-                      "speedUp": 50
-                    },
-                    "initialState": {
-                      "score": 0,
-                      "lives": 3,
-                      "over": false,
-                      "won": false
-                    },
-                    "resetStateOnShow": true,
-                    "rules": [
-                      {
-                        "on": {
-                          "every": "random(900, 2200)"
-                        },
-                        "if": "not state.over",
-                        "do": [
-                          {
-                            "set": {
-                              "high": "random(0, 1) < 0.5"
-                            }
-                          },
-                          {
-                            "spawn": "#jd-obstacle",
-                            "into": "#jd-lanes",
-                            "name": "obstacle"
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "actionEnd": "obstacle"
-                        },
-                        "do": [
-                          {
-                            "effect": "item-move",
-                            "target": "event",
-                            "end": {
-                              "by": {
-                                "left": -120,
-                                "top": 0
-                              }
-                            },
-                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)"
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "effectEnd": "item-move",
-                          "target": ".jd-obstacle"
-                        },
-                        "do": [
-                          {
-                            "despawn": "event"
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "every": 1000
-                        },
-                        "if": "not state.over",
-                        "do": [
-                          {
-                            "set": {
-                              "score": "state.score + 1"
-                            }
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "interact": ["body-enter", "mouse-enter"],
-                          "target": ".jd-snowball",
-                          "threshold": 0.1
-                        },
-                        "if": "not state.over",
-                        "do": [
-                          {
-                            "set": {
-                              "lives": "state.lives - 1"
-                            }
-                          },
-                          {
-                            "sound": "pop"
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "interact": ["head-enter", "mouse-enter"],
-                          "target": ".jd-bat",
-                          "threshold": 0.3
-                        },
-                        "if": "not state.over",
-                        "do": [
-                          {
-                            "set": {
-                              "lives": "state.lives - 1"
-                            }
-                          },
-                          {
-                            "sound": "pop"
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "when": "state.score >= data.target and not state.over"
-                        },
-                        "do": [
-                          {
-                            "set": {
-                              "over": "true",
-                              "won": "true"
-                            }
-                          },
-                          {
-                            "effect": "stop",
-                            "target": ".jd-obstacle",
-                            "stop": "item-move"
-                          },
-                          {
-                            "series": [
-                              {
-                                "parallel": [
-                                  {
-                                    "sound": "fanfare"
-                                  },
-                                  {
-                                    "reward": {
-                                      "animation": "fireworks",
-                                      "particleCount": 150
-                                    }
-                                  }
-                                ]
-                              },
-                              {
-                                "completeChallenge": true
-                              }
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "when": "state.lives <= 0 and not state.over"
-                        },
-                        "do": [
-                          {
-                            "set": {
-                              "over": "true"
-                            }
-                          },
-                          {
-                            "effect": "stop",
-                            "target": ".jd-obstacle",
-                            "stop": "item-move"
-                          },
-                          {
-                            "resetChallenge": true,
-                            "delayMs": 1500
-                          }
-                        ]
-                      }
-                    ],
-                    "foregroundTemplate": {
-                      "sourceType": "relative",
-                      "templateSource": "games/jump-and-duck/run.html"
-                    },
-                    "foregroundTemplateStyle": {
-                      "width": "100%",
-                      "height": "100%"
-                    }
-                  },
-                  "resetScene": {
-                    "showOn": "every-show",
-                    "component": {
-                      "type": "template",
-                      "data": {},
-                      "initialState": {
-                        "count": 3
-                      },
-                      "rules": [
-                        {
-                          "on": {
-                            "every": 1000
-                          },
-                          "do": [
-                            {
-                              "set": {
-                                "count": "state.count - 1"
-                              }
-                            },
-                            {
-                              "sound": "tick"
-                            }
-                          ]
-                        },
-                        {
-                          "on": {
-                            "after": 3500
-                          },
-                          "do": [
-                            {
-                              "finishReset": true
-                            }
-                          ]
-                        }
-                      ],
-                      "foregroundTemplate": {
-                        "sourceType": "relative",
-                        "templateSource": "games/jump-and-duck/ready.html"
-                      },
-                      "foregroundTemplateStyle": {
-                        "width": "100%",
-                        "height": "100%"
-                      }
-                    }
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "long-run",
-          "challenges": [
-            {
-              "id": "long-run-run",
-              "solution": {
-                "answers": []
-              },
-              "scenes": [
-                {
-                  "purpose": "challenge-in-progress",
-                  "component": {
-                    "type": "template",
-                    "data": {
-                      "target": 40,
-                      "baseMs": 3500,
-                      "minMs": 1600,
-                      "speedUp": 40
-                    },
-                    "initialState": {
-                      "score": 0,
-                      "lives": 3,
-                      "over": false,
-                      "won": false
-                    },
-                    "resetStateOnShow": true,
-                    "rules": [
-                      {
-                        "on": {
-                          "every": "random(900, 2200)"
-                        },
-                        "if": "not state.over",
-                        "do": [
-                          {
-                            "set": {
-                              "high": "random(0, 1) < 0.5"
-                            }
-                          },
-                          {
-                            "spawn": "#jd-obstacle",
-                            "into": "#jd-lanes",
-                            "name": "obstacle"
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "actionEnd": "obstacle"
-                        },
-                        "do": [
-                          {
-                            "effect": "item-move",
-                            "target": "event",
-                            "end": {
-                              "by": {
-                                "left": -120,
-                                "top": 0
-                              }
-                            },
-                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)"
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "effectEnd": "item-move",
-                          "target": ".jd-obstacle"
-                        },
-                        "do": [
-                          {
-                            "despawn": "event"
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "every": 1000
-                        },
-                        "if": "not state.over",
-                        "do": [
-                          {
-                            "set": {
-                              "score": "state.score + 1"
-                            }
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "interact": ["body-enter", "mouse-enter"],
-                          "target": ".jd-snowball",
-                          "threshold": 0.1
-                        },
-                        "if": "not state.over",
-                        "do": [
-                          {
-                            "set": {
-                              "lives": "state.lives - 1"
-                            }
-                          },
-                          {
-                            "sound": "pop"
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "interact": ["head-enter", "mouse-enter"],
-                          "target": ".jd-bat",
-                          "threshold": 0.3
-                        },
-                        "if": "not state.over",
-                        "do": [
-                          {
-                            "set": {
-                              "lives": "state.lives - 1"
-                            }
-                          },
-                          {
-                            "sound": "pop"
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "when": "state.score >= data.target and not state.over"
-                        },
-                        "do": [
-                          {
-                            "set": {
-                              "over": "true",
-                              "won": "true"
-                            }
-                          },
-                          {
-                            "effect": "stop",
-                            "target": ".jd-obstacle",
-                            "stop": "item-move"
-                          },
-                          {
-                            "series": [
-                              {
-                                "parallel": [
-                                  {
-                                    "sound": "fanfare"
-                                  },
-                                  {
-                                    "reward": {
-                                      "animation": "fireworks",
-                                      "particleCount": 150
-                                    }
-                                  }
-                                ]
-                              },
-                              {
-                                "completeChallenge": true
-                              }
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "on": {
-                          "when": "state.lives <= 0 and not state.over"
-                        },
-                        "do": [
-                          {
-                            "set": {
-                              "over": "true"
-                            }
-                          },
-                          {
-                            "effect": "stop",
-                            "target": ".jd-obstacle",
-                            "stop": "item-move"
-                          },
-                          {
-                            "resetChallenge": true,
-                            "delayMs": 1500
-                          }
-                        ]
-                      }
-                    ],
-                    "foregroundTemplate": {
-                      "sourceType": "relative",
-                      "templateSource": "games/jump-and-duck/run.html"
-                    },
-                    "foregroundTemplateStyle": {
-                      "width": "100%",
-                      "height": "100%"
-                    }
-                  },
-                  "resetScene": {
-                    "showOn": "every-show",
-                    "component": {
-                      "type": "template",
-                      "data": {},
-                      "initialState": {
-                        "count": 3
-                      },
-                      "rules": [
-                        {
-                          "on": {
-                            "every": 1000
-                          },
-                          "do": [
-                            {
-                              "set": {
-                                "count": "state.count - 1"
-                              }
-                            },
-                            {
-                              "sound": "tick"
-                            }
-                          ]
-                        },
-                        {
-                          "on": {
-                            "after": 3500
-                          },
-                          "do": [
-                            {
-                              "finishReset": true
-                            }
-                          ]
-                        }
-                      ],
-                      "foregroundTemplate": {
-                        "sourceType": "relative",
-                        "templateSource": "games/jump-and-duck/ready.html"
-                      },
-                      "foregroundTemplateStyle": {
-                        "width": "100%",
-                        "height": "100%"
-                      }
-                    }
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ],
-      "gameContainerStyle": {
-        "fontFamily": "system-ui, sans-serif"
-      }
-    },
     "rules-demo": {
       "id": "rules-demo",
-      "title": "Demo scenes (2.5D)",
+      "title": "Demo scenes",
       "description": "Pop balloons, dodge the pits, walk around a room with a tiled floor, walls and hills, and hop the stones over a floor of lava: a demonstration of 2.5D scenes, rules and state, by camera, or by mouse without one.",
+      "tileGraphic": "tile",
       "modules": {
         "scene": "2.5D",
         "avatar": { "mode": "mouse" },
@@ -1236,13 +469,16 @@
         }
       },
       "config": { "sequential": false, "autoAdvanceStages": false },
-      "stylesheets": ["demo-css"],
+      "stylesheets": ["demo-css", "jd-css", "ndc-css"],
       "resources": {
         "demo-css": { "type": "local", "target": "games/rules-demo/rules-demo.css" },
         "chime": { "type": "local", "target": "games/rules-demo/chime.wav" },
         "tick": { "type": "local", "target": "games/rules-demo/tick.wav" },
         "pop": { "type": "local", "target": "games/rules-demo/pop.wav" },
-        "fanfare": { "type": "local", "target": "games/rules-demo/fanfare.wav" }
+        "fanfare": { "type": "local", "target": "games/rules-demo/fanfare.wav" },
+        "jd-css": { "type": "local", "target": "games/rules-demo/jump-and-duck/jump-and-duck.css" },
+        "tile": { "type": "local", "target": "games/rules-demo/demo-no-camera/tile.svg" },
+        "ndc-css": { "type": "local", "target": "games/rules-demo/demo-no-camera/demo-no-camera.css" }
       },
       "scenes": [
         {
@@ -1265,7 +501,12 @@
                 "pits": "Avoid the pits",
                 "depth": "Walk around",
                 "effects": "Effects",
-                "floor-is-lava": "The floor is lava"
+                "floor-is-lava": "The floor is lava",
+                "warm-up": "Jump and duck: warm-up",
+                "long-run": "Jump and duck: long run",
+                "lamps": "Light the lamps",
+                "riddle": "A riddle",
+                "doors": "Pick a door"
               }
             },
             "initialState": { "position": 1, "lit": false },
@@ -1301,6 +542,26 @@
                   "threshold": 0.5
                 },
                 "do": [{ "enterStage": "floor-is-lava" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-warm-up", "threshold": 0.5 },
+                "do": [{ "enterStage": "warm-up" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-long-run", "threshold": 0.5 },
+                "do": [{ "enterStage": "long-run" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-lamps", "threshold": 0.5 },
+                "do": [{ "enterStage": "lamps" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-riddle", "threshold": 0.5 },
+                "do": [{ "enterStage": "riddle" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-doors", "threshold": 0.5 },
+                "do": [{ "enterStage": "doors" }]
               },
               {
                 "on": { "interact": ["click", "hand-enter"], "target": "#switch", "threshold": 0.5 },
@@ -1806,6 +1067,631 @@
                       },
                       "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
                     }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "warm-up",
+          "challenges": [
+            {
+              "id": "warm-up-run",
+              "solution": {
+                "answers": []
+              },
+              "scenes": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "scene": "2D",
+                  "avatar": { "mode": "camera", "fallback": "mouse", "preview": false },
+                  "component": {
+                    "type": "template",
+                    "data": {
+                      "target": 15,
+                      "baseMs": 4000,
+                      "minMs": 2500,
+                      "speedUp": 50
+                    },
+                    "initialState": {
+                      "score": 0,
+                      "lives": 3,
+                      "over": false,
+                      "won": false
+                    },
+                    "resetStateOnShow": true,
+                    "rules": [
+                      {
+                        "on": {
+                          "every": "random(900, 2200)"
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "set": {
+                              "high": "random(0, 1) < 0.5"
+                            }
+                          },
+                          {
+                            "spawn": "#jd-obstacle",
+                            "into": "#jd-lanes",
+                            "name": "obstacle"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "actionEnd": "obstacle"
+                        },
+                        "do": [
+                          {
+                            "effect": "item-move",
+                            "target": "event",
+                            "end": {
+                              "by": {
+                                "left": -120,
+                                "top": 0
+                              }
+                            },
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "effectEnd": "item-move",
+                          "target": ".jd-obstacle"
+                        },
+                        "do": [
+                          {
+                            "despawn": "event"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "every": 1000
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "set": {
+                              "score": "state.score + 1"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "interact": ["body-enter", "mouse-enter"],
+                          "target": ".jd-snowball",
+                          "threshold": 0.1
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "set": {
+                              "lives": "state.lives - 1"
+                            }
+                          },
+                          {
+                            "sound": "pop"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "interact": ["head-enter", "mouse-enter"],
+                          "target": ".jd-bat",
+                          "threshold": 0.3
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "set": {
+                              "lives": "state.lives - 1"
+                            }
+                          },
+                          {
+                            "sound": "pop"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "when": "state.score >= data.target and not state.over"
+                        },
+                        "do": [
+                          {
+                            "set": {
+                              "over": "true",
+                              "won": "true"
+                            }
+                          },
+                          {
+                            "effect": "stop",
+                            "target": ".jd-obstacle",
+                            "stop": "item-move"
+                          },
+                          {
+                            "series": [
+                              {
+                                "parallel": [
+                                  {
+                                    "sound": "fanfare"
+                                  },
+                                  {
+                                    "reward": {
+                                      "animation": "fireworks",
+                                      "particleCount": 150
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "completeChallenge": true
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "when": "state.lives <= 0 and not state.over"
+                        },
+                        "do": [
+                          {
+                            "set": {
+                              "over": "true"
+                            }
+                          },
+                          {
+                            "effect": "stop",
+                            "target": ".jd-obstacle",
+                            "stop": "item-move"
+                          },
+                          {
+                            "resetChallenge": true,
+                            "delayMs": 1500
+                          }
+                        ]
+                      }
+                    ],
+                    "foregroundTemplate": {
+                      "sourceType": "relative",
+                      "templateSource": "games/rules-demo/jump-and-duck/run.html"
+                    },
+                    "foregroundTemplateStyle": {
+                      "width": "100%",
+                      "height": "100%"
+                    }
+                  },
+                  "resetScene": {
+                    "scene": "2D",
+                    "showOn": "every-show",
+                    "component": {
+                      "type": "template",
+                      "data": {},
+                      "initialState": {
+                        "count": 3
+                      },
+                      "rules": [
+                        {
+                          "on": {
+                            "every": 1000
+                          },
+                          "do": [
+                            {
+                              "set": {
+                                "count": "state.count - 1"
+                              }
+                            },
+                            {
+                              "sound": "tick"
+                            }
+                          ]
+                        },
+                        {
+                          "on": {
+                            "after": 3500
+                          },
+                          "do": [
+                            {
+                              "finishReset": true
+                            }
+                          ]
+                        }
+                      ],
+                      "foregroundTemplate": {
+                        "sourceType": "relative",
+                        "templateSource": "games/rules-demo/jump-and-duck/ready.html"
+                      },
+                      "foregroundTemplateStyle": {
+                        "width": "100%",
+                        "height": "100%"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "long-run",
+          "challenges": [
+            {
+              "id": "long-run-run",
+              "solution": {
+                "answers": []
+              },
+              "scenes": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "scene": "2D",
+                  "avatar": { "mode": "camera", "fallback": "mouse", "preview": false },
+                  "component": {
+                    "type": "template",
+                    "data": {
+                      "target": 40,
+                      "baseMs": 3500,
+                      "minMs": 1600,
+                      "speedUp": 40
+                    },
+                    "initialState": {
+                      "score": 0,
+                      "lives": 3,
+                      "over": false,
+                      "won": false
+                    },
+                    "resetStateOnShow": true,
+                    "rules": [
+                      {
+                        "on": {
+                          "every": "random(900, 2200)"
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "set": {
+                              "high": "random(0, 1) < 0.5"
+                            }
+                          },
+                          {
+                            "spawn": "#jd-obstacle",
+                            "into": "#jd-lanes",
+                            "name": "obstacle"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "actionEnd": "obstacle"
+                        },
+                        "do": [
+                          {
+                            "effect": "item-move",
+                            "target": "event",
+                            "end": {
+                              "by": {
+                                "left": -120,
+                                "top": 0
+                              }
+                            },
+                            "durationMs": "max(data.minMs, data.baseMs - state.score * data.speedUp)"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "effectEnd": "item-move",
+                          "target": ".jd-obstacle"
+                        },
+                        "do": [
+                          {
+                            "despawn": "event"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "every": 1000
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "set": {
+                              "score": "state.score + 1"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "interact": ["body-enter", "mouse-enter"],
+                          "target": ".jd-snowball",
+                          "threshold": 0.1
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "set": {
+                              "lives": "state.lives - 1"
+                            }
+                          },
+                          {
+                            "sound": "pop"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "interact": ["head-enter", "mouse-enter"],
+                          "target": ".jd-bat",
+                          "threshold": 0.3
+                        },
+                        "if": "not state.over",
+                        "do": [
+                          {
+                            "set": {
+                              "lives": "state.lives - 1"
+                            }
+                          },
+                          {
+                            "sound": "pop"
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "when": "state.score >= data.target and not state.over"
+                        },
+                        "do": [
+                          {
+                            "set": {
+                              "over": "true",
+                              "won": "true"
+                            }
+                          },
+                          {
+                            "effect": "stop",
+                            "target": ".jd-obstacle",
+                            "stop": "item-move"
+                          },
+                          {
+                            "series": [
+                              {
+                                "parallel": [
+                                  {
+                                    "sound": "fanfare"
+                                  },
+                                  {
+                                    "reward": {
+                                      "animation": "fireworks",
+                                      "particleCount": 150
+                                    }
+                                  }
+                                ]
+                              },
+                              {
+                                "completeChallenge": true
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "on": {
+                          "when": "state.lives <= 0 and not state.over"
+                        },
+                        "do": [
+                          {
+                            "set": {
+                              "over": "true"
+                            }
+                          },
+                          {
+                            "effect": "stop",
+                            "target": ".jd-obstacle",
+                            "stop": "item-move"
+                          },
+                          {
+                            "resetChallenge": true,
+                            "delayMs": 1500
+                          }
+                        ]
+                      }
+                    ],
+                    "foregroundTemplate": {
+                      "sourceType": "relative",
+                      "templateSource": "games/rules-demo/jump-and-duck/run.html"
+                    },
+                    "foregroundTemplateStyle": {
+                      "width": "100%",
+                      "height": "100%"
+                    }
+                  },
+                  "resetScene": {
+                    "scene": "2D",
+                    "showOn": "every-show",
+                    "component": {
+                      "type": "template",
+                      "data": {},
+                      "initialState": {
+                        "count": 3
+                      },
+                      "rules": [
+                        {
+                          "on": {
+                            "every": 1000
+                          },
+                          "do": [
+                            {
+                              "set": {
+                                "count": "state.count - 1"
+                              }
+                            },
+                            {
+                              "sound": "tick"
+                            }
+                          ]
+                        },
+                        {
+                          "on": {
+                            "after": 3500
+                          },
+                          "do": [
+                            {
+                              "finishReset": true
+                            }
+                          ]
+                        }
+                      ],
+                      "foregroundTemplate": {
+                        "sourceType": "relative",
+                        "templateSource": "games/rules-demo/jump-and-duck/ready.html"
+                      },
+                      "foregroundTemplateStyle": {
+                        "width": "100%",
+                        "height": "100%"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "lamps",
+          "challenges": [
+            {
+              "id": "light-the-lamps",
+              "solution": { "answers": [] },
+              "scenes": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "scene": "2D",
+                  "component": {
+                    "type": "template",
+                    "data": {},
+                    "initialState": { "lamp1": false, "lamp2": false, "lamp3": false, "done": false },
+                    "resetStateOnShow": true,
+                    "rules": [
+                      {
+                        "on": { "interact": "click", "target": "#lamp-1" },
+                        "if": "not state.done",
+                        "do": [{ "set": { "lamp1": "not state.lamp1" } }, { "sound": "chime" }]
+                      },
+                      {
+                        "on": { "interact": "click", "target": "#lamp-2" },
+                        "if": "not state.done",
+                        "do": [{ "set": { "lamp2": "not state.lamp2" } }, { "sound": "chime" }]
+                      },
+                      {
+                        "on": { "interact": "click", "target": "#lamp-3" },
+                        "if": "not state.done",
+                        "do": [{ "set": { "lamp3": "not state.lamp3" } }, { "sound": "chime" }]
+                      },
+                      {
+                        "on": { "when": "state.lamp1 and state.lamp2 and state.lamp3" },
+                        "do": [
+                          { "set": { "done": "true" } },
+                          {
+                            "series": [
+                              {
+                                "parallel": [
+                                  { "sound": "fanfare" },
+                                  { "reward": { "animation": "sparkles", "particleCount": 80 } }
+                                ]
+                              },
+                              { "completeChallenge": true }
+                            ]
+                          }
+                        ]
+                      }
+                    ],
+                    "foregroundTemplate": {
+                      "sourceType": "relative",
+                      "templateSource": "games/rules-demo/demo-no-camera/lamps.html"
+                    },
+                    "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "riddle",
+          "challenges": [
+            {
+              "id": "answer-the-riddle",
+              "solution": { "answers": ["keyboard", "a keyboard"] },
+              "scenes": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "scene": "2D",
+                  "component": {
+                    "type": "scroll",
+                    "data": {},
+                    "contents": [
+                      {
+                        "text": "I have keys, but open no locks.\nI have space, but no room.\nYou can enter, but you can't go in."
+                      },
+                      { "text": "What am I?", "showInput": true, "label": "Your answer" }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "doors",
+          "challenges": [
+            {
+              "id": "pick-a-door",
+              "solution": { "answers": [] },
+              "scenes": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "scene": "2D",
+                  "component": {
+                    "type": "template",
+                    "data": {},
+                    "initialState": { "wrong": false },
+                    "resetStateOnShow": true,
+                    "rules": [
+                      {
+                        "on": { "interact": "click", "target": "#door-1" },
+                        "do": [
+                          { "set": { "wrong": "true" } },
+                          { "effect": "quake", "target": "#door-1", "dx": 1, "durationMs": 400 }
+                        ]
+                      },
+                      {
+                        "on": { "interact": "click", "target": "#door-3" },
+                        "do": [
+                          { "set": { "wrong": "true" } },
+                          { "effect": "quake", "target": "#door-3", "dx": 1, "durationMs": 400 }
+                        ]
+                      },
+                      {
+                        "on": { "interact": "click", "target": "#door-2" },
+                        "do": [
+                          { "completeChallenge": true },
+                          { "sound": "fanfare" },
+                          { "reward": { "animation": "fireworks", "particleCount": 150 } }
+                        ]
+                      }
+                    ],
+                    "foregroundTemplate": {
+                      "sourceType": "relative",
+                      "templateSource": "games/rules-demo/demo-no-camera/doors.html"
+                    },
+                    "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
                   }
                 }
               ]

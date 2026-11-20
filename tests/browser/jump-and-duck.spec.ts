@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { GameRepository } from "../../src/entities/GameRepository";
 
-/** The 2D runner, played by mouse (its fallback) with the camera left off. */
-const GAME_ID = "jump-and-duck";
+/** The 2D runner, one of the demo game's stages, played by mouse (its fallback) with the camera left off. */
+const GAME_ID = "rules-demo";
 
 /**
  * Opens the warm-up run without the camera, setting its target score, and waits out the countdown. Motion isn't
@@ -14,10 +14,10 @@ const openWarmUp = async (page: Page, target?: number, { feet = false } = {}) =>
     const response = await route.fetch();
     const repository = (await response.json()) as GameRepository;
     const game = repository.games[GAME_ID];
-    const [scene] = game.stages[0].challenges[0].scenes;
+    const [scene] = game.stages.find((stage) => stage.id === "warm-up")!.challenges[0].scenes;
     if (target !== undefined) scene.component.data.target = target;
     if (feet) {
-      game.modules = { ...game.modules, avatar: { mode: "camera", fallback: "mouse-feet", preview: false } };
+      scene.avatar = { mode: "camera", fallback: "mouse-feet", preview: false };
       for (const { on } of scene.component.rules ?? []) {
         if ("interact" in on && on.target === ".jd-snowball") on.interact = ["foot-enter"];
       }
@@ -25,7 +25,7 @@ const openWarmUp = async (page: Page, target?: number, { feet = false } = {}) =>
     await route.fulfill({ response, json: repository });
   });
   await page.goto(`/game/${GAME_ID}/play?noCamera=true`);
-  await page.locator("#jd-title").click();
+  await page.locator("#demo-title").click();
   await page.locator("#stage-link-warm-up").click();
   await expect(page.locator("#jd-countdown")).toBeVisible();
   await expect(page.locator("#jd-status")).toBeVisible({ timeout: 10_000 });

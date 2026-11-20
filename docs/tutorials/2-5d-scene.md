@@ -2,7 +2,7 @@
 
 In a 2.5D scene, the game is fitted to the floor of the room. Things stand on the floor and shrink as they go further
 back, players walk in front of them and behind them, and walls, hills and sky fill the screen around the floor. This
-tutorial builds a room to walk around, then a floor of lava with stepping stones. It follows the **Demo scenes (2.5D)**
+tutorial builds a room to walk around, then a floor of lava with stepping stones. It follows the **Demo scenes**
 game's "Walk around" and "The floor is lava" stages; every snippet is quoted from `public/game-repository.json` and
 `public/games/rules-demo/`.
 

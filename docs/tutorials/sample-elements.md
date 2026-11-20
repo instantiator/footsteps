@@ -203,7 +203,7 @@ and `role="button"` and `tabindex="0"` so keyboard players can reach it too.
 
 ![A gold bell shape on a dark screen](images/clickable.png)
 
-A rule in the scene's data reacts to the click. This one is from the Demo (no camera) game's lamps:
+A rule in the scene's data reacts to the click. This one is from the Demo scenes game's lamps:
 
 ```json [public/game-repository.json]
 {
