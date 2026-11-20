@@ -55,6 +55,7 @@ const runEffect = (effects: ItemEffects, effect: ResolvedEffect, elements: Eleme
   if (effect.effect === "quake") effects.quake(effect, elements, run);
   else if (effect.effect === "item-fall") effects.fall(effect, elements, run);
   else if (effect.effect === "item-move") effects.move(effect, elements, run);
+  else if (effect.effect === "item-spin-away") effects.spinAway(effect, elements, run);
   else if (effect.effect === "highlight") effects.highlight(effect, elements, run);
   else if (effect.effect === "stop") effects.stop(elements, effect.stop);
 };

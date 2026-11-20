@@ -22,6 +22,9 @@
                     "$ref": "#/definitions/GamePlayerSpinAwayEffect"
                 },
                 {
+                    "$ref": "#/definitions/GameItemSpinAwayEffect"
+                },
+                {
                     "$ref": "#/definitions/GamePlayerOpacityEffect"
                 },
                 {
@@ -863,6 +866,71 @@
             "required": [
                 "effect",
                 "end"
+            ],
+            "type": "object"
+        },
+        "GameItemSpinAwayEffect": {
+            "description": "Knocks elements off the scene, turning as they go, where they stay until it resets.",
+            "properties": {
+                "angle": {
+                    "$ref": "#/definitions/GameEffectAngle",
+                    "description": "The directions they may leave in; one is picked at random. Defaults to -60 to 60."
+                },
+                "cycleMs": {
+                    "description": "The length of one loop, when `durationMs` is `\"indefinite\"`: milliseconds, or an expression.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
+                },
+                "delayMs": {
+                    "description": "Milliseconds to wait before it happens, or an expression worked out when its rule fires. Defaults to 0. Later\nactions in a plain `do` list don't wait for it.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
+                },
+                "durationMs": {
+                    "description": "How long it runs.",
+                    "type": [
+                        "string",
+                        "number"
+                    ]
+                },
+                "easing": {
+                    "description": "A CSS easing function: how it speeds up and slows down.",
+                    "type": "string"
+                },
+                "effect": {
+                    "const": "item-spin-away",
+                    "description": "Which effect this is.",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "A name, so rules can follow the action starting (`actionStart`) and ending (`actionEnd`).",
+                    "type": "string"
+                },
+                "opacity": {
+                    "description": "How opaque they are by the time they are off-screen. Defaults to 1.",
+                    "maximum": 1,
+                    "minimum": 0,
+                    "type": "number"
+                },
+                "rotations": {
+                    "description": "How many times they turn on the way. The direction is random. Defaults to 2.",
+                    "type": "number"
+                },
+                "target": {
+                    "description": "CSS selector for the elements. Defaults to every item in the shown scenes.",
+                    "type": "string"
+                },
+                "zoom": {
+                    "description": "How much bigger or smaller they are by the time they are off-screen, as a multiple above 0. Defaults to 1.",
+                    "type": "number"
+                }
+            },
+            "required": [
+                "effect"
             ],
             "type": "object"
         },

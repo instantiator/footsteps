@@ -134,8 +134,9 @@ type VisitedScene = Pick<GameSceneBase, "component" | "resetScene" | "avatar">;
 function eachScene(game: GameData, visit: (scene: VisitedScene, path: string, can25D: boolean) => void): void {
   const visitWithResets = (scene: VisitedScene, path: string, can25D: boolean): void => {
     visit(scene, path, can25D);
-    if (isDefined(scene.resetScene) && typeof scene.resetScene !== "string")
-      visitWithResets(scene.resetScene, `${path}.resetScene`, can25D);
+    const reset = scene.resetScene;
+    if (isDefined(reset) && typeof reset !== "string")
+      visitWithResets(reset, `${path}.resetScene`, can25D || reset.scene === "2.5D");
   };
   const mode = game.modules?.scene;
   game.scenes.forEach((scene, index) => visitWithResets(scene, `scenes[${index}]`, (scene.scene ?? mode) === "2.5D"));

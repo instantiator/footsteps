@@ -122,10 +122,8 @@ export interface GameEffectAngle {
   max: number;
 }
 
-/** Knocks players off the scene, turning as they go. They are removed once they have gone. */
-export interface GamePlayerSpinAwayEffect extends GamePlayerEffectBase {
-  /** Which effect this is. */
-  effect: "player-spin-away";
+/** How something spins away off the scene. */
+export interface GameSpinAwayOptions {
   /** The directions they may leave in; one is picked at random. Defaults to -60 to 60. */
   angle?: GameEffectAngle;
   /**
@@ -141,6 +139,18 @@ export interface GamePlayerSpinAwayEffect extends GamePlayerEffectBase {
   opacity?: number;
   /** How many times they turn on the way. The direction is random. Defaults to 2. */
   rotations?: number;
+}
+
+/** Knocks players off the scene, turning as they go. They are removed once they have gone. */
+export interface GamePlayerSpinAwayEffect extends GamePlayerEffectBase, GameSpinAwayOptions {
+  /** Which effect this is. */
+  effect: "player-spin-away";
+}
+
+/** Knocks elements off the scene, turning as they go, where they stay until it resets. */
+export interface GameItemSpinAwayEffect extends GameItemEffectBase, GameSpinAwayOptions {
+  /** Which effect this is. */
+  effect: "item-spin-away";
 }
 
 /** Hides players, or shows them again. They are still active, and can still interact. */
@@ -215,6 +225,7 @@ export type GameEffect =
   | GameQuakeEffect
   | GameItemFallEffect
   | GameItemMoveEffect
+  | GameItemSpinAwayEffect
   | GameHighlightEffect
   | GamePlayerFallEffect
   | GamePlayerSpinAwayEffect
@@ -245,6 +256,7 @@ export const GAME_EFFECT_NAMES = [
   "quake",
   "item-fall",
   "item-move",
+  "item-spin-away",
   "highlight",
   "player-fall",
   "player-spin-away",

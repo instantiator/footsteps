@@ -17,14 +17,7 @@ import type { RuleEvent } from "../logic/GameRuleUtils";
 import { easingFunction } from "./EasingProbe";
 import type { ScreenPoint } from "./EffectTargets";
 import type { EffectRun, ItemEffects } from "./ItemEffects";
-
-/** A size on screen. */
-interface ScreenSize {
-  /** Across. */
-  width: number;
-  /** Down. */
-  height: number;
-}
+import { offscreenDistance, spinAwayKeyframes, spinAwayPath, type ScreenSize } from "./SpinAway";
 
 /** The wrapper of the player with this number; effects stay with it, as it stays with them. */
 const wrapperOfNumber = (number: number | undefined): HTMLElement | null =>
@@ -38,28 +31,6 @@ const isMirrored = (wrapper: HTMLElement): boolean =>
 export const silhouetteTop = (mask: Uint8Array, width: number, height: number): number => {
   const first = mask.indexOf(1);
   return first < 0 || height <= 0 ? 1 : Math.floor(first / width) / height;
-};
-
-/**
- * How far a player must travel in a direction to be fully off the scene, centre first.
- * @param centre where their body's centre is, with the scene's top left at 0, 0
- * @param radius the furthest any of them reaches from it, as they arrive, allowing for zoom and rotation
- * @param degrees 0 is straight up, 90 is right, and -90 is left
- */
-export const offscreenDistance = (
-  centre: ScreenPoint,
-  radius: number,
-  degrees: number,
-  { width, height }: ScreenSize,
-): number => {
-  const radians = (degrees * Math.PI) / 180;
-  const across = Math.sin(radians);
-  const down = -Math.cos(radians);
-  const toEdge = (from: number, size: number, direction: number) => {
-    if (direction === 0) return Infinity;
-    return ((direction > 0 ? size - from : from) + radius) / Math.abs(direction);
-  };
-  return Math.min(toEdge(centre.x, width, across), toEdge(centre.y, height, down));
 };
 
 /** Who a player effect applies to, of those it can apply to. */
@@ -240,10 +211,8 @@ export class PlayerEffects {
 
   /** Knocks a player off the scene, turning about the centre of their body. */
   private spin(wrapper: HTMLElement, id: number, effect: Resolved<GamePlayerSpinAwayEffect>, run: EffectRun): void {
-    const { angle, zoom = 1, opacity = 1, rotations = 2, easing = "ease-out", durationMs = 1000 } = effect;
-    const { min, max } = angle ?? { min: -60, max: 60 };
-    const degrees = min + Math.random() * (max - min);
-    const turn = rotations * 360 * (Math.random() < 0.5 ? -1 : 1);
+    const { zoom = 1, opacity = 1, easing = "ease-out", durationMs = 1000 } = effect;
+    const { degrees, turn } = spinAwayPath(effect);
     const rect = wrapper.getBoundingClientRect();
     const centre = this.bodyCentre(wrapper);
     const fromCorner = { x: centre.x - rect.left, y: centre.y - rect.top };
@@ -252,15 +221,10 @@ export class PlayerEffects {
     const size = this.players.frameSize();
     const radius = this.reachOf(person?.mask, size, rect) * zoom;
     const distance = offscreenDistance(fromCorner, radius, degrees, rect);
-    const radians = (degrees * Math.PI) / 180;
+    const [from, to] = spinAwayKeyframes(degrees, turn, distance, zoom);
     const keyframes = [
-      { translate: "0 0", rotate: "0deg", scale: "1", opacity: 1 },
-      {
-        translate: `${Math.sin(radians) * distance}px ${-Math.cos(radians) * distance}px`,
-        rotate: `${turn}deg`,
-        scale: String(zoom),
-        opacity,
-      },
+      { ...from, opacity: 1 },
+      { ...to, opacity },
     ];
     const on = { element: wrapper, name: effect.effect };
     this.effects.playToEnd(on, keyframes, { durationMs, easing, composite: "replace" }, this.leaving(id, run));
