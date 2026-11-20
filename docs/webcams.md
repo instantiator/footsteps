@@ -10,7 +10,7 @@ See [camera mode](camera-mode.md) for how the camera is used.
 | --------------------------------------------------------------------------------------- | ------------ | ------------- | ------------------ | ----------------- | ------ | ---------------- | ---------------------- |
 | [LifeCam HD-3000](https://www.farnell.com/datasheets/1728895.pdf)                       | Microsoft    | HD            | 1280 × 720         | 68.5° (published) | 16:9   | USB-A            | No                     |
 | [LifeCam HD-3000](https://www.farnell.com/datasheets/1728895.pdf)                       | Microsoft    | SD            | 640 × 480          | ≈58° (estimated)  | 4:3    | USB-A            | No                     |
-| [MacBook Pro 13-inch (M1, 2020) FaceTime HD camera](https://support.apple.com/kb/SP824) | Apple        | HD            | 1280 × 720         | Not published     | 16:9   | Built-in         | No (uses the laptop's) |
+| [MacBook Pro 13-inch (M1, 2020) FaceTime HD camera](https://support.apple.com/kb/SP824) | Apple        | HD            | 1280 × 720         | 65° (measured)    | 16:9   | Built-in         | No (uses the laptop's) |
 
 ## Measuring a field of view
 
