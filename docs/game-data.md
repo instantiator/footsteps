@@ -524,7 +524,7 @@ it. `mouse-enter` is a good mouse stand-in for walking onto something with the c
 `body-enter` and `head-enter`), though a `mouse-feet` fallback, as in the demo's floor stages, needs only `foot-enter`; pair it with `click` where keyboard players need a way in too. `threshold` is the fraction of the body part that must be inside the
 element (0–1, default `1`). Interactions fire once per approach, and re-arm when the player moves away. An `-exit`
 fires only after its `-enter` has fired, so pair them (eg. `["hand-exit", "mouse-exit"]` to undo
-`["hand-enter", "mouse-enter"]`, as the demo's bulb does). The monitor
+`["hand-enter", "mouse-enter"]`). The monitor
 is described under [how interactions work](camera-mode.md#how-interactions-work), and jumps under
 [jumps](camera-mode.md#jumps). Jump interactions fire as the player lands.
 

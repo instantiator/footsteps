@@ -20,7 +20,7 @@ const openDemo = async (page: Page, change: (game: GameData) => void = () => {})
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto(`/game/${GAME_ID}/play?noCamera=true`);
   await page.locator("#demo-title").click();
-  await expect(page.locator("#switch")).toBeVisible();
+  await expect(page.locator("#candle-left")).toBeVisible();
 };
 
 /** The challenge scene of a stage. */
@@ -93,19 +93,11 @@ const clickBalloon = async (page: Page, n: number) => {
 };
 
 test.describe("rules demo", () => {
-  test("moves the toggle on each click, keeping its element so the move transitions", async ({ page }) => {
+  test("moving the mouse to a candle's tip lights that candle only", async ({ page }) => {
     await openDemo(page);
-    const handle = await page.$("#switch");
-    const before = (await page.locator("#switch").boundingBox())!;
-
-    await page.locator("#switch").click();
-
-    await expect(page.locator("#switch")).toHaveClass(/position-2/);
-    expect(await handle!.evaluate((element) => element.isConnected)).toBe(true);
-    // Partway through the transition, the switch is between its two places
-    const during = (await page.locator("#switch").boundingBox())!;
-    await expect.poll(async () => (await page.locator("#switch").boundingBox())!.x).toBeGreaterThan(during.x);
-    expect(during.x).toBeGreaterThanOrEqual(before.x);
+    await page.locator("#candle-left-tip").hover();
+    await expect(page.locator("#candle-left")).toHaveClass(/lit/);
+    await expect(page.locator("#candle-right")).not.toHaveClass(/lit/);
   });
 
   test("stands on Start, counts 3-2-1, then starts the stage", async ({ page }) => {
@@ -138,14 +130,14 @@ test.describe("rules demo", () => {
 
   test("keeps a scene's state while it is hidden", async ({ page }) => {
     await openDemo(page);
-    await page.locator("#switch").click();
-    await expect(page.locator("#switch")).toHaveClass(/position-2/);
+    await page.locator("#candle-right-tip").hover();
+    await expect(page.locator("#candle-right")).toHaveClass(/lit/);
 
     await page.locator("#stage-link-pits").click();
     await expect(page.locator("#reset-message")).toBeVisible();
     await page.getByRole("button", { name: "Close challenge" }).click();
 
-    await expect(page.locator("#switch")).toHaveClass(/position-2/);
+    await expect(page.locator("#candle-right")).toHaveClass(/lit/);
   });
 
   /** Rests the mouse in the sky, off every item and tile. */
@@ -546,15 +538,6 @@ test.describe("rules demo", () => {
     await page.reload();
 
     await expect(page.locator("#reset-message")).toHaveText("Stand on Start, or put your mouse on it");
-  });
-
-  test("lights the bulb while the mouse is over it", async ({ page }) => {
-    await openDemo(page);
-    await page.locator("#bulb").hover();
-    await expect(page.locator("#bulb")).toHaveClass(/lit/);
-
-    await page.locator("#switch").hover();
-    await expect(page.locator("#bulb")).not.toHaveClass(/lit/);
   });
 
   test("lets the mouse through empty foreground to the background, but not through something drawn over it", async ({

@@ -15,7 +15,7 @@ for (const stageId of stageIds) {
     await page.locator("#demo-title").click();
     await page.locator(`#stage-link-${stageId}`).click();
     await expect(page.locator(`#stage-link-${stageId}`)).toHaveCount(0);
-    await expect(page.locator("#switch")).toHaveCount(0);
+    await expect(page.locator("#candle-left")).toHaveCount(0);
     await expect(page.locator(".demo-stages")).toHaveCount(0);
   });
 }

@@ -108,14 +108,15 @@ describe("rules demo, played by camera", () => {
     );
     await waitFor(() => expect($("#demo-title")).not.toBeNull());
     fireEvent.click($("#demo-title")!);
-    await waitFor(() => expect($("#switch")).not.toBeNull());
+    await waitFor(() => expect($("#candle-left")).not.toBeNull());
   };
 
-  it("moves the toggle at a touch of the hand", async () => {
+  it("lights a candle when a hand is over its tip", async () => {
     await start();
-    expect($("#switch")).toHaveClass("position-1");
-    touch("#switch", "hand-enter");
-    await waitFor(() => expect($("#switch")).toHaveClass("position-2"));
+    expect($("#candle-left")).not.toHaveClass("lit");
+    touch("#candle-left-tip", "hand-enter");
+    await waitFor(() => expect($("#candle-left")).toHaveClass("lit"));
+    expect($("#candle-right")).not.toHaveClass("lit");
   });
 
   /** Enters the balloons stage, stands on the shared reset's Start, and waits out its countdown. */
@@ -129,14 +130,6 @@ describe("rules demo, played by camera", () => {
     await wait(2000);
     await waitFor(() => expect($("#balloon-0")).not.toBeNull());
   };
-
-  it("lights the bulb while a hand is over it", async () => {
-    await start();
-    touch("#bulb", "hand-enter");
-    await waitFor(() => expect($("#bulb")).toHaveClass("lit"));
-    touch("#bulb", "hand-exit");
-    await waitFor(() => expect($("#bulb")).not.toHaveClass("lit"));
-  });
 
   it("keeps the shared reset showing until Start is touched, then counts 3-2-1", async () => {
     await start();

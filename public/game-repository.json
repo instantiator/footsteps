@@ -548,15 +548,15 @@
                 "rings": "Ring collection"
               }
             },
-            "initialState": { "position": 1, "lit": false },
+            "initialState": { "leftLit": false, "rightLit": false },
             "rules": [
               {
-                "on": { "interact": ["hand-enter", "mouse-enter"], "target": "#bulb", "threshold": 0.3 },
-                "do": [{ "set": { "lit": "true" } }]
+                "on": { "interact": ["hand-enter", "mouse-enter"], "target": "#candle-left-tip", "threshold": 0.05 },
+                "do": [{ "set": { "leftLit": "true" } }]
               },
               {
-                "on": { "interact": ["hand-exit", "mouse-exit"], "target": "#bulb", "threshold": 0.3 },
-                "do": [{ "set": { "lit": "false" } }]
+                "on": { "interact": ["hand-enter", "mouse-enter"], "target": "#candle-right-tip", "threshold": 0.05 },
+                "do": [{ "set": { "rightLit": "true" } }]
               },
               {
                 "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-balloons", "threshold": 0.5 },
@@ -605,10 +605,6 @@
               {
                 "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-rings", "threshold": 0.5 },
                 "do": [{ "enterStage": "rings" }]
-              },
-              {
-                "on": { "interact": ["click", "hand-enter"], "target": "#switch", "threshold": 0.5 },
-                "do": [{ "set": { "position": "if state.position == 1 then 2 else 1" } }]
               }
             ],
             "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/stages.html" },

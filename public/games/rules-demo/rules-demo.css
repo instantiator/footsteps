@@ -39,27 +39,6 @@
   background: #2a9d8f;
 }
 
-/* The toggle: moves between two positions, animated by a transition as idiomorph keeps the element */
-.demo-switch {
-  position: absolute;
-  width: 8cqw;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: #f1c40f;
-  cursor: pointer;
-  transition:
-    left 0.4s ease,
-    top 0.4s ease;
-}
-.demo-switch.position-1 {
-  left: 10cqw;
-  top: 55cqh;
-}
-.demo-switch.position-2 {
-  left: 75cqw;
-  top: 70cqh;
-}
-
 /* The scenery every screen shares, drawn in the floor's perspective: sky above the horizon, and grass out to it */
 .demo-horizon {
   background: linear-gradient(#457b9d, #a8dadc 90%, #f1faee);
@@ -310,22 +289,75 @@
   pointer-events: none;
 }
 
-/* A bulb that lights while something is over it */
-.demo-bulb {
+/*
+ * A candle standing on the bottom edge of the overview, lit by a hand or the mouse at its tip. The tip area covers the
+ * wick and generous space above it, so "near the tip" is enough. The flame and its glow show only while lit.
+ */
+.demo-candle {
   position: absolute;
-  right: 10cqw;
-  bottom: 12cqh;
-  width: 8cqw;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: #555;
-  transition:
-    background 0.2s ease,
-    box-shadow 0.2s ease;
+  bottom: 0;
+  width: 7cqw;
+  height: 30cqh;
 }
-.demo-bulb.lit {
-  background: #fff3b0;
-  box-shadow: 0 0 6cqh #ffd166;
+.demo-candle-left {
+  left: 6cqw;
+}
+.demo-candle-right {
+  right: 6cqw;
+}
+.candle-wax {
+  position: absolute;
+  inset: auto 0 0;
+  height: 17cqh;
+  border-radius: 1cqh 1cqh 0 0;
+  background: linear-gradient(90deg, #e9dcc3, #fff8e7 45%, #d9c9a8);
+}
+.candle-wick {
+  position: absolute;
+  bottom: 17cqh;
+  left: calc(50% - 0.2cqw);
+  width: 0.4cqw;
+  height: 3cqh;
+  background: #2b2118;
+}
+.candle-tip {
+  position: absolute;
+  bottom: 14cqh;
+  left: -3cqw;
+  width: 13cqw;
+  height: 16cqh;
+}
+.candle-flame {
+  position: absolute;
+  bottom: 19.5cqh;
+  left: calc(50% - 1.1cqw);
+  width: 2.2cqw;
+  height: 8cqh;
+  border-radius: 50% 50% 50% 50% / 65% 65% 35% 35%;
+  background: radial-gradient(ellipse at 50% 75%, #fff8c4 15%, #ffb703 55%, #fb5607 100%);
+  box-shadow:
+    0 0 3cqh 1cqh rgba(255, 183, 3, 0.7),
+    0 0 9cqh 4cqh rgba(255, 140, 0, 0.35);
+  transform-origin: 50% 100%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.demo-candle.lit .candle-flame {
+  opacity: 1;
+  animation: candle-flicker 0.8s ease-in-out infinite alternate;
+}
+@keyframes candle-flicker {
+  from {
+    transform: scale(1, 1) rotate(-2deg);
+  }
+  to {
+    transform: scale(0.92, 1.07) rotate(2deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .demo-candle.lit .candle-flame {
+    animation: none;
+  }
 }
 
 /* Posts for a player to walk behind and in front of, sized as at the front of the floor, where the engine stands them */
