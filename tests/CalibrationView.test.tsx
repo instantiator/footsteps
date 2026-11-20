@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CameraChoice } from "../src/components/camera/CameraChoice";
 import type CharacterCanvas from "../src/components/camera/CharacterCanvas";
-import { loadCalibration, saveCalibration } from "../src/components/camera/FloorCalibration";
+import { cameraKeyOf, loadCalibration, saveCalibration } from "../src/components/camera/FloorCalibration";
 import { DEFAULT_CORNERS, isValidFloor, type Corners } from "../src/components/camera/FloorGeometry";
 import type { PlayerFrame } from "../src/components/camera/PlayerMonitor";
 import CalibrationView from "../src/components/landing/CalibrationView";
@@ -153,24 +153,24 @@ describe("CalibrationView", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     expect(screen.getByRole("status")).toHaveTextContent("Saved");
-    expect(loadCalibration("rear")?.backLeft.x).toBeCloseTo(0.24, 6);
-    expect(loadCalibration("default")).toBeUndefined();
+    expect(loadCalibration(cameraKeyOf({ deviceId: "rear" }))?.backLeft.x).toBeCloseTo(0.24, 6);
+    expect(loadCalibration(cameraKeyOf({}))).toBeUndefined();
 
     fireEvent.keyDown(corner("Back left corner"), { key: "ArrowLeft" });
     expect(screen.getByRole("status")).toHaveTextContent("Changes not saved yet");
   });
 
   it("resets to the default area without saving", () => {
-    saveCalibration("default", { ...DEFAULT_CORNERS, backLeft: { x: 0.3, y: 0.5 } });
+    saveCalibration(cameraKeyOf({}), { ...DEFAULT_CORNERS, backLeft: { x: 0.3, y: 0.5 } });
     renderView();
     expect(positionOf(corner("Back left corner"))).toEqual({ x: 0.3, y: 0.5 });
     fireEvent.click(screen.getByRole("button", { name: "Reset to the default area" }));
     expect(positionOf(corner("Back left corner"))).toEqual(DEFAULT_CORNERS.backLeft);
-    expect(loadCalibration("default")?.backLeft).toEqual({ x: 0.3, y: 0.5 });
+    expect(loadCalibration(cameraKeyOf({}))?.backLeft).toEqual({ x: 0.3, y: 0.5 });
   });
 
   it("forgets every saved area only once the player confirms", () => {
-    saveCalibration("default", DEFAULT_CORNERS);
+    saveCalibration(cameraKeyOf({}), DEFAULT_CORNERS);
     saveCalibration("rear", DEFAULT_CORNERS);
     renderView();
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
@@ -180,7 +180,7 @@ describe("CalibrationView", () => {
     confirm.mockReturnValue(true);
     fireEvent.click(screen.getByRole("button", { name: "Forget all saved areas" }));
     expect(loadCalibration("rear")).toBeUndefined();
-    expect(loadCalibration("default")).toBeUndefined();
+    expect(loadCalibration(cameraKeyOf({}))).toBeUndefined();
     expect(screen.getByRole("status")).toHaveTextContent("Not saved yet");
   });
 });

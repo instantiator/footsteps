@@ -60,8 +60,14 @@ on, so changing only the module is not enough.
       appears.
 - [ ] On `/`, each tile shows its badges: scene modes, camera, size, sound, and "% complete" once a game is saved.
       Demo (no camera) says "2D" and "No camera"; Jump and duck says "2D" and "Camera optional".
-- [ ] A camera-optional game's landing page offers "Play without the camera". Ticked, New game starts without the
+- [ ] A camera-optional game's camera dropdown offers "Play without the camera". Chosen, New game starts without the
       camera, and without asking to calibrate a 2.5D game's floor.
+- [ ] With saved progress, New game asks before clearing it; cancelling keeps it. Without saved progress, it doesn't
+      ask.
+- [ ] **Plan space** opens `/setup` in a new tab.
+- [ ] **Layout:** at desktop size, the title is on the left, the permissions and camera configuration on the right,
+      and the buttons in a bar along the bottom, with nothing hidden behind the bar. At phone width the panels stack
+      and scroll above the bar.
 - [ ] Demo (no camera) plays through by mouse: light the three lamps, answer the riddle ("keyboard"), and pick the
       green door.
 - [ ] Jump and duck, with the camera: after the countdown, snowballs roll in low and bats swoop in high, faster as
@@ -211,17 +217,26 @@ Play it once with the camera (`?debug=true` shows where your hands and feet are 
 Use the demo (`rules-demo`, "Demo scenes (2.5D)"), a 2.5D game, with the camera granted on its landing page. Start with no saved
 floor: on the calibration page, **Forget all saved areas**.
 
-- [ ] The landing page outlines the default floor on the preview, says the camera has no saved floor area, and New
-      game is disabled with "Calibrate the floor before you start".
+- [ ] The landing page draws no floor on the preview, shows "Not yet calibrated" over it, and New game is disabled.
 - [ ] **Default corners:** with the camera set up as the defaults assume (about 2 m high, tilted down a little), the
       outline lines up roughly with a floor about 2.6 m wide and 2 m deep, starting 2.5 m from the camera.
-- [ ] **Calibrate:** open "Calibrate the floor", and drag each corner to a corner of the real floor, then try the
+- [ ] **Calibrate:** press **Calibrate** beside the preview, and drag each corner to a corner of the real floor, then try the
       arrow keys on a corner. A drag that would fold the shape stops. The outline lines up with the real floor.
 - [ ] **Walking the edges:** walk to every edge and corner of the calibrated floor. Your feet stay tracked and
       green, red just past an edge, and your whole body stays in view at the back.
 - [ ] **A second person:** someone else stepping into view shows "Only one person should be in view", the feet
       stop turning green or red, and Save is disabled, until they step out again.
-- [ ] Save, then go back: the landing page says the camera has a saved floor, and New game is enabled.
+- [ ] Save, then go back: the landing page outlines the saved floor on the preview, "Not yet calibrated" has gone,
+      and New game is enabled.
+- [ ] **Configurations:** with a camera that offers more than one (the LifeCam HD-3000 offers HD and SD), switch
+      configuration on the landing page. The other configuration shows "Not yet calibrated"; calibrate it too, and
+      switching back and forth keeps each floor. Play in each: your feet land on the floor calibrated for it.
+- [ ] **Clear** beside the preview forgets the chosen configuration's floor only: "Not yet calibrated" returns for it,
+      and the other configuration keeps its floor.
+- [ ] **Reset** saves the default floor: the default outline appears on the preview, and New game is enabled.
+- [ ] **Plan space** opens `/setup` on the camera in use: with the LifeCam on SD, "Known webcam" starts on its SD
+      configuration. Opened from the home page instead, it starts on the browser's default camera if it's known, and
+      on "Generic webcam" if not.
 - [ ] **The fitted view:** open "Walk around". The view has the crop's shape: your feet reach the bottom edge at the
       floor's front, and your head stays in view at the back.
 - [ ] **A small calibration:** calibrate a small floor, about a metre square, and play "Walk around" again. The view

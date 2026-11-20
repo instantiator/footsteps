@@ -32,12 +32,12 @@ export interface CameraGameOptions {
 /**
  * Saves a floor calibration for a camera before the page loads, as a player would on the calibration page, so a game
  * with 2.5D scenes can start. It is saved again on every page load.
- * @param cameraKey the camera chosen on the landing page; the system default if omitted
+ * @param deviceId the camera chosen on the landing page, at the configured size; the system default if omitted
  */
-export const seedCalibration = async (page: Page, corners: Corners = DEFAULT_CORNERS, cameraKey = "default") => {
+export const seedCalibration = async (page: Page, corners: Corners = DEFAULT_CORNERS, deviceId = "default") => {
   await page.addInitScript(
-    ({ key, saved }) => localStorage.setItem("footsteps:floor-calibration", JSON.stringify({ [key]: saved })),
-    { key: cameraKey, saved: corners },
+    ({ key, saved }) => localStorage.setItem("footsteps:floor-calibrations", JSON.stringify({ [key]: saved })),
+    { key: `${deviceId}@1280x720`, saved: corners },
   );
 };
 

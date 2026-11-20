@@ -33,7 +33,7 @@ test("starts the game from the landing page at /play", async ({ page }) => {
   await expect(page.locator("#game-container")).toBeVisible();
 });
 
-test("plays with the camera chosen on the landing page, and shows no picker without a grant", async ({
+test("plays with the camera chosen on the landing page, and opens no camera without a grant", async ({
   page,
   context,
 }) => {
@@ -57,9 +57,12 @@ test("plays with the camera chosen on the landing page, and shows no picker with
     });
   await expect.poll(lastAsked, { timeout: 20_000 }).toEqual({ exact: "fake-rear" });
 
+  // Without a grant, the dropdown offers only the system default and playing without, and lists no cameras
   await context.clearPermissions();
   await page.goto("/game/magic-trifle");
-  await expect(page.getByRole("combobox", { name: "Camera" })).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: "Camera" })).toBeVisible();
+  await expect(page.getByRole("option", { name: "Play without the camera" })).toBeAttached();
+  await expect(page.getByRole("option", { name: /Fake rear camera/ })).toHaveCount(0);
 });
 
 test("holds a 2.5D game back until the floor is calibrated, and calibrates it", async ({ page }) => {
@@ -69,12 +72,11 @@ test("holds a 2.5D game back until the floor is calibrated, and calibrates it", 
   await expect(page).toHaveURL(/\/game\/rules-demo$/);
 
   const newGame = page.getByRole("button", { name: "New game" });
-  await expect(page.getByText("Calibrate the floor before you start.")).toBeVisible();
+  await expect(page.getByText("Not yet calibrated")).toBeVisible();
   await expect(newGame).toBeDisabled();
-  await expect(page.getByText(/This camera has no saved floor area yet/)).toBeVisible();
-  await expect(page.locator(".game-camera-preview polygon")).toBeAttached();
+  await expect(page.locator(".game-camera-preview polygon")).toHaveCount(0);
 
-  await page.getByRole("link", { name: "Calibrate the floor" }).click();
+  await page.getByRole("link", { name: "Calibrate", exact: true }).click();
   const saved = page.locator(".calibration-actions").getByRole("status");
   await expect(page).toHaveURL(/\/game\/rules-demo\/calibrate$/);
   await expect(saved).toHaveText("Not saved yet");
@@ -89,7 +91,8 @@ test("holds a 2.5D game back until the floor is calibrated, and calibrates it", 
   await expect(saved).toHaveText("Saved");
 
   await page.getByRole("link", { name: "Back to the game" }).click();
-  await expect(page.getByText(/This camera has a saved floor area/)).toBeVisible();
+  await expect(page.locator(".game-camera-preview polygon")).toBeAttached();
+  await expect(page.getByText("Not yet calibrated")).toHaveCount(0);
   await expect(newGame).toBeEnabled();
   await newGame.click();
   await expect(page.locator("#game-container")).toBeVisible();
@@ -110,8 +113,8 @@ test("shows each game's badges on its tile and its landing page, and plays witho
   await expect(page).toHaveURL(/\/game\/rules-demo$/);
   await expect(page.getByRole("list", { name: "About this game" })).toContainText("Camera optional");
   // No floor is calibrated, which only the camera needs
-  await expect(page.getByText("Calibrate the floor before you start.")).toBeVisible();
-  await page.getByRole("checkbox", { name: "Play without the camera" }).check();
+  await expect(page.getByText("Not yet calibrated")).toBeVisible();
+  await page.getByRole("combobox", { name: "Camera" }).selectOption({ label: "Play without the camera" });
   await page.getByRole("button", { name: "New game" }).click();
   await expect(page).toHaveURL(/\/play\?noCamera=true$/);
   await expect(page.locator("#game-container")).toBeVisible();

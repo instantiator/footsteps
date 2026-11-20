@@ -46,10 +46,18 @@ const expectEveryoneInView = (layout: SetupLayout, sv: number, tallest: number, 
 
 const LARGE_ROOM = inputs({ roomLength: 10, roomWidth: 8 });
 
+/** The generic 4:3 webcam the docs' default floor assumes: 65° diagonal, which is 42° vertical. */
+const WEBCAM_4_3 = { diagonalFov: 65, aspect: 4 / 3 };
+
 describe("the camera's view", () => {
-  it("takes the default webcam to a 42° vertical field of view", () => {
-    const { sv } = cameraView(DEFAULT_SETUP_INPUTS, constants({ edgeInset: 0 }));
+  it("takes a 65° 4:3 webcam to a 42° vertical field of view", () => {
+    const { sv } = cameraView(inputs(WEBCAM_4_3), constants({ edgeInset: 0 }));
     expect(2 * halfView(sv)).toBeCloseTo(42, 0);
+  });
+
+  it("takes a LifeCam HD-3000 at 16:9 to about 37° vertically", () => {
+    const { sv } = cameraView(inputs({ diagonalFov: 68.5, aspect: 16 / 9 }), constants({ edgeInset: 0 }));
+    expect(2 * halfView(sv)).toBeCloseTo(37, 0);
   });
 
   it("shrinks the usable view by the edge inset", () => {
@@ -61,7 +69,7 @@ describe("the camera's view", () => {
 
   it("prefers a measurement to the diagonal, and reports the diagonal it implies", () => {
     const measured = { distance: 1, width: 1 };
-    const view = cameraView(inputs({ measured, diagonalFov: 120 }), constants({ edgeInset: 0 }));
+    const view = cameraView(inputs({ ...WEBCAM_4_3, measured, diagonalFov: 120 }), constants({ edgeInset: 0 }));
     expect(view.sh).toBeCloseTo(0.5);
     expect(view.sv).toBeCloseTo(0.375);
     expect(view.impliedDiagonalFov).toBeCloseTo(2 * halfView(0.625));
@@ -140,7 +148,7 @@ describe("the floor's width and margins", () => {
   });
 
   it("centres the floor in the space between unequal margins", () => {
-    const result = planSetup(inputs({ roomLength: 10, marginLeft: 0.5, marginRight: 0.1 }));
+    const result = planSetup(inputs({ roomLength: 10, roomWidth: 4, marginLeft: 0.5, marginRight: 0.1 }));
     expect(result.floorWidth).toBeCloseTo(2.5);
     expect(result.marginLeft).toBeCloseTo(0.95);
     expect(result.marginRight).toBeCloseTo(0.55);
@@ -217,7 +225,7 @@ describe("rooms without space", () => {
 
 describe("the documented default", () => {
   it("puts a 2 m camera's floor about 2.1 m away, tilted about 22°", () => {
-    const room = inputs({ roomLength: 10, roomWidth: 8, tallestPlayer: 1.8 });
+    const room = inputs({ ...WEBCAM_4_3, roomLength: 10, roomWidth: 8, tallestPlayer: 1.8 });
     const limits = constants({ edgeInset: 0, maxFloorDepth: 2, maxFloorWidth: 2.6 });
     const view = cameraView(room, limits);
     const layout = layoutAt(2, view, room, limits);

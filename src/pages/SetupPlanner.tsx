@@ -1,5 +1,5 @@
-import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
-import { Link } from "react-router";
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { Link, useSearchParams } from "react-router";
 import NumberField from "../components/setup/NumberField";
 import SetupIllustration from "../components/setup/SetupIllustration";
 import SetupScreenView from "../components/setup/SetupScreenView";
@@ -11,6 +11,7 @@ import {
   type SetupInputs,
   type SetupResult,
 } from "../components/setup/SetupCalculations";
+import { SETUP_WEBCAMS, startingWebcam, type SetupWebcam } from "../components/setup/SetupWebcams";
 import "./SetupPlanner.css";
 
 /** The user's values as the form holds them: any may be blank, and the measurement is two separate fields. */
@@ -108,12 +109,37 @@ const inputsOf = ({ measuredDistance, measuredWidth, ...values }: FormValues): S
 const metres = (value: number) => `${value.toFixed(2)} m`;
 
 /**
+ * Starts with the camera the game uses, once it's known, filling in its values.
+ * @returns the camera chosen in the dropdown, and a way to change it
+ */
+const useStartingWebcam = (setValues: Dispatch<SetStateAction<FormValues>>) => {
+  const [searchParams] = useSearchParams();
+  const [index, setIndex] = useState(0);
+  const query = searchParams.toString();
+  useEffect(() => {
+    let cancelled = false;
+    startingWebcam(new URLSearchParams(query))
+      .then((webcam) => {
+        if (cancelled) return;
+        setIndex(SETUP_WEBCAMS.indexOf(webcam));
+        setValues((old) => withWebcam(old, webcam));
+      })
+      .catch((error: unknown) => console.warn("Could not find the camera to plan for:", error));
+    return () => {
+      cancelled = true;
+    };
+  }, [query, setValues]);
+  return { index, setIndex };
+};
+
+/**
  * Works out how big a floor a room allows and where to put the camera: the user's values and the assumptions on the
  * left, and the recommendation on the right.
  */
 export default function SetupPlanner() {
   const [values, setValues] = useState<FormValues>(DEFAULT_SETUP_INPUTS);
   const [constants, setConstants] = useState<SetupConstants>(DEFAULT_SETUP_CONSTANTS);
+  const webcam = useStartingWebcam(setValues);
   const inputs = useMemo(() => inputsOf(values), [values]);
   const plan = useMemo(() => {
     try {
@@ -133,7 +159,7 @@ export default function SetupPlanner() {
       <Explanation />
       <div className="setup-columns">
         <div>
-          <InputFields values={values} setValues={setValues} />
+          <InputFields values={values} setValues={setValues} webcam={webcam} />
           <ConstantFields constants={constants} setConstants={setConstants} />
         </div>
         <div>
@@ -153,7 +179,15 @@ export default function SetupPlanner() {
 }
 
 /** The user's values, grouped, with the camera's picture shape among them. */
-function InputFields({ values, setValues }: { values: FormValues; setValues: Dispatch<SetStateAction<FormValues>> }) {
+function InputFields({
+  values,
+  setValues,
+  webcam,
+}: {
+  values: FormValues;
+  setValues: Dispatch<SetStateAction<FormValues>>;
+  webcam: { index: number; setIndex: (index: number) => void };
+}) {
   return INPUT_GROUPS.map(({ legend, fields }) => (
     <fieldset key={legend}>
       <legend>{legend}</legend>
@@ -169,10 +203,13 @@ function InputFields({ values, setValues }: { values: FormValues; setValues: Dis
         />
       ))}
       {legend === "Camera" && (
-        <AspectChoice
-          value={values.aspect ?? DEFAULT_SETUP_INPUTS.aspect}
-          onChange={(aspect) => setValues((old) => ({ ...old, aspect }))}
-        />
+        <>
+          <AspectChoice
+            value={values.aspect ?? DEFAULT_SETUP_INPUTS.aspect}
+            onChange={(aspect) => setValues((old) => ({ ...old, aspect }))}
+          />
+          <WebcamChoice {...webcam} onUse={(chosen) => setValues((old) => withWebcam(old, chosen))} />
+        </>
       )}
     </fieldset>
   ));
@@ -204,6 +241,42 @@ function ConstantFields({
         Reset defaults
       </button>
     </fieldset>
+  );
+}
+
+/** The form with a camera's field of view, where known, and shape, in place of any measurement. */
+const withWebcam = (values: FormValues, { diagonalFov, aspect }: SetupWebcam): FormValues => ({
+  ...values,
+  diagonalFov: diagonalFov ?? values.diagonalFov,
+  aspect,
+  measuredDistance: undefined,
+  measuredWidth: undefined,
+});
+
+/** A choice of the known webcams, filling in the camera's values when used. */
+function WebcamChoice({
+  index,
+  setIndex,
+  onUse,
+}: {
+  index: number;
+  setIndex: (index: number) => void;
+  onUse: (webcam: SetupWebcam) => void;
+}) {
+  return (
+    <div className="number-field setup-webcam">
+      <label htmlFor="setup-webcam">Known webcam</label>
+      <select id="setup-webcam" value={index} onChange={(event) => setIndex(Number(event.target.value))}>
+        {SETUP_WEBCAMS.map(({ name }, i) => (
+          <option key={name} value={i}>
+            {name}
+          </option>
+        ))}
+      </select>
+      <button type="button" onClick={() => onUse(SETUP_WEBCAMS[index])}>
+        Use this camera
+      </button>
+    </div>
   );
 }
 

@@ -42,7 +42,8 @@ function useCameraStart(
     let opened: MediaStream | undefined;
     const start = async () => {
       // The choice is read only here: changing camera means going back to the landing page
-      opened = await getCameraStream({ width, height }, loadCameraChoice().deviceId);
+      const choice = loadCameraChoice();
+      opened = await getCameraStream(choice.size ?? { width, height }, choice.deviceId);
       if (cancelled) return stopTracks(opened);
       element.srcObject = opened;
       await element.play();

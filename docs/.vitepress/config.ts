@@ -63,6 +63,7 @@ export default defineConfig({
           { text: "Positions, sizes and units", link: "/positions-sizes-units" },
           { text: "Game repository data", link: "/game-repository-data" },
           { text: "Camera mode", link: "/camera-mode" },
+          { text: "Known webcams", link: "/webcams" },
           { text: "Code formatting", link: "/code-formatting" },
           { text: "Outstanding issues", link: "/outstanding-issues" },
         ],

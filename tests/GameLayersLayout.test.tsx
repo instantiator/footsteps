@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentProps, ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { saveCameraChoice } from "../src/components/camera/CameraChoice";
-import { saveCalibration } from "../src/components/camera/FloorCalibration";
+import { cameraKeyOf, saveCalibration } from "../src/components/camera/FloorCalibration";
 import type CharacterCamera from "../src/components/camera/CharacterCamera";
 import type CharacterCanvas from "../src/components/camera/CharacterCanvas";
 import type { PlayerFrame } from "../src/components/camera/PlayerMonitor";
@@ -281,7 +281,7 @@ describe("GameLayersLayout in 2.5D scenes", () => {
 
   it("uses the chosen camera's calibration, and crops from the right of a mirrored image", async () => {
     saveCameraChoice({ deviceId: "rear", mirror: true });
-    saveCalibration("rear", {
+    saveCalibration(cameraKeyOf({ deviceId: "rear" }), {
       backLeft: { x: 0.3, y: 0.4 },
       backRight: { x: 0.65, y: 0.5 },
       frontRight: { x: 0.97, y: 0.95 },

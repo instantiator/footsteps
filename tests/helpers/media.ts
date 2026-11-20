@@ -68,7 +68,7 @@ export class FakeMediaStream extends EventTarget implements MediaStream {
     return this.tracks;
   }
   getVideoTracks(): MediaStreamTrack[] {
-    return [];
+    return this.tracks.filter(({ kind }) => kind === "video");
   }
   removeTrack(): void {}
 }

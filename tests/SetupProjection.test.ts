@@ -51,10 +51,17 @@ describe("what the screen shows", () => {
     screenScene(planSetup(inputs, DEFAULT_SETUP_CONSTANTS), inputs, DEFAULT_SETUP_CONSTANTS);
 
   it("fits a 4:3 picture to the screen's height, centred", () => {
-    const { picture } = scene(DEFAULT_SETUP_INPUTS);
+    const { picture } = scene({ ...DEFAULT_SETUP_INPUTS, aspect: 4 / 3 });
     expect(picture.height).toBeCloseTo(DEFAULT_SETUP_CONSTANTS.screenHeight);
     expect(picture.width).toBeCloseTo(0.68 * (4 / 3));
     expect(picture.x).toBeCloseTo((1.22 - picture.width) / 2);
+  });
+
+  it("fits a 16:9 picture to a screen a little wider than 16:9 by its height", () => {
+    const { picture } = scene({ ...DEFAULT_SETUP_INPUTS, aspect: 16 / 9 });
+    expect(picture.height).toBeCloseTo(DEFAULT_SETUP_CONSTANTS.screenHeight);
+    expect(picture.width).toBeCloseTo(0.68 * (16 / 9));
+    expect(picture.x).toBeGreaterThan(0);
   });
 
   it.each([

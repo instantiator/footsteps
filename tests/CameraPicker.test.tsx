@@ -1,6 +1,10 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ComponentProps } from "react";
+import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { loadCameraChoice, saveCameraChoice } from "../src/components/camera/CameraChoice";
+import { cameraKeyOf, isCalibrated, loadCalibration, saveCalibration } from "../src/components/camera/FloorCalibration";
+import { DEFAULT_CORNERS } from "../src/components/camera/FloorGeometry";
 import CameraPicker from "../src/components/landing/CameraPicker";
 import { FakeMediaStream, FakeMediaStreamTrack } from "./helpers/media";
 import { stubGetUserMedia } from "./helpers/permissions";
@@ -15,6 +19,10 @@ const device = (deviceId: string, label: string): MediaDeviceInfo => ({
 });
 
 const LAPTOP = device("laptop", "Laptop camera");
+
+/** A floor narrower at the front than the default. */
+const NARROW = { ...DEFAULT_CORNERS, frontLeft: { x: 0.2, y: 0.85 }, frontRight: { x: 0.8, y: 0.85 } };
+const LIFECAM = device("lifecam", "Microsoft® LifeCam HD-3000 (045e:0810)");
 const REAR = device("rear", "Rear camera");
 
 let camera: ReturnType<typeof stubGetUserMedia>;
@@ -30,6 +38,8 @@ const opensDevices = (defaultCamera: () => string) => {
     return Promise.resolve(new FakeMediaStream([track]));
   });
 };
+
+const sizes = () => screen.queryByRole<HTMLSelectElement>("combobox", { name: "Configuration" });
 
 const dropdown = () => screen.getByRole<HTMLSelectElement>("combobox", { name: "Camera" });
 
@@ -65,7 +75,9 @@ describe("CameraPicker", () => {
 
     expect(await screen.findByRole("option", { name: "✓ Rear camera" })).toBeInTheDocument();
     expect(loadCameraChoice().deviceId).toBe("rear");
-    expect(camera.getUserMedia).toHaveBeenLastCalledWith({ video: { deviceId: { exact: "rear" } } });
+    expect(camera.getUserMedia).toHaveBeenLastCalledWith({
+      video: { width: { ideal: 1280 }, height: { ideal: 720 }, deviceId: { exact: "rear" } },
+    });
     expect(tracks[0].stop).toHaveBeenCalled();
   });
 
@@ -179,5 +191,104 @@ describe("loadCameraChoice", () => {
     localStorage.setItem("footsteps:camera-choice", value);
     expect(loadCameraChoice()).toMatchObject({ mirror: false });
     expect(loadCameraChoice().deviceId).toBeUndefined();
+  });
+
+  it("keeps a saved size, and ignores one that isn't a size", () => {
+    saveCameraChoice({ size: { width: 640, height: 480 }, mirror: false });
+    expect(loadCameraChoice().size).toEqual({ width: 640, height: 480 });
+    localStorage.setItem("footsteps:camera-choice", '{"size":{"width":0,"height":"480"},"mirror":false}');
+    expect(loadCameraChoice().size).toBeUndefined();
+  });
+});
+
+describe("the configuration choice", () => {
+  it("offers a known camera's configurations, and reopens it at the chosen one", async () => {
+    camera.enumerateDevices.mockResolvedValue([LIFECAM, REAR]);
+    opensDevices(() => "lifecam");
+    render(<CameraPicker />);
+    await screen.findByRole("option", { name: "HD (1280×720)" });
+
+    fireEvent.change(sizes() ?? dropdown(), { target: { value: "640x480" } });
+
+    await waitFor(() =>
+      expect(camera.getUserMedia).toHaveBeenLastCalledWith({
+        video: { width: { ideal: 640 }, height: { ideal: 480 } },
+      }),
+    );
+    expect(loadCameraChoice().size).toEqual({ width: 640, height: 480 });
+  });
+
+  it("goes back to the configured size when the camera changes", async () => {
+    saveCameraChoice({ size: { width: 640, height: 480 }, mirror: false });
+    render(<CameraPicker />);
+    await screen.findByRole("option", { name: "Rear camera" });
+
+    fireEvent.change(dropdown(), { target: { value: "rear" } });
+
+    await waitFor(() => expect(loadCameraChoice()).toEqual({ deviceId: "rear", size: undefined, mirror: false }));
+  });
+
+  it("isn't shown when the camera can give only one size", async () => {
+    vi.spyOn(FakeMediaStreamTrack.prototype, "getCapabilities").mockReturnValue({
+      width: { max: 640 },
+      height: { max: 480 },
+    });
+    render(<CameraPicker />);
+    await screen.findByRole("option", { name: "Rear camera" });
+    expect(sizes()).toBeNull();
+  });
+});
+
+describe("the floor buttons and warnings", () => {
+  const renderPicker = (props: ComponentProps<typeof CameraPicker> = {}) =>
+    render(
+      <MemoryRouter>
+        <CameraPicker calibrateTo="/calibrate" {...props} />
+      </MemoryRouter>,
+    );
+
+  it("shows what's still needed over the preview", () => {
+    renderPicker({ granted: false, warnings: ["Camera required"] });
+    expect(screen.getByText("Camera required").closest(".game-camera-preview")).not.toBeNull();
+    expect(camera.getUserMedia).not.toHaveBeenCalled();
+  });
+
+  it("clears only the chosen configuration's floor", async () => {
+    const sd = cameraKeyOf({ size: { width: 640, height: 480 } });
+    saveCalibration(cameraKeyOf({}), NARROW);
+    saveCalibration(sd, NARROW);
+    const onCalibrationChange = vi.fn();
+    renderPicker({ onCalibrationChange });
+    await screen.findByRole("option", { name: "Rear camera" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+
+    expect(onCalibrationChange).toHaveBeenCalledOnce();
+    expect(isCalibrated(cameraKeyOf({}))).toBe(false);
+    expect(isCalibrated(sd)).toBe(true);
+  });
+
+  it("resets the chosen configuration's floor to the default floor", async () => {
+    saveCalibration(cameraKeyOf({}), NARROW);
+    const onCalibrationChange = vi.fn();
+    renderPicker({ onCalibrationChange });
+    await screen.findByRole("option", { name: "Rear camera" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+
+    expect(onCalibrationChange).toHaveBeenCalledOnce();
+    expect(loadCalibration(cameraKeyOf({}))).toEqual(DEFAULT_CORNERS);
+  });
+
+  it("tells the landing page which camera is in use, and at what size", async () => {
+    const onCameraChange = vi.fn();
+    renderPicker({ onCameraChange });
+    await waitFor(() =>
+      expect(onCameraChange).toHaveBeenLastCalledWith({
+        key: "default@1280x720",
+        label: "Laptop camera",
+        size: { width: 1280, height: 720 },
+      }),
+    );
   });
 });

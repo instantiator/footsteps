@@ -66,10 +66,13 @@ export interface SetupConstants {
   screenHeight: number;
 }
 
-/** A typical room, family and 4:3 webcam (65° diagonal, which is 42° vertical). */
+/**
+ * A family room, and a generic 4:3 webcam (65° diagonal, which is 42° vertical). The planner starts with the camera the
+ * game uses instead, where it's known (`SetupWebcams.ts`).
+ */
 export const DEFAULT_SETUP_INPUTS: SetupInputs = {
-  roomLength: 5,
-  roomWidth: 4,
+  roomLength: 5.77,
+  roomWidth: 4.27,
   clearance: 0.2,
   shortestPlayer: 1,
   tallestPlayer: 1.9,

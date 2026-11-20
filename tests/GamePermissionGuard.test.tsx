@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import GamePermissionGuard from "../src/components/core/GamePermissionGuard";
-import { saveCalibration } from "../src/components/camera/FloorCalibration";
+import { cameraKeyOf, saveCalibration } from "../src/components/camera/FloorCalibration";
 import { DEFAULT_CORNERS } from "../src/components/camera/FloorGeometry";
 import { requestGamePermission } from "../src/components/core/logic/GamePermissionUtils";
 import type { GameData } from "../src/entities/data/GameData";
@@ -67,7 +67,7 @@ describe("GamePermissionGuard for a game with 2.5D scenes", () => {
 
   it("lets the player in once the chosen camera has a floor", async () => {
     permissionQuery("granted");
-    saveCalibration("default", DEFAULT_CORNERS);
+    saveCalibration(cameraKeyOf({}), DEFAULT_CORNERS);
     renderGuard(floorGame({ mode: "camera" }));
     expect(await screen.findByText("Playing the game")).toBeInTheDocument();
   });
