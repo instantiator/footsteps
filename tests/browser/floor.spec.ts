@@ -464,3 +464,27 @@ test("lifts the mouse's feet over a shadow through a drag, and lands them where 
   await expect(avatar.locator(".mouse-feet-shadow")).toBeHidden();
   expect((await avatarDrawn(page)).y).toBeCloseTo(mid.y, 0);
 });
+
+test("a floor area catches the pointer only where it is drawn, not as its plain box before it is placed", async ({
+  page,
+}) => {
+  await page.route("**/game-repository.json", async (route) => {
+    const response = await route.fetch();
+    const repository = (await response.json()) as GameRepository;
+    repository.games["rules-demo"].resetScenes!.start.component.rules = [
+      { on: { interact: ["mouse-enter"], target: "#reset-start" }, do: [{ set: { ready: "true" } }] },
+    ];
+    await route.fulfill({ response, json: repository });
+  });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/game/rules-demo/play?noCamera=true");
+  // Clicking the title leaves the pointer resting in the middle of the screen, where Start's plain box would be
+  await page.locator("#demo-title").click();
+  await page.locator("#stage-link-pits").dispatchEvent("click");
+  const message = page.locator("#reset-message");
+  await expect(message).toHaveText("Stand on Start, or put your mouse on it");
+  await page.waitForTimeout(500);
+  await expect(message).toHaveText("Stand on Start, or put your mouse on it");
+  await page.locator("#reset-start").hover();
+  await expect(message).toHaveText("Get ready!");
+});

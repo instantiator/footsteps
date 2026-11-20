@@ -449,16 +449,6 @@ most.
 **Act when:** the next manual session. Play a run with a still mouse and note whether the first obstacles still pass
 without a hit, and whether the camera was on, the game full screen, or the mouse untouched since the stage opened.
 
-## `mouse-enter` on a floor area can fire far from it
-
-While building the shared grid reset (003.00.00), a `mouse-enter` rule on the reset's Start floor area fired with the
-pointer at the screen's top-left corner, nowhere near the area. The reset uses `foot-enter` alone, which mouse-feet
-fires, so it isn't affected. The cause isn't known yet. A likely suspect is hit-testing a floor area's box, which is
-drawn in perspective with `matrix3d`.
-
-**Act when:** a game needs `mouse-enter` (rather than mouse-feet's `foot-enter`) on a floor area. First reproduce it
-in a browser test, with the pointer well away from a floor area.
-
 ## Overview and stage dialogs sit behind players
 
 A dialog or scroll draws its image and text together in its scene's foreground (prompt 002.03.10). For a challenge

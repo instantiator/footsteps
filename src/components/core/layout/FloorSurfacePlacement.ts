@@ -225,7 +225,8 @@ export const placeSurface = (element: HTMLElement, view: FloorView, size: MaskSi
         })
       : undefined;
   setStyle(element, "transform-origin", "0 0");
-  setStyle(element, "visibility", matrix ? "" : "hidden");
+  // Visible outright once drawn, over the stylesheet's hiding of surfaces not yet placed
+  setStyle(element, "visibility", matrix ? "visible" : "hidden");
   if (matrix) setStyle(element, "transform", matrix);
   setStyle(element, "z-index", String(surfaceZIndex(surface.kind, element.closest(`.${DEPTH_STACK_CLASS}`) !== null)));
   return true;
