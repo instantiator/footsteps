@@ -86,6 +86,8 @@ describe("effects when the game loads", () => {
     ["too much static", { effect: "player-static", proportion: -1 }, "proportion must be between"],
     ["negative easing time", { effect: "player-static", easeMs: -1 }, "easeMs can't be negative"],
     ["a fall on a player", { effect: "item-fall", target: ".player-1" }, "use player-fall instead"],
+    ["a spin away on a player", { effect: "item-spin-away", target: ".player" }, "use player-spin-away instead"],
+    ["an item spin with no zoom", { effect: "item-spin-away", zoom: 0 }, "zoom must be above 0"],
     ["a move on a player", { effect: "item-move", target: ".player", end: { left: 0, top: 0 } }, "item-move would"],
     [
       "a shadow on a player",
@@ -247,12 +249,21 @@ describe("the camera when the game loads", () => {
       ).not.toThrow();
     });
 
-    it("follows an overview, as it renders behind a stage", () => {
+    it("follows an overview a stage shows behind it", () => {
+      expect(
+        compiled((data) => {
+          data.scenes[0].avatar = ON_CAMERA;
+          data.stages[0].showOverview = true;
+        }),
+      ).not.toThrow();
+    });
+
+    it("ignores an overview the stage doesn't show", () => {
       expect(
         compiled((data) => {
           data.scenes[0].avatar = ON_CAMERA;
         }),
-      ).not.toThrow();
+      ).toThrow("needs a player");
     });
 
     it("follows the stage's shared scene over the overview", () => {

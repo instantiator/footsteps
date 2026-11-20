@@ -1,10 +1,11 @@
 import { act, fireEvent, render, waitFor } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import type { ComponentProps } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import localRepository from "../public/game-repository.json";
 import type { CameraInteraction } from "../src/components/camera/PlayerMonitor";
 import Game from "../src/components/core/Game";
+import { resetSceneOf, resolveNamedResets } from "../src/components/core/logic/NamedResets";
 import type GameLayersLayout from "../src/components/core/layout/GameLayersLayout";
 import type { GameData } from "../src/entities/data/GameData";
 import type { GameSceneBase, GameResetScene } from "../src/entities/data/scenes/GameSceneData";
@@ -41,10 +42,12 @@ const inline = (source: GameSceneTemplateSourceData | undefined): GameSceneTempl
  * none: scenes use their fallback modes, and the rules the camera can fire don't depend on it.
  */
 const demo = (change: (game: GameData) => void): GameData => {
-  const game: GameData = structuredClone((localRepository as GameRepository).games["rules-demo"]);
+  const game = resolveNamedResets(structuredClone((localRepository as GameRepository).games["rules-demo"]));
   change(game);
-  const withResets = (scene: GameResetScene | GameSceneBase): (GameResetScene | GameSceneBase)[] =>
-    scene.resetScene ? [scene, ...withResets(scene.resetScene)] : [scene];
+  const withResets = (scene: GameResetScene | GameSceneBase): (GameResetScene | GameSceneBase)[] => {
+    const reset = resetSceneOf(scene);
+    return reset ? [scene, ...withResets(reset)] : [scene];
+  };
   for (const scene of [
     ...game.scenes,
     ...game.stages.flatMap((stage) => stage.challenges.flatMap((challenge) => challenge.scenes)),
@@ -73,7 +76,7 @@ const touch = (selector: string, interaction: CameraInteraction) => {
   const element = document.querySelector(selector);
   const layout = receivedLayout.at(-1)!;
   const rule = layout.cameraRules!.find(
-    (r) => element?.matches(r.selector ?? "") && r.interactions.includes(interaction),
+    (r) => r.selector && element?.matches(r.selector) && r.interactions.includes(interaction),
   );
   expect(rule, `a camera rule for ${interaction} on ${selector}`).toBeDefined();
   act(() =>
@@ -105,32 +108,40 @@ describe("rules demo, played by camera", () => {
     );
     await waitFor(() => expect($("#demo-title")).not.toBeNull());
     fireEvent.click($("#demo-title")!);
-    await waitFor(() => expect($("#switch")).not.toBeNull());
+    await waitFor(() => expect($("#candle-left")).not.toBeNull());
   };
 
-  it("moves the toggle at a touch of the hand", async () => {
+  it("lights a candle when a hand is over its tip", async () => {
     await start();
-    expect($("#switch")).toHaveClass("position-1");
-    touch("#switch", "hand-enter");
-    await waitFor(() => expect($("#switch")).toHaveClass("position-2"));
+    expect($("#candle-left")).not.toHaveClass("lit");
+    touch("#candle-left-tip", "hand-enter");
+    await waitFor(() => expect($("#candle-left")).toHaveClass("lit"));
+    expect($("#candle-right")).not.toHaveClass("lit");
   });
 
-  /** Enters the balloons stage, and waits out its countdown. */
+  /** Enters the balloons stage, stands on the shared reset's Start, and waits out its countdown. */
   const startBalloons = async () => {
     touch("#stage-link-balloons", "hand-enter");
-    await waitFor(() => expect($("#countdown")).toHaveTextContent("Get ready… 3"));
+    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Stand on Start"));
+    touch("#reset-start", "foot-enter");
+    await waitFor(() => expect($("#reset-count")).toHaveTextContent("3"));
     await wait(1000);
-    expect($("#countdown")).toHaveTextContent("Get ready… 2");
+    expect($("#reset-count")).toHaveTextContent("2");
     await wait(2000);
     await waitFor(() => expect($("#balloon-0")).not.toBeNull());
   };
 
-  it("lights the bulb while a hand is over it", async () => {
+  it("keeps the shared reset showing until Start is touched, then counts 3-2-1", async () => {
     await start();
-    touch("#bulb", "hand-enter");
-    await waitFor(() => expect($("#bulb")).toHaveClass("lit"));
-    touch("#bulb", "hand-exit");
-    await waitFor(() => expect($("#bulb")).not.toHaveClass("lit"));
+    touch("#stage-link-balloons", "hand-enter");
+    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Stand on Start"));
+    await wait(1500);
+    expect($("#reset-count")).toBeNull();
+
+    touch("#reset-start", "foot-enter");
+    await waitFor(() => expect($("#reset-count")).toHaveTextContent("3"));
+    await wait(1000);
+    expect($("#reset-count")).toHaveTextContent("2");
   });
 
   it("counts down before the balloons, then pops a balloon a hand touches, and scores it", async () => {
@@ -172,7 +183,7 @@ describe("rules demo, played by camera", () => {
 
   /** Stands on the pits' reset scene's start, and waits for the floor to be revealed. */
   const returnToStart = async () => {
-    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Return to the start"));
+    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Stand on Start, or put your mouse on it"));
     touch("#reset-start", "foot-enter");
     await waitFor(() => expect($("#reset-message")).toHaveTextContent("Get ready!"));
     await wait(3000);
@@ -202,8 +213,9 @@ describe("rules demo, played by camera", () => {
     fireEvent.click($("[aria-label='Next page']")!);
     await waitFor(() => expect($("input[name='answer']")).not.toBeNull());
     fireEvent.change($("input[name='answer']")!, { target: { value: "walk" } });
-    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Stand on the start"));
+    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Stand on Start"));
     touch("#reset-start", "foot-enter");
+    await wait(3000);
     await waitFor(() => expect($("#depth-spring")).not.toBeNull());
 
     touch("#depth-spring", "foot-enter");
@@ -213,6 +225,65 @@ describe("rules demo, played by camera", () => {
     await waitFor(() => expect($("#reset-start")).not.toBeNull(), { timeout: 3000 });
   });
 
+  it("collects a ring a hand touches, and brings the next one", async () => {
+    await start();
+    touch("#stage-link-rings", "hand-enter");
+    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Stand on Start"));
+    touch("#reset-start", "foot-enter");
+    await wait(3000);
+    await waitFor(() => expect($("#ring-0")).not.toBeNull());
+    expect($(".rings-scroll")).toHaveTextContent("Collected 0 rings");
+
+    // jsdom lacks the Web Animations API: this stand-in records what was animated, and never finishes
+    const animated: string[] = [];
+    Element.prototype.animate = vi.fn<Element["animate"]>(function (this: Element) {
+      animated.push(this.id);
+      const animation = Object.assign(new EventTarget(), {
+        onfinish: null as Animation["onfinish"],
+        cancel: vi.fn(),
+        persist: vi.fn(),
+        finish: vi.fn(),
+      });
+      return animation as EventTarget & Pick<Animation, "cancel" | "persist" | "onfinish" | "finish"> as Animation;
+    });
+    onTestFinished(() => void Reflect.deleteProperty(Element.prototype, "animate"));
+
+    touch("#ring-0", "hand-enter");
+
+    await waitFor(() => expect(animated).toContain("ring-gone-1"));
+    await waitFor(() => expect($("#ring-1")).not.toBeNull());
+    expect($(".rings-scroll")).toHaveTextContent("Collected 1 ring");
+    expect($("#ring-gone-1")).not.toBeNull();
+  });
+
+  it("a hand touching a floating item fires it, and a foot on a tile fires its rule", async () => {
+    await start();
+    touch("#stage-link-effects", "hand-enter");
+    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Stand on Start"));
+    touch("#reset-start", "foot-enter");
+    await wait(3000);
+    await waitFor(() => expect($("#crate")).not.toBeNull());
+
+    // jsdom lacks the Web Animations API: this stand-in records what was animated, and never finishes
+    const animated: string[] = [];
+    Element.prototype.animate = vi.fn<Element["animate"]>(function (this: Element) {
+      animated.push(this.id);
+      const animation = Object.assign(new EventTarget(), {
+        onfinish: null as Animation["onfinish"],
+        cancel: vi.fn(),
+        persist: vi.fn(),
+        finish: vi.fn(),
+      });
+      return animation as EventTarget & Pick<Animation, "cancel" | "persist" | "onfinish" | "finish"> as Animation;
+    });
+    onTestFinished(() => void Reflect.deleteProperty(Element.prototype, "animate"));
+
+    touch("#crate", "hand-enter");
+    await waitFor(() => expect(animated).toContain("crate"));
+    touch("#restore", "foot-enter");
+    await waitFor(() => expect($("#effects-message")).toHaveTextContent("Restored"));
+  });
+
   it("asks the camera not to count covered elements, as clicks don't", async () => {
     await start();
     expect(receivedLayout.at(-1)!.cameraRules!.every((rule) => !rule.includeCovered)).toBe(true);
@@ -220,42 +291,38 @@ describe("rules demo, played by camera", () => {
 });
 
 // Trips back to the start wait in real time (up to 3 s each), too close to the default 5 s under a busy full suite
-describe("rules demo, the floor is lava, played by mouse-feet", { timeout: 15_000 }, () => {
+describe("rules demo, the bridge across lava, played by mouse-feet", { timeout: 15_000 }, () => {
   /** Where each element sits on the screen, as jsdom has no layout; later ones are drawn on top. */
   const BOXES: [string, [number, number, number, number]][] = [
     ["lava", [0, 0, 1000, 1000]],
-    ["stone-1", [0, 0, 50, 50]],
     ["reset-start", [0, 0, 50, 50]],
-    ["stone-2", [100, 0, 150, 50]],
-    ["stone-3", [200, 0, 250, 50]],
-    ["door", [220, 0, 230, 50]],
+    ["bridge-1", [0, 0, 50, 50]],
+    ["bridge-2", [100, 0, 150, 50]],
+    ["bridge-3", [200, 0, 250, 50]],
+    ["bridge-4", [300, 0, 350, 50]],
+    ["bridge-5", [400, 0, 450, 50]],
+    ["door", [420, 0, 430, 50]],
   ];
-  const [STONE_1, STONE_2, STONE_3, DOOR, LAVA] = [25, 125, 210, 225, 500];
+  const SECTIONS = [25, 125, 225, 325, 405]; // the last is clear of the door, which stands in it
+  const [DOOR, LAVA] = [425, 700];
+  const SECTION = (n: number) => SECTIONS[n - 1];
 
   /** The topmost element at a point, by the boxes. */
   const elementAt = (x: number, y: number): Element | null => {
-    const hits = BOXES.filter(
-      ([id, [l, t, r, b]]) => document.getElementById(id) && x >= l && x < r && y >= t && y < b,
-    );
+    const hits = BOXES.filter(([id, [l, t, r, b]]) => {
+      const element = document.getElementById(id);
+      // A fallen section is hidden, and one yet to appear (or still appearing) takes no feet, so none is there to touch
+      const absent = ["gone", "unseen", "appearing"].some((name) => element?.classList.contains(name));
+      return element && !absent && x >= l && x < r && y >= t && y < b;
+    });
     const top = hits.at(-1);
     return top ? document.getElementById(top[0]) : null;
   };
 
-  /** The pointer, on the game viewport. */
-  const pointer = {
-    move: (x: number, buttons = 0) => fireEvent.pointerMove($("#game-viewport")!, { clientX: x, clientY: 25, buttons }),
-    down: (x: number) => fireEvent.pointerDown($("#game-viewport")!, { clientX: x, clientY: 25, button: 0 }),
-    up: (x: number) => fireEvent.pointerUp($("#game-viewport")!, { clientX: x, clientY: 25, button: 0 }),
-    /** A jump: press, drag through `via` (eg. across lava), and release. */
-    jump: (from: number, to: number, via = (from + to) / 2) => {
-      pointer.down(from);
-      pointer.move(via, 1);
-      pointer.move(to, 1);
-      pointer.up(to);
-    },
-  };
+  /** Puts the mouse's feet at a place across the game viewport. */
+  const moveTo = (x: number) => fireEvent.pointerMove($("#game-viewport")!, { clientX: x, clientY: 25, buttons: 0 });
 
-  /** The elements the item effects have animated, by id. */
+  /** The elements the item effects have animated, by id, once for each animation. */
   const animated: string[] = [];
 
   beforeEach(() => {
@@ -267,8 +334,8 @@ describe("rules demo, the floor is lava, played by mouse-feet", { timeout: 15_00
         ? DOMRect.fromRect({ x: box[0], y: box[1], width: box[2] - box[0], height: box[3] - box[1] })
         : DOMRect.fromRect({ width: 0, height: 0 });
     });
-    // jsdom has no Web Animations, which item effects play with
-    Element.prototype.animate = vi.fn<Element["animate"]>(function (this: Element) {
+    // jsdom has no Web Animations, which item effects play with; each ends when its duration has passed
+    Element.prototype.animate = vi.fn<Element["animate"]>(function (this: Element, _keyframes, options) {
       animated.push(this.id);
       const animation: Pick<Animation, "cancel" | "persist" | "onfinish" | "finish"> = {
         cancel: vi.fn(),
@@ -276,7 +343,10 @@ describe("rules demo, the floor is lava, played by mouse-feet", { timeout: 15_00
         finish: vi.fn(),
         onfinish: null,
       };
-      return Object.assign(new EventTarget(), animation) as EventTarget & typeof animation as Animation;
+      const playing = Object.assign(new EventTarget(), animation) as EventTarget & typeof animation as Animation;
+      const durationMs = typeof options === "object" ? Number(options.duration ?? 0) : 0;
+      setTimeout(() => playing.onfinish?.call(playing, new Event("finish") as AnimationPlaybackEvent), durationMs);
+      return playing;
     });
   });
   afterEach(() => {
@@ -285,17 +355,18 @@ describe("rules demo, the floor is lava, played by mouse-feet", { timeout: 15_00
     vi.restoreAllMocks();
   });
 
-  /** Puts the mouse on the reset scene's first stone, and waits for the stones. */
+  /** Puts the mouse on the reset scene's Start, and waits out its countdown for the bridge. */
   const returnToStart = async () => {
-    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Stand on the first stone"), { timeout: 3000 });
+    await waitFor(() => expect($("#reset-message")).toHaveTextContent("Stand on Start"), { timeout: 3000 });
     await wait(3000); // the scene change, during which the feet wait
-    pointer.move(LAVA);
-    pointer.move(STONE_1);
-    await waitFor(() => expect($("#stone-1")).not.toBeNull());
-    await wait(3000);
+    moveTo(LAVA);
+    moveTo(SECTION(1));
+    await waitFor(() => expect($("#reset-count")).not.toBeNull());
+    await wait(3500);
+    await waitFor(() => expect($("#bridge-1")).not.toBeNull());
   };
 
-  /** Opens stone hop, and stands on the first stone. */
+  /** Opens the bridge stage, and stands on the first section. */
   const openStage = async () => {
     render(
       <GameProviders repository={{ games: { "rules-demo": demo(() => {}) } }} gameId="rules-demo" config={NO_CAMERA}>
@@ -304,50 +375,118 @@ describe("rules demo, the floor is lava, played by mouse-feet", { timeout: 15_00
     );
     await waitFor(() => expect($("#demo-title")).not.toBeNull());
     fireEvent.click($("#demo-title")!);
-    await waitFor(() => expect($("#stage-link-floor-is-lava")).not.toBeNull());
-    fireEvent.click($("#stage-link-floor-is-lava")!);
+    await waitFor(() => expect($("#stage-link-bridge-across-lava")).not.toBeNull());
+    fireEvent.click($("#stage-link-bridge-across-lava")!);
     await returnToStart();
     expect(receivedLayout.at(-1)!.avatar).toMatchObject({ mode: "camera", fallback: "mouse-feet" });
   };
 
-  it("tells the player to jump between the stones, dragging with the mouse", async () => {
+  /** Walks on to a later section, and waits for the one left behind to quake, fall and go. */
+  const walkTo = async (n: number) => {
+    moveTo(SECTION(n));
+    await wait(2500);
+  };
+
+  /** Ends section 4's appearance, which jsdom has no animations to do. */
+  const solidify4 = async () => {
+    // jsdom has no AnimationEvent, so the event is made by hand, under the name React listens for there
+    const ended = Object.assign(new Event("webkitAnimationEnd", { bubbles: true }), { animationName: "appear-static" });
+    fireEvent($("#bridge-4")!, ended);
+    await waitFor(() => expect($("#bridge-4")).not.toHaveClass("appearing"));
+  };
+
+  it("hides section 4 as lava until section 3 is reached, then shows it appearing, and solid once it ends", async () => {
     await openStage();
-    expect($("#stones-message")).toHaveTextContent("With the mouse, drag from one to the next");
+    expect($("#bridge-4")).toHaveClass("unseen");
+    expect($("#bridge-4")).not.toHaveClass("appearing");
+
+    await walkTo(2);
+    expect($("#bridge-4")).toHaveClass("unseen");
+    await walkTo(3);
+    expect($("#bridge-4")).toHaveClass("appearing");
+    expect($("#bridge-4")).not.toHaveClass("unseen");
+
+    // Until the static ends, a foot where it is is on lava
+    moveTo(LAVA);
+    moveTo(SECTION(4));
+    await waitFor(() => expect($(".bridge-glow")).not.toBeNull());
+    moveTo(SECTION(3));
+    await waitFor(() => expect($(".bridge-glow")).toBeNull());
+
+    await solidify4();
+    moveTo(LAVA);
+    moveTo(SECTION(4)); // now a section like the others
+    await waitFor(() => expect($(".bridge-glow")).toBeNull());
   });
 
-  it("sends the player back to the start for walking onto the lava", async () => {
+  it("walks the bridge section by section, and each section left quakes then falls", async () => {
     await openStage();
-    pointer.move(LAVA);
-    await returnToStart();
+    expect(animated).toEqual([]);
+
+    // Reduced motion, which tests run in, skips the quake, so what shows is the fall
+    await walkTo(2);
+    expect(animated).toEqual(["bridge-1"]);
+    await waitFor(() => expect($("#bridge-1")).toHaveClass("gone"));
+    expect($("#bridge-2")).not.toHaveClass("gone");
+
+    await walkTo(3);
+    await solidify4();
+    for (const n of [4, 5]) await walkTo(n);
+    await waitFor(() => expect($("#bridge-4")).toHaveClass("gone"));
+    expect($("#bridge-5")).not.toHaveClass("gone");
+    expect(animated).toEqual(["bridge-1", "bridge-2", "bridge-3", "bridge-4"]);
   });
 
-  it("drops each stone as the player jumps on, over the lava, and opens the door on the last", async () => {
+  it("a foot on lava for under 2 s shows the warning, which clears on return", async () => {
     await openStage();
-    pointer.jump(STONE_1, STONE_2, LAVA);
-    await waitFor(() => expect(animated).toEqual(["stone-1"]));
-    pointer.jump(STONE_2, STONE_3, LAVA);
-    await waitFor(() => expect($("#door")).toHaveClass("open"));
-    expect(animated).toEqual(["stone-1", "stone-2"]);
+    expect($(".bridge-glow")).toBeNull();
+
+    moveTo(LAVA);
+    await waitFor(() => expect($(".bridge-glow")).not.toBeNull());
+    expect($("#bridge-message")).toHaveTextContent("Get off the lava");
+    await wait(1000);
+
+    moveTo(SECTION(1));
+    await waitFor(() => expect($(".bridge-glow")).toBeNull());
+    await wait(2000); // past the 2 s it would have taken to fall
+    expect($("#reset-message")).toBeNull();
+  });
+
+  it("a foot on lava for 2 s falls and resets", async () => {
+    await openStage();
+    moveTo(LAVA);
+    await wait(1500);
     expect($("#reset-message")).toBeNull();
 
-    pointer.move(DOOR);
-    fireEvent.click($("#door")!);
-    await waitFor(() => expect($("#stage-link-floor-is-lava")).toHaveClass("completed"));
+    await wait(700); // the hold, then the fall, which ends at once for a player nobody can see
+    await returnToStart();
+    expect($(".bridge-glow")).toBeNull();
   });
 
-  it("sends the player back for jumping from the first stone straight to the last, or into the lava", async () => {
+  it("the door completes only from section 5", async () => {
     await openStage();
-    pointer.jump(STONE_1, STONE_3);
-    await returnToStart();
-    pointer.jump(STONE_1, LAVA);
-    await returnToStart();
+    moveTo(DOOR);
+    await wait(1500);
+    fireEvent.click($("#door")!);
+    await wait(500);
+    expect($("#stage-link-bridge-across-lava")).toBeNull(); // still in the stage, so not back on the overview
+
+    for (const n of [2, 3]) await walkTo(n);
+    await solidify4();
+    for (const n of [4, 5]) await walkTo(n);
+    moveTo(DOOR);
+    await wait(1500);
+    expect($(".bridge-glow")).toBeNull(); // the door stands on the bridge, so reaching it never touches lava
+    await waitFor(() => expect($("#stage-link-bridge-across-lava")).toHaveClass("completed"));
   });
 
-  it("keeps the door shut to a click until the player stands on the last stone", async () => {
+  it("a fallen section no longer counts as safe", async () => {
     await openStage();
-    fireEvent.click($("#door")!);
-    await wait(1000);
-    expect($("#door")).not.toHaveClass("open");
-    expect($("#stage-link-floor-is-lava")).not.toHaveClass("completed");
+    await walkTo(2);
+    await waitFor(() => expect($("#bridge-1")).toHaveClass("gone"));
+
+    moveTo(LAVA);
+    moveTo(SECTION(1)); // where the first section was, now lava
+    await waitFor(() => expect($(".bridge-glow")).not.toBeNull());
   });
 });

@@ -79,7 +79,7 @@ interface GameLayersLayoutProps {
 
 /** The nodes for the background and foreground of the overview, the stage, and its challenges. */
 export interface GameLayers {
-  /** The overview scene, when no stage is open. */
+  /** The overview scene, when no stage is open, or behind a stage that shows it. */
   overview?: {
     /** The background half of the scene. */
     backgroundLayerNodes: ReactNode[] | undefined;

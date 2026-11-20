@@ -1,21 +1,14 @@
 import { expect, test } from "@playwright/test";
 
-/** The 2D demo played by mouse alone, with no camera to grant or calibrate. */
-const GAME_ID = "demo-no-camera";
+/** The 2D demo stages, played by mouse alone, with no camera. */
+const GAME_ID = "rules-demo";
 
-test("plays the 2D demo to the end by mouse, and shows it complete on its tile", async ({ page }) => {
+test("plays the 2D demo stages by mouse, without the camera", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto(`/game/${GAME_ID}`);
-  const badges = page.getByRole("list", { name: "About this game" });
-  await expect(badges).toContainText("2D");
-  await expect(badges).toContainText("No camera");
-  await expect(badges).toContainText("3 stages · 3 challenges");
-  await expect(badges).toContainText("Sound effects");
-  await expect(page.getByRole("combobox", { name: "Camera" })).toHaveCount(0);
-  await page.getByRole("button", { name: "New game" }).click();
+  await page.goto(`/game/${GAME_ID}/play?noCamera=true`);
   await expect(page.locator("#character-camera-layer")).toHaveCount(0);
 
-  await page.locator("#ndc-title").click();
+  await page.locator("#demo-title").click();
 
   await page.locator("#stage-link-lamps").click();
   await page.getByRole("button", { name: "Lamp 1" }).click();
@@ -36,10 +29,5 @@ test("plays the 2D demo to the end by mouse, and shows it complete on its tile",
   await page.getByRole("button", { name: "Red door" }).click();
   await expect(page.locator("#doors-message")).toHaveText("Not that one. Try another.");
   await page.getByRole("button", { name: "Green door" }).click();
-  // The last challenge completes the game, which leaves the stages for its closing scene
-  await expect(page.locator("#stage-link-doors")).toHaveCount(0);
-
-  await page.goto("/");
-  const tile = page.getByRole("link", { name: "Play Demo (no camera)" });
-  await expect(tile.getByRole("list", { name: "About this game" })).toContainText("100% complete");
+  await expect(page.locator("#stage-link-doors")).toHaveClass(/completed/);
 });

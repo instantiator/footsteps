@@ -6,6 +6,7 @@
       "title": "Nanny's Magic Trifle",
       "description": "A rhyming Christmas treasure hunt through the house: follow the clues from room to room to find Nanny's magic trifle.",
       "tileGraphic": "title-background",
+      "promoted": true,
       "modules": {
         "scene": "2.5D",
         "avatar": {
@@ -215,6 +216,7 @@
         },
         {
           "id": "stage-2",
+          "showOverview": true,
           "challenges": [
             {
               "id": "stage-2-challenge-1",
@@ -249,6 +251,7 @@
         },
         {
           "id": "stage-3",
+          "showOverview": true,
           "challengeChunking": 2,
           "challenges": [
             {
@@ -307,6 +310,7 @@
         },
         {
           "id": "stage-4",
+          "showOverview": true,
           "challenges": [
             {
               "id": "stage-4-challenge-1",
@@ -342,6 +346,7 @@
 
         {
           "id": "stage-5",
+          "showOverview": true,
           "challenges": [
             {
               "id": "stage-5-challenge-1",
@@ -373,6 +378,7 @@
         },
         {
           "id": "stage-6",
+          "showOverview": true,
           "challenges": [
             {
               "id": "stage-6-challenge-1",
@@ -404,6 +410,7 @@
         },
         {
           "id": "stage-7",
+          "showOverview": true,
           "challenges": [
             {
               "id": "stage-7-challenge-1",
@@ -454,19 +461,62 @@
         "boxShadow": "rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px"
       }
     },
-    "demo-no-camera": {
-      "id": "demo-no-camera",
-      "title": "Demo (no camera)",
-      "description": "Light the lamps, answer a riddle on a scroll, and pick the right door: a demonstration of 2D scenes, played with the mouse alone.",
+    "rules-demo": {
+      "id": "rules-demo",
+      "title": "Demo scenes",
+      "description": "Pop balloons, dodge the pits, walk around a room with a tiled floor, walls and hills, and cross a bridge over a floor of lava: a demonstration of 2.5D scenes, rules and state, by camera, or by mouse without one.",
       "tileGraphic": "tile",
-      "modules": { "scene": "2D", "avatar": { "mode": "mouse" } },
+      "modules": {
+        "scene": "2.5D",
+        "avatar": { "mode": "mouse" },
+        "spectators": {
+          "show": "shown",
+          "look": { "opacity": 0.3, "filter": "grayscale(calc(var(--spectator-strength) * 100%))" },
+          "fade": { "to": 30 }
+        }
+      },
       "config": { "sequential": false, "autoAdvanceStages": false },
-      "stylesheets": ["ndc-css"],
+      "stylesheets": ["demo-css", "jd-css", "ndc-css"],
+      "resetScenes": {
+        "start": {
+          "showOn": "every-show",
+          "scene": "2.5D",
+          "avatar": { "mode": "camera", "fallback": "mouse-feet" },
+          "component": {
+            "type": "template",
+            "data": {},
+            "initialState": { "ready": false, "count": 3 },
+            "rules": [
+              {
+                "on": { "interact": ["foot-enter"], "target": "#reset-start", "threshold": 0.05 },
+                "if": "not state.ready",
+                "do": [
+                  { "set": { "ready": "true" } },
+                  { "sound": "chime" },
+                  { "reward": { "animation": "sparkles", "particleCount": 60 } }
+                ]
+              },
+              {
+                "on": { "every": 1000 },
+                "if": "state.ready and state.count > 0",
+                "do": [{ "set": { "count": "state.count - 1" } }, { "sound": "tick" }]
+              },
+              { "on": { "when": "state.ready and state.count <= 0" }, "do": [{ "finishReset": true }] }
+            ],
+            "backgroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/reset.html" },
+            "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
+          }
+        }
+      },
       "resources": {
-        "ndc-css": { "type": "local", "target": "games/demo-no-camera/demo-no-camera.css" },
-        "tile": { "type": "local", "target": "games/demo-no-camera/tile.svg" },
+        "demo-css": { "type": "local", "target": "games/rules-demo/rules-demo.css" },
         "chime": { "type": "local", "target": "games/rules-demo/chime.wav" },
-        "fanfare": { "type": "local", "target": "games/rules-demo/fanfare.wav" }
+        "tick": { "type": "local", "target": "games/rules-demo/tick.wav" },
+        "pop": { "type": "local", "target": "games/rules-demo/pop.wav" },
+        "fanfare": { "type": "local", "target": "games/rules-demo/fanfare.wav" },
+        "jd-css": { "type": "local", "target": "games/rules-demo/jump-and-duck/jump-and-duck.css" },
+        "tile": { "type": "local", "target": "games/rules-demo/demo-no-camera/tile.svg" },
+        "ndc-css": { "type": "local", "target": "games/rules-demo/demo-no-camera/demo-no-camera.css" }
       },
       "scenes": [
         {
@@ -474,91 +524,210 @@
           "component": {
             "type": "template",
             "data": {},
-            "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/demo-no-camera/title.html" },
+            "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/title.html" },
             "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
           }
         },
         {
           "purpose": "game-overview-stages",
+          "avatar": { "mode": "camera", "fallback": "mouse" },
           "component": {
             "type": "template",
-            "data": { "names": { "lamps": "Light the lamps", "riddle": "A riddle", "doors": "Pick a door" } },
+            "data": {
+              "names": {
+                "balloons": "Balloons",
+                "pits": "Avoid the pits",
+                "depth": "Walk around",
+                "effects": "Effects",
+                "bridge-across-lava": "Bridge across lava",
+                "warm-up": "Jump and duck: warm-up",
+                "long-run": "Jump and duck: long run",
+                "lamps": "Light the lamps",
+                "riddle": "A riddle",
+                "doors": "Pick a door",
+                "rings": "Ring collection"
+              }
+            },
+            "initialState": { "leftLit": false, "rightLit": false },
             "rules": [
-              { "on": { "interact": "click", "target": "#stage-link-lamps" }, "do": [{ "enterStage": "lamps" }] },
-              { "on": { "interact": "click", "target": "#stage-link-riddle" }, "do": [{ "enterStage": "riddle" }] },
-              { "on": { "interact": "click", "target": "#stage-link-doors" }, "do": [{ "enterStage": "doors" }] }
+              {
+                "on": { "interact": ["hand-enter", "mouse-enter"], "target": "#candle-left-tip", "threshold": 0.05 },
+                "do": [{ "set": { "leftLit": "true" } }]
+              },
+              {
+                "on": { "interact": ["hand-enter", "mouse-enter"], "target": "#candle-right-tip", "threshold": 0.05 },
+                "do": [{ "set": { "rightLit": "true" } }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-balloons", "threshold": 0.5 },
+                "do": [{ "enterStage": "balloons" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-pits", "threshold": 0.5 },
+                "do": [{ "enterStage": "pits" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-depth", "threshold": 0.5 },
+                "do": [{ "enterStage": "depth" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-effects", "threshold": 0.5 },
+                "do": [{ "enterStage": "effects" }]
+              },
+              {
+                "on": {
+                  "interact": ["click", "hand-enter"],
+                  "target": "#stage-link-bridge-across-lava",
+                  "threshold": 0.5
+                },
+                "do": [{ "enterStage": "bridge-across-lava" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-warm-up", "threshold": 0.5 },
+                "do": [{ "enterStage": "warm-up" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-long-run", "threshold": 0.5 },
+                "do": [{ "enterStage": "long-run" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-lamps", "threshold": 0.5 },
+                "do": [{ "enterStage": "lamps" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-riddle", "threshold": 0.5 },
+                "do": [{ "enterStage": "riddle" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-doors", "threshold": 0.5 },
+                "do": [{ "enterStage": "doors" }]
+              },
+              {
+                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-rings", "threshold": 0.5 },
+                "do": [{ "enterStage": "rings" }]
+              }
             ],
-            "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/demo-no-camera/stages.html" },
+            "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/stages.html" },
             "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
           }
         }
       ],
       "stages": [
         {
-          "id": "lamps",
+          "id": "balloons",
           "challenges": [
             {
-              "id": "light-the-lamps",
+              "id": "pop-balloons",
               "solution": { "answers": [] },
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
+                  "avatar": { "mode": "camera", "fallback": "mouse" },
                   "component": {
                     "type": "template",
-                    "data": {},
-                    "initialState": { "lamp1": false, "lamp2": false, "lamp3": false, "done": false },
+                    "data": { "target": 10 },
+                    "initialState": {
+                      "score": 0,
+                      "balloonIndex": 0,
+                      "popping": false,
+                      "dropMs": 4000,
+                      "left": 45,
+                      "colour": 0
+                    },
                     "resetStateOnShow": true,
                     "rules": [
                       {
-                        "on": { "interact": "click", "target": "#lamp-1" },
-                        "if": "not state.done",
-                        "do": [{ "set": { "lamp1": "not state.lamp1" } }, { "sound": "chime" }]
+                        "on": { "interact": ["hand-enter", "click"], "target": ".balloon", "threshold": 0.3 },
+                        "if": "not state.popping",
+                        "do": [{ "set": { "popping": "true", "score": "state.score + 1" } }, { "sound": "pop" }]
                       },
                       {
-                        "on": { "interact": "click", "target": "#lamp-2" },
-                        "if": "not state.done",
-                        "do": [{ "set": { "lamp2": "not state.lamp2" } }, { "sound": "chime" }]
+                        "on": { "animationEnd": "fall", "target": ".balloon" },
+                        "do": [{ "set": { "popping": "true" } }]
                       },
                       {
-                        "on": { "interact": "click", "target": "#lamp-3" },
-                        "if": "not state.done",
-                        "do": [{ "set": { "lamp3": "not state.lamp3" } }, { "sound": "chime" }]
-                      },
-                      {
-                        "on": { "when": "state.lamp1 and state.lamp2 and state.lamp3" },
+                        "on": { "animationEnd": "pop", "target": ".balloon" },
                         "do": [
-                          { "set": { "done": "true" } },
                           {
-                            "series": [
-                              {
-                                "parallel": [
-                                  { "sound": "fanfare" },
-                                  { "reward": { "animation": "sparkles", "particleCount": 80 } }
-                                ]
-                              },
-                              { "completeChallenge": true }
-                            ]
+                            "set": {
+                              "popping": "false",
+                              "balloonIndex": "state.balloonIndex + 1",
+                              "left": "((state.balloonIndex + 1) * 37) mod 70 + 10",
+                              "colour": "(state.balloonIndex + 1) mod 6"
+                            }
                           }
                         ]
-                      }
+                      },
+                      { "on": { "when": "state.score >= data.target" }, "do": [{ "completeChallenge": true }] }
                     ],
                     "foregroundTemplate": {
                       "sourceType": "relative",
-                      "templateSource": "games/demo-no-camera/lamps.html"
+                      "templateSource": "games/rules-demo/balloons.html"
                     },
                     "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
-                  }
+                  },
+                  "resetScene": "start"
                 }
               ]
             }
           ]
         },
         {
-          "id": "riddle",
+          "id": "pits",
           "challenges": [
             {
-              "id": "answer-the-riddle",
-              "solution": { "answers": ["keyboard", "a keyboard"] },
+              "id": "cross-the-floor",
+              "solution": { "answers": [] },
+              "scenes": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "avatar": { "mode": "camera", "fallback": "mouse-feet" },
+                  "spectators": { "resetOnReturn": true },
+                  "component": {
+                    "type": "template",
+                    "data": {},
+                    "initialState": { "done": false, "falling": false },
+                    "resetStateOnShow": true,
+                    "rules": [
+                      {
+                        "on": { "interact": ["foot-enter"], "target": ".pit", "threshold": 0.3 },
+                        "if": "not state.done and not state.falling",
+                        "do": [
+                          { "set": { "falling": "true" } },
+                          {
+                            "series": [
+                              { "effect": "player-fall", "durationMs": 1000, "easing": "ease-in" },
+                              { "resetChallenge": true, "delayMs": 500 }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": "#door-base", "threshold": 0.3 },
+                        "if": "not state.done and not state.falling",
+                        "do": [
+                          { "set": { "done": "true" } },
+                          { "completeChallenge": true },
+                          { "sound": "fanfare" },
+                          { "reward": { "animation": "fireworks", "particleCount": 150 } }
+                        ]
+                      }
+                    ],
+                    "backgroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/pits.html" },
+                    "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
+                  },
+                  "resetScene": "start"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "depth",
+          "challenges": [
+            {
+              "id": "walk-around-intro",
+              "solution": { "answers": ["walk"] },
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
@@ -567,172 +736,422 @@
                     "data": {},
                     "contents": [
                       {
-                        "text": "I have keys, but open no locks.\nI have space, but no room.\nYou can enter, but you can't go in."
+                        "text": "In a 2.5D scene, things stand on the floor.\nThey shrink as they go further back,\nand you can walk in front of them and behind them."
                       },
-                      { "text": "What am I?", "showInput": true, "label": "Your answer" }
+                      {
+                        "text": "The near post only notices you when you stand beside it.\nA ring follows you around, and your position shows at the bottom.",
+                        "showInput": true,
+                        "label": "Type walk to start walking"
+                      }
                     ]
                   }
+                }
+              ]
+            },
+            {
+              "id": "walk-around",
+              "solution": { "answers": [] },
+              "scenes": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "avatar": { "mode": "camera", "fallback": "mouse-feet" },
+                  "component": {
+                    "type": "template",
+                    "data": {},
+                    "initialState": { "lit": false, "sprung": false },
+                    "resetStateOnShow": true,
+                    "rules": [
+                      {
+                        "on": { "interact": ["click"], "target": "#depth-done" },
+                        "do": [{ "completeChallenge": true }]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": "#depth-spring" },
+                        "if": "not state.sprung",
+                        "do": [
+                          { "set": { "sprung": "true" } },
+                          {
+                            "series": [
+                              { "effect": "player-spin-away", "durationMs": 1000 },
+                              { "resetChallenge": true, "delayMs": 500 }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": "#depth-near" },
+                        "do": [{ "set": { "lit": "true" } }]
+                      },
+                      {
+                        "on": { "interact": ["foot-exit"], "target": "#depth-near" },
+                        "do": [{ "set": { "lit": "false" } }]
+                      }
+                    ],
+                    "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/depth.html" },
+                    "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+                  },
+                  "resetScene": "start"
                 }
               ]
             }
           ]
         },
         {
-          "id": "doors",
+          "id": "effects",
           "challenges": [
             {
-              "id": "pick-a-door",
+              "id": "try-effects",
               "solution": { "answers": [] },
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
+                  "avatar": { "mode": "camera", "fallback": "mouse-feet", "preview": false },
                   "component": {
                     "type": "template",
                     "data": {},
-                    "initialState": { "wrong": false },
+                    "initialState": { "message": "Wave at the floating items, and walk onto the tiles" },
+                    "keepRemovedPlayers": false,
+                    "rules": [
+                      {
+                        "on": { "interact": ["click", "hand-enter"], "target": "#rock", "threshold": 0.05 },
+                        "do": [
+                          { "effect": "quake", "target": "#rock", "dx": 1, "durationMs": 1000, "easing": "ease-out" },
+                          { "effect": "quake", "target": ".player", "dx": 0.5, "durationMs": 500 }
+                        ]
+                      },
+                      {
+                        "on": { "interact": "jump" },
+                        "do": [{ "effect": "quake", "dx": 0.5, "dy": 1, "consistentMotion": false, "durationMs": 500 }]
+                      },
+                      {
+                        "on": { "interact": ["click", "hand-enter"], "target": "#crate", "threshold": 0.05 },
+                        "do": [{ "effect": "item-fall", "target": "#crate", "easing": "ease-in" }]
+                      },
+                      {
+                        "on": { "effectEnd": "item-fall", "target": "#crate" },
+                        "do": [{ "set": { "message": "\"The crate has fallen\"" } }]
+                      },
+                      {
+                        "on": { "interact": ["click", "hand-enter"], "target": "#lift", "threshold": 0.05 },
+                        "do": [{ "effect": "item-move", "target": "#lift", "end": { "by": { "left": 0, "top": 15 } } }]
+                      },
+                      {
+                        "on": { "interact": ["hand-enter", "mouse-enter"], "target": "#lamp", "threshold": 0.05 },
+                        "do": [
+                          {
+                            "effect": "highlight",
+                            "target": "#lamp",
+                            "durationMs": "indefinite",
+                            "sequence": [
+                              {
+                                "filter": "brightness(1.5)",
+                                "shadow": "0 0 2cqw gold",
+                                "durationMs": 500,
+                                "easing": "ease-in"
+                              },
+                              {
+                                "filter": "brightness(1)",
+                                "shadow": "0 0 0 gold",
+                                "durationMs": 500,
+                                "easing": "ease-out"
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["hand-exit", "mouse-exit"], "target": "#lamp", "threshold": 0.05 },
+                        "do": [{ "effect": "stop", "target": "#lamp", "stop": "highlight" }]
+                      },
+                      {
+                        "on": { "interact": ["click", "hand-enter"], "target": "#bridge", "threshold": 0.05 },
+                        "do": [
+                          {
+                            "series": [
+                              { "effect": "quake", "target": "#bridge", "dx": 0.5, "dy": 0.5, "durationMs": 400 },
+                              { "effect": "item-fall", "target": "#bridge" },
+                              { "set": { "message": "\"The bridge has gone\"" } }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["click", "hand-enter"], "target": "#prize", "threshold": 0.05 },
+                        "do": [{ "reward": { "animation": "stars", "particleCount": 40 }, "target": "#prize" }]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": ".pit", "threshold": 0.05 },
+                        "do": [
+                          { "set": { "message": "\"Pit: fell\"" } },
+                          { "effect": "player-fall", "durationMs": 1000, "easing": "ease-in" }
+                        ]
+                      },
+                      {
+                        "on": { "effectEnd": "player-fall" },
+                        "do": [{ "set": { "fell": "event.player" } }]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": ".boulder", "threshold": 0.05 },
+                        "do": [
+                          { "set": { "message": "\"Boulder: spun away\"" } },
+                          {
+                            "effect": "player-spin-away",
+                            "durationMs": 1200,
+                            "angle": { "min": -60, "max": 60 },
+                            "zoom": 0.3,
+                            "opacity": 0,
+                            "rotations": 2
+                          }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": "#ghost", "threshold": 0.05 },
+                        "do": [
+                          { "set": { "message": "\"Ghost: invisible\"" } },
+                          {
+                            "series": [
+                              { "effect": "player-invisible", "durationMs": 500 },
+                              { "effect": "player-visible", "durationMs": 500, "delayMs": 2500 }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": ".ice", "threshold": 0.05 },
+                        "do": [
+                          { "set": { "message": "\"Ice: frozen\"" } },
+                          { "effect": "player-freeze" },
+                          { "effect": "player-unfreeze", "delayMs": 3000 }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": "#fuzz", "threshold": 0.05 },
+                        "do": [
+                          { "set": { "message": "\"Fuzz: static\"" } },
+                          { "effect": "player-static", "pixelSize": 0.5, "proportion": 0.6, "easeMs": 500 }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["foot-exit"], "target": "#fuzz", "threshold": 0.05 },
+                        "do": [{ "effect": "stop", "players": "triggering", "stop": "player-static" }]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": "#restore", "threshold": 0.05 },
+                        "do": [
+                          { "set": { "message": "\"Restored\"" } },
+                          { "effect": "player-restore", "players": "all", "durationMs": 500 }
+                        ]
+                      },
+                      {
+                        "on": { "when": "game.players.active == 0 and game.players.removed > 0", "forMs": 2000 },
+                        "do": [{ "resetChallenge": true }]
+                      },
+                      {
+                        "on": { "interact": ["click"], "target": "#effects-done" },
+                        "do": [{ "completeChallenge": true }]
+                      }
+                    ],
+                    "backgroundStyle": { "background": "#1b2a41" },
+                    "foregroundTemplate": {
+                      "sourceType": "relative",
+                      "templateSource": "games/rules-demo/effects.html"
+                    },
+                    "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+                  },
+                  "resetScene": "start"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bridge-across-lava",
+          "challenges": [
+            {
+              "id": "cross-the-bridge",
+              "solution": { "answers": [] },
+              "scenes": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "avatar": {
+                    "mode": "camera",
+                    "fallback": "mouse-feet",
+                    "feet": { "color": "rgb(120 200 255 / 70%)" }
+                  },
+                  "component": {
+                    "type": "template",
+                    "data": {},
+                    "initialState": {
+                      "on": 1,
+                      "warning": false,
+                      "falling": false,
+                      "done": false,
+                      "gone1": false,
+                      "gone2": false,
+                      "gone3": false,
+                      "gone4": false,
+                      "appearing4": false,
+                      "solid4": false
+                    },
                     "resetStateOnShow": true,
                     "rules": [
                       {
-                        "on": { "interact": "click", "target": "#door-1" },
+                        "on": { "interact": ["foot-enter"], "target": "#lava", "threshold": 0.05 },
+                        "if": "not state.warning and not state.falling",
                         "do": [
-                          { "set": { "wrong": "true" } },
-                          { "effect": "quake", "target": "#door-1", "dx": 1, "durationMs": 400 }
+                          { "set": { "warning": "true" } },
+                          { "effect": "player-static", "pixelSize": 2, "proportion": 1, "easeMs": 800 },
+                          {
+                            "effect": "highlight",
+                            "target": ".player",
+                            "durationMs": "indefinite",
+                            "sequence": [
+                              { "filter": "drop-shadow(0 0 1cqw red)", "durationMs": 400 },
+                              { "filter": "drop-shadow(0 0 3cqw red)", "durationMs": 400 }
+                            ]
+                          }
                         ]
                       },
                       {
-                        "on": { "interact": "click", "target": "#door-3" },
+                        "on": { "interact": ["foot-exit"], "target": "#lava", "threshold": 0.05 },
+                        "if": "state.warning and not state.falling",
                         "do": [
-                          { "set": { "wrong": "true" } },
-                          { "effect": "quake", "target": "#door-3", "dx": 1, "durationMs": 400 }
+                          { "set": { "warning": "false" } },
+                          { "effect": "stop", "players": "triggering", "stop": "player-static" },
+                          { "effect": "stop", "target": ".player", "stop": "highlight" }
                         ]
                       },
                       {
-                        "on": { "interact": "click", "target": "#door-2" },
+                        "on": { "interact": ["foot-enter"], "target": "#lava", "threshold": 0.05, "holdMs": 2000 },
+                        "if": "not state.falling",
                         "do": [
+                          { "set": { "falling": "true" } },
+                          {
+                            "series": [
+                              { "effect": "player-fall", "durationMs": 1000, "easing": "ease-in" },
+                              { "resetChallenge": true, "delayMs": 500 }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": "#bridge-2", "threshold": 0.05 },
+                        "if": "state.on == 1",
+                        "do": [
+                          { "set": { "on": "2" } },
+                          {
+                            "series": [
+                              { "effect": "quake", "target": "#bridge-1", "dx": 0.3, "durationMs": 1000 },
+                              {
+                                "parallel": [
+                                  { "effect": "quake", "target": "#bridge-1", "dx": 0.3, "durationMs": 800 },
+                                  { "effect": "item-fall", "target": "#bridge-1", "easing": "ease-in" }
+                                ]
+                              },
+                              { "set": { "gone1": "true" } }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": "#bridge-3", "threshold": 0.05 },
+                        "if": "state.on == 2",
+                        "do": [
+                          { "set": { "on": "3", "appearing4": "true" } },
+                          {
+                            "series": [
+                              { "effect": "quake", "target": "#bridge-2", "dx": 0.3, "durationMs": 1000 },
+                              {
+                                "parallel": [
+                                  { "effect": "quake", "target": "#bridge-2", "dx": 0.3, "durationMs": 800 },
+                                  { "effect": "item-fall", "target": "#bridge-2", "easing": "ease-in" }
+                                ]
+                              },
+                              { "set": { "gone2": "true" } }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": "#bridge-4", "threshold": 0.05 },
+                        "if": "state.on == 3",
+                        "do": [
+                          { "set": { "on": "4" } },
+                          {
+                            "series": [
+                              { "effect": "quake", "target": "#bridge-3", "dx": 0.3, "durationMs": 1000 },
+                              {
+                                "parallel": [
+                                  { "effect": "quake", "target": "#bridge-3", "dx": 0.3, "durationMs": 800 },
+                                  { "effect": "item-fall", "target": "#bridge-3", "easing": "ease-in" }
+                                ]
+                              },
+                              { "set": { "gone3": "true" } }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": "#bridge-5", "threshold": 0.05 },
+                        "if": "state.on == 4",
+                        "do": [
+                          { "set": { "on": "5" } },
+                          {
+                            "series": [
+                              { "effect": "quake", "target": "#bridge-4", "dx": 0.3, "durationMs": 1000 },
+                              {
+                                "parallel": [
+                                  { "effect": "quake", "target": "#bridge-4", "dx": 0.3, "durationMs": 800 },
+                                  { "effect": "item-fall", "target": "#bridge-4", "easing": "ease-in" }
+                                ]
+                              },
+                              { "set": { "gone4": "true" } }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "on": { "animationEnd": "appear-static", "target": "#bridge-4" },
+                        "do": [{ "set": { "solid4": "true" } }]
+                      },
+                      {
+                        "on": { "interact": ["foot-enter"], "target": "#door", "threshold": 0.05, "holdMs": 1000 },
+                        "if": "state.on == 5 and not state.done",
+                        "do": [
+                          { "set": { "done": "true" } },
+                          { "completeChallenge": true },
+                          { "sound": "fanfare" },
+                          { "reward": { "animation": "fireworks", "particleCount": 150 } }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["click"], "target": "#door" },
+                        "if": "state.on == 5 and not state.done",
+                        "do": [
+                          { "set": { "done": "true" } },
                           { "completeChallenge": true },
                           { "sound": "fanfare" },
                           { "reward": { "animation": "fireworks", "particleCount": 150 } }
                         ]
                       }
                     ],
+                    "backgroundTemplate": {
+                      "sourceType": "relative",
+                      "templateSource": "games/rules-demo/bridge.html"
+                    },
+                    "backgroundTemplateStyle": { "width": "100%", "height": "100%" },
                     "foregroundTemplate": {
                       "sourceType": "relative",
-                      "templateSource": "games/demo-no-camera/doors.html"
+                      "templateSource": "games/rules-demo/bridge-front.html"
                     },
                     "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
-                  }
+                  },
+                  "resetScene": "start"
                 }
               ]
             }
           ]
-        }
-      ],
-      "gameContainerStyle": { "fontFamily": "system-ui, sans-serif" }
-    },
-    "jump-and-duck": {
-      "id": "jump-and-duck",
-      "title": "Jump and duck (2D)",
-      "description": "Snowballs roll along the ground and bats swoop at head height: jump the snowballs and duck the bats until the score is reached. Best with a camera; with the mouse, keep your pointer clear of them.",
-      "tileGraphic": "tile",
-      "modules": {
-        "scene": "2D",
-        "avatar": {
-          "mode": "camera",
-          "fallback": "mouse",
-          "preview": false
-        }
-      },
-      "config": {
-        "sequential": true,
-        "autoAdvanceStages": false
-      },
-      "stylesheets": ["jd-css"],
-      "resources": {
-        "jd-css": {
-          "type": "local",
-          "target": "games/jump-and-duck/jump-and-duck.css"
         },
-        "tile": {
-          "type": "local",
-          "target": "games/jump-and-duck/tile.svg"
-        },
-        "pop": {
-          "type": "local",
-          "target": "games/rules-demo/pop.wav"
-        },
-        "tick": {
-          "type": "local",
-          "target": "games/rules-demo/tick.wav"
-        },
-        "fanfare": {
-          "type": "local",
-          "target": "games/rules-demo/fanfare.wav"
-        }
-      },
-      "scenes": [
-        {
-          "purpose": "game-overview-title",
-          "component": {
-            "type": "template",
-            "data": {},
-            "foregroundTemplate": {
-              "sourceType": "relative",
-              "templateSource": "games/jump-and-duck/title.html"
-            },
-            "foregroundTemplateStyle": {
-              "width": "100%",
-              "height": "100%"
-            }
-          }
-        },
-        {
-          "purpose": "game-overview-stages",
-          "component": {
-            "type": "template",
-            "data": {
-              "names": {
-                "warm-up": "Warm-up",
-                "long-run": "Long run"
-              }
-            },
-            "rules": [
-              {
-                "on": {
-                  "interact": ["click", "hand-enter"],
-                  "target": "#stage-link-warm-up",
-                  "threshold": 0.5
-                },
-                "do": [
-                  {
-                    "enterStage": "warm-up"
-                  }
-                ]
-              },
-              {
-                "on": {
-                  "interact": ["click", "hand-enter"],
-                  "target": "#stage-link-long-run",
-                  "threshold": 0.5
-                },
-                "do": [
-                  {
-                    "enterStage": "long-run"
-                  }
-                ]
-              }
-            ],
-            "foregroundTemplate": {
-              "sourceType": "relative",
-              "templateSource": "games/jump-and-duck/stages.html"
-            },
-            "foregroundTemplateStyle": {
-              "width": "100%",
-              "height": "100%"
-            }
-          }
-        }
-      ],
-      "stages": [
         {
           "id": "warm-up",
           "challenges": [
@@ -744,6 +1163,8 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
+                  "scene": "2D",
+                  "avatar": { "mode": "camera", "fallback": "mouse", "preview": false },
                   "component": {
                     "type": "template",
                     "data": {
@@ -835,6 +1256,9 @@
                           },
                           {
                             "sound": "pop"
+                          },
+                          {
+                            "despawn": "event"
                           }
                         ]
                       },
@@ -853,6 +1277,9 @@
                           },
                           {
                             "sound": "pop"
+                          },
+                          {
+                            "despawn": "event"
                           }
                         ]
                       },
@@ -918,58 +1345,14 @@
                     ],
                     "foregroundTemplate": {
                       "sourceType": "relative",
-                      "templateSource": "games/jump-and-duck/run.html"
+                      "templateSource": "games/rules-demo/jump-and-duck/run.html"
                     },
                     "foregroundTemplateStyle": {
                       "width": "100%",
                       "height": "100%"
                     }
                   },
-                  "resetScene": {
-                    "showOn": "every-show",
-                    "component": {
-                      "type": "template",
-                      "data": {},
-                      "initialState": {
-                        "count": 3
-                      },
-                      "rules": [
-                        {
-                          "on": {
-                            "every": 1000
-                          },
-                          "do": [
-                            {
-                              "set": {
-                                "count": "state.count - 1"
-                              }
-                            },
-                            {
-                              "sound": "tick"
-                            }
-                          ]
-                        },
-                        {
-                          "on": {
-                            "after": 3500
-                          },
-                          "do": [
-                            {
-                              "finishReset": true
-                            }
-                          ]
-                        }
-                      ],
-                      "foregroundTemplate": {
-                        "sourceType": "relative",
-                        "templateSource": "games/jump-and-duck/ready.html"
-                      },
-                      "foregroundTemplateStyle": {
-                        "width": "100%",
-                        "height": "100%"
-                      }
-                    }
-                  }
+                  "resetScene": "start"
                 }
               ]
             }
@@ -986,6 +1369,8 @@
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
+                  "scene": "2D",
+                  "avatar": { "mode": "camera", "fallback": "mouse", "preview": false },
                   "component": {
                     "type": "template",
                     "data": {
@@ -1077,6 +1462,9 @@
                           },
                           {
                             "sound": "pop"
+                          },
+                          {
+                            "despawn": "event"
                           }
                         ]
                       },
@@ -1095,6 +1483,9 @@
                           },
                           {
                             "sound": "pop"
+                          },
+                          {
+                            "despawn": "event"
                           }
                         ]
                       },
@@ -1160,305 +1551,73 @@
                     ],
                     "foregroundTemplate": {
                       "sourceType": "relative",
-                      "templateSource": "games/jump-and-duck/run.html"
+                      "templateSource": "games/rules-demo/jump-and-duck/run.html"
                     },
                     "foregroundTemplateStyle": {
                       "width": "100%",
                       "height": "100%"
                     }
                   },
-                  "resetScene": {
-                    "showOn": "every-show",
-                    "component": {
-                      "type": "template",
-                      "data": {},
-                      "initialState": {
-                        "count": 3
-                      },
-                      "rules": [
-                        {
-                          "on": {
-                            "every": 1000
-                          },
-                          "do": [
-                            {
-                              "set": {
-                                "count": "state.count - 1"
-                              }
-                            },
-                            {
-                              "sound": "tick"
-                            }
-                          ]
-                        },
-                        {
-                          "on": {
-                            "after": 3500
-                          },
-                          "do": [
-                            {
-                              "finishReset": true
-                            }
-                          ]
-                        }
-                      ],
-                      "foregroundTemplate": {
-                        "sourceType": "relative",
-                        "templateSource": "games/jump-and-duck/ready.html"
-                      },
-                      "foregroundTemplateStyle": {
-                        "width": "100%",
-                        "height": "100%"
-                      }
-                    }
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ],
-      "gameContainerStyle": {
-        "fontFamily": "system-ui, sans-serif"
-      }
-    },
-    "rules-demo": {
-      "id": "rules-demo",
-      "title": "Demo scenes (2.5D)",
-      "description": "Pop balloons, dodge the pits, walk around a room with a tiled floor, walls and hills, and hop the stones over a floor of lava: a demonstration of 2.5D scenes, rules and state, by camera, or by mouse without one.",
-      "modules": {
-        "scene": "2.5D",
-        "avatar": { "mode": "mouse" },
-        "spectators": {
-          "show": "shown",
-          "look": { "opacity": 0.3, "filter": "grayscale(calc(var(--spectator-strength) * 100%))" },
-          "fade": { "to": 30 }
-        }
-      },
-      "config": { "sequential": false, "autoAdvanceStages": false },
-      "stylesheets": ["demo-css"],
-      "resources": {
-        "demo-css": { "type": "local", "target": "games/rules-demo/rules-demo.css" },
-        "chime": { "type": "local", "target": "games/rules-demo/chime.wav" },
-        "tick": { "type": "local", "target": "games/rules-demo/tick.wav" },
-        "pop": { "type": "local", "target": "games/rules-demo/pop.wav" },
-        "fanfare": { "type": "local", "target": "games/rules-demo/fanfare.wav" }
-      },
-      "scenes": [
-        {
-          "purpose": "game-overview-title",
-          "component": {
-            "type": "template",
-            "data": {},
-            "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/title.html" },
-            "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
-          }
-        },
-        {
-          "purpose": "game-overview-stages",
-          "avatar": { "mode": "camera", "fallback": "mouse" },
-          "component": {
-            "type": "template",
-            "data": {
-              "names": {
-                "balloons": "Balloons",
-                "pits": "Avoid the pits",
-                "depth": "Walk around",
-                "effects": "Effects",
-                "floor-is-lava": "The floor is lava"
-              }
-            },
-            "initialState": { "position": 1, "lit": false },
-            "rules": [
-              {
-                "on": { "interact": ["hand-enter", "mouse-enter"], "target": "#bulb", "threshold": 0.3 },
-                "do": [{ "set": { "lit": "true" } }]
-              },
-              {
-                "on": { "interact": ["hand-exit", "mouse-exit"], "target": "#bulb", "threshold": 0.3 },
-                "do": [{ "set": { "lit": "false" } }]
-              },
-              {
-                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-balloons", "threshold": 0.5 },
-                "do": [{ "enterStage": "balloons" }]
-              },
-              {
-                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-pits", "threshold": 0.5 },
-                "do": [{ "enterStage": "pits" }]
-              },
-              {
-                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-depth", "threshold": 0.5 },
-                "do": [{ "enterStage": "depth" }]
-              },
-              {
-                "on": { "interact": ["click", "hand-enter"], "target": "#stage-link-effects", "threshold": 0.5 },
-                "do": [{ "enterStage": "effects" }]
-              },
-              {
-                "on": {
-                  "interact": ["click", "hand-enter"],
-                  "target": "#stage-link-floor-is-lava",
-                  "threshold": 0.5
-                },
-                "do": [{ "enterStage": "floor-is-lava" }]
-              },
-              {
-                "on": { "interact": ["click", "hand-enter"], "target": "#switch", "threshold": 0.5 },
-                "do": [{ "set": { "position": "if state.position == 1 then 2 else 1" } }]
-              }
-            ],
-            "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/stages.html" },
-            "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
-          }
-        }
-      ],
-      "stages": [
-        {
-          "id": "balloons",
-          "challenges": [
-            {
-              "id": "pop-balloons",
-              "solution": { "answers": [] },
-              "scenes": [
-                {
-                  "purpose": "challenge-in-progress",
-                  "avatar": { "mode": "camera", "fallback": "mouse" },
-                  "component": {
-                    "type": "template",
-                    "data": { "target": 10 },
-                    "initialState": {
-                      "score": 0,
-                      "balloonIndex": 0,
-                      "popping": false,
-                      "dropMs": 4000,
-                      "left": 45,
-                      "colour": 0
-                    },
-                    "resetStateOnShow": true,
-                    "rules": [
-                      {
-                        "on": { "interact": ["hand-enter", "click"], "target": ".balloon", "threshold": 0.3 },
-                        "if": "not state.popping",
-                        "do": [{ "set": { "popping": "true", "score": "state.score + 1" } }, { "sound": "pop" }]
-                      },
-                      {
-                        "on": { "animationEnd": "fall", "target": ".balloon" },
-                        "do": [{ "set": { "popping": "true" } }]
-                      },
-                      {
-                        "on": { "animationEnd": "pop", "target": ".balloon" },
-                        "do": [
-                          {
-                            "set": {
-                              "popping": "false",
-                              "balloonIndex": "state.balloonIndex + 1",
-                              "left": "((state.balloonIndex + 1) * 37) mod 70 + 10",
-                              "colour": "(state.balloonIndex + 1) mod 6"
-                            }
-                          }
-                        ]
-                      },
-                      { "on": { "when": "state.score >= data.target" }, "do": [{ "completeChallenge": true }] }
-                    ],
-                    "foregroundTemplate": {
-                      "sourceType": "relative",
-                      "templateSource": "games/rules-demo/balloons.html"
-                    },
-                    "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
-                  },
-                  "resetScene": {
-                    "showOn": "every-show",
-                    "component": {
-                      "type": "template",
-                      "data": {},
-                      "initialState": { "count": 3 },
-                      "rules": [
-                        { "on": { "start": true }, "do": [{ "sound": "tick" }] },
-                        {
-                          "on": { "every": 1000 },
-                          "do": [{ "set": { "count": "state.count - 1" } }, { "sound": "tick" }]
-                        },
-                        { "on": { "after": 3000 }, "do": [{ "finishReset": true }] }
-                      ],
-                      "foregroundTemplate": {
-                        "sourceType": "relative",
-                        "templateSource": "games/rules-demo/balloons-ready.html"
-                      },
-                      "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
-                    }
-                  }
+                  "resetScene": "start"
                 }
               ]
             }
           ]
         },
         {
-          "id": "pits",
+          "id": "lamps",
           "challenges": [
             {
-              "id": "cross-the-floor",
+              "id": "light-the-lamps",
               "solution": { "answers": [] },
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "avatar": { "mode": "camera", "fallback": "mouse-feet" },
-                  "spectators": { "resetOnReturn": true },
+                  "scene": "2D",
                   "component": {
                     "type": "template",
                     "data": {},
-                    "initialState": { "done": false, "falling": false },
+                    "initialState": { "lamp1": false, "lamp2": false, "lamp3": false, "done": false },
                     "resetStateOnShow": true,
                     "rules": [
                       {
-                        "on": { "interact": ["foot-enter"], "target": ".pit", "threshold": 0.3 },
-                        "if": "not state.done and not state.falling",
+                        "on": { "interact": "click", "target": "#lamp-1" },
+                        "if": "not state.done",
+                        "do": [{ "set": { "lamp1": "not state.lamp1" } }, { "sound": "chime" }]
+                      },
+                      {
+                        "on": { "interact": "click", "target": "#lamp-2" },
+                        "if": "not state.done",
+                        "do": [{ "set": { "lamp2": "not state.lamp2" } }, { "sound": "chime" }]
+                      },
+                      {
+                        "on": { "interact": "click", "target": "#lamp-3" },
+                        "if": "not state.done",
+                        "do": [{ "set": { "lamp3": "not state.lamp3" } }, { "sound": "chime" }]
+                      },
+                      {
+                        "on": { "when": "state.lamp1 and state.lamp2 and state.lamp3" },
                         "do": [
-                          { "set": { "falling": "true" } },
+                          { "set": { "done": "true" } },
                           {
                             "series": [
-                              { "effect": "player-fall", "durationMs": 1000, "easing": "ease-in" },
-                              { "resetChallenge": true, "delayMs": 500 }
+                              {
+                                "parallel": [
+                                  { "sound": "fanfare" },
+                                  { "reward": { "animation": "sparkles", "particleCount": 80 } }
+                                ]
+                              },
+                              { "completeChallenge": true }
                             ]
                           }
                         ]
-                      },
-                      {
-                        "on": { "interact": ["foot-enter"], "target": "#door-base", "threshold": 0.3 },
-                        "if": "not state.done and not state.falling",
-                        "do": [
-                          { "set": { "done": "true" } },
-                          { "completeChallenge": true },
-                          { "sound": "fanfare" },
-                          { "reward": { "animation": "fireworks", "particleCount": 150 } }
-                        ]
                       }
                     ],
-                    "backgroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/pits.html" },
-                    "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
-                  },
-                  "resetScene": {
-                    "component": {
-                      "type": "template",
-                      "data": {},
-                      "initialState": { "ready": false },
-                      "rules": [
-                        {
-                          "on": { "interact": ["foot-enter"], "target": "#reset-start", "threshold": 0.3 },
-                          "if": "not state.ready",
-                          "do": [
-                            { "set": { "ready": "true" } },
-                            { "sound": "chime" },
-                            { "reward": { "animation": "sparkles", "particleCount": 60 } }
-                          ]
-                        },
-                        { "on": { "when": "state.ready", "forMs": 3000 }, "do": [{ "finishReset": true }] }
-                      ],
-                      "backgroundTemplate": {
-                        "sourceType": "relative",
-                        "templateSource": "games/rules-demo/pits-reset.html"
-                      },
-                      "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
-                    }
+                    "foregroundTemplate": {
+                      "sourceType": "relative",
+                      "templateSource": "games/rules-demo/demo-no-camera/lamps.html"
+                    },
+                    "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
                   }
                 }
               ]
@@ -1466,89 +1625,24 @@
           ]
         },
         {
-          "id": "depth",
+          "id": "riddle",
           "challenges": [
             {
-              "id": "walk-around-intro",
-              "solution": { "answers": ["walk"] },
+              "id": "answer-the-riddle",
+              "solution": { "answers": ["keyboard", "a keyboard"] },
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
+                  "scene": "2D",
                   "component": {
                     "type": "scroll",
                     "data": {},
                     "contents": [
                       {
-                        "text": "In a 2.5D scene, things stand on the floor.\nThey shrink as they go further back,\nand you can walk in front of them and behind them."
+                        "text": "I have keys, but open no locks.\nI have space, but no room.\nYou can enter, but you can't go in."
                       },
-                      {
-                        "text": "The near post only notices you when you stand beside it.\nA ring follows you around, and your position shows at the bottom.",
-                        "showInput": true,
-                        "label": "Type walk to start walking"
-                      }
+                      { "text": "What am I?", "showInput": true, "label": "Your answer" }
                     ]
-                  }
-                }
-              ]
-            },
-            {
-              "id": "walk-around",
-              "solution": { "answers": [] },
-              "scenes": [
-                {
-                  "purpose": "challenge-in-progress",
-                  "avatar": { "mode": "camera", "fallback": "mouse-feet" },
-                  "component": {
-                    "type": "template",
-                    "data": {},
-                    "initialState": { "lit": false, "sprung": false },
-                    "resetStateOnShow": true,
-                    "rules": [
-                      {
-                        "on": { "interact": ["click"], "target": "#depth-done" },
-                        "do": [{ "completeChallenge": true }]
-                      },
-                      {
-                        "on": { "interact": ["foot-enter"], "target": "#depth-spring" },
-                        "if": "not state.sprung",
-                        "do": [
-                          { "set": { "sprung": "true" } },
-                          {
-                            "series": [
-                              { "effect": "player-spin-away", "durationMs": 1000 },
-                              { "resetChallenge": true, "delayMs": 500 }
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "on": { "interact": ["foot-enter"], "target": "#depth-near" },
-                        "do": [{ "set": { "lit": "true" } }]
-                      },
-                      {
-                        "on": { "interact": ["foot-exit"], "target": "#depth-near" },
-                        "do": [{ "set": { "lit": "false" } }]
-                      }
-                    ],
-                    "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/depth.html" },
-                    "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
-                  },
-                  "resetScene": {
-                    "component": {
-                      "type": "template",
-                      "data": {},
-                      "rules": [
-                        {
-                          "on": { "interact": ["foot-enter"], "target": "#reset-start" },
-                          "do": [{ "sound": "chime" }, { "finishReset": true }]
-                        }
-                      ],
-                      "foregroundTemplate": {
-                        "sourceType": "relative",
-                        "templateSource": "games/rules-demo/depth-reset.html"
-                      },
-                      "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
-                    }
                   }
                 }
               ]
@@ -1556,257 +1650,255 @@
           ]
         },
         {
-          "id": "effects",
+          "id": "doors",
           "challenges": [
             {
-              "id": "try-effects",
+              "id": "pick-a-door",
               "solution": { "answers": [] },
               "scenes": [
                 {
                   "purpose": "challenge-in-progress",
-                  "avatar": { "mode": "camera", "fallback": "mouse", "preview": false },
+                  "scene": "2D",
                   "component": {
                     "type": "template",
                     "data": {},
-                    "initialState": { "message": "Touch or click each one" },
-                    "keepRemovedPlayers": false,
+                    "initialState": { "wrong": false },
+                    "resetStateOnShow": true,
                     "rules": [
                       {
-                        "on": { "interact": ["click", "hand-enter"], "target": "#rock", "threshold": 0.3 },
+                        "on": { "interact": "click", "target": "#door-1" },
                         "do": [
-                          { "effect": "quake", "target": "#rock", "dx": 1, "durationMs": 1000, "easing": "ease-out" },
-                          { "effect": "quake", "target": ".player", "dx": 0.5, "durationMs": 500 }
+                          { "set": { "wrong": "true" } },
+                          { "effect": "quake", "target": "#door-1", "dx": 1, "durationMs": 400 }
                         ]
                       },
                       {
-                        "on": { "interact": "jump" },
-                        "do": [{ "effect": "quake", "dx": 0.5, "dy": 1, "consistentMotion": false, "durationMs": 500 }]
+                        "on": { "interact": "click", "target": "#door-3" },
+                        "do": [
+                          { "set": { "wrong": "true" } },
+                          { "effect": "quake", "target": "#door-3", "dx": 1, "durationMs": 400 }
+                        ]
                       },
                       {
-                        "on": { "interact": ["click", "hand-enter"], "target": "#crate", "threshold": 0.3 },
-                        "do": [{ "effect": "item-fall", "target": "#crate", "easing": "ease-in" }]
-                      },
+                        "on": { "interact": "click", "target": "#door-2" },
+                        "do": [
+                          { "completeChallenge": true },
+                          { "sound": "fanfare" },
+                          { "reward": { "animation": "fireworks", "particleCount": 150 } }
+                        ]
+                      }
+                    ],
+                    "foregroundTemplate": {
+                      "sourceType": "relative",
+                      "templateSource": "games/rules-demo/demo-no-camera/doors.html"
+                    },
+                    "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "rings",
+          "challenges": [
+            {
+              "id": "collect-rings",
+              "solution": {
+                "answers": []
+              },
+              "scenes": [
+                {
+                  "purpose": "challenge-in-progress",
+                  "scene": "2.5D",
+                  "avatar": {
+                    "mode": "camera",
+                    "fallback": "mouse-feet"
+                  },
+                  "spectators": {
+                    "resetOnReturn": true
+                  },
+                  "component": {
+                    "type": "template",
+                    "data": {},
+                    "initialState": {
+                      "t": 30,
+                      "score": 0,
+                      "index": 0,
+                      "x": 60,
+                      "y": 30,
+                      "left": 52,
+                      "back": 22,
+                      "right": 68,
+                      "front": 38,
+                      "goneIndex": 0,
+                      "goneX": 0,
+                      "goneY": 0,
+                      "one": false,
+                      "done": false
+                    },
+                    "resetStateOnShow": true,
+                    "rules": [
                       {
-                        "on": { "effectEnd": "item-fall", "target": "#crate" },
-                        "do": [{ "set": { "message": "\"The crate has fallen\"" } }]
-                      },
-                      {
-                        "on": { "interact": ["click", "hand-enter"], "target": "#lift", "threshold": 0.3 },
-                        "do": [{ "effect": "item-move", "target": "#lift", "end": { "by": { "left": 0, "top": 15 } } }]
-                      },
-                      {
-                        "on": { "interact": ["near-enter", "mouse-enter"], "target": "#lamp", "within": 10 },
+                        "on": {
+                          "interact": ["foot-enter"],
+                          "target": ".ring-near",
+                          "threshold": 0.05
+                        },
+                        "if": "not state.done",
                         "do": [
                           {
-                            "effect": "highlight",
-                            "target": "#lamp",
-                            "durationMs": "indefinite",
-                            "sequence": [
+                            "series": [
                               {
-                                "filter": "brightness(1.5)",
-                                "shadow": "0 0 2cqw gold",
-                                "durationMs": 500,
-                                "easing": "ease-in"
+                                "set": {
+                                  "score": "state.score + 1",
+                                  "one": "state.score == 0",
+                                  "goneIndex": "state.index + 1",
+                                  "goneX": "state.x",
+                                  "goneY": "state.y",
+                                  "index": "state.index + 1",
+                                  "x": "round(random(10, 90))",
+                                  "y": "round(random(10, 65))"
+                                }
                               },
                               {
-                                "filter": "brightness(1)",
-                                "shadow": "0 0 0 gold",
-                                "durationMs": 500,
-                                "easing": "ease-out"
+                                "set": {
+                                  "left": "state.x - 8",
+                                  "right": "state.x + 8",
+                                  "back": "state.y - 8",
+                                  "front": "state.y + 8"
+                                }
+                              },
+                              {
+                                "parallel": [
+                                  {
+                                    "effect": "item-spin-away",
+                                    "target": ".ring-gone",
+                                    "durationMs": 600,
+                                    "opacity": 0,
+                                    "zoom": 1.5
+                                  },
+                                  {
+                                    "reward": {
+                                      "animation": "sparkles",
+                                      "particleCount": 40
+                                    },
+                                    "target": ".ring-gone"
+                                  },
+                                  {
+                                    "sound": "chime"
+                                  }
+                                ]
                               }
                             ]
                           }
                         ]
                       },
                       {
-                        "on": { "interact": ["near-exit", "mouse-exit"], "target": "#lamp", "within": 10 },
-                        "do": [{ "effect": "stop", "target": "#lamp", "stop": "highlight" }]
-                      },
-                      {
-                        "on": { "interact": ["click", "hand-enter"], "target": "#bridge", "threshold": 0.3 },
+                        "on": {
+                          "interact": ["hand-enter"],
+                          "target": ".ring",
+                          "threshold": 0.05
+                        },
+                        "if": "not state.done",
                         "do": [
                           {
                             "series": [
-                              { "effect": "quake", "target": "#bridge", "dx": 0.5, "dy": 0.5, "durationMs": 400 },
-                              { "effect": "item-fall", "target": "#bridge" },
-                              { "set": { "message": "\"The bridge has gone\"" } }
+                              {
+                                "set": {
+                                  "score": "state.score + 1",
+                                  "one": "state.score == 0",
+                                  "goneIndex": "state.index + 1",
+                                  "goneX": "state.x",
+                                  "goneY": "state.y",
+                                  "index": "state.index + 1",
+                                  "x": "round(random(10, 90))",
+                                  "y": "round(random(10, 65))"
+                                }
+                              },
+                              {
+                                "set": {
+                                  "left": "state.x - 8",
+                                  "right": "state.x + 8",
+                                  "back": "state.y - 8",
+                                  "front": "state.y + 8"
+                                }
+                              },
+                              {
+                                "parallel": [
+                                  {
+                                    "effect": "item-spin-away",
+                                    "target": ".ring-gone",
+                                    "durationMs": 600,
+                                    "opacity": 0,
+                                    "zoom": 1.5
+                                  },
+                                  {
+                                    "reward": {
+                                      "animation": "sparkles",
+                                      "particleCount": 40
+                                    },
+                                    "target": ".ring-gone"
+                                  },
+                                  {
+                                    "sound": "chime"
+                                  }
+                                ]
+                              }
                             ]
                           }
                         ]
                       },
                       {
-                        "on": { "interact": ["click", "hand-enter"], "target": "#prize", "threshold": 0.3 },
-                        "do": [{ "reward": { "animation": "stars", "particleCount": 40 }, "target": "#prize" }]
-                      },
-                      {
-                        "on": { "interact": ["foot-enter", "body-enter"], "target": ".pit", "threshold": 0.3 },
-                        "do": [{ "effect": "player-fall", "durationMs": 1000, "easing": "ease-in" }]
-                      },
-                      {
-                        "on": { "effectEnd": "player-fall" },
-                        "do": [{ "set": { "fell": "event.player" } }]
-                      },
-                      {
-                        "on": { "interact": ["body-enter", "hand-enter"], "target": ".boulder", "threshold": 0.2 },
+                        "on": {
+                          "every": 1000
+                        },
+                        "if": "not state.done and state.t > 0",
                         "do": [
                           {
-                            "effect": "player-spin-away",
-                            "durationMs": 1200,
-                            "angle": { "min": -60, "max": 60 },
-                            "zoom": 0.3,
-                            "opacity": 0,
-                            "rotations": 2
+                            "set": {
+                              "t": "state.t - 1"
+                            }
                           }
                         ]
                       },
                       {
-                        "on": { "interact": ["hand-enter"], "target": "#ghost", "threshold": 0.3 },
+                        "on": {
+                          "when": "state.t <= 0 and not state.done"
+                        },
                         "do": [
                           {
-                            "series": [
-                              { "effect": "player-invisible", "durationMs": 500 },
-                              { "effect": "player-visible", "durationMs": 500, "delayMs": 2500 }
-                            ]
+                            "set": {
+                              "done": "true"
+                            }
+                          },
+                          {
+                            "sound": "fanfare"
                           }
                         ]
                       },
                       {
-                        "on": { "interact": ["body-enter", "hand-enter"], "target": ".ice", "threshold": 0.2 },
-                        "do": [{ "effect": "player-freeze" }, { "effect": "player-unfreeze", "delayMs": 3000 }]
-                      },
-                      {
-                        "on": { "interact": ["hand-enter"], "target": "#fuzz", "threshold": 0.3 },
-                        "do": [{ "effect": "player-static", "pixelSize": 0.5, "proportion": 0.6, "easeMs": 500 }]
-                      },
-                      {
-                        "on": { "interact": ["hand-exit"], "target": "#fuzz", "threshold": 0.3 },
-                        "do": [{ "effect": "stop", "players": "triggering", "stop": "player-static" }]
-                      },
-                      {
-                        "on": { "interact": ["click", "hand-enter"], "target": "#restore", "threshold": 0.3 },
-                        "do": [{ "effect": "player-restore", "players": "all", "durationMs": 500 }]
-                      },
-                      {
-                        "on": { "when": "game.players.active == 0 and game.players.removed > 0", "forMs": 2000 },
-                        "do": [{ "resetChallenge": true }]
-                      },
-                      {
-                        "on": { "interact": ["click"], "target": "#effects-done" },
-                        "do": [{ "completeChallenge": true }]
-                      }
-                    ],
-                    "backgroundStyle": { "background": "#1b2a41" },
-                    "foregroundTemplate": {
-                      "sourceType": "relative",
-                      "templateSource": "games/rules-demo/effects.html"
-                    },
-                    "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "id": "floor-is-lava",
-          "challenges": [
-            {
-              "id": "hop-the-stones",
-              "solution": { "answers": [] },
-              "scenes": [
-                {
-                  "purpose": "challenge-in-progress",
-                  "avatar": {
-                    "mode": "camera",
-                    "fallback": "mouse-feet",
-                    "feet": { "color": "rgb(120 200 255 / 70%)" }
-                  },
-                  "component": {
-                    "type": "template",
-                    "data": {},
-                    "initialState": { "on": 1, "doorOpen": false, "burning": false, "done": false },
-                    "resetStateOnShow": true,
-                    "rules": [
-                      {
-                        "on": { "interact": ["foot-enter"], "target": "#lava" },
-                        "if": "not state.burning",
+                        "on": {
+                          "when": "state.done",
+                          "forMs": 10000
+                        },
                         "do": [
-                          { "set": { "burning": "true" } },
-                          { "effect": "player-static", "pixelSize": 2, "proportion": 1, "easeMs": 800 },
-                          { "resetChallenge": true, "delayMs": 1200 }
-                        ]
-                      },
-                      {
-                        "on": { "interact": ["jump-onto"], "target": "#stone-2" },
-                        "if": "state.on == 1",
-                        "do": [
-                          { "set": { "on": "2" } },
-                          { "effect": "item-fall", "target": "#stone-1", "easing": "ease-in" },
-                          { "sound": "chime" }
-                        ]
-                      },
-                      {
-                        "on": { "interact": ["jump-onto"], "target": "#stone-3" },
-                        "if": "state.on == 2",
-                        "do": [
-                          { "set": { "on": "3", "doorOpen": "true" } },
-                          { "effect": "item-fall", "target": "#stone-2", "easing": "ease-in" },
-                          { "sound": "chime" }
-                        ]
-                      },
-                      {
-                        "on": { "interact": ["jump-onto"], "target": "#stone-3" },
-                        "if": "state.on == 1 and not state.burning",
-                        "do": [
-                          { "set": { "burning": "true" } },
-                          { "effect": "player-static", "pixelSize": 2, "proportion": 1, "easeMs": 800 },
-                          { "resetChallenge": true, "delayMs": 1200 }
-                        ]
-                      },
-                      {
-                        "on": { "interact": ["foot-enter"], "target": "#door", "holdMs": 1000 },
-                        "if": "state.doorOpen and not state.done",
-                        "do": [
-                          { "set": { "done": "true" } },
-                          { "completeChallenge": true },
-                          { "sound": "fanfare" },
-                          { "reward": { "animation": "fireworks", "particleCount": 150 } }
-                        ]
-                      },
-                      {
-                        "on": { "interact": ["click"], "target": "#door" },
-                        "if": "state.doorOpen and not state.done",
-                        "do": [
-                          { "set": { "done": "true" } },
-                          { "completeChallenge": true },
-                          { "sound": "fanfare" },
-                          { "reward": { "animation": "fireworks", "particleCount": 150 } }
+                          {
+                            "completeChallenge": true
+                          }
                         ]
                       }
                     ],
                     "backgroundTemplate": {
                       "sourceType": "relative",
-                      "templateSource": "games/rules-demo/stones.html"
+                      "templateSource": "games/rules-demo/rings.html"
                     },
-                    "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
-                  },
-                  "resetScene": {
-                    "component": {
-                      "type": "template",
-                      "data": {},
-                      "rules": [
-                        {
-                          "on": { "interact": ["foot-enter"], "target": "#reset-start" },
-                          "do": [{ "sound": "chime" }, { "finishReset": true }]
-                        }
-                      ],
-                      "backgroundTemplate": {
-                        "sourceType": "relative",
-                        "templateSource": "games/rules-demo/stones-reset.html"
-                      },
-                      "backgroundTemplateStyle": { "width": "100%", "height": "100%" }
+                    "backgroundTemplateStyle": {
+                      "width": "100%",
+                      "height": "100%"
                     }
-                  }
+                  },
+                  "resetScene": "start"
                 }
               ]
             }

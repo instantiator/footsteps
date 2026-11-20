@@ -3,8 +3,8 @@
 This tutorial builds a runner played with the camera: snowballs roll along the ground and bats swoop at head height,
 and the player jumps and ducks to keep clear of them until the score is reached. It covers the camera avatar and its
 mouse fallback, how players are drawn between a scene's background and foreground, spawning copies of a template,
-body-part interactions, timers, effects that move things, a series of actions, and a countdown before each run. It follows the **Jump and duck (2D)** game's "Warm-up"
-stage; every snippet is quoted from `public/game-repository.json` and `public/games/jump-and-duck/`.
+body-part interactions, timers, effects that move things, a series of actions, and a countdown before each run. It follows the "Warm-up" stage of the **Demo scenes** game's
+Jump and duck; every snippet is quoted from `public/game-repository.json` and `public/games/rules-demo/jump-and-duck/`.
 
 Start from [your first game](your-first-game.md) and [a scene without a camera](scene-without-camera.md), which
 cover the game's structure, rules and state. [Camera mode](../camera-mode.md) explains what the camera does.
@@ -12,15 +12,12 @@ cover the game's structure, rules and state. [Camera mode](../camera-mode.md) ex
 ## Step 1: the camera, with the mouse as a fallback
 
 ```json [public/game-repository.json]
-"modules": {
-  "scene": "2D",
-  "avatar": {
-    "mode": "camera",
-    "fallback": "mouse",
-    "preview": false
-  }
-},
+"scene": "2D",
+"avatar": { "mode": "camera", "fallback": "mouse", "preview": false },
 ```
+
+These go on the stage's challenge scene. The Demo scenes game is 2.5D and mouse-played as a whole, so this scene sets its
+own modes; a whole game can set them in `modules` instead.
 
 - `"mode": "camera"` plays with the player's silhouette, cut out of the webcam picture and drawn into the game.
 - `"fallback": "mouse"` lets the game start without a camera, played with the mouse instead. Its landing page says
@@ -38,7 +35,7 @@ Each scene draws a background and a foreground. The camera's players are drawn b
 foreground, in front of everything else ([layers](../game-data.md#layers)). The run is a foreground template whose
 screen is see-through, so the player shows behind the obstacles.
 
-```css [public/games/jump-and-duck/jump-and-duck.css]
+```css [public/games/rules-demo/jump-and-duck/jump-and-duck.css]
 /* The run: see-through, so the player's camera image shows behind the obstacles */
 .jd-run {
   background: linear-gradient(#14213d33, #3a506b33);
@@ -56,7 +53,7 @@ The template has the ground, a status line, a message for the end of the run, so
 `<template>` for an obstacle, which the rules copy:
 
 <!-- prettier-ignore -->
-```html [public/games/jump-and-duck/run.html]
+```html [public/games/rules-demo/jump-and-duck/run.html]
 <div class="jd-screen jd-run">
   <div class="jd-ground"></div>
   <p id="jd-status" class="jd-status">Score {{state.score}} of {{data.target}} · Lives {{state.lives}}</p>
@@ -71,7 +68,7 @@ The template has the ground, a status line, a message for the end of the run, so
 A `<template>` isn't shown. Its content is rendered with the rest of the template, so `state.high` picks the
 obstacle's kind. Each copy waits off the right edge, at its height: snowballs low, bats high.
 
-```css [public/games/jump-and-duck/jump-and-duck.css]
+```css [public/games/rules-demo/jump-and-duck/jump-and-duck.css]
 .jd-obstacle {
   position: absolute;
   left: 110%;
@@ -212,6 +209,9 @@ under bats.
     },
     {
       "sound": "pop"
+    },
+    {
+      "despawn": "event"
     }
   ]
 },
@@ -223,6 +223,7 @@ under bats.
   },
 ```
 
+- `despawn: "event"` pops the obstacle that hit, so it costs one life however often the player brushes against it.
 - `threshold` is how much of the body part must be inside the element: a tenth of the body for a snowball, which is
   small next to a whole silhouette, and almost a third of the head for a bat.
 - `mouse-enter` is the mouse's stand-in: moving the pointer onto an obstacle costs a life too, so the mouse player
@@ -312,54 +313,24 @@ Running out of lives does the same, but after a pause for its message, resets th
 ## Step 7: a countdown before each run
 
 A **reset scene** shows in place of its scene until one of its rules finishes it
-([reset scenes](../game-data.md#reset-scenes)). Until then, the run's rules and timers wait. With
-`"showOn": "every-show"`, the countdown comes back each time the run starts, including after `resetChallenge`.
+([reset scenes](../game-data.md#reset-scenes)). Until then, the run's rules and timers wait. Both runs use the demo's
+shared **grid reset**, named in the game's `resetScenes` and asked for by name:
 
 ```json [public/game-repository.json]
-"resetScene": {
-  "showOn": "every-show",
-  "component": {
-    "type": "template",
-    "data": {},
-    "initialState": {
-      "count": 3
-    },
-    "rules": [
-      {
-        "on": {
-          "every": 1000
-        },
-        "do": [
-          {
-            "set": {
-              "count": "state.count - 1"
-            }
-          },
-          {
-            "sound": "tick"
-          }
-        ]
-      },
-      {
-        "on": {
-          "after": 3500
-        },
-        "do": [
-          {
-            "finishReset": true
-          }
-        ]
-      }
-    ],
+"resetScene": "start"
 ```
 
-<!-- prettier-ignore -->
-```html [public/games/jump-and-duck/ready.html]
-<p id="jd-countdown" class="jd-countdown">{{#if state.count}}{{state.count}}{{else}}Go!{{/if}}</p>
+It has `"showOn": "every-show"`, so it comes back each time the run starts, including after `resetChallenge`. The player
+stands on Start (or puts the mouse on it), and the reset counts down from 3 with a tick each second before finishing:
+
+```json [public/game-repository.json]
+"on": { "every": 1000 },
+"if": "state.ready and state.count > 0",
+"do": [{ "set": { "count": "state.count - 1" } }, { "sound": "tick" }]
 ```
 
-**Look for:** 3, 2, 1, Go!, then the run. Lose all your lives, and after "Ouch! Back to the start…" the countdown
-begins again. Reach 15, and fireworks.
+**Look for:** Start, then 3, 2, 1, then the run. Lose all your lives, and after "Ouch! Back to the start…" the grid
+returns. Reach 15, and fireworks.
 
 ## Next
 

@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { GameOverviewScene } from "./scenes/GameSceneData";
+import type { GameOverviewScene, GameResetScene, GameResetSceneName } from "./scenes/GameSceneData";
 import type { GameModulesData } from "./GameModuleData";
 import type { GameStageData } from "./GameStageData";
 
@@ -51,12 +51,16 @@ export interface GameData {
   description: string;
   /** Resource name (a key of `resources`) of the image shown behind the game's landing-page tile. */
   tileGraphic?: string;
+  /** Listed before other games on the home page. Default: false. */
+  promoted?: boolean;
   /** Overview scenes (title, stages, complete), shown when no stage is active. */
   scenes: GameOverviewScene[];
   /** The stages of the game, in order. */
   stages: GameStageData[];
   /** Named media resources, referenced by `*Resource` keys and passed to templates as `resources`. */
   resources?: GameResourceDefinitions;
+  /** Named reset scenes, which scenes share by giving the name as their `resetScene`. */
+  resetScenes?: Record<GameResetSceneName, GameResetScene>;
   /**
    * Names of resources (keys of `resources`) that are CSS stylesheets the game needs, such as a web font;
    * loaded while the game is shown. Only `https:` or same-site URLs are used.

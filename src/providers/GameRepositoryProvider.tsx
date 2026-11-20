@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FAILED_REPOSITORY, LOADING_REPOSITORY, type GameRepository } from "../entities/GameRepository";
 import type { GameSource } from "../entities/GameSource";
 import { GameRepositoryContext } from "./GameRepositoryContext";
+import { resolveRepositoryResets } from "../components/core/logic/NamedResets";
 
 /** Props for {@link GameRepositoryProvider}. */
 interface GameRepositoryProviderParams {
@@ -48,9 +49,11 @@ export default function GameRepositoryProvider({ source, children }: GameReposit
     };
   }, [url]);
 
+  // Resolves each game's named reset scenes once here, so everything beneath sees each scene's own
   const repository = useMemo((): GameRepository => {
-    if (source.type === "RawRepository") return { ...source.repository, ready: true, loading: false } as GameRepository;
-    return fetched && fetched.url === url ? fetched.repository : LOADING_REPOSITORY;
+    if (source.type === "RawRepository")
+      return resolveRepositoryResets({ ...source.repository, ready: true, loading: false } as GameRepository);
+    return fetched && fetched.url === url ? resolveRepositoryResets(fetched.repository) : LOADING_REPOSITORY;
   }, [source, fetched, url]);
 
   return <GameRepositoryContext.Provider value={{ source, repository }}>{children}</GameRepositoryContext.Provider>;

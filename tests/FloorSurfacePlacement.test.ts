@@ -101,6 +101,13 @@ describe("surfaceZIndex", () => {
     expect(surfaceZIndex("front-wall", true)).toBeGreaterThan(depthZIndex(100));
     expect(surfaceZIndex("floor-area", true)).toBeLessThan(surfaceZIndex("rear-wall", true));
   });
+
+  it("paints the screen foreground over the rest of its template, and in front of every player and the front wall", () => {
+    for (const inDepthStack of [false, true]) {
+      expect(surfaceZIndex("screen-foreground", inDepthStack)).toBeGreaterThan(depthZIndex(100));
+      expect(surfaceZIndex("screen-foreground", inDepthStack)).toBeGreaterThan(surfaceZIndex("front-wall", true));
+    }
+  });
 });
 
 describe("placeSurface", () => {
@@ -174,6 +181,17 @@ describe("placeSurface", () => {
     expect(backdrop.style.height).toBe("1000px");
     // Drawn from its own top left, which the layout put 100 pixels in, back to the viewport's
     expect(backdrop.style.transform).toBe("matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -100, 0, 0, 1)");
+  });
+
+  it("stretches the screen foreground over the whole viewport, as the screen background is", () => {
+    const overlay = element(`<div class="screen-foreground"></div>`);
+    placeSurface(overlay, VIEW, size, { x: 100, y: 0 });
+    expect([overlay.style.width, overlay.style.height, overlay.style.visibility]).toEqual([
+      "1240px",
+      "1000px",
+      "visible",
+    ]);
+    expect(overlay.style.transform).toBe("matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -100, 0, 0, 1)");
   });
 
   it("draws a large floor background at a smaller scale, so its box stays a manageable size", () => {

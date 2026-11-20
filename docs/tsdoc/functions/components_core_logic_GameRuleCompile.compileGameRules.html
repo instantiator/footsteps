@@ -14,7 +14,7 @@
 <section class="tsd-panel">
 <ul class="tsd-signatures">
 <li class="">
-<div class="tsd-signature tsd-anchor-link" id="compilegamerules"><span class="tsd-kind-call-signature">compileGameRules</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">gameData</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/entities_data_GameData.GameData.html" class="tsd-signature-type tsd-kind-interface">GameData</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="../types/components_core_logic_RuleActions.GameExpressions.html" class="tsd-signature-type tsd-kind-type-alias">GameExpressions</a><a href="#compilegamerules" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-signature tsd-anchor-link" id="compilegamerules"><span class="tsd-kind-call-signature">compileGameRules</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">authored</span><span class="tsd-signature-symbol">:</span> <a href="../interfaces/entities_data_GameData.GameData.html" class="tsd-signature-type tsd-kind-interface">GameData</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="../types/components_core_logic_RuleActions.GameExpressions.html" class="tsd-signature-type tsd-kind-type-alias">GameExpressions</a><a href="#compilegamerules" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>Compiles and checks every rule in a game, so a mistake is reported when the game loads, naming the
 scene and rule it is in.</p>
@@ -22,16 +22,16 @@ scene and rule it is in.</p>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
-<li><span><span class="tsd-kind-parameter">gameData</span>: <a href="../interfaces/entities_data_GameData.GameData.html" class="tsd-signature-type tsd-kind-interface">GameData</a></span></li></ul></div>
+<li><span><span class="tsd-kind-parameter">authored</span>: <a href="../interfaces/entities_data_GameData.GameData.html" class="tsd-signature-type tsd-kind-interface">GameData</a></span></li></ul></div>
 <h4 class="tsd-returns-title">Returns <a href="../types/components_core_logic_RuleActions.GameExpressions.html" class="tsd-signature-type tsd-kind-type-alias">GameExpressions</a></h4><p>the compiled expressions, by source text</p>
 
 <div class="tsd-comment tsd-typography">
 <div class="tsd-tag-throws">
-<h4 class="tsd-anchor-link" id="throws">Throws<a href="#throws" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p>on the first expression that doesn't parse, invalid selector, negative duration, challenge action
+<h4 class="tsd-anchor-link" id="throws">Throws<a href="#throws" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p>on a reset scene name the game doesn't have, the first expression that doesn't parse, invalid selector, negative duration, challenge action
 outside a challenge scene, or <code>enterStage</code> to a stage the game doesn't have</p>
 </div></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/logic/GameRuleCompile.ts#L315">components/core/logic/GameRuleCompile.ts:315</a></li></ul></aside></div></li></ul></section></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/core/logic/GameRuleCompile.ts#L318">components/core/logic/GameRuleCompile.ts:318</a></li></ul></aside></div></li></ul></section></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

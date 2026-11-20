@@ -393,6 +393,15 @@ describe("template text", () => {
     ]);
   });
 
+  it("checks a named reset scene's templates, counting its own 2.5D, and reports a name the game lacks", async () => {
+    const reset = { scene: "2.5D" as const, component: templateScene(embedded(FLOOR_ITEM)).component };
+    const scene = { ...templateScene(embedded("<p></p>")), resetScene: "start" };
+    const result = await checkGame(gameWith({ scenes: [scene], resetScenes: { start: reset } }), optionsWith());
+    expect(result.warnings).toEqual([]);
+    const missing = await checkGame(gameWith({ scenes: [{ ...scene, resetScene: "nope" }] }), optionsWith());
+    expect(missing.problems).toEqual([{ path: expect.any(String), message: expect.stringContaining('"nope"') }]);
+  });
+
   it.each([
     '<div class="sky horizon-background"></div>',
     "<div class='rear-wall'></div>",

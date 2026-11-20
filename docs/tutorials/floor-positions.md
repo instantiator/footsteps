@@ -2,7 +2,7 @@
 
 In a 2.5D scene, the game knows where each player stands on the floor, in [floor coordinates](2-5d-scene.md#the-floor).
 Rules and templates can use it: to draw something under a player, to show where they are, or to react when they reach
-part of the room. This tutorial adds a ring that follows the player around the **Demo scenes (2.5D)** game's
+part of the room. This tutorial adds a ring that follows the player around the **Demo scenes** game's
 "Walk around" room, and a line of text saying where they stand. Every snippet is quoted from
 `public/games/rules-demo/`.
 

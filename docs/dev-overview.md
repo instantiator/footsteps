@@ -79,12 +79,10 @@ the checks it does not replace.
 
 Every game in the local repository, `public/game-repository.json`, is prerendered at its own URL:
 
-| Game             | Landing page                                | Play page                                        | Game data URL                                    |
-| ---------------- | ------------------------------------------- | ------------------------------------------------ | ------------------------------------------------ |
-| `magic-trifle`   | <http://localhost:5173/game/magic-trifle>   | <http://localhost:5173/game/magic-trifle/play>   | <http://localhost:5173/game/magic-trifle/json>   |
-| `rules-demo`     | <http://localhost:5173/game/rules-demo>     | <http://localhost:5173/game/rules-demo/play>     | <http://localhost:5173/game/rules-demo/json>     |
-| `demo-no-camera` | <http://localhost:5173/game/demo-no-camera> | <http://localhost:5173/game/demo-no-camera/play> | <http://localhost:5173/game/demo-no-camera/json> |
-| `jump-and-duck`  | <http://localhost:5173/game/jump-and-duck>  | <http://localhost:5173/game/jump-and-duck/play>  | <http://localhost:5173/game/jump-and-duck/json>  |
+| Game           | Landing page                              | Play page                                      | Game data URL                                  |
+| -------------- | ----------------------------------------- | ---------------------------------------------- | ---------------------------------------------- |
+| `magic-trifle` | <http://localhost:5173/game/magic-trifle> | <http://localhost:5173/game/magic-trifle/play> | <http://localhost:5173/game/magic-trifle/json> |
+| `rules-demo`   | <http://localhost:5173/game/rules-demo>   | <http://localhost:5173/game/rules-demo/play>   | <http://localhost:5173/game/rules-demo/json>   |
 
 `public/test-repository.json` holds `test-game`, which isn't in the local repository, so
 `/game/test-game` shows "not found".

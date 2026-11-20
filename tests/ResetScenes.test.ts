@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { applyShowResets, fireRules, NO_EVENT, type RuleEnvironment } from "../src/components/core/logic/GameRuleUtils";
 import { compileGameRules } from "../src/components/core/logic/GameRuleCompile";
+import { resolveNamedResets } from "../src/components/core/logic/NamedResets";
 import { getSceneKey, getLayeredRenderData, getShownScenes } from "../src/components/core/logic/RenderDataUtils";
 import type { GameData } from "../src/entities/data/GameData";
 import type { GameResetScene, GameRule, GameTrigger } from "../src/entities/data/scenes/GameSceneData";
@@ -163,5 +164,31 @@ describe("reset scenes", () => {
       const bad: GameResetScene = { component: { ...scroll(), rules: [{ on: { when: "1 +" }, do: [] }] } };
       expect(() => compileGameRules(gameWithReset(bad))).toThrow("› resetScene › rules[0].on.when");
     });
+  });
+});
+
+describe("named reset scenes", () => {
+  /** The game with its challenge's reset scene given by name, and a reset scene of that name. */
+  const named = (name: string): GameData => {
+    const data = gameWithReset(resetScene("shared"));
+    data.resetScenes = { start: resetScene("shared") };
+    data.stages[0].challenges[0].scenes[0].resetScene = name;
+    return data;
+  };
+
+  it("resolves a name to the game's reset scene of that name", () => {
+    const resolved = resolveNamedResets(named("start"));
+    expect(resolved.stages[0].challenges[0].scenes[0].resetScene).toEqual(resetScene("shared"));
+  });
+
+  it("reports a name the game has no reset scene for, when the game loads", () => {
+    expect(() => compileGameRules(named("missing"))).toThrow('there is no reset scene "missing" in resetScenes');
+    expect(() => compileGameRules(named("start"))).not.toThrow();
+  });
+
+  it("leaves an inline reset scene as it is", () => {
+    const data = gameWithReset(resetScene("inline"));
+    data.resetScenes = { start: resetScene("shared") };
+    expect(resolveNamedResets(data).stages[0].challenges[0].scenes[0].resetScene).toEqual(resetScene("inline"));
   });
 });

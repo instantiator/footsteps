@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { GameRepository } from "../../src/entities/GameRepository";
 
-/** The 2D runner, played by mouse (its fallback) with the camera left off. */
-const GAME_ID = "jump-and-duck";
+/** The 2D runner, one of the demo game's stages, played by mouse (its fallback) with the camera left off. */
+const GAME_ID = "rules-demo";
 
 /**
  * Opens the warm-up run without the camera, setting its target score, and waits out the countdown. Motion isn't
@@ -14,10 +14,10 @@ const openWarmUp = async (page: Page, target?: number, { feet = false } = {}) =>
     const response = await route.fetch();
     const repository = (await response.json()) as GameRepository;
     const game = repository.games[GAME_ID];
-    const [scene] = game.stages[0].challenges[0].scenes;
+    const [scene] = game.stages.find((stage) => stage.id === "warm-up")!.challenges[0].scenes;
     if (target !== undefined) scene.component.data.target = target;
     if (feet) {
-      game.modules = { ...game.modules, avatar: { mode: "camera", fallback: "mouse-feet", preview: false } };
+      scene.avatar = { mode: "camera", fallback: "mouse-feet", preview: false };
       for (const { on } of scene.component.rules ?? []) {
         if ("interact" in on && on.target === ".jd-snowball") on.interact = ["foot-enter"];
       }
@@ -25,11 +25,81 @@ const openWarmUp = async (page: Page, target?: number, { feet = false } = {}) =>
     await route.fulfill({ response, json: repository });
   });
   await page.goto(`/game/${GAME_ID}/play?noCamera=true`);
-  await page.locator("#jd-title").click();
+  await page.locator("#demo-title").click();
   await page.locator("#stage-link-warm-up").click();
-  await expect(page.locator("#jd-countdown")).toBeVisible();
+  await startRun(page);
+};
+
+/** Stands on the shared reset's Start, and waits out its countdown until the run is under way. */
+const startRun = async (page: Page) => {
+  await expect(page.locator("#reset-message")).toBeVisible();
+  await page.locator("#reset-start").hover({ force: true });
+  await expect(page.locator("#reset-count")).toBeVisible();
   await expect(page.locator("#jd-status")).toBeVisible({ timeout: 10_000 });
 };
+
+/** Each lane's height, as a share of the screen: the middle of its obstacles. */
+const LANES = { snowball: 0.82, bat: 0.22 } as const;
+
+/** Where the pointer goes in a lane: the middle of the screen, nudged right by `nudge` pixels. */
+const laneSpot = async (page: Page, lane: keyof typeof LANES, nudge = 0) => {
+  const box = (await page.locator("#game-viewport").boundingBox())!;
+  return { x: box.x + box.width / 2 + nudge, y: box.y + box.height * LANES[lane] };
+};
+
+/**
+ * Plays the warm-up with the pointer in one lane from before the run starts, still or moving, and checks the first
+ * obstacle in that lane has cost exactly one life once it has popped or passed the pointer. A re-render can detach an
+ * obstacle for a moment, so it only counts as popped once it has stayed gone.
+ */
+const firstInLaneCostsALife = async (page: Page, lane: keyof typeof LANES, moving: boolean) => {
+  await page.route("**/game-repository.json", async (route) => {
+    const response = await route.fetch();
+    const repository = (await response.json()) as GameRepository;
+    const [scene] = repository.games[GAME_ID].stages.find((stage) => stage.id === "warm-up")!.challenges[0].scenes;
+    scene.component.data.target = 100;
+    await route.fulfill({ response, json: repository });
+  });
+  await page.goto(`/game/${GAME_ID}/play?noCamera=true`);
+  await page.locator("#demo-title").click();
+  await page.locator("#stage-link-warm-up").click();
+  await startRun(page);
+  const spot = await laneSpot(page, lane);
+  await page.mouse.move(spot.x, spot.y);
+
+  const first = page.locator(`.jd-${lane}`).first();
+  await expect(first).toBeAttached({ timeout: 20_000 });
+  const id = (await first.getAttribute("id"))!;
+  // Read without waiting, as a popped obstacle never comes back
+  const rightEdge = () => page.evaluate((id) => document.getElementById(id)?.getBoundingClientRect().right ?? null, id);
+  let nudge = 0;
+  let detachedFor = 0;
+  for (;;) {
+    const right = await rightEdge();
+    if (right !== null && right < spot.x - 30) break;
+    // A hit pops the obstacle; a re-render detaches it only for a moment
+    detachedFor = right === null ? detachedFor + 1 : 0;
+    if (detachedFor > 10) break;
+    if (moving) {
+      nudge = nudge === 0 ? 20 : 0;
+      const { x, y } = await laneSpot(page, lane, nudge);
+      await page.mouse.move(x, y);
+    }
+    await page.waitForTimeout(50);
+  }
+  await expect(page.locator("#jd-status")).toContainText("Lives 2");
+};
+
+for (const lane of ["snowball", "bat"] as const) {
+  for (const moving of [false, true]) {
+    test(`costs a life for the first ${lane} under a pointer ${moving ? "moving in" : "parked in"} its lane before the run starts`, async ({
+      page,
+    }) => {
+      test.setTimeout(60_000);
+      await firstInLaneCostsALife(page, lane, moving);
+    });
+  }
+}
 
 /** Parks the pointer in the top left corner, clear of both lanes. */
 const parkClear = async (page: Page) => {
@@ -63,7 +133,7 @@ const loseEveryLife = async (page: Page, options: { feet?: boolean } = {}) => {
   await expect.poll(lives, { timeout: 15_000 }).toBe("2");
   await expect.poll(lives, { timeout: 30_000 }).toBe("0");
   await expect(page.locator("#jd-message")).toContainText("Ouch");
-  await expect(page.locator("#jd-countdown")).toBeVisible({ timeout: 5_000 });
+  await expect(page.locator("#reset-message")).toBeVisible({ timeout: 5_000 });
 };
 
 test("scores a run as obstacles cross, costs a life for each one a still pointer meets, and restarts at none", async ({

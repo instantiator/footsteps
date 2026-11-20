@@ -88,7 +88,8 @@
   .rear-wall,
   .left-wall,
   .right-wall,
-  .front-wall
+  .front-wall,
+  .screen-foreground
 ) {
   position: absolute;
   left: 0;
@@ -114,6 +115,34 @@
   height: var(--scene-height);
   container-type: size;
   overflow: visible;
+}
+
+/*
+ * A floor surface stays hidden until placement draws it, which may be a frame after its template renders. Unplaced,
+ * it is a plain box over much of the scene, which would flash, and catch the pointer far from where it will be drawn.
+ * The classes are SURFACE_CLASSES (FloorSurfaceClasses.ts); a test keeps the two lists alike.
+ */
+.floorScene
+  :where(
+    [data-floor-area],
+    .screen-background,
+    .horizon-background,
+    .floor-background,
+    .rear-background,
+    .left-background,
+    .right-background,
+    .rear-wall,
+    .left-wall,
+    .right-wall,
+    .front-wall,
+    .screen-foreground
+  ) {
+  visibility: hidden;
+}
+
+/* An overlay over the whole screen lets the pointer through to the scene, unless its author says otherwise */
+:where(.screen-foreground) {
+  pointer-events: none;
 }
 
 /* Each challenge's column clips its scene, except in a 2.5D scene, whose surfaces reach the screen's edges */

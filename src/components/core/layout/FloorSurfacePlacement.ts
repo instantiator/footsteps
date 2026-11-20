@@ -92,6 +92,7 @@ const PAINT_ORDER: readonly SurfaceKind[] = [
   ...SURFACE_CLASSES.filter((kind) => kind.endsWith("-background")),
   "floor-area",
   ...SURFACE_CLASSES.filter((kind) => kind.endsWith("-wall")),
+  "screen-foreground",
 ];
 
 /** The z-index of the furthest surface: below the depth stack's players and items. */
@@ -100,9 +101,10 @@ const PAINT_BASE = depthZIndex(0) - 100;
 /**
  * Where a surface paints. Surfaces paint beneath the rest of their template, back to front. In the challenge
  * foreground, where players sort by depth, the rear and side walls stand behind every player and the front wall in
- * front of them all.
+ * front of them all. The screen foreground paints over the rest of its template, and in front of every player too.
  */
 export const surfaceZIndex = (kind: SurfaceKind, inDepthStack: boolean): number => {
+  if (kind === "screen-foreground") return depthZIndex(100) + 2;
   if (inDepthStack && kind === "front-wall") return depthZIndex(100) + 1;
   if (inDepthStack && kind.endsWith("-wall")) return depthZIndex(0) - 1;
   return PAINT_BASE + PAINT_ORDER.indexOf(kind);
@@ -122,6 +124,7 @@ const drawSurface = (
   const { kind, area, distance, depth } = surface;
   switch (kind) {
     case "screen-background":
+    case "screen-foreground":
       return screenSurface(size);
     case "floor-area":
       return area && { quad: floorAreaQuad(view, size, area) };
@@ -225,7 +228,8 @@ export const placeSurface = (element: HTMLElement, view: FloorView, size: MaskSi
         })
       : undefined;
   setStyle(element, "transform-origin", "0 0");
-  setStyle(element, "visibility", matrix ? "" : "hidden");
+  // Visible outright once drawn, over the stylesheet's hiding of surfaces not yet placed
+  setStyle(element, "visibility", matrix ? "visible" : "hidden");
   if (matrix) setStyle(element, "transform", matrix);
   setStyle(element, "z-index", String(surfaceZIndex(surface.kind, element.closest(`.${DEPTH_STACK_CLASS}`) !== null)));
   return true;

@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 /**
  * Docs quote real files in code blocks titled with the file's path, in VitePress's title syntax:
- * ```` ```html [public/games/demo-no-camera/lamps.html] ````. A `[git:<rev>:<path>]` title quotes the file as it was
+ * ```` ```html [public/games/rules-demo/demo-no-camera/lamps.html] ````. A `[git:<rev>:<path>]` title quotes the file as it was
  * at that revision. These tests check every titled block against its file, so a tutorial can't drift from its game.
  */
 

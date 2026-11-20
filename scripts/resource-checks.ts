@@ -5,6 +5,7 @@ import type { GameSceneAvatarData } from "../src/entities/data/scenes/GameAvatar
 import type { GameSceneTemplateSourceData } from "../src/entities/data/scenes/GameSceneTemplateComponentData";
 import type { GameRepository } from "../src/entities/GameRepository";
 import { templateMessages } from "../src/components/core/logic/TemplateChecks.ts";
+import { resolveNamedResets, unknownResetNames } from "../src/components/core/logic/NamedResets.ts";
 
 /** True unless the value is undefined or null. */
 const isDefined = <T>(value: T | undefined | null): value is T => value !== undefined && value !== null;
@@ -133,7 +134,9 @@ type VisitedScene = Pick<GameSceneBase, "component" | "resetScene" | "avatar">;
 function eachScene(game: GameData, visit: (scene: VisitedScene, path: string, can25D: boolean) => void): void {
   const visitWithResets = (scene: VisitedScene, path: string, can25D: boolean): void => {
     visit(scene, path, can25D);
-    if (scene.resetScene) visitWithResets(scene.resetScene, `${path}.resetScene`, can25D);
+    const reset = scene.resetScene;
+    if (isDefined(reset) && typeof reset !== "string")
+      visitWithResets(reset, `${path}.resetScene`, can25D || reset.scene === "2.5D");
   };
   const mode = game.modules?.scene;
   game.scenes.forEach((scene, index) => visitWithResets(scene, `scenes[${index}]`, (scene.scene ?? mode) === "2.5D"));
@@ -331,8 +334,10 @@ function createChecker(options: CheckOptions) {
     return urlProblems.get(target);
   };
 
-  const checkOne = async (game: GameData, prefix: string): Promise<CheckResult> => {
+  const checkOne = async (authored: GameData, prefix: string): Promise<CheckResult> => {
+    const game = resolveNamedResets(authored);
     const { targets, names, templates, problems } = collectReferences(game);
+    problems.push(...unknownResetNames(game).map((message) => ({ path: "", message })));
     const checked: CheckCounts = { files: 0, urls: 0, names: 0 };
     const definitions = game.resources ?? {};
     const found = problems.map((problem) => ({ ...problem, path: at(prefix, problem.path) }));

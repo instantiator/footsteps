@@ -8,10 +8,12 @@ A game is one `GameData` object (`src/entities/data/GameData.ts`), authored as J
 GameData
 ├── title, description                 shown as-is; the description goes on the landing-page tile
 ├── tileGraphic?                       resource name of the tile's background image (see Landing tile)
+├── promoted?                          listed before other games on the home page (default false)
 ├── gameContainerStyle                 applied to the game's outer container
 ├── config?                            { sequential, autoAdvanceStages }
 ├── modules?                           { scene?, avatar? }: how scenes are laid out, and what stands in for the player
 ├── resources?                         name → { type, target }        (see Resources)
+├── resetScenes?                       name → reset scene, shared by name (see Reset scenes)
 ├── sounds?                            resource names of music and sound effects (see Sounds)
 ├── reward?                            { animation, particleCount? }: celebration on stage completion
 ├── credits?                           [{ text, url? }]: credits for third-party media (see Credits)
@@ -20,6 +22,7 @@ GameData
 └── stages: GameStageData[]
     ├── id
     ├── scenes?: GameStageScene[]  a "shared" scene behind the stage's challenges
+    ├── showOverview?                  show the overview behind this stage (default false)
     ├── challengeChunking?             how many challenges show at once (default 1)
     └── challenges: GameChallengeData[]
         ├── id
@@ -74,7 +77,7 @@ A game with any `2.5D` scene asks a player using the camera to calibrate the flo
 items can be [placed on the floor](#floor-placed-items), and players pass in front of and behind them. The scene mode
 resolves most specific first: `2.5D` if any active challenge sets it, else `2D` if one does, then the open stage's
 `shared` scene, the overview scene, the game's `modules`, and finally `2D`. A reset scene's setting is over its
-parent's. Nanny's Magic Trifle and Demo scenes (2.5D) are `2.5D` games; Demo (no camera) and Jump and duck (2D) are `2D`.
+parent's. Nanny's Magic Trifle and Demo scenes are `2.5D` games; Demo scenes' jump and duck, lamps, riddle and doors stages set `2D` for their own scenes.
 
 #### Spectators
 
@@ -99,7 +102,7 @@ wins, over the stage's `shared` scene, the overview scene, and the game's.
 | `fade`          | How the look's strength follows how far outside the floor they stand, in floor units: none at `from` (the spectator margin, 5, by default), full at `to`, eased between. Without it, the look is at full strength.                                                                               |
 | `resetOnReturn` | `true` resets the scene's challenge when a spectator steps back on the floor more than 25 floor units from where they left it, so walking round the outside can't skip part of it. Off by default.                                                                                               |
 
-The debug view draws spectators like anyone else. Demo scenes (2.5D) shows spectators faded and grey, and resets
+The debug view draws spectators like anyone else. Demo scenes shows spectators faded and grey, and resets
 "Cross the floor" if someone walks round the pits.
 
 #### Floor-placed items
@@ -184,7 +187,9 @@ element holds (colour, images, text) is drawn in perspective.
 - **Distance.** `data-wall-distance` is how far beyond the floor's edge an upright surface stands, in floor units: y
   units for the rear and front, x units for the sides. Walls default to `0`, on the edge; backgrounds to `50`.
 - **Painting order**, back to front: `screen-background`, `horizon-background`, `floor-background`, the rear, left and
-  right backgrounds, floor areas, then walls. Transparent parts of a surface show what's behind it.
+  right backgrounds, floor areas, walls, then `screen-foreground`, which covers the whole screen in front of the rest of
+  its template (and, in a challenge's foreground, in front of the players) without taking the pointer. Transparent
+  parts of a surface show what's behind it.
 - **Surfaces paint beneath the rest of their template.** An element wrapped around them is above them, and takes the
   pointer first, so give the wrapper the `noClicks` class if anything should react to the surfaces. What's inside it
   still takes the pointer. A wrapper mustn't clip with `overflow: hidden`, or the surfaces stop at the scene box. Each
@@ -209,7 +214,8 @@ element holds (colour, images, text) is drawn in perspective.
 Nanny's Magic Trifle's stepping stones cross a river that runs across the screen, with its far bank and a forest just
 beyond, and the sky behind. Its title has a blurred copy of its picture as a screen background. The demo's "Walk
 around" stage has a tiled floor (with a spring in it), low walls, hills across the screen, and the sky. Its "Avoid the
-pits" and "The floor is lava" stages lay their pits and stones on the floor.
+pits" and "Bridge across lava" stages lay their pits and bridge sections on the floor, and "Ring collection" floats
+rings above theirs.
 
 **`avatar`** is what stands in for the player:
 
@@ -308,7 +314,7 @@ a countdown before balloons fall. Until then, the scene's own rules, timers and 
       { "on": { "every": 1000 }, "do": [{ "set": { "count": "state.count - 1" } }] },
       { "on": { "after": 3000 }, "do": [{ "finishReset": true }] }
     ],
-    "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/rules-demo/balloons-ready.html" }
+    "foregroundTemplate": { "sourceType": "relative", "templateSource": "games/my-game/countdown.html" }
   }
 }
 ```
@@ -320,6 +326,20 @@ a countdown before balloons fall. Until then, the scene's own rules, timers and 
 - A reset scene's state starts from its `initialState` each time it is shown.
 - It inherits the scene's `scene` and `avatar` settings, and may override them with its own.
 - A reset scene can have a reset scene of its own, shown first.
+- Scenes can share one reset scene: define it by name in the game's `resetScenes`, and give the name as each scene's
+  `resetScene`. A name the game doesn't define stops the game loading, naming the scene that uses it. The Demo scenes
+  game shares one this way: a grid reset, where the player stands on Start, then watches a 3-2-1 countdown.
+
+```json
+"resetScenes": {
+  "start": { "showOn": "every-show", "component": { "type": "template", "rules": [] } }
+},
+```
+
+```json
+"resetScene": "start"
+```
+
 - Revealing the scene fades, like any scene change. Camera interactions pause during the fade. Once it is over, a
   player (or the mouse) already on one of the revealed scene's elements enters it, as if they had just arrived.
 
@@ -504,7 +524,7 @@ it. `mouse-enter` is a good mouse stand-in for walking onto something with the c
 `body-enter` and `head-enter`), though a `mouse-feet` fallback, as in the demo's floor stages, needs only `foot-enter`; pair it with `click` where keyboard players need a way in too. `threshold` is the fraction of the body part that must be inside the
 element (0–1, default `1`). Interactions fire once per approach, and re-arm when the player moves away. An `-exit`
 fires only after its `-enter` has fired, so pair them (eg. `["hand-exit", "mouse-exit"]` to undo
-`["hand-enter", "mouse-enter"]`, as the demo's bulb does). The monitor
+`["hand-enter", "mouse-enter"]`). The monitor
 is described under [how interactions work](camera-mode.md#how-interactions-work), and jumps under
 [jumps](camera-mode.md#jumps). Jump interactions fire as the player lands.
 
@@ -538,7 +558,7 @@ animations: a simple way to replace one. To have any number at once, [spawn](#sp
 
 The screen is a stack of layers, and each scene renders into two of them: background and foreground. From back to front:
 
-1. overview
+1. overview, while no stage is open, or behind a stage that sets `showOverview`
 2. the open stage's `shared` scene
 3. the active challenges' backgrounds
 4. the camera silhouette
@@ -604,6 +624,9 @@ If a resource can't be resolved, the game's loading state becomes `resource-erro
 The landing page shows each game as a square tile with its `title`, its id, its `description`, and `tileGraphic` as the background image behind them. `tileGraphic` is a resource name (see [Resources](#resources)); a game without one, or whose graphic can't be resolved, gets a plain tinted tile instead.
 
 Magic-trifle uses its title background: `"tileGraphic": "title-background"`.
+
+The home page lists games in the repository's order, except that games with `"promoted": true` come first. Magic-trifle
+is promoted.
 
 ## Sounds
 

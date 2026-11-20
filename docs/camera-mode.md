@@ -82,7 +82,7 @@ and leaves elements as a real move would. The browser's own events and the frame
 what is under the pointer, so neither fires twice, and a frame where nothing has changed fires nothing. In Jump and
 duck, a pointer resting in a lane loses a life to every obstacle that passes, as a player standing there would.
 Dialog and scroll scenes don't hit-test each frame. The code is `MouseFeet` and `useMouseFeet` in
-`src/components/core/layout/MouseFeetHook.ts`. The rules demo's floor stages fall back to it without a camera: in "The floor is lava", the player drags between three stones over lava, each stone falling behind them.
+`src/components/core/layout/MouseFeetHook.ts`. The rules demo's floor stages fall back to it without a camera: in "Bridge across lava", the player moves the mouse along a bridge over lava, each section falling behind them.
 
 ## Permission
 

@@ -1,9 +1,9 @@
 # Your first game
 
 This tutorial builds a small game, played with the mouse, from an empty entry in the game repository up to a title, a
-list of stages, and a challenge that takes an answer. It follows the **Demo (no camera)** game, so every snippet here
-is quoted from `public/game-repository.json` and `public/games/demo-no-camera/`, and you can play the finished game at
-`/game/demo-no-camera`.
+list of stages, and a challenge that takes an answer. It follows the **Demo (no camera)** game as it was when it stood alone, so the snippets are quoted from commit
+`140d903e` of `public/game-repository.json` and `public/games/demo-no-camera/`. Its stages have since joined the
+**Demo scenes** game (`/game/rules-demo`), under `public/games/rules-demo/demo-no-camera/`.
 
 You'll need the app running locally (`npm run dev`; see the [developer overview](../dev-overview.md)), and a text
 editor. You don't need to know how Footsteps works inside.
@@ -25,7 +25,7 @@ has the whole structure.
 
 Add the game to `games` in the repository file. Its key is its id, which goes in its URLs.
 
-```json [public/game-repository.json]
+```json [git:140d903e:public/game-repository.json]
 "demo-no-camera": {
   "id": "demo-no-camera",
   "title": "Demo (no camera)",
@@ -52,7 +52,7 @@ A game also needs `scenes` and `stages`, which the next steps add. Until it has 
 The first overview scene is the title. Its template is a file next to the game's other files, so its `sourceType` is
 `relative`: relative to the repository file.
 
-```json [public/game-repository.json]
+```json [git:140d903e:public/game-repository.json]
 "scenes": [
   {
     "purpose": "game-overview-title",
@@ -68,7 +68,7 @@ The first overview scene is the title. Its template is a file next to the game's
 The template shows the game's own title and description. `gameState` is one of the values every template can use
 ([template data](../game-data.md#template-data)).
 
-```html [public/games/demo-no-camera/title.html]
+```html [git:140d903e:public/games/demo-no-camera/title.html]
 <div id="ndc-title" class="ndc-screen ndc-title" role="button" tabindex="0">
   <h1>{{gameState.gameData.title}}</h1>
   <p>{{gameState.gameData.description}}</p>
@@ -79,14 +79,14 @@ The template shows the game's own title and description. `gameState` is one of t
 A click on the title that no rule takes moves on to the list of stages, so the title needs no rules.
 `role="button"` and `tabindex="0"` let keyboard players start the game too.
 
-**Look for:** open `/game/demo-no-camera/play`. The title and description show, in the browser's plain style for now.
+**Look for:** open `/game/<your-game-id>/play`. The title and description show, in the browser's plain style for now.
 
 ## Step 3: a stylesheet
 
 The title uses classes such as `ndc-screen`. They live in a CSS file, which is a **resource**: a name for a file. The
 game loads every resource named in `stylesheets`.
 
-```json [public/game-repository.json]
+```json [git:140d903e:public/game-repository.json]
 "stylesheets": ["ndc-css"],
 "resources": {
   "ndc-css": { "type": "local", "target": "games/demo-no-camera/demo-no-camera.css" },
@@ -96,7 +96,7 @@ A `local` resource is a path on this site, under `public/`. [Resources](../game-
 types. Prefix your class names with something short for your game, as `ndc-` is here, so they don't clash with other
 games or with Footsteps' own.
 
-```css [public/games/demo-no-camera/demo-no-camera.css]
+```css [public/games/rules-demo/demo-no-camera/demo-no-camera.css]
 .ndc-screen {
   position: relative;
   box-sizing: border-box;
@@ -121,10 +121,10 @@ The screen fills the scene and centres what's on it. Sizes in `vmin` (or `%`) su
 
 ## Step 4: the landing tile
 
-The landing page at `/game/demo-no-camera` shows the game on a tile. `tileGraphic` names the resource to draw behind
+The landing page at `/game/<your-game-id>` shows the game on a tile. `tileGraphic` names the resource to draw behind
 the title and description ([landing tile](../game-data.md#landing-tile)).
 
-```json [public/game-repository.json]
+```json [git:140d903e:public/game-repository.json]
 "tileGraphic": "tile",
 …
 "tile": { "type": "local", "target": "games/demo-no-camera/tile.svg" },
@@ -138,7 +138,7 @@ the title and description ([landing tile](../game-data.md#landing-tile)).
 A stage holds challenges, and a challenge has scenes and a solution. The riddle stage has one challenge: a scroll
 that asks a question and takes an answer.
 
-```json [public/game-repository.json]
+```json [git:140d903e:public/game-repository.json]
 {
   "id": "riddle",
   "challenges": [
@@ -176,7 +176,7 @@ that asks a question and takes an answer.
 The second overview scene, `game-overview-stages`, lists the stages and lets the player open one. Its `data` holds a
 name for each stage, and its rules open a stage when its link is clicked.
 
-```json [public/game-repository.json]
+```json [git:140d903e:public/game-repository.json]
 {
   "purpose": "game-overview-stages",
   "component": {
@@ -198,7 +198,7 @@ The template draws a link for each stage. `{{#each gameState.stages}}` repeats f
 targets.
 
 <!-- prettier-ignore -->
-```html [public/games/demo-no-camera/stages.html]
+```html [git:140d903e:public/games/demo-no-camera/stages.html]
 <div class="ndc-screen">
   <h1>Choose a stage</h1>
   <div class="ndc-stages">
@@ -237,7 +237,7 @@ Validation successful for public/game-repository.json.
 ```
 
 A misspelt resource name, a missing file, or a rule with a mistake in it is reported with its path in the file, such
-as `games.demo-no-camera.scenes[0].component.foregroundTemplate.templateSource`.
+as `games.rules-demo.scenes[0].component.foregroundTemplate.templateSource`.
 
 ## Next
 

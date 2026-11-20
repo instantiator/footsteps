@@ -10,19 +10,7 @@
   text-align: center;
 }
 
-.jd-title {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3vmin;
-  background: linear-gradient(#14213d, #3a506b);
-  cursor: pointer;
-}
 
-.jd-hint {
-  opacity: 0.85;
-}
 
 .jd-stages {
   display: flex;
@@ -42,10 +30,6 @@
   background: #8ecae6;
 }
 
-.jd-countdown {
-  font-size: 20vmin;
-  margin: 0;
-}
 
 /* The run: see-through, so the player's camera image shows behind the obstacles */
 .jd-run {

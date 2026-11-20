@@ -4,12 +4,14 @@ import type {
   GameHighlightStep,
   GameItemFallEffect,
   GameItemMoveEffect,
+  GameItemSpinAwayEffect,
   GameQuakeEffect,
   Resolved,
 } from "../../../entities/data/scenes/GameEffectData";
 import { isDefined } from "../../../util/ObjectUtils";
 import { easingFunction } from "./EasingProbe";
 import { SCENE_FRAME_CLASS, centreOnScreen, sceneDistance, sceneRect, type ScreenPoint } from "./EffectTargets";
+import { offscreenDistance, spinAwayKeyframes, spinAwayPath } from "./SpinAway";
 
 /** How far an item is shaken at some point in a quake, as a % of the scene. */
 export interface QuakeStep extends ScreenPoint {
@@ -315,6 +317,30 @@ export class ItemEffects {
         translate: sceneDistance(element, offset),
       }));
       this.playToEnd({ element, name: "item-move" }, keyframes, effect, run);
+    }
+  }
+
+  /**
+   * Knocks the elements off the scene, turning as they go, about the origin their placement gives them (their centre,
+   * unless floor placement anchors them). They fade with `filter`, as it adds to any filter they have, where `opacity`
+   * would replace their own.
+   */
+  spinAway(effect: Resolved<GameItemSpinAwayEffect>, elements: Element[], run: EffectRun): void {
+    const { zoom = 1, opacity = 1, easing = "ease-out" } = effect;
+    for (const element of elements) {
+      this.cancel(element, "item-spin-away");
+      const scene = sceneRect(element);
+      const { x, y } = centreOnScreen(element);
+      const { width, height } = element.getBoundingClientRect();
+      const { degrees, turn } = spinAwayPath(effect);
+      const reach = (Math.hypot(width, height) / 2) * Math.max(zoom, 1);
+      const distance = offscreenDistance({ x: x - scene.left, y: y - scene.top }, reach, degrees, scene);
+      const [from, to] = spinAwayKeyframes(degrees, turn, distance, zoom);
+      const keyframes = [
+        { ...from, filter: "opacity(1)" },
+        { ...to, filter: `opacity(${opacity})` },
+      ];
+      this.playToEnd({ element, name: "item-spin-away" }, keyframes, { ...effect, easing }, run);
     }
   }
 

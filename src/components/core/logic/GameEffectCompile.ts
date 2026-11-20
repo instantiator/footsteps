@@ -104,7 +104,11 @@ const moveProblem = ({ start, end }: Extract<GameEffect, { effect: "item-move" }
 };
 
 /** Why a spin away can't happen. */
-const spinProblem = ({ angle, zoom, opacity }: Extract<GameEffect, { effect: "player-spin-away" }>): Problem => {
+const spinProblem = ({
+  angle,
+  zoom,
+  opacity,
+}: Extract<GameEffect, { effect: "player-spin-away" | "item-spin-away" }>): Problem => {
   if (isDefined(angle) && angle.min > angle.max) return "angle.min can't be above angle.max";
   if (isDefined(zoom) && zoom <= 0) return "zoom must be above 0";
   return fractionProblem(opacity, "opacity");
@@ -124,11 +128,13 @@ const staticProblem = ({
 const movesPlayerProblem = ({
   effect,
   target,
-}: Extract<GameEffect, { effect: "item-fall" | "item-move" }>): Problem => {
+}: Extract<GameEffect, { effect: "item-fall" | "item-move" | "item-spin-away" }>): Problem => {
   if (!targetsPlayers(target)) return undefined;
-  return effect === "item-fall"
-    ? "item-fall would move a player's image while they stayed active; use player-fall instead"
-    : "item-move would move a player's image away from where they are really interacting";
+  if (effect === "item-fall")
+    return "item-fall would move a player's image while they stayed active; use player-fall instead";
+  if (effect === "item-spin-away")
+    return "item-spin-away would move a player's image while they stayed active; use player-spin-away instead";
+  return "item-move would move a player's image away from where they are really interacting";
 };
 
 /** Why `stop` can't stop what it names. */
@@ -149,6 +155,8 @@ const ownProblem = (effect: GameEffect): Problem => {
       return moveProblem(effect) ?? movesPlayerProblem(effect);
     case "player-spin-away":
       return spinProblem(effect);
+    case "item-spin-away":
+      return spinProblem(effect) ?? movesPlayerProblem(effect);
     case "player-static":
       return staticProblem(effect);
     case "stop":
