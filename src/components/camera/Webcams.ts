@@ -68,7 +68,15 @@ export const WEBCAMS: readonly WebcamConfig[] = [
     diagonalFov: 58,
     fovSource: "estimated",
   },
-  { ...MACBOOK_PRO_M1_2020, configuration: "HD", width: 1280, height: 720 },
+  // Measured on /setup: 0.608 m of wall across at 0.55 m, which is 64.8° diagonally in 16:9
+  {
+    ...MACBOOK_PRO_M1_2020,
+    configuration: "HD",
+    width: 1280,
+    height: 720,
+    diagonalFov: 65,
+    fovSource: "measured",
+  },
 ];
 
 /** The known configurations of the camera with this label, if it's one we know. */
