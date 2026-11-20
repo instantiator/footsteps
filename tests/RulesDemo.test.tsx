@@ -219,7 +219,8 @@ describe("rules demo, played by camera", () => {
   });
 });
 
-describe("rules demo, the floor is lava, played by mouse-feet", () => {
+// Trips back to the start wait in real time (up to 3 s each), too close to the default 5 s under a busy full suite
+describe("rules demo, the floor is lava, played by mouse-feet", { timeout: 15_000 }, () => {
   /** Where each element sits on the screen, as jsdom has no layout; later ones are drawn on top. */
   const BOXES: [string, [number, number, number, number]][] = [
     ["lava", [0, 0, 1000, 1000]],
@@ -340,8 +341,7 @@ describe("rules demo, the floor is lava, played by mouse-feet", () => {
     await returnToStart();
     pointer.jump(STONE_1, LAVA);
     await returnToStart();
-    // Two trips back to the start take over 3 s in real time, too close to the default 5 s under a busy full suite
-  }, 15_000);
+  });
 
   it("keeps the door shut to a click until the player stands on the last stone", async () => {
     await openStage();
