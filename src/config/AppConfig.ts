@@ -21,6 +21,10 @@ export interface AppConfig {
   visionSmoothing: boolean;
   /** Frames a body part must stay over an element before the interaction counts. */
   visionStableFrames: number;
+  /** The smallest separate patch of a person's pixels kept beside their body, as a share of the body's pixels. */
+  visionBlobMinShare: number;
+  /** The furthest a separate patch of a person's pixels may be from their body and be kept, as a share of the frame's width. */
+  visionBlobMaxGap: number;
   /** The widest frame the model is given, in pixels; wider camera frames are scaled down first. 0 gives every frame at full size. */
   visionInputWidth: number;
   /** The camera resolution to ask for; the camera may give something else. */
@@ -86,6 +90,8 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   visionMaxPeople: 4,
   visionSmoothing: true,
   visionStableFrames: 2,
+  visionBlobMinShare: 0.002,
+  visionBlobMaxGap: 0.1,
   visionInputWidth: 960,
   cameraWidth: 1280,
   cameraHeight: 720,
@@ -151,6 +157,8 @@ const PARSERS: { [K in keyof AppConfig]: Parser<AppConfig[K]> } = {
   visionMaxPeople: int(1),
   visionSmoothing: bool,
   visionStableFrames: int(1),
+  visionBlobMinShare: fraction,
+  visionBlobMaxGap: fraction,
   visionInputWidth: int(0),
   cameraWidth: int(1),
   cameraHeight: int(1),

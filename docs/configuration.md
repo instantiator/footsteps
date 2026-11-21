@@ -45,15 +45,17 @@ React Router re-reads the query when the URL changes, so a setting can be change
 
 ### Vision
 
-| Query                | Default   | Values                            | What it does                                                              |
-| -------------------- | --------- | --------------------------------- | ------------------------------------------------------------------------- |
-| `visionModel`        | `bodypix` | `bodypix`, `mediapipe`, `movenet` | The model that tracks players; see [ADR 0005](ADRs/0005-vision-models.md) |
-| `visionBackend`      | `webgpu`  | `webgpu`, `webgl`                 | tfjs backend for BodyPix and MoveNet; WebGPU falls back to WebGL          |
-| `visionWorker`       | `true`    | boolean                           | Runs the model in a web worker                                            |
-| `visionMaxPeople`    | `4`       | whole number, 1 or more           | The most players a model looks for                                        |
-| `visionSmoothing`    | `true`    | boolean                           | Stable player ids, smoothed key points, and the stable-frames rule        |
-| `visionStableFrames` | `2`       | whole number, 1 or more           | Frames an interaction must hold before it fires                           |
-| `visionInputWidth`   | `960`     | whole number                      | The widest frame the model is given; `0` gives it full size               |
+| Query                | Default   | Values                            | What it does                                                                                                |
+| -------------------- | --------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `visionModel`        | `bodypix` | `bodypix`, `mediapipe`, `movenet` | The model that tracks players; see [ADR 0005](ADRs/0005-vision-models.md)                                   |
+| `visionBackend`      | `webgpu`  | `webgpu`, `webgl`                 | tfjs backend for BodyPix and MoveNet; WebGPU falls back to WebGL                                            |
+| `visionWorker`       | `true`    | boolean                           | Runs the model in a web worker                                                                              |
+| `visionMaxPeople`    | `4`       | whole number, 1 or more           | The most players a model looks for                                                                          |
+| `visionSmoothing`    | `true`    | boolean                           | Stable player ids, smoothed key points, and the stable-frames rule                                          |
+| `visionStableFrames` | `2`       | whole number, 1 or more           | Frames an interaction must hold before it fires                                                             |
+| `visionInputWidth`   | `960`     | whole number                      | The widest frame the model is given; `0` gives it full size                                                 |
+| `visionBlobMinShare` | `0.002`   | 0–1                               | BodyPix: the smallest separate patch of a person kept, as a share of their body; smaller patches are strays |
+| `visionBlobMaxGap`   | `0.1`     | 0–1                               | BodyPix: the furthest a separate patch may be from the body and be kept, as a share of the frame's width    |
 
 ### BodyPix
 

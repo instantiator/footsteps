@@ -30,6 +30,9 @@ export const silhouettePixels = (
   return pixels;
 };
 
+/** The debug tint for the stray patches removed from a person: a magenta that no person's own tint uses. */
+const STRAY_TINT: Color = { r: 255, g: 0, b: 255, a: 200 };
+
 /** Writes a colour to one pixel. */
 const paint = (pixels: Uint8ClampedArray, i: number, { r, g, b, a }: Color) => {
   pixels.set([r, g, b, a], i * 4);
@@ -44,9 +47,10 @@ export const tintPixels = (
   pixels: Uint8ClampedArray<ArrayBuffer> = new Uint8ClampedArray(width * height * 4),
 ): Uint8ClampedArray<ArrayBuffer> => {
   pixels.fill(0);
-  for (const { id, mask } of people) {
+  for (const { id, mask, strays } of people) {
     const tint = PERSON_TINTS[id % PERSON_TINTS.length];
     for (let i = 0; i < mask.length; i++) if (mask[i] === 1) paint(pixels, i, tint);
+    if (strays) for (let i = 0; i < strays.length; i++) if (strays[i] === 1) paint(pixels, i, STRAY_TINT);
   }
   return pixels;
 };

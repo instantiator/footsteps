@@ -10,6 +10,7 @@ import {
   type VisionPerson,
   type VisionSource,
 } from "../VisionTypes";
+import { keepMainBody } from "../MaskComponents";
 import { selectTfBackend } from "./TfBackend";
 
 /** BodyPix's part ids (see its `PART_CHANNELS`) for the parts we find key points from. */
@@ -122,6 +123,14 @@ export class BodyPixModel extends FootstepsVisionModelImplementation {
     this.net = await bodyPix.load({ architecture, outputStride, multiplier, quantBytes });
   }
 
+  /** A person from their segmentation, without the stray patches, which are noted for the debug view. */
+  private personOf(id: number, segmentation: bodyPix.PartSegmentation): VisionPerson {
+    const { visionBlobMinShare: minShare, visionBlobMaxGap: maxGap } = this.config;
+    const { parts, strays } = keepMainBody(segmentation.data, segmentation.width, { minShare, maxGap });
+    const person = personFromParts(id, { ...segmentation, data: parts });
+    return strays ? { ...person, strays } : person;
+  }
+
   async detect(source: VisionSource, timestamp: number): Promise<VisionFrame> {
     if (!this.net) throw new Error("BodyPix is not loaded");
     // BodyPix reads a video directly; a bitmap (from a worker) goes in as a tensor
@@ -134,7 +143,7 @@ export class BodyPixModel extends FootstepsVisionModelImplementation {
         maxDetections: this.config.visionMaxPeople,
         refineSteps: this.config.bodypixRefineSteps,
       });
-      const people = segmentations.map((segmentation, id) => personFromParts(id, segmentation));
+      const people = segmentations.map((segmentation, id) => this.personOf(id, segmentation));
       return { ...sourceSize(source), timestamp, people };
     } finally {
       if (input instanceof tf.Tensor) input.dispose();
