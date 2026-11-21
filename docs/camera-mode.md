@@ -143,6 +143,12 @@ isn't known, at that size, starts on the generic webcam. The page shows the floo
 (and where the picture's centre meets the floor), the margins left over, and an isometric drawing of the result. Every
 value and assumption has − and + buttons, so the effect of a change can be watched.
 
+The page is laid out like the landing page, in panels: a title, then inputs on the left in collapsible groups ("Your
+space", open, with the room, the webcam and the players; "Space around the floor", "Camera details and field-of-view
+check" and "Assumptions", closed) beside the results, drawing and screen view on the right, and two explainers along the
+bottom. "Getting the most from your space" gives plain advice (choose the biggest rectangle first, then the camera's
+height and distance, with a worked example from the planner's defaults); "How it works" describes the calculation.
+
 Below the drawing, a wireframe shows what the screen will show: the camera's picture of the room's floor, walls and
 ceiling edges, with the game floor shaded, the tallest player at its front and back, and the picture's edge kept clear
 for tracking dashed. The picture is fitted to a screen whose size is one of the assumptions, by default a 55-inch
@@ -485,6 +491,9 @@ has `?debug=true` (the [`debug` setting](configuration.md)). In camera mode they
   monitors, drawing), and the people, hands and feet found. `?showFps=true` shows the readout on its own;
 - draw a bright green line across each player at the height of the ground point their [position](#player-positions)
   comes from, and shade what is off the floor in a 2.5D scene.
+- list each person found, below the stats: their player number, whether they play, watch as a spectator, or are held,
+  where they stand on the floor, how far outside it they are, and how long a change between player and spectator has
+  been waiting. A player stuck as a spectator while standing on the floor shows here.
 
 Lower a rule's `threshold` when testing interactions, and use the feet markers to see where the
 camera thinks the player is. Switching the debug aids restarts the tracking loop with the new

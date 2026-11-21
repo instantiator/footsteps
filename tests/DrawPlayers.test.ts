@@ -21,7 +21,12 @@ const drawSpectator = (settings: GameSpectatorsData, { debugging = false, specta
   const id = players.update(frame).drawn.people[0].id;
   const drawn = { ...frame, people: [{ ...frame.people[0], id }] };
   const spectators: DrawnSpectators = {
-    report: { spectators: new Set(spectator ? [id] : []), distances: new Map([[id, 20]]), returned: [] },
+    report: {
+      spectators: new Set(spectator ? [id] : []),
+      distances: new Map([[id, 20]]),
+      returned: [],
+      pendingMs: new Map(),
+    },
     settings,
     margin: 5,
   };

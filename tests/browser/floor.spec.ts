@@ -248,6 +248,16 @@ for (const screen of [
   });
 }
 
+test("lists each person when debugging: player or spectator, where they stand, and how far off the floor", async ({
+  page,
+}) => {
+  await openWalkAround(page, { query: "?debug=true" });
+  const person = page.locator("output.vision-people [data-person-id]").first();
+  await expect(person).toBeAttached({ timeout: MODEL_TIMEOUT });
+  await expect(person).toHaveAttribute("data-role", /^(player|spectator|held)$/);
+  await expect(person).toHaveText(/^(P\d+|#\d+) (player|spectator|held)( \(-?\d+, -?\d+\))? off [\d.]+/);
+});
+
 test("outlines the floor, shades what's off it, and marks the player's feet when debugging", async ({ page }) => {
   await openWalkAround(page, { query: "?debug=true" });
   const overlay = page.locator("#debug-overlay-container");

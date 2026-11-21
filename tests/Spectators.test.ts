@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { distanceOffFloor, RETURN_DISTANCE, SpectatorWatch } from "../src/components/camera/Spectators";
+import { describePeople, distanceOffFloor, RETURN_DISTANCE, SpectatorWatch } from "../src/components/camera/Spectators";
 import type { PlayerPosition } from "../src/components/camera/PlayerPosition";
 import type { Point } from "../src/vision/VisionTypes";
 
@@ -87,5 +87,33 @@ describe("SpectatorWatch", () => {
     expect(watch.update(new Map(), 100, known).spectators.has(1)).toBe(true);
     known.clear();
     expect(watch.update(new Map(), 200, known).spectators.size).toBe(0);
+  });
+});
+
+describe("the debug view's readout", () => {
+  it("reports how long a pending change has waited, and nothing once it has happened or been called off", () => {
+    const { at } = watching();
+    at(ON, 0);
+    expect(at(OFF, 100).pendingMs.get(1)).toBe(0);
+    expect(at(OFF, 400).pendingMs.get(1)).toBe(300);
+    expect(at(OFF, 100 + HOLD).pendingMs.has(1)).toBe(false);
+    at(ON, 2000);
+    expect(at(OFF, 2100).pendingMs.has(1)).toBe(false);
+  });
+
+  it("describes each person drawn: player, spectator or held, with their place, distance off and any wait", () => {
+    const { at } = watching();
+    at(ON, 0);
+    const report = at(OFF, 300);
+    const positions = new Map<number, PlayerPosition>([[1, { ground: OFF, position: OFF }]]);
+    const people = describePeople([{ id: 1 }, { id: 2, held: { opacity: 1 } }], positions, report, (id) =>
+      id === 1 ? 1 : undefined,
+    );
+    expect(people).toEqual([
+      { id: 1, number: 1, role: "player", position: OFF, offBy: 20, pendingMs: 0 },
+      { id: 2, number: undefined, role: "held", position: undefined, offBy: 0, pendingMs: undefined },
+    ]);
+    const watched = describePeople([{ id: 1 }], positions, at(OFF, 300 + HOLD), () => 1);
+    expect(watched[0].role).toBe("spectator");
   });
 });
