@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { Link, useSearchParams } from "react-router";
 import NumberField from "../components/setup/NumberField";
 import SetupIllustration from "../components/setup/SetupIllustration";
 import SetupScreenView from "../components/setup/SetupScreenView";
+import SpaceExplainer from "../components/setup/SpaceExplainer";
 import {
   DEFAULT_SETUP_CONSTANTS,
   DEFAULT_SETUP_INPUTS,
@@ -12,6 +13,7 @@ import {
   type SetupResult,
 } from "../components/setup/SetupCalculations";
 import { SETUP_WEBCAMS, startingWebcam, type SetupWebcam } from "../components/setup/SetupWebcams";
+import "../components/landing/GamePanel.css";
 import "./SetupPlanner.css";
 
 /** The user's values as the form holds them: any may be blank, and the measurement is two separate fields. */
@@ -38,26 +40,20 @@ const FORM_FALLBACKS: Record<FieldKey, number> = {
   measuredWidth: 1,
 };
 
-/** The user's values, in the groups the page shows them. */
-const INPUT_GROUPS: { legend: string; fields: FieldSpec<FieldKey>[] }[] = [
+/** The user's values, in the groups the page shows them; only the key ones start open. */
+const INPUT_GROUPS: { title: string; open?: boolean; fields: FieldSpec<FieldKey>[] }[] = [
   {
-    legend: "Room",
+    title: "Your space",
+    open: true,
     fields: [
       { key: "roomLength", label: "Room length (camera's wall to far wall)", ...METRES },
       { key: "roomWidth", label: "Room width", ...METRES },
-      { key: "ceiling", label: "Ceiling height (optional)", ...METRES },
-      { key: "clearance", label: "Space above the camera", ...METRES },
-    ],
-  },
-  {
-    legend: "Players",
-    fields: [
-      { key: "shortestPlayer", label: "Shortest player", ...METRES },
       { key: "tallestPlayer", label: "Tallest player", ...METRES },
+      { key: "shortestPlayer", label: "Shortest player", ...METRES },
     ],
   },
   {
-    legend: "Space taken around the floor",
+    title: "Space around the floor",
     fields: [
       { key: "marginLeft", label: "Left of the floor", ...METRES },
       { key: "marginRight", label: "Right of the floor", ...METRES },
@@ -66,17 +62,23 @@ const INPUT_GROUPS: { legend: string; fields: FieldSpec<FieldKey>[] }[] = [
     ],
   },
   {
-    legend: "Camera",
-    fields: [{ key: "diagonalFov", label: "Diagonal field of view (dFoV)", step: 1, unit: "°" }],
-  },
-  {
-    legend: "Check the field of view (optional)",
+    title: "Camera details and field-of-view check",
     fields: [
+      { key: "ceiling", label: "Ceiling height (optional)", ...METRES },
+      { key: "clearance", label: "Space above the camera", ...METRES },
       { key: "measuredDistance", label: "Camera's distance from a wall", ...METRES },
       { key: "measuredWidth", label: "Width of wall it shows", ...METRES },
     ],
   },
 ];
+
+/** The camera's field of view, which sits with the webcam choice in "Your space". */
+const FOV_FIELD: FieldSpec<FieldKey> = {
+  key: "diagonalFov",
+  label: "Diagonal field of view (dFoV)",
+  step: 1,
+  unit: "°",
+};
 
 /** The adjustable assumptions. */
 const CONSTANT_FIELDS: FieldSpec<keyof SetupConstants>[] = [
@@ -152,29 +154,47 @@ export default function SetupPlanner() {
 
   return (
     <div className="setup-planner">
-      <h1>Plan your space</h1>
-      <p>
-        Find out whether your room is big enough to play, and where to put the camera. <Link to="/">Back to games</Link>
-      </p>
-      <Explanation />
+      <header className="game-panel setup-title">
+        <h1>Plan your space</h1>
+        <p>
+          Find out whether your room is big enough to play, and where to put the camera.{" "}
+          <Link to="/">Back to games</Link>
+        </p>
+      </header>
       <div className="setup-columns">
-        <div>
+        <div className="setup-column">
           <InputFields values={values} setValues={setValues} webcam={webcam} />
           <ConstantFields constants={constants} setConstants={setConstants} />
         </div>
-        <div>
+        <div className="setup-column">
           {typeof plan === "string" ? (
-            <p className="setup-warning">{plan}</p>
+            <p className="game-panel setup-warning">{plan}</p>
           ) : (
             <>
               <Results plan={plan} />
-              <SetupIllustration plan={plan} inputs={inputs} />
-              <SetupScreenView plan={plan} inputs={inputs} constants={constants} />
+              <div className="game-panel">
+                <SetupIllustration plan={plan} inputs={inputs} />
+                <SetupScreenView plan={plan} inputs={inputs} constants={constants} />
+              </div>
             </>
           )}
         </div>
       </div>
+      <div className="setup-explainers">
+        <SpaceExplainer />
+        <Explanation />
+      </div>
     </div>
+  );
+}
+
+/** A collapsible panel of fields, kept mounted when closed so nothing typed is lost. */
+function Group({ title, open, children }: { title: string; open?: boolean; children: ReactNode }) {
+  return (
+    <details className="game-panel setup-group" open={open}>
+      <summary>{title}</summary>
+      {children}
+    </details>
   );
 }
 
@@ -188,30 +208,31 @@ function InputFields({
   setValues: Dispatch<SetStateAction<FormValues>>;
   webcam: { index: number; setIndex: (index: number) => void };
 }) {
-  return INPUT_GROUPS.map(({ legend, fields }) => (
-    <fieldset key={legend}>
-      <legend>{legend}</legend>
-      {fields.map(({ key, label, step, unit }) => (
-        <NumberField
-          key={key}
-          label={label}
-          step={step}
-          unit={unit}
-          value={values[key]}
-          fallback={FORM_FALLBACKS[key]}
-          onChange={(value) => setValues((old) => ({ ...old, [key]: value }))}
-        />
-      ))}
-      {legend === "Camera" && (
+  const numberField = ({ key, label, step, unit }: FieldSpec<FieldKey>) => (
+    <NumberField
+      key={key}
+      label={label}
+      step={step}
+      unit={unit}
+      value={values[key]}
+      fallback={FORM_FALLBACKS[key]}
+      onChange={(value) => setValues((old) => ({ ...old, [key]: value }))}
+    />
+  );
+  return INPUT_GROUPS.map(({ title, open, fields }) => (
+    <Group key={title} title={title} open={open}>
+      {fields.map(numberField)}
+      {open && (
         <>
+          <WebcamChoice {...webcam} onUse={(chosen) => setValues((old) => withWebcam(old, chosen))} />
+          {numberField(FOV_FIELD)}
           <AspectChoice
             value={values.aspect ?? DEFAULT_SETUP_INPUTS.aspect}
             onChange={(aspect) => setValues((old) => ({ ...old, aspect }))}
           />
-          <WebcamChoice {...webcam} onUse={(chosen) => setValues((old) => withWebcam(old, chosen))} />
         </>
       )}
-    </fieldset>
+    </Group>
   ));
 }
 
@@ -224,8 +245,7 @@ function ConstantFields({
   setConstants: Dispatch<SetStateAction<SetupConstants>>;
 }) {
   return (
-    <fieldset>
-      <legend>Assumptions</legend>
+    <Group title="Assumptions">
       {CONSTANT_FIELDS.map(({ key, label, step, unit }) => (
         <NumberField
           key={key}
@@ -240,7 +260,7 @@ function ConstantFields({
       <button type="button" onClick={() => setConstants(DEFAULT_SETUP_CONSTANTS)}>
         Reset defaults
       </button>
-    </fieldset>
+    </Group>
   );
 }
 
@@ -317,7 +337,7 @@ function Results({ plan }: { plan: SetupResult }) {
   }
 
   return (
-    <section aria-label="Recommendation">
+    <section className="game-panel" aria-label="Recommendation">
       <h2>Recommendation</h2>
       {plan.warnings.length > 0 && (
         <ul className="setup-warnings">
@@ -343,7 +363,7 @@ function Results({ plan }: { plan: SetupResult }) {
 /** How the recommendation is worked out, in plain words, folded away until asked for. */
 function Explanation() {
   return (
-    <details className="setup-explanation">
+    <details className="game-panel setup-group">
       <summary>How it works</summary>
       <p>The recommendation looks for the largest floor that:</p>
       <ul>
