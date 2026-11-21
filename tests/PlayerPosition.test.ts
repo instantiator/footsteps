@@ -82,6 +82,15 @@ describe("PositionFollower", () => {
     expect(follower.update(at(30, 60), 800).y).toBe(60);
   });
 
+  it("ignores one stray low ground point among a full window of them", () => {
+    const follower = new PositionFollower(settings);
+    // The window fills with seven points before the stray comes
+    for (let time = 0; time <= 1200; time += 100) {
+      const stray = time === 800;
+      expect(follower.update(at(30, stray ? 95 : 60), time).y).toBe(60);
+    }
+  });
+
   it("doesn't flicker when the ground point jitters within the deadband", () => {
     const follower = new PositionFollower({ windowMs: 0, deadband: 2 });
     follower.update(at(30, 60), 0);

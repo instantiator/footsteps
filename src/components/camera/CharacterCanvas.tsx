@@ -196,7 +196,7 @@ interface LoopSettings {
 /** The loop's settings from the app config, the same object until one of them changes. */
 const useLoopSettings = (config: AppConfig): LoopSettings => {
   const { visionSmoothing, cameraHoldMs, cameraFadeMs, cameraFillGaps, visionInputWidth, cameraFeatherPx } = config;
-  const { cameraDepthWindowMs, cameraDepthDeadband, spectatorMargin, spectatorHoldMs } = config;
+  const { cameraDepthWindowMs, cameraDepthDeadband, spectatorMargin, spectatorHoldMs, spectatorReturnMs } = config;
   return useMemo(
     () => ({
       smoothing: visionSmoothing,
@@ -205,7 +205,7 @@ const useLoopSettings = (config: AppConfig): LoopSettings => {
       inputWidth: visionInputWidth,
       featherPx: cameraFeatherPx,
       position: { windowMs: cameraDepthWindowMs, deadband: cameraDepthDeadband },
-      spectators: { margin: spectatorMargin, holdMs: spectatorHoldMs },
+      spectators: { margin: spectatorMargin, holdMs: spectatorHoldMs, returnMs: spectatorReturnMs },
     }),
     [
       visionSmoothing,
@@ -218,6 +218,7 @@ const useLoopSettings = (config: AppConfig): LoopSettings => {
       cameraDepthDeadband,
       spectatorMargin,
       spectatorHoldMs,
+      spectatorReturnMs,
     ],
   );
 };
@@ -233,6 +234,7 @@ const DRAWING_SETTINGS = [
   "cameraDepthDeadband",
   "spectatorMargin",
   "spectatorHoldMs",
+  "spectatorReturnMs",
 ] as const;
 
 /** The config the model is made from, the same object while only {@link DRAWING_SETTINGS} change, so the model is kept. */

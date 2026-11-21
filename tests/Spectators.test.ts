@@ -7,7 +7,7 @@ const HOLD = 1000;
 
 /** A watch, and a step that puts player 1 at a floor position at a time. */
 const watching = () => {
-  const watch = new SpectatorWatch({ margin: 5, holdMs: HOLD });
+  const watch = new SpectatorWatch({ margin: 5, holdMs: HOLD, returnMs: HOLD });
   const known = new Set([1]);
   const at = (position: Point, now: number) =>
     watch.update(new Map<number, PlayerPosition>([[1, { ground: position, position }]]), now, known);
@@ -40,7 +40,7 @@ describe("SpectatorWatch", () => {
     at(OFF, 100);
     at(ON, 500);
     expect(at(OFF, 100 + HOLD).spectators.has(1)).toBe(false);
-    expect(at({ x: 50, y: 104 }, 5000).spectators.has(1)).toBe(false);
+    for (let now = 1200; now <= 5000; now += 100) expect(at({ x: 50, y: 104 }, now).spectators.has(1)).toBe(false);
   });
 
   it("keeps a player jumping at the front edge, whose held position stays put", () => {
@@ -87,6 +87,42 @@ describe("SpectatorWatch", () => {
     expect(watch.update(new Map(), 100, known).spectators.has(1)).toBe(true);
     known.clear();
     expect(watch.update(new Map(), 200, known).spectators.size).toBe(0);
+  });
+});
+
+describe("flicker and the return", () => {
+  /** A watch with the game's own holds: 1000 ms to leave the floor, 300 ms to come back. */
+  const gameWatch = () => {
+    const watch = new SpectatorWatch({ margin: 5, holdMs: 1000, returnMs: 300 });
+    return (position: Point, now: number) =>
+      watch.update(new Map<number, PlayerPosition>([[1, { ground: position, position }]]), now, new Set([1]));
+  };
+
+  it("keeps a player on the floor a player, though one frame in five puts them off it", () => {
+    const at = gameWatch();
+    for (let now = 0; now <= 5000; now += 100) {
+      const flicker = now % 500 === 0 && now > 0;
+      expect(at(flicker ? OFF : ON, now).spectators.has(1)).toBe(false);
+    }
+  });
+
+  it("brings a spectator who flickers back onto the floor back as a player within the shorter return", () => {
+    const at = gameWatch();
+    at(OFF, 0);
+    let back: number | undefined;
+    for (let now = 100; now <= 2000 && back === undefined; now += 100) {
+      const flicker = now % 500 === 0;
+      if (!at(flicker ? OFF : ON, now).spectators.has(1)) back = now;
+    }
+    expect(back).toBeLessThanOrEqual(500);
+  });
+
+  it("still makes a player who stays off the floor a spectator, after the longer hold", () => {
+    const at = gameWatch();
+    at(ON, 0);
+    expect(at(OFF, 100).spectators.has(1)).toBe(false);
+    expect(at(OFF, 900).spectators.has(1)).toBe(false);
+    expect(at(OFF, 1300).spectators.has(1)).toBe(true);
   });
 });
 

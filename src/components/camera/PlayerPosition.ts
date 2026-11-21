@@ -71,6 +71,21 @@ export const groundPointOf = (mask: Uint8Array, width: number): Point | null => 
   return null;
 };
 
+/**
+ * How low in the window's ground points a player's depth is taken from (0–1): near the lowest, so a jump, whose points
+ * are higher, doesn't move them, but short of it, so one stray low point can't hold them nearer for the whole window.
+ */
+const DEPTH_PERCENTILE = 0.8;
+
+/**
+ * The value at a percentile of some numbers (0 the smallest, 1 the largest), rounding towards the largest, so a few
+ * numbers give their largest and only a full window can leave its largest out.
+ */
+const percentile = (values: number[], at: number): number => {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.ceil(at * (sorted.length - 1))];
+};
+
 /** Follows one player's ground point, smoothed into a position that jumps and jitter don't change. */
 export class PositionFollower {
   private readonly settings: PositionSettings;
@@ -85,14 +100,18 @@ export class PositionFollower {
    * Takes a new ground point.
    * @param ground the ground point, as percentages of the frame
    * @param timestamp when it was seen, in milliseconds
-   * @returns the player's ground point: coming nearer shows at once, and moving away only after the window has passed.
+   * @returns the player's ground point: coming nearer shows once most of the window agrees, and moving away only after
+   * the window has passed.
    * Moving across shows while they are on the ground, so a jump holds where they took off from.
    */
   update(ground: Point, timestamp: number): Point {
     const { windowMs, deadband } = this.settings;
     this.samples = this.samples.filter((sample) => timestamp - sample.timestamp < windowMs);
     this.samples.push({ timestamp, y: ground.y });
-    const lowest = Math.max(...this.samples.map((sample) => sample.y));
+    const lowest = percentile(
+      this.samples.map((sample) => sample.y),
+      DEPTH_PERCENTILE,
+    );
     const last = this.position ?? ground;
     const y = this.position === undefined || Math.abs(lowest - last.y) > deadband ? lowest : last.y;
     const grounded = Math.abs(ground.y - y) <= deadband;

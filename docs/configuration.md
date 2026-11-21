@@ -87,7 +87,8 @@ React Router re-reads the query when the URL changes, so a setting can be change
 | `cameraDepthWindowMs`      | `700`   | whole number | How long a player's lowest ground point is kept, so a jump doesn't change their position                                           |
 | `cameraDepthDeadband`      | `2`     | whole number | How far a player's ground point must move to change their position, in % of the camera frame                                       |
 | `spectatorMargin`          | `5`     | whole number | How far outside the floor someone must stand to be a spectator, in floor units                                                     |
-| `spectatorHoldMs`          | `1000`  | whole number | How long someone must stay off the floor to be a spectator, or on it to play again                                                 |
+| `spectatorHoldMs`          | `1000`  | whole number | How long someone must be mostly (80% of frames) off the floor to be a spectator                                                    |
+| `spectatorReturnMs`        | `300`   | whole number | How long a spectator must be mostly (80% of frames) back on the floor to play again                                                |
 | `positionCellSize`         | `5`     | whole number | The grid players' positions are rounded to for rules and templates, in position units                                              |
 | `positionUpdatesPerSecond` | `10`    | whole number | The most times a second players' positions reach rules and templates                                                               |
 
