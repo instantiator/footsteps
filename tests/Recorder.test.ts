@@ -1,26 +1,10 @@
 import { strFromU8, unzipSync } from "fflate";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_APP_CONFIG } from "../src/config/AppConfig";
-import { Recorder, type FrameToRecord, type VideoRecorder } from "../src/debug/Recorder";
+import { Recorder, type FrameToRecord } from "../src/debug/Recorder";
 import { RECORDING_JSON, type Recording } from "../src/debug/RecordingFormat";
 import { noKeyPoints } from "../src/vision/VisionTypes";
-
-/** A video recorder that starts when told to, and records a fixed few bytes. */
-class FakeVideo implements VideoRecorder {
-  readonly mimeType = "video/webm";
-  stopped = 0;
-  private onStarted?: () => void;
-  start(onStarted: () => void) {
-    this.onStarted = onStarted;
-  }
-  began() {
-    this.onStarted?.();
-  }
-  async stop() {
-    this.stopped++;
-    return new Blob([new Uint8Array([1, 2, 3])], { type: this.mimeType });
-  }
-}
+import { FakeVideo } from "./data/FakeVideo";
 
 const CONTEXT = { config: DEFAULT_APP_CONFIG };
 

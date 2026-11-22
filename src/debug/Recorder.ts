@@ -54,6 +54,14 @@ export interface FrameToRecord {
   players: RecordedPlayer[];
 }
 
+/** The camera a recording would capture, and what to say about it when it starts. */
+export interface RecordingSource {
+  /** Starts recording the camera's video, eg. with {@link mediaVideoRecorder}. */
+  video: () => VideoRecorder;
+  /** Describes the camera and settings as recording starts. */
+  describe: () => RecordingContext;
+}
+
 /** Whether nothing is recorded, a recording is running, or one is held to download. */
 export type RecorderState = "idle" | "recording" | "held";
 
@@ -100,6 +108,7 @@ const addFile = (zip: Zip, path: string, data: Uint8Array, deflate = true) => {
  */
 export class Recorder {
   private take?: Take;
+  private source?: RecordingSource;
   private listeners = new Set<() => void>();
   private readonly options: Required<RecorderOptions>;
 
@@ -123,6 +132,23 @@ export class Recorder {
   subscribe(listener: () => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  /** Whether there is a camera to record. */
+  get canRecord(): boolean {
+    return this.source !== undefined;
+  }
+
+  /** Sets the camera to record, or none when it goes. A recording of a camera that goes is stopped and held. */
+  setSource(source: RecordingSource | undefined) {
+    this.source = source;
+    if (!source) void this.stop();
+    this.changed();
+  }
+
+  /** Starts recording the camera, discarding any recording held. */
+  record() {
+    if (this.source) this.start(this.source.video(), this.source.describe());
   }
 
   /** Starts recording, discarding any recording held. @param video records the camera, eg. {@link mediaVideoRecorder} */

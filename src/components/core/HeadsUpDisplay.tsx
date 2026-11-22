@@ -14,6 +14,7 @@ import {
   type HudOption,
 } from "./logic/HudNavigation";
 import { getRenderMode } from "./logic/RenderDataUtils";
+import { useRecorder } from "../../debug/RecorderContext";
 
 /**
  * The HUD buttons' shared look: small and snug, so they take little of the game's space, and in the app's font
@@ -163,8 +164,46 @@ function HudMenu({ debug, onToggleDebug, onDone }: HudMenuProps) {
   );
 }
 
+/** A recording's length as minutes and seconds, eg. "0:07". */
+const minutesAndSeconds = (ms: number): string => {
+  const seconds = Math.floor(ms / 1000);
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+};
+
 /**
- * The HUD: a Menu (Go to, Reset and the debug aids), buttons to leave the current challenge or return to the title
+ * Record, then Stop, and Download once a recording is held: shown while debugging a game with a camera. A red
+ * indicator shows while the camera is being recorded.
+ */
+function RecordButtons() {
+  const { recorder, state, canRecord, elapsedMs } = useRecorder();
+  if (!recorder || (!canRecord && state === "idle")) return null;
+  return (
+    <>
+      {state === "recording" ? (
+        <>
+          <span role="status" style={{ ...buttonStyle, color: "#e00", fontWeight: "bold" }}>
+            ● Recording {minutesAndSeconds(elapsedMs)}
+          </span>
+          <button style={buttonStyle} onClick={() => void recorder.stop()}>
+            Stop
+          </button>
+        </>
+      ) : (
+        <button style={buttonStyle} onClick={() => recorder.record()} disabled={!canRecord}>
+          Record
+        </button>
+      )}
+      {state === "held" && (
+        <button style={buttonStyle} onClick={() => void recorder.download()}>
+          Download
+        </button>
+      )}
+    </>
+  );
+}
+
+/**
+ * The HUD: a Menu (Go to, Reset and the debug aids), recording while debugging, buttons to leave the current challenge or return to the title
  * screen when either applies, and the fullscreen toggle.
  */
 export default function HeadsUpDisplay(props: HeadsUpDisplayProps) {
@@ -181,6 +220,7 @@ export default function HeadsUpDisplay(props: HeadsUpDisplayProps) {
         Menu
       </button>
       {menuOpen && <HudMenu {...props} onDone={() => setMenuOpen(false)} />}
+      {props.debug && <RecordButtons />}
       <LeaveButtons />
       <button style={buttonStyle} onClick={toggleFullscreen} aria-pressed={isFullscreen}>
         {isFullscreen ? "Exit full screen" : "Full screen"}

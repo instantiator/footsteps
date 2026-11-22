@@ -2,6 +2,7 @@ import { useParams } from "react-router";
 import Game from "../components/core/Game";
 import GamePermissionGuard from "../components/core/GamePermissionGuard";
 import type { GameId } from "../entities/data/GameData";
+import RecorderProvider from "../debug/RecorderProvider";
 import AppConfigProvider from "../providers/AppConfigProvider";
 import { GameDataProvider } from "../providers/GameDataProvider";
 import GameMusicProvider from "../providers/GameMusicProvider";
@@ -20,7 +21,9 @@ export default function LocalGame() {
             <GamePermissionGuard>
               <GameStateProvider>
                 <GameMusicProvider>
-                  <Game />
+                  <RecorderProvider>
+                    <Game />
+                  </RecorderProvider>
                 </GameMusicProvider>
               </GameStateProvider>
             </GamePermissionGuard>
