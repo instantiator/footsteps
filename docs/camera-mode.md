@@ -523,6 +523,36 @@ camera thinks the player is. Switching the debug aids restarts the tracking loop
 mask type, and cancels the old one; check the console for model or "disposed" errors after
 toggling it.
 
+### Recording
+
+While debugging a game with the camera on, the HUD shows **Record**. It records the camera, and what the game made of
+each frame it processed, so a moment that went wrong (eg. a player turning into a spectator) can be examined afterwards,
+or replayed in tests.
+
+- **Recording:** a red "● Recording" and the time show while it runs. **Stop** ends it, and it stops itself after
+  [`recordingMaxSeconds`](configuration.md) (60 s), as it is meant for short clips.
+- **Downloading:** the recording is held in memory until **Download** saves it as a zip. Downloading it, starting
+  another, or leaving the game discards it.
+- **Consent:** recordings never leave the browser unless downloaded. Ask anyone in view before recording them.
+
+The zip holds:
+
+| File                                | What it holds                                                                                         |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `video.webm` (or `.mp4` in Safari)  | the camera at its full size and frame rate                                                            |
+| `recording.json`                    | the camera, the floor's corners, the app's settings, and each processed frame (below)                 |
+| `masks/<frame>-<person>.bin`        | each person's mask in a frame, one byte per pixel (1 for the person), row by row, at the frame's size |
+| `masks/<frame>-<person>-strays.bin` | the stray patches removed from that person's mask, when there were any                                |
+
+Each frame in `recording.json` has its `timestamp`, its `videoMs` (where it is in the video), the model's time, its
+mask size, `detected` (each person the model found: key points, scale, and their mask's file) and `players` (each
+person tracked: number, role, floor position, distance off the floor, and smoothed key points). `labels` is empty, for
+labelled recordings later. `RecordingFormat.ts` describes it all.
+
+The video frame at `videoMs` is the picture the model was given to within about a frame, so a replay sees the same
+picture most of the time, not always. The video has no seek index, so read its frames by playing it;
+`tests/browser/recordings.ts` has helpers to unzip a recording and read its frames.
+
 ## Where the code lives
 
 | Path                                                  | What it does                                                                                                                                              |
@@ -542,6 +572,8 @@ toggling it.
 | `src/components/core/layout/FloorPlacement.ts`        | placing, scaling and sorting floor items, kept through re-renders; the debug warning for targets off the floor                                            |
 | `src/components/core/layout/FloorSurfacePlacement.ts` | drawing floor surfaces onto the screen with a `matrix3d`, sizing their boxes, and their painting order                                                    |
 | `src/components/camera/CharacterCanvas.tsx`           | tracking loop; draws the silhouettes; reports players and feet; the stats readout                                                                         |
+| `src/debug/Recorder.ts`                               | debug recordings: the video, each frame's masks and players, zipped                                                                                       |
+| `src/debug/RecordingFormat.ts`                        | the shape of a recording's `recording.json`                                                                                                               |
 | `src/components/camera/DrawPeople.ts`                 | cuts the people out of the video, and tints them for debugging                                                                                            |
 | `src/components/camera/DrawPlayers.ts`                | draws each player on their canvas, frozen or with static, sorted to their floor depth; hides or styles spectators                                         |
 | `src/components/camera/PlayerMonitor.ts`              | turns body-part coverage and feet into edge-triggered interactions                                                                                        |
