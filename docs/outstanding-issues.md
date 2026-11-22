@@ -601,3 +601,25 @@ which is why the bridge stage draws its cavern with gradients instead.
 
 **Act when:** the test game's title is next looked at. Then point the path at `games/test-game/`, or drop the image
 if its licence can't be confirmed.
+
+## Debug recordings are unproven on a real camera and in Safari
+
+The recording test runs against the fake camera in Chromium. Nothing yet shows that a real webcam's recording matches
+its frames as closely, or that Safari's MP4 recording and download work.
+
+**Act when:** the next real-camera session (003.00.03's camera session 1). Record 10 s in `?debug=true`, download it,
+check the video plays and `recording.json` lists frames with players. Repeat once in Safari.
+
+## Recordings can't replay the game's decisions exactly
+
+A recorded frame's `videoMs` finds the picture the model was given to within about a frame, not always exactly, so a
+replay may see a neighbouring frame and decide differently.
+
+**Act when:** a replay test (eg. 993's bench) needs to reproduce a decision exactly, or misses one because of it. Then
+also save each model input frame (eg. as a JPEG in the zip, or a second video of only those frames, one per frame).
+
+## The scene renderer has no recorder
+
+`RecorderProvider` wraps only the game page, so the scene renderer's HUD shows no Record button.
+
+**Act when:** someone needs to record from the scene renderer. Wrap its `Game` in `RecorderProvider` too.
