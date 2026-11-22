@@ -53,6 +53,8 @@ export interface AppConfig {
   playerScale: number;
   /** A spike: how far a player moves from the floor's centre, compared with how far they walk (1). */
   motionGain: number;
+  /** The longest a debug recording runs before it stops itself, in seconds. */
+  recordingMaxSeconds: number;
   /** The grid players' positions are rounded to for rules and templates: the size of a cell, in position units. */
   positionCellSize: number;
   /** The most times a second players' positions reach rules and templates. */
@@ -112,6 +114,7 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   spectatorReturnMs: 300,
   playerScale: 1,
   motionGain: 1,
+  recordingMaxSeconds: 60,
   positionCellSize: 5,
   positionUpdatesPerSecond: 10,
   jumpMinRise: 0.04,
@@ -190,6 +193,7 @@ const PARSERS: { [K in keyof AppConfig]: Parser<AppConfig[K]> } = {
   spectatorReturnMs: int(0),
   playerScale: between(0.2, 2),
   motionGain: between(0.5, 4),
+  recordingMaxSeconds: int(1),
   positionCellSize: int(1),
   positionUpdatesPerSecond: int(1),
   jumpMinRise: fraction,
