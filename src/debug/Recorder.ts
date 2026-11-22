@@ -13,8 +13,8 @@ import {
 export interface VideoRecorder {
   /** The video's MIME type. */
   readonly mimeType: string;
-  /** Starts recording, calling back once the video's first moment is fixed. */
-  start(onStarted: () => void): void;
+  /** Starts recording. */
+  start(): void;
   /** Stops recording. @returns the whole video */
   stop(): Promise<Blob>;
 }
@@ -30,10 +30,7 @@ export const mediaVideoRecorder = (stream: MediaStream): VideoRecorder => {
     get mimeType() {
       return recorder.mimeType;
     },
-    start: (onStarted) => {
-      recorder.onstart = onStarted;
-      recorder.start(1000);
-    },
+    start: () => recorder.start(1000),
     stop: () =>
       new Promise((resolve) => {
         recorder.onstop = () => resolve(new Blob(chunks, { type: recorder.mimeType }));
@@ -78,7 +75,7 @@ interface Take {
   context: RecordingContext;
   recordedAt: string;
   video: VideoRecorder;
-  startedAt?: number;
+  startedAt: number;
   frames: RecordedFrameEntry[];
   zip: Zip;
   chunks: Uint8Array<ArrayBuffer>[];
@@ -122,10 +119,9 @@ export class Recorder {
     return this.take.blob ? "held" : "recording";
   }
 
-  /** How long the recording has run, in milliseconds; 0 until its video starts. */
+  /** How long the recording has run, in milliseconds. */
   get elapsedMs(): number {
-    const startedAt = this.take?.startedAt;
-    return startedAt === undefined ? 0 : this.options.now() - startedAt;
+    return this.take ? this.options.now() - this.take.startedAt : 0;
   }
 
   /** Calls back whenever the state changes. @returns a function that stops calling back */
@@ -158,7 +154,10 @@ export class Recorder {
     const zip = new Zip((error, chunk) => {
       if (!error) chunks.push(chunk.slice()); // a copy, typed as a plain buffer for the Blob
     });
+    // Timed from the call rather than the recorder's start event, which comes a frame or more after its first frame
+    video.start();
     const take: Take = {
+      startedAt: this.options.now(),
       context,
       recordedAt: new Date().toISOString(),
       video,
@@ -168,17 +167,13 @@ export class Recorder {
       stopTimer: setTimeout(() => void this.stop(), this.options.maxMs),
     };
     this.take = take;
-    video.start(() => {
-      take.startedAt = this.options.now();
-      this.changed();
-    });
     this.changed();
   }
 
-  /** Adds a processed frame while recording; ignored otherwise, or before the video has started. */
+  /** Adds a processed frame while recording; ignored otherwise. */
   addFrame({ timestamp, inferenceMs, detected, players }: FrameToRecord) {
     const take = this.take;
-    if (!take || take.blob || take.startedAt === undefined) return;
+    if (!take || take.blob) return;
     const index = take.frames.length;
     const people = detected.people.map(({ id, keyPoints, scale, mask, strays }) => {
       const masks = { mask: maskPath(index, id), strays: strays && maskPath(index, id, "-strays") };

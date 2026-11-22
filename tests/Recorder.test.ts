@@ -47,7 +47,6 @@ describe("Recorder", () => {
 
   it("zips the video, each frame's masks, and the frames timed from the video's start", async () => {
     recorder.start(video, CONTEXT);
-    video.began();
     recorder.addFrame(frameAt(1040, [1, 0, 0, 1], [0, 1, 0, 0]));
     recorder.addFrame(frameAt(1080));
     await recorder.stop();
@@ -68,10 +67,8 @@ describe("Recorder", () => {
     expect(recording.config.recordingMaxSeconds).toBe(DEFAULT_APP_CONFIG.recordingMaxSeconds);
   });
 
-  it("keeps no frames before the video starts, or after it stops", async () => {
+  it("keeps no frames after it stops", async () => {
     recorder.start(video, CONTEXT);
-    recorder.addFrame(frameAt(1000));
-    video.began();
     recorder.addFrame(frameAt(1010));
     await recorder.stop();
     recorder.addFrame(frameAt(1020));
@@ -81,7 +78,6 @@ describe("Recorder", () => {
 
   it("holds a stopped recording, and discards it when another starts", async () => {
     recorder.start(video, CONTEXT);
-    video.began();
     await recorder.stop();
     expect(recorder.state).toBe("held");
 
@@ -95,7 +91,6 @@ describe("Recorder", () => {
     URL.createObjectURL = vi.fn(() => "blob:recording");
     URL.revokeObjectURL = vi.fn();
     recorder.start(video, CONTEXT);
-    video.began();
     await recorder.stop();
 
     await recorder.download();
@@ -107,18 +102,16 @@ describe("Recorder", () => {
     const changes = vi.fn();
     recorder.subscribe(changes);
     recorder.start(video, CONTEXT);
-    video.began();
 
     await vi.advanceTimersByTimeAsync(60_000);
     expect(recorder.state).toBe("held");
     expect(video.stopped).toBe(1);
-    expect(changes).toHaveBeenCalledTimes(3); // started, video began, stopped
+    expect(changes).toHaveBeenCalledTimes(2); // started, stopped
   });
 
-  it("times the recording from the video's start", () => {
-    recorder.start(video, CONTEXT);
+  it("times the recording from its start", () => {
     expect(recorder.elapsedMs).toBe(0);
-    video.began();
+    recorder.start(video, CONTEXT);
     now += 2500;
     expect(recorder.elapsedMs).toBe(2500);
   });

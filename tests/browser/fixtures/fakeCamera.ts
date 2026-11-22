@@ -11,6 +11,26 @@ export interface FakeCameraState {
   streams: MediaStream[];
   /** What each stream was asked for, oldest first. */
   constraints: MediaStreamConstraints[];
+  /** Drawn over every frame after the scene, eg. {@link TIME_CODE}'s time code. */
+  overlay?: (context: CanvasRenderingContext2D, width: number) => void;
+}
+
+/**
+ * The time code painted across the top of each frame, so a recording's frames can be timed: `performance.now()` in
+ * steps of `stepMs`, wrapping at 2^`bits`, as a row of black (0) and white (1) blocks, most significant first,
+ * `height` pixels tall.
+ */
+export const TIME_CODE = { bits: 16, stepMs: 4, height: 24 };
+
+/** Runs in the page after {@link fakeCameraScript}: paints the time code over every frame. */
+function timeCodeScript({ bits, stepMs, height }: typeof TIME_CODE): void {
+  window.__fakeCamera.overlay = (context, width) => {
+    const code = Math.round(performance.now() / stepMs) % 2 ** bits;
+    for (let bit = 0; bit < bits; bit++) {
+      context.fillStyle = (code >> (bits - 1 - bit)) & 1 ? "#fff" : "#000";
+      context.fillRect((bit * width) / bits, 0, width / bits, height);
+    }
+  };
 }
 
 declare global {
@@ -87,7 +107,7 @@ function fakeCameraScript({ photoUrls, width, height, cameras }: FakeCameraSetup
   window.__fakeCamera = state;
   paint(image);
   // A canvas only sends frames when it is painted, so repaint at a webcam's rate to keep frames coming
-  setInterval(() => paint(image), 1000 / 30);
+  setInterval(() => (paint(image), state.overlay?.(context, width)), 1000 / 30);
 
   Object.defineProperty(navigator, "mediaDevices", {
     configurable: true,
@@ -116,11 +136,14 @@ const FAKE_CAMERAS: FakeCameraSetup["cameras"] = [
  * physical camera.
  * @param photos image URLs by name, shown by `setImage("photo:<name>")`, letterboxed to the camera's shape
  * @param size the camera's resolution; 640×480 unless given
+ * @param timeCode whether each frame shows when it was painted; see {@link TIME_CODE}
  */
 export const installFakeCamera = async (
   page: Page,
   photos: Record<string, string> = {},
   size = { width: 640, height: 480 },
+  timeCode = false,
 ): Promise<void> => {
   await page.addInitScript(fakeCameraScript, { photoUrls: photos, ...size, cameras: FAKE_CAMERAS });
+  if (timeCode) await page.addInitScript(timeCodeScript, TIME_CODE);
 };

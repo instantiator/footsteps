@@ -275,8 +275,8 @@ describe("HeadsUpDisplay recording, while debugging", () => {
   /** The HUD with a recorder that has a camera to record, or none. */
   const renderHud = (debug: boolean, withCamera = true) => {
     const recorder = new Recorder({ maxMs: 60_000 });
-    const video = new FakeVideo();
-    if (withCamera) recorder.setSource({ video: () => video, describe: () => ({ config: DEFAULT_APP_CONFIG }) });
+    if (withCamera)
+      recorder.setSource({ video: () => new FakeVideo(), describe: () => ({ config: DEFAULT_APP_CONFIG }) });
     render(
       <InGame gameState={titleState}>
         <GameStateContext.Provider value={{ gameState: titleState, setGameState: () => {} }}>
@@ -286,7 +286,6 @@ describe("HeadsUpDisplay recording, while debugging", () => {
         </GameStateContext.Provider>
       </InGame>,
     );
-    return { recorder, video };
   };
 
   it("offers to record only while debugging a game with a camera", () => {
@@ -301,9 +300,8 @@ describe("HeadsUpDisplay recording, while debugging", () => {
   });
 
   it("shows it's recording, then offers the recording to download once stopped", async () => {
-    const { video } = renderHud(true);
+    renderHud(true);
     fireEvent.click(screen.getByRole("button", { name: "Record" }));
-    act(() => video.began());
     expect(screen.getByRole("status")).toHaveTextContent("Recording 0:00");
     expect(screen.queryByRole("button", { name: "Download" })).toBeNull();
 
