@@ -25,6 +25,34 @@ test("shows the preview and runs the silhouette loop against the fake camera", a
   await expect.poll(() => drawCount(page), { timeout: MODEL_TIMEOUT }).toBeGreaterThan(2);
 });
 
+/** The bottom of the HUD, or of its menu while open, and the top of the preview, in screen pixels. */
+const hudAndPreview = (page: Page) =>
+  page.evaluate(() => {
+    const bottom = (selector: string) => document.querySelector(selector)?.getBoundingClientRect().bottom ?? 0;
+    const top = document.querySelector("#character-camera-layer")!.getBoundingClientRect().top;
+    return { hudBottom: Math.max(bottom("#hud-layer-container"), bottom("#hud-menu")), previewTop: top };
+  });
+
+test("keeps the preview below the HUD, and below its menu while that's open", async ({ page }) => {
+  await openCameraGame(page);
+  await expect(preview(page)).toBeVisible();
+
+  await expect
+    .poll(async () => {
+      const at = await hudAndPreview(page);
+      return at.previewTop > at.hudBottom;
+    })
+    .toBe(true);
+  await page.getByRole("button", { name: "Menu" }).click();
+  await expect(page.locator("#hud-menu")).toBeVisible();
+  await expect
+    .poll(async () => {
+      const at = await hudAndPreview(page);
+      return at.previewTop > at.hudBottom;
+    })
+    .toBe(true);
+});
+
 test("keeps the silhouette loop running when debug changes the mask type", async ({ page }) => {
   const errors: string[] = [];
   page.on("console", (message) => {

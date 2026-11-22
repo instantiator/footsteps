@@ -1,4 +1,4 @@
-import { Fragment, type CSSProperties, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import useAppConfig from "../../../providers/AppConfigHook";
 import { isDefined } from "../../../util/ObjectUtils";
 import CharacterCamera from "../../camera/CharacterCamera";
@@ -174,9 +174,37 @@ export const CharacterCanvasLayerWrapper = ({
   );
 };
 
-/** Top layer, holding the {@link HeadsUpDisplay}. */
-export const HudLayerWrapper = ({ style, zIndex, debug, onToggleDebug }: LayerNodeProps) => (
-  <div id="hud-layer-container" className="hudStyle childClicksOnly" style={{ ...style, zIndex: zIndex }}>
-    <HeadsUpDisplay debug={debug === true} onToggleDebug={onToggleDebug} />
-  </div>
-);
+/**
+ * Top layer, holding the {@link HeadsUpDisplay}. It shares its height with the layers beside it as `--hud-height`, so
+ * the camera preview sits below it, and below its menu while that's open.
+ */
+export const HudLayerWrapper = ({ style, zIndex, debug, onToggleDebug }: LayerNodeProps) => {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const hud = ref.current;
+    const parent = hud?.parentElement;
+    // ponytail: jsdom has no ResizeObserver; the browser tests check the placement
+    if (!hud || !parent || typeof ResizeObserver === "undefined") return;
+    // The menu hangs below the HUD rather than growing it, so its bottom counts too, and it comes and goes
+    const measure = () => {
+      const menu = hud.querySelector("#hud-menu");
+      if (menu) resizes.observe(menu);
+      const bottom = Math.max(hud.getBoundingClientRect().bottom, menu?.getBoundingClientRect().bottom ?? 0);
+      parent.style.setProperty("--hud-height", `${bottom - parent.getBoundingClientRect().top}px`);
+    };
+    const resizes = new ResizeObserver(measure);
+    const changes = new MutationObserver(measure);
+    resizes.observe(hud);
+    changes.observe(hud, { childList: true, subtree: true });
+    return () => {
+      resizes.disconnect();
+      changes.disconnect();
+      parent.style.removeProperty("--hud-height");
+    };
+  }, []);
+  return (
+    <div ref={ref} id="hud-layer-container" className="hudStyle childClicksOnly" style={{ ...style, zIndex: zIndex }}>
+      <HeadsUpDisplay debug={debug === true} onToggleDebug={onToggleDebug} />
+    </div>
+  );
+};
