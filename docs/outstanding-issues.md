@@ -602,13 +602,14 @@ which is why the bridge stage draws its cavern with gradients instead.
 **Act when:** the test game's title is next looked at. Then point the path at `games/test-game/`, or drop the image
 if its licence can't be confirmed.
 
-## Debug recordings are unproven on a real camera and in Safari
+## Debug recordings are unproven in Safari
 
-The recording test runs against the fake camera in Chromium. Nothing yet shows that a real webcam's recording matches
-its frames as closely, or that Safari's MP4 recording and download work.
+Camera session 1 (2026-11-23) made seven recordings on a real webcam in Chrome: each video played, and its frames
+matched it well enough to build a test fixture from (`docs/testing/sessions/2026-11-23-camera-session-1.md`). Nothing
+yet shows that Safari's MP4 recording and download work.
 
-**Act when:** the next real-camera session (003.00.03's camera session 1). Record 10 s in `?debug=true`, download it,
-check the video plays and `recording.json` lists frames with players. Repeat once in Safari.
+**Act when:** the game is next played in Safari. Record 10 s in `?debug=true`, download it, and check the video plays
+and `recording.json` lists frames with players.
 
 ## Recordings can't replay the game's decisions exactly
 
