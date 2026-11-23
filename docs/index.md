@@ -17,6 +17,8 @@ Published as HTML at <https://instantiator.dev/footsteps/docs/>, with the API re
 - [Camera mode](camera-mode.md): what camera mode is, planning the space and calibrating the floor, and how the camera view is layered into the game.
 - [Known webcams](webcams.md): the webcams and configurations the setup planner and landing page know, generated from `src/components/camera/Webcams.ts`.
 - [Manual testing](testing/manual-testing.md): camera checks with a real webcam, and how to run the browser suite.
+- [Camera session 1](testing/sessions/2026-11-23-camera-session-1.md): detection on a real camera, with recordings
+  and findings (003.00.03 stage 6).
 - [API reference](/tsdoc/){target="_blank"}: generated from the TSDoc comments in `src/` by `npm run docs:api`, and rendered as HTML by TypeDoc.
 - [Code formatting](code-formatting.md): prettier and ESLint setup, and editor integration.
 - [Outstanding issues](outstanding-issues.md): deferred work and when to act on it.
