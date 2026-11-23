@@ -204,6 +204,22 @@ describe("ItemEffects", () => {
     expect([first.onEnd, again.onEnd].map((onEnd) => vi.mocked(onEnd).mock.calls.length)).toEqual([0, 0]);
   });
 
+  it("spins an item off the scene, turning and fading by filter, and adds to its placement", () => {
+    const target = element();
+    const ended = run();
+    new ItemEffects().spinAway(
+      { effect: "item-spin-away", angle: { min: 90, max: 90 }, rotations: 1, opacity: 0, durationMs: 600 },
+      [target],
+      ended,
+    );
+    const [start, end] = animate.mock.calls[0][0] as Keyframe[];
+    expect(start).toMatchObject({ translate: "0 0", rotate: "0deg", filter: "opacity(1)" });
+    expect(end).toMatchObject({ filter: "opacity(0)" });
+    expect(String(end.rotate)).toMatch(/^-?360deg$/);
+    expect(String(end.translate)).toMatch(/^[\d.]+px -?0px$/); // straight right, to the edge
+    expect(optionsOf(0)).toMatchObject({ composite: "add", duration: 600, fill: "forwards" });
+  });
+
   it("adds to what the element has, so its template's positioning still applies", () => {
     new ItemEffects().fall({ effect: "item-fall" }, [element()], run());
     expect(optionsOf(0).composite).toBe("add");

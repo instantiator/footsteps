@@ -2,12 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PlayerRegistry } from "../src/components/camera/PlayerRegistry";
 import { sceneEnds } from "../src/components/core/effects/GameEffectsHook";
 import { ItemEffects } from "../src/components/core/effects/ItemEffects";
-import {
-  PlayerEffects,
-  offscreenDistance,
-  silhouetteTop,
-  type PlayerEffectRun,
-} from "../src/components/core/effects/PlayerEffects";
+import { PlayerEffects, silhouetteTop, type PlayerEffectRun } from "../src/components/core/effects/PlayerEffects";
+import { offscreenDistance } from "../src/components/core/effects/SpinAway";
 import { NO_EVENT } from "../src/components/core/logic/GameRuleUtils";
 import type { ResolvedEffect } from "../src/entities/data/scenes/GameEffectData";
 import { noKeyPoints, type VisionFrame, type VisionPerson } from "../src/vision/VisionTypes";

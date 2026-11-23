@@ -1,21 +1,25 @@
 <div class="noClicks demo-screen">
   <div class="horizon-background demo-horizon"></div>
   <div class="floor-background demo-ground"></div>
+  <!-- The floor is a solid slab with a border; the tiles on it leave lanes to walk around and between -->
+  <div class="effects-floor" data-floor-area="0 0 100 100"></div>
   <p id="effects-message" class="demo-score effects-message">{{state.message}}{{#if state.fell}} · Player {{state.fell}} fell{{/if}} · {{game.players.active}} playing, {{game.players.removed}} gone, {{game.players.frozen}} frozen</p>
 
-  <div id="rock" class="effects-item" style="left: 4cqw; top: 14cqh">Quake</div>
-  <div id="crate" class="effects-item" style="left: 20cqw; top: 14cqh">Fall</div>
-  <div id="lift" class="effects-item" style="left: 36cqw; top: 14cqh">Move</div>
-  <div id="lamp" class="effects-item" style="left: 52cqw; top: 14cqh">Come near</div>
-  <div id="bridge" class="effects-item" style="left: 68cqw; top: 14cqh">Delay</div>
-  <div id="prize" class="effects-item" style="left: 84cqw; top: 14cqh">Reward</div>
+  <!-- Floating items to wave a hand into, in a band across the upper scene -->
+  <div id="rock" class="effects-item" style="left: 4cqw; top: 28cqh">Quake</div>
+  <div id="crate" class="effects-item" style="left: 20cqw; top: 28cqh">Fall</div>
+  <div id="lift" class="effects-item" style="left: 36cqw; top: 28cqh">Move</div>
+  <div id="lamp" class="effects-item" style="left: 52cqw; top: 28cqh">Lamp</div>
+  <div id="bridge" class="effects-item" style="left: 68cqw; top: 28cqh">Delay</div>
+  <div id="prize" class="effects-item" style="left: 84cqw; top: 28cqh">Reward</div>
 
-  <div class="effects-item effects-player pit" style="left: 4cqw; top: 50cqh">Pit: fall</div>
-  <div class="effects-item effects-player boulder" style="left: 20cqw; top: 50cqh">Boulder: spin away</div>
-  <div id="ghost" class="effects-item effects-player" style="left: 36cqw; top: 50cqh">Ghost: invisible</div>
-  <div class="effects-item effects-player ice" style="left: 52cqw; top: 50cqh">Ice: freeze</div>
-  <div id="fuzz" class="effects-item effects-player" style="left: 68cqw; top: 50cqh">Fuzz: static</div>
-  <div id="restore" class="effects-item effects-player" role="button" tabindex="0" style="left: 84cqw; top: 50cqh">Restore all</div>
+  <!-- Tiles to walk onto, three across and two deep, clear of Start at the front left -->
+  <div class="effects-tile pit" data-floor-area="10 14 28 32">Pit</div>
+  <div class="effects-tile boulder" data-floor-area="41 14 59 32">Boulder</div>
+  <div id="ghost" class="effects-tile" data-floor-area="72 14 90 32">Ghost</div>
+  <div class="effects-tile ice" data-floor-area="10 46 28 64">Ice</div>
+  <div id="fuzz" class="effects-tile" data-floor-area="41 46 59 64">Fuzz</div>
+  <div id="restore" class="effects-tile" data-floor-area="72 46 90 64">Restore</div>
 
   <button id="effects-done" type="button" class="demo-depth-done">Done</button>
 </div>

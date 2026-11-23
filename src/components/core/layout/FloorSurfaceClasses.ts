@@ -2,7 +2,10 @@
  * The names that make an element a floor surface. This module imports nothing, so the resource validator can read it.
  */
 
-/** The surface classes, in the order they paint, back to front, with floor areas between the backgrounds and walls. */
+/**
+ * The surface classes, in the order they paint, back to front, with floor areas between the backgrounds and walls. The
+ * screen foreground paints last, in front of everything in its layer.
+ */
 export const SURFACE_CLASSES = [
   "screen-background",
   "horizon-background",
@@ -14,6 +17,7 @@ export const SURFACE_CLASSES = [
   "left-wall",
   "right-wall",
   "front-wall",
+  "screen-foreground",
 ] as const;
 
 /** The attribute that lays an element on a rectangle of the floor. */

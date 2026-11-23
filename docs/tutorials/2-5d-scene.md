@@ -2,8 +2,8 @@
 
 In a 2.5D scene, the game is fitted to the floor of the room. Things stand on the floor and shrink as they go further
 back, players walk in front of them and behind them, and walls, hills and sky fill the screen around the floor. This
-tutorial builds a room to walk around, then a floor of lava with stepping stones. It follows the **Demo scenes (2.5D)**
-game's "Walk around" and "The floor is lava" stages; every snippet is quoted from `public/game-repository.json` and
+tutorial builds a room to walk around, then a bridge over a floor of lava. It follows the **Demo scenes**
+game's "Walk around" and "Bridge across lava" stages; every snippet is quoted from `public/game-repository.json` and
 `public/games/rules-demo/`.
 
 Start from [your first game](your-first-game.md) and [a scene without a camera](scene-without-camera.md).
@@ -234,83 +234,93 @@ opens with a scroll that introduces the room, as a challenge of its own before t
 
 ## Step 7: start in the right place
 
-A reset scene waits for the player to stand on the start tile before the room appears
-([reset scenes](../game-data.md#reset-scenes)). Its template is the same room, with the front-left tile lit up:
-
-```html [public/games/rules-demo/depth-reset.html]
-<div id="reset-start" class="demo-start-bright" data-floor-area="0 75 25 100"></div>
-<p id="reset-message" class="noClicks demo-depth-hint">Stand on the start, or put your mouse on it</p>
-```
-
-```json [public/game-repository.json]
-"resetScene": {
-  "component": {
-    "type": "template",
-    "data": {},
-    "rules": [
-      {
-        "on": { "interact": ["foot-enter"], "target": "#reset-start" },
-        "do": [{ "sound": "chime" }, { "finishReset": true }]
-      }
-    ],
-```
-
-**Look for:** "Stand on the start". Put the pointer on the yellow tile: a chime, and the posts appear.
-
-## The floor is lava
-
-The last stage puts these pieces to work. The whole floor background is lava, except three stones, which are floor
-areas. The template is the challenge's **background**, so everything in it, stones included, stays behind the player.
+Like the other stages, this one shares the demo's **grid reset**, a reset scene that waits for the player to stand on
+Start before the room appears ([reset scenes](../game-data.md#reset-scenes)). Its template is a dark grid, with the
+front-left cell lit up:
 
 <!-- prettier-ignore -->
-```html [public/games/rules-demo/stones.html]
+```html [public/games/rules-demo/reset.html]
+<div id="reset-start" class="grid-start" data-floor-area="0 80 20 100">Start</div>
+<p id="reset-message" class="grid-message">{{#if state.ready}}Get ready!{{else}}Stand on Start, or put your mouse on it{{/if}}</p>
+```
+
+The game defines it once, by name, and each stage asks for it:
+
+```json [public/game-repository.json]
+"resetScenes": {
+  "start": {
+    "showOn": "every-show",
+    "scene": "2.5D",
+    "avatar": { "mode": "camera", "fallback": "mouse-feet" },
+```
+
+**Look for:** "Stand on Start, or put your mouse on it". Put the pointer on the yellow cell: a chime and sparkles, a
+countdown from 3, and then the posts appear.
+
+## Bridge across lava
+
+The last stage puts these pieces to work. The whole floor background is lava, except a curved bridge from the Start
+cell to a door. The bridge is five SVG paths in one floor area covering the whole floor, so the SVG's coordinates are
+floor percentages. The template is the challenge's **background**, so everything in it, bridge included, stays behind
+the player.
+
+<!-- prettier-ignore -->
+```html [public/games/rules-demo/bridge.html]
 <div class="noClicks demo-screen">
-  <div class="horizon-background demo-horizon"></div>
-  <div id="lava" class="floor-background stones-lava"></div>
-  <div id="stone-1" class="stone" data-floor-area="6 68 28 90"></div>
-  <div id="stone-2" class="stone" data-floor-area="40 40 60 60"></div>
-  <div id="stone-3" class="stone" data-floor-area="70 8 92 30">
+  <div class="screen-background cavern-dark"></div>
+  <div class="rear-background cavern-rock" data-fill-width></div>
+  <div id="lava" class="floor-background lava"></div>
+  <!-- One curved bridge in five sections, drawn in floor percentages; only its painted shapes catch feet -->
+  <div class="bridge-floor" data-floor-area="0 0 100 100">
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none">
 …
 ```
 
-The lava's glow is sized in floor units, so it keeps one size from the front of the floor to the horizon:
+The lava's glow is sized in floor units, so it keeps one size from the front of the floor to the horizon, and the cavern
+wall behind it is layered gradients, with no pictures:
 
 ```css [public/games/rules-demo/rules-demo.css]
-.stones-lava {
-  background: radial-gradient(circle, #ffd166, #ef476f 60%, #9d0208) 0 0 / calc(var(--floor-unit) * 40) repeat;
+.lava {
+  background: radial-gradient(circle, #ffd166, #ef476f 60%, #c1121f) 0 0 / calc(var(--floor-unit) * 20) repeat;
 }
 ```
 
-Touching the lava fizzles the player out with `player-static`, and starts again. Landing a jump on the next stone
-moves the player on, and drops the stone behind them with `item-fall`:
+A foot on the lava warns the player, with `player-static`, a red glow in the template, and a `highlight` on the
+player. Stepping back on the bridge ends it, but 2 s on the lava (`holdMs`) makes the player fall, and starts again:
 
 ```json [public/game-repository.json]
 {
-  "on": { "interact": ["foot-enter"], "target": "#lava" },
-  "if": "not state.burning",
+  "on": { "interact": ["foot-enter"], "target": "#lava", "threshold": 0.05 },
+  "if": "not state.warning and not state.falling",
   "do": [
-    { "set": { "burning": "true" } },
+    { "set": { "warning": "true" } },
     { "effect": "player-static", "pixelSize": 2, "proportion": 1, "easeMs": 800 },
-    { "resetChallenge": true, "delayMs": 1200 }
-  ]
+…
 },
 {
-  "on": { "interact": ["jump-onto"], "target": "#stone-2" },
+  "on": { "interact": ["foot-enter"], "target": "#lava", "threshold": 0.05, "holdMs": 2000 },
+  "if": "not state.falling",
+```
+
+Stepping onto the next section sets where the player is, and the section behind them quakes, falls with `item-fall`,
+and is then hidden (`visibility: hidden`), so it stops covering the lava. The area and its SVG ignore the pointer, and
+only the paths' painted shapes catch it, so the lava shows through everywhere else:
+
+```json [public/game-repository.json]
+{
+  "on": { "interact": ["foot-enter"], "target": "#bridge-2", "threshold": 0.05 },
   "if": "state.on == 1",
   "do": [
     { "set": { "on": "2" } },
-    { "effect": "item-fall", "target": "#stone-1", "easing": "ease-in" },
-    { "sound": "chime" }
-  ]
-},
 ```
 
-The stones cover the lava, so standing on a stone isn't standing on the lava: an element drawn over another takes the
-touch ([what can be clicked or touched](../game-data.md#what-can-be-clicked-or-touched)). With the mouse as feet, a
-`jump-onto` is a drag from one stone to the next.
+The bridge covers the lava, so standing on it isn't standing on the lava: an element drawn over another takes the
+touch ([what can be clicked or touched](../game-data.md#what-can-be-clicked-or-touched)). Once a section has gone, the
+lava shows through where it was.
 
-**Look for:** stand on the first stone to start. Drag to the second stone, and the first falls away; drag to the
-third, and a hatch opens in it. Stray onto the lava, and you fizzle out and start again.
+**Look for:** stand on Start and the bridge appears under you. Step along it, and each section falls behind you. Step
+off onto the lava, and the screen's edge glows red; stay there and you fall and start again. Stand on the door from the
+last section to finish.
 
 ## Next
 

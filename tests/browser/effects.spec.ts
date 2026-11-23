@@ -434,23 +434,27 @@ test("the demo's effects stage removes a player, says who, and starts again once
   await page.context().grantPermissions(["camera"]);
   await installFakeCamera(page, peoplePhotoUrls());
   await seedCalibration(page);
+  // Without the Start reset, which a fake player can't be relied on to stand on, and with the pit under the whole
+  // floor, so the player walks into it, as far as the camera can tell
+  await page.route("**/game-repository.json", async (route) => {
+    const response = await route.fetch();
+    const repository = (await response.json()) as GameRepository;
+    const stage = repository.games["rules-demo"].stages.find(({ id }) => id === "effects")!;
+    delete stage.challenges[0].scenes[0].resetScene;
+    await route.fulfill({ response, json: repository });
+  });
+  await page.route("**/games/rules-demo/effects.html", async (route) => {
+    const response = await route.fetch();
+    const template = (await response.text()).replace('data-floor-area="10 14 28 32"', 'data-floor-area="0 0 100 100"');
+    await route.fulfill({ response, body: template });
+  });
   await page.goto("/game/rules-demo/play");
   await page.locator("#demo-title").click();
   await page.locator("#stage-link-effects").click();
-  await expect(page.locator(".effects-item.pit")).toBeVisible();
+  await expect(page.locator(".effects-tile.pit")).toBeVisible();
   await page.evaluate(() => window.__fakeCamera.setImage("photo:jumping-side-on"));
   const message = page.locator("#effects-message");
-  await expect(message).toContainText("1 playing", { timeout: MODEL_TIMEOUT });
-
-  // Puts the pit under the player, so they walk into it, as far as the camera can tell
-  await page.locator(".effects-item.pit").evaluate((pit: HTMLElement) => {
-    pit.style.left = "0";
-    pit.style.top = "0";
-    pit.style.width = "100cqw";
-    pit.style.height = "100cqh";
-    pit.style.zIndex = "1";
-  });
-  await expect(message).toContainText("0 playing, 1 gone", { timeout: 10_000 });
+  await expect(message).toContainText("0 playing, 1 gone", { timeout: MODEL_TIMEOUT });
   await expect(message).toContainText("1 playing", { timeout: 10_000 });
 });
 

@@ -19,43 +19,24 @@
   opacity: 0.8;
 }
 
+/* Six stages to a row, wrapping onto more rows as stages are added, so every stage fits on the screen */
 .demo-stages {
-  display: flex;
-  justify-content: center;
-  gap: 4cqw;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2cqh 2cqw;
+  margin: 0 4cqw;
 }
 
 .demo-stage-link {
-  padding: 2cqh 4cqw;
+  padding: 1.5cqh 1cqw;
   border-radius: 1cqh;
   background: #e63946;
-  font-size: 4cqh;
+  font-size: 3cqh;
   cursor: pointer;
 }
 
 .demo-stage-link.completed {
   background: #2a9d8f;
-}
-
-/* The toggle: moves between two positions, animated by a transition as idiomorph keeps the element */
-.demo-switch {
-  position: absolute;
-  width: 8cqw;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: #f1c40f;
-  cursor: pointer;
-  transition:
-    left 0.4s ease,
-    top 0.4s ease;
-}
-.demo-switch.position-1 {
-  left: 10cqw;
-  top: 55cqh;
-}
-.demo-switch.position-2 {
-  left: 75cqw;
-  top: 70cqh;
 }
 
 /* The scenery every screen shares, drawn in the floor's perspective: sky above the horizon, and grass out to it */
@@ -170,6 +151,46 @@
   box-shadow: inset 0 1cqh 2cqh #000;
 }
 
+/* A post pushed into the floor, anchored at its foot; the lean pivots about that foot */
+.pit-sign,
+.pit-sign * {
+  pointer-events: none;
+}
+.pit-sign {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 6cqw;
+  height: 12cqh;
+}
+.pit-sign-lean {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-origin: center bottom;
+}
+.pit-sign-lean::before {
+  content: "";
+  position: absolute;
+  left: 44%;
+  width: 12%;
+  top: 40%;
+  bottom: 0;
+  background: #8d5524;
+}
+.pit-sign-board {
+  position: absolute;
+  inset: 0 0 45%;
+  display: grid;
+  place-items: center;
+  border-radius: 8%;
+  background: #1b1b2f;
+  border: 0.3cqh solid #f1faee;
+  color: #f1faee;
+  font-size: 6cqh;
+  line-height: 1;
+}
+
 .demo-start {
   position: absolute;
   left: 4cqw;
@@ -184,60 +205,159 @@
   font-size: 3cqh;
 }
 
-/* Stands at the back of the floor, where the engine places it */
+/* An arched wooden door in a frame, with two panels and a handle; stands at the back of the floor, where the engine places it */
 .pits-door {
   position: absolute;
   left: 0;
   top: 0;
   width: 10cqw;
   height: 30cqh;
-  border-radius: 1cqh 1cqh 0 0;
-  background: #8d5524;
+  box-sizing: border-box;
+  border: 0.8cqh solid #4a2c10;
+  border-bottom: 0;
+  border-radius: 5cqw 5cqw 0 0;
+  background:
+    linear-gradient(#6b3f17, #6b3f17) 50% 18% / 60% 30% no-repeat,
+    linear-gradient(#6b3f17, #6b3f17) 50% 62% / 60% 30% no-repeat,
+    #8d5524;
+  box-shadow: inset 0 0 1cqh #3a200a;
   pointer-events: none;
 }
-/* Only the door's base counts as reaching it */
+.pits-door::before {
+  content: "";
+  position: absolute;
+  right: 12%;
+  top: 55%;
+  width: 1.2cqh;
+  height: 1.2cqh;
+  border-radius: 50%;
+  background: #ffd166;
+}
+/* The threshold step at the door's foot: only it counts as reaching the door */
 .pits-door-base {
   position: absolute;
-  inset: 80% 0 0;
-  background: #c68642;
+  inset: 80% -0.8cqh 0;
+  background: #b8a58c;
+  border-top: 0.5cqh solid #d8c9b0;
   pointer-events: auto;
 }
 
-/* Reset scenes: a dark screen with the start picked out, and a countdown before the balloons */
-.demo-reset,
-.demo-reset-backdrop {
-  background: #1b1b2f;
+/*
+ * The shared grid reset: a dark room with a 5 x 5 grid of thin lines laid on the floor rectangle, whose front-left
+ * cell is the start. Each cell is a fifth of the floor, so the lines fall on the cells' edges.
+ */
+.grid-backdrop {
+  background: #0b132b;
 }
-.demo-start-bright {
+.grid-ground {
+  background: #1c2541;
+}
+.grid-floor {
+  background:
+    linear-gradient(90deg, #8fa3c8 2px, transparent 2px),
+    linear-gradient(#8fa3c8 2px, transparent 2px);
+  background-size: 20% 20%;
+  aspect-ratio: 1;
+  box-shadow: inset -2px -2px #8fa3c8;
+}
+.grid-start {
+  display: grid;
+  place-items: center;
   background: #ffd166;
   box-shadow: 0 0 3cqh #ffd166;
+  color: #0b132b;
+  font-size: 20cqw;
+  font-weight: bold;
 }
-.demo-countdown {
+/* Text is not somewhere to stand, so the instruction sits at the top of the screen, clear of the floor */
+.grid-message {
+  position: absolute;
+  inset: 3cqh 0 auto;
+  margin: 0;
+  font-size: 4cqh;
+  pointer-events: none;
+}
+.grid-count {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
   margin: 0;
-  color: #1d3557;
-  font-size: 10cqh;
+  font-size: 30cqh;
+  font-weight: bold;
+  text-shadow: 0 0 4cqh #ffd166;
+  pointer-events: none;
 }
 
-/* A bulb that lights while something is over it */
-.demo-bulb {
+/*
+ * A candle standing on the bottom edge of the overview, lit by a hand or the mouse at its tip. The tip area covers the
+ * wick and generous space above it, so "near the tip" is enough. The flame and its glow show only while lit.
+ */
+.demo-candle {
   position: absolute;
-  right: 10cqw;
-  bottom: 12cqh;
-  width: 8cqw;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: #555;
-  transition:
-    background 0.2s ease,
-    box-shadow 0.2s ease;
+  bottom: 0;
+  width: 7cqw;
+  height: 30cqh;
 }
-.demo-bulb.lit {
-  background: #fff3b0;
-  box-shadow: 0 0 6cqh #ffd166;
+.demo-candle-left {
+  left: 6cqw;
+}
+.demo-candle-right {
+  right: 6cqw;
+}
+.candle-wax {
+  position: absolute;
+  inset: auto 0 0;
+  height: 17cqh;
+  border-radius: 1cqh 1cqh 0 0;
+  background: linear-gradient(90deg, #e9dcc3, #fff8e7 45%, #d9c9a8);
+}
+.candle-wick {
+  position: absolute;
+  bottom: 17cqh;
+  left: calc(50% - 0.2cqw);
+  width: 0.4cqw;
+  height: 3cqh;
+  background: #2b2118;
+}
+.candle-tip {
+  position: absolute;
+  bottom: 14cqh;
+  left: -3cqw;
+  width: 13cqw;
+  height: 16cqh;
+}
+.candle-flame {
+  position: absolute;
+  bottom: 19.5cqh;
+  left: calc(50% - 1.1cqw);
+  width: 2.2cqw;
+  height: 8cqh;
+  border-radius: 50% 50% 50% 50% / 65% 65% 35% 35%;
+  background: radial-gradient(ellipse at 50% 75%, #fff8c4 15%, #ffb703 55%, #fb5607 100%);
+  box-shadow:
+    0 0 3cqh 1cqh rgba(255, 183, 3, 0.7),
+    0 0 9cqh 4cqh rgba(255, 140, 0, 0.35);
+  transform-origin: 50% 100%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.demo-candle.lit .candle-flame {
+  opacity: 1;
+  animation: candle-flicker 0.8s ease-in-out infinite alternate;
+}
+@keyframes candle-flicker {
+  from {
+    transform: scale(1, 1) rotate(-2deg);
+  }
+  to {
+    transform: scale(0.92, 1.07) rotate(2deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .demo-candle.lit .candle-flame {
+    animation: none;
+  }
 }
 
 /* Posts for a player to walk behind and in front of, sized as at the front of the floor, where the engine stands them */
@@ -303,9 +423,17 @@
   transform: translateX(-50%);
 }
 
-/* One thing to touch or click for each effect: items along the top, and what happens to players along the bottom */
+/* Floating items to wave a hand into along the top, and tiles on a bordered floor whose effects play on whoever walks onto them */
+.effects-floor {
+  background: #2d4a5e;
+  border: 2cqh solid #f4d35e;
+}
+
+/* Below the HUD's buttons, clear of the Done button at the bottom */
 .effects-message {
-  inset: 36cqh 0 auto;
+  position: absolute;
+  inset: 12cqh 0 auto;
+  margin: 0;
   color: #fff;
   font-size: 3.5cqh;
   text-align: center;
@@ -326,38 +454,136 @@
   text-align: center;
 }
 
-.effects-player {
+.effects-tile {
+  display: grid;
+  place-items: center;
   background: #99615b;
+  color: #fff;
+  /* A floor area's box is drawn shrunk onto its tile, so its text is sized for the whole scene */
+  font-size: 26cqw;
+  line-height: 1.1;
+  font-weight: bold;
+  text-align: center;
+}
+/* The pit is a hole, not a coloured tile */
+.effects-tile.pit {
+  border-radius: 0;
+  background: #0b0b14;
 }
 
-/* The floor is lava: everything is lava but three stones, jumped between by dragging; its glow repeats every 40 floor units */
-.stones-lava {
-  background: radial-gradient(circle, #ffd166, #ef476f 60%, #9d0208) 0 0 / calc(var(--floor-unit) * 40) repeat;
+/* The bridge's cavern: dark rock behind, and a floor of lava whose glow repeats every 20 floor units */
+.cavern-dark {
+  background: #1a0505;
+}
+.cavern-rock {
+  aspect-ratio: 2;
+  background:
+    radial-gradient(ellipse 22% 40% at 18% 30%, #6b1d14, transparent),
+    radial-gradient(ellipse 28% 50% at 55% 20%, #7a2418, transparent),
+    radial-gradient(ellipse 25% 45% at 85% 40%, #5c1a12, transparent),
+    radial-gradient(ellipse 35% 30% at 35% 90%, #3b0d0a, transparent),
+    linear-gradient(#2a0808, #4a110c);
+}
+.lava {
+  background: radial-gradient(circle, #ffd166, #ef476f 60%, #c1121f) 0 0 / calc(var(--floor-unit) * 20) repeat;
 }
 
-/* Stones laid on the floor; the box is drawn onto each stone's rectangle */
-.stone {
-  border-radius: 45%;
-  background: #6c757d;
-  box-shadow: inset 0 -1cqh 0 #495057;
+/* The bridge's floor area is empty but for its sections: only their painted shapes catch feet, the lava elsewhere */
+.bridge-floor,
+.bridge-floor svg {
+  pointer-events: none;
+}
+.bridge-floor svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
-/* A hatch in the last stone, lying flat with it */
-.stones-door {
+/* A section of the bridge: pale stone with a dashed darker outline, and thickness below it toward the front */
+.bridge-section {
+  fill: #f1d9a8;
+  stroke: #8a5a1f;
+  stroke-width: 1px;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+  pointer-events: visiblePainted;
+  filter: drop-shadow(0 2px 0 #a8651a);
+}
+.bridge-section.gone,
+.bridge-section.unseen {
+  visibility: hidden;
+}
+
+/* Section 4 flickers in through frames of TV static over 2 s, and is not somewhere to stand until it ends */
+.bridge-section.appearing {
+  pointer-events: none;
+  animation: appear-static 2s linear;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Not a blink of static, but still an animation, so that it ends and the section turns solid */
+  .bridge-section.appearing {
+    animation-duration: 0.01s;
+  }
+}
+@keyframes appear-static {
+  0% {
+    filter: url(#bridge-static-0);
+  }
+  14% {
+    filter: url(#bridge-static-1);
+  }
+  29% {
+    filter: url(#bridge-static-2);
+  }
+  43% {
+    filter: url(#bridge-static-3);
+  }
+  57% {
+    filter: url(#bridge-static-4);
+  }
+  71% {
+    filter: url(#bridge-static-5);
+  }
+  86% {
+    filter: url(#bridge-static-6);
+  }
+  100% {
+    filter: url(#bridge-static-7);
+  }
+}
+
+/* The black door at the bridge's far end, standing on the floor */
+.bridge-door {
   position: absolute;
-  inset: 25%;
-  border-radius: 1cqh;
-  background: #5c3d2e;
+  left: 0;
+  top: 0;
+  width: 7cqw;
+  height: 22cqh;
+  border-radius: 1cqh 1cqh 0 0;
+  background: #000;
   cursor: pointer;
 }
 
-.stones-door.open {
-  background: #ffe8a3;
-  box-shadow: 0 0 3cqh #ffd166;
+/* A red tint and edge glow over the whole screen, pulsing gently, while a foot is on the lava */
+.bridge-glow {
+  background: rgba(255, 42, 26, 0.12);
+  box-shadow: inset 0 0 14vmin 3vmin #ff2a1a;
+  animation: bridge-glow-pulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes bridge-glow-pulse {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-/* Text over the lava is not somewhere to stand */
-.stones-message {
+/* Text over the cavern is not somewhere to stand */
+.bridge-message {
+  inset: 10cqh 0 auto;
+  color: white;
+  text-shadow: 0 0 0.5em black;
   pointer-events: none;
 }
 
@@ -385,4 +611,116 @@
     radial-gradient(ellipse 30% 35% at 25% 100%, #2d6a4f 98%, transparent),
     radial-gradient(ellipse 40% 25% at 70% 100%, #40916c 98%, transparent);
   background-size: calc(var(--floor-unit, 1cqw) * 200) 100%;
+}
+
+/* Ring collection: a purple tiled floor with a soft glow, on dark grey */
+.rings-dark {
+  background: #3b3b3b;
+}
+.rings-floor {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.14) 2px, transparent 2px) 0 0 / 10% 10%,
+    linear-gradient(rgba(255, 255, 255, 0.14) 2px, transparent 2px) 0 0 / 10% 10%,
+    #6a4fa8;
+  border: 0.4cqh solid #3a2486;
+  box-shadow: 0 0 6cqh 3cqh rgba(255, 255, 255, 0.45);
+}
+/* Where the player starts, and where no ring appears */
+.rings-start {
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 3cqh;
+}
+
+/* Floating rings and their shadows are scenery: only the shadow's floor area, and the ring itself, are touched */
+.ring,
+.ring-gone {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 12cqw;
+  height: 12cqw;
+}
+.ring-bob {
+  width: 100%;
+  height: 100%;
+  animation: ring-bob 2.4s ease-in-out infinite alternate;
+}
+/* A gold ring seen face on, with an occasional glint across it */
+.ring-body {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(#ffc800, #8a5a00);
+  mask: radial-gradient(circle, transparent 28%, #000 29%);
+}
+.ring .ring-body::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 25%, #fff 0, transparent 22%);
+  opacity: 0;
+  animation: ring-sparkle 6s ease-in-out infinite;
+}
+/* The shadow is on the floor, so the floor's perspective makes the circle an ellipse */
+.ring-near {
+  background: radial-gradient(circle, #000 0, rgba(0, 0, 0, 0.55) 25%, transparent 62%);
+}
+@keyframes ring-bob {
+  from {
+    transform: translateY(-4%);
+  }
+  to {
+    transform: translateY(4%);
+  }
+}
+@keyframes ring-sparkle {
+  0%,
+  88%,
+  100% {
+    opacity: 0;
+  }
+  94% {
+    opacity: 1;
+  }
+}
+
+.rings-scroll {
+  position: absolute;
+  inset: 3cqh 0 auto;
+  margin: 0 auto;
+  width: 40cqw;
+  padding: 1.5cqh 0;
+  border-radius: 1.5cqh;
+  background: #f9cb9c;
+  color: #1d1d1d;
+  font-size: 3.5cqh;
+  border: 0.3cqh solid #b8895a;
+  pointer-events: none;
+}
+.rings-timer {
+  position: absolute;
+  right: 4cqw;
+  bottom: 4cqh;
+  margin: 0;
+  width: 14cqw;
+  padding: 1cqh 0;
+  background: rgba(20, 20, 50, 0.6);
+  border: 0.5cqh solid rgba(255, 255, 255, 0.6);
+  font-size: 7cqh;
+  font-weight: bold;
+  pointer-events: none;
+}
+/* The final score, large and central */
+.rings-final {
+  position: absolute;
+  inset: 25cqh 0 auto;
+  margin: 0;
+  font-size: 40cqh;
+  font-weight: bold;
+  color: #ffc800;
+  text-shadow: 0 0 2cqh #000;
+  pointer-events: none;
 }

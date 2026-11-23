@@ -616,7 +616,8 @@ describe("Game sounds and reward", () => {
 
     it("still plays a delayed sound after its scene has closed", async () => {
       renderEffects([{ sound: "opened", delayMs: 100 }, { enterStage: "stage-1" }]);
-      await screen.findByText("Stage 1");
+      // The overview, which lists the stage, closes as the stage opens
+      await vi.waitFor(() => expect(screen.queryByText("Stage 1")).toBeNull());
       await vi.waitFor(() => expect(opened()).toHaveLength(1));
     });
 

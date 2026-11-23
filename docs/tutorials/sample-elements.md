@@ -203,7 +203,7 @@ and `role="button"` and `tabindex="0"` so keyboard players can reach it too.
 
 ![A gold bell shape on a dark screen](images/clickable.png)
 
-A rule in the scene's data reacts to the click. This one is from the Demo (no camera) game's lamps:
+A rule in the scene's data reacts to the click. This one is from the Demo scenes game's lamps:
 
 ```json [public/game-repository.json]
 {
@@ -236,18 +236,22 @@ renderer, the mouse is the player's feet.
 
 ![A grey stone lying on a floor of lava](images/standable.png)
 
-A `foot-enter` rule reacts to standing on it. The demo's "The floor is lava" stage uses `jump-onto` to hop between
-stones, and `foot-enter` on the lava:
+A `foot-enter` rule reacts to standing on it. The demo's "Bridge across lava" stage uses `foot-enter` on each section of
+a bridge, and on the lava:
 
 ```json [public/game-repository.json]
 {
-  "on": { "interact": ["foot-enter"], "target": "#lava" },
-  "if": "not state.burning",
+  "on": { "interact": ["foot-enter"], "target": "#lava", "threshold": 0.05 },
+  "if": "not state.warning and not state.falling",
+  "do": [
+    { "set": { "warning": "true" } },
 …
 },
 {
-  "on": { "interact": ["jump-onto"], "target": "#stone-2" },
+  "on": { "interact": ["foot-enter"], "target": "#bridge-2", "threshold": 0.05 },
   "if": "state.on == 1",
+  "do": [
+    { "set": { "on": "2" } },
 ```
 
 The [2.5D scene tutorial](2-5d-scene.md) builds that stage.

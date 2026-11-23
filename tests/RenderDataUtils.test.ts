@@ -84,6 +84,15 @@ describe("getSceneKey", () => {
 });
 
 describe("getLayeredRenderData", () => {
+  it("leaves the overview out behind a stage, unless that stage shows it", () => {
+    const data = chunkedGame(1);
+    const state = createBlankGameState(data);
+    expect(getLayeredRenderData(inStage(state, "s1"), resources, "game").overviewRenderData).toBeUndefined();
+    data.stages[0].showOverview = true;
+    const shown = getLayeredRenderData(inStage(createBlankGameState(data), "s1"), resources, "game");
+    expect(shown.overviewRenderData?.purpose).toBe("game-overview-title");
+  });
+
   describe("in overview mode", () => {
     const state = createBlankGameState(chunkedGame(1));
     const layers = getLayeredRenderData(state, resources, "game");

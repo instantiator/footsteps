@@ -69,4 +69,22 @@ describe("LocalListing", () => {
     );
     expect(screen.queryAllByRole("list").filter((list) => !list.classList.contains("game-badges"))).toEqual([]);
   });
+
+  it("lists promoted games first, each group in repository order", () => {
+    const game = (title: string, promoted?: boolean) => ({ ...simpleGameData, title, promoted });
+    render(
+      <MemoryRouter>
+        <GameRepositoryProvider
+          source={{
+            type: "RawRepository",
+            repository: { games: { a: game("A"), b: game("B", true), c: game("C"), d: game("D", true) } },
+          }}
+        >
+          <LocalListing />
+        </GameRepositoryProvider>
+      </MemoryRouter>,
+    );
+    const names = screen.getAllByRole("link").map((link) => link.getAttribute("aria-label"));
+    expect(names).toEqual(["Play B", "Play D", "Play A", "Play C"]);
+  });
 });

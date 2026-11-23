@@ -1,4 +1,4 @@
-/* Demo (no camera): plain 2D screens, played by mouse, sized in % and vmin so they suit any screen */
+/* The 2D lamps, riddle and doors stages: plain screens, played by mouse, sized in % and vmin so they suit any screen */
 .ndc-screen {
   position: relative;
   box-sizing: border-box;

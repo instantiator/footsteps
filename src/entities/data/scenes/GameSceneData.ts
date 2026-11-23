@@ -85,9 +85,15 @@ export interface GameSceneBase {
   avatar?: GameSceneAvatarData;
   /** How spectators are shown in this scene, over broader scenes' settings. */
   spectators?: GameSpectatorsData;
-  /** Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it. */
-  resetScene?: GameResetScene;
+  /**
+   * Shown in this scene's place first, to help the player get ready for it, until one of its rules finishes it: the
+   * scene itself, or the name of one of the game's `resetScenes`.
+   */
+  resetScene?: GameResetScene | GameResetSceneName;
 }
+
+/** The name of a reset scene in the game's `resetScenes`, which many scenes may share. */
+export type GameResetSceneName = string;
 
 /** A scene that helps the player get ready for its parent scene, eg. "Return to the start". */
 export interface GameResetScene {

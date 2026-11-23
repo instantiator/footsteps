@@ -87,6 +87,7 @@ A fallen item stays off-screen during the scene's fade as its scene closes, rath
 | `quake`                                                | Allowed        | `cycleMs`                                    |
 | `item-fall`                                            | Allowed        | `cycleMs`, then it starts again from the top |
 | `item-move`                                            | Allowed        | `cycleMs`, then it starts again from `start` |
+| `item-spin-away`                                       | Allowed        | `cycleMs`, then it starts again from rest    |
 | `highlight`                                            | Allowed        | The length of its `sequence`                 |
 | `player-static`                                        | Allowed        | Doesn't loop: it holds                       |
 | `player-fall`, `player-spin-away`                      | Error on load  | They must finish, to remove the player       |
@@ -220,6 +221,28 @@ A position is one of:
 | `{ "left": 50, "top": 20 }`                      | A place in the scene.                                       |
 | `{ "by": { "left": 0, "top": -10 } }`            | An amount from where the element is when the effect starts. |
 | `{ "from": "#selector", "left": 0, "top": -10 }` | An amount from the centre of another element.               |
+
+### Item spin away
+
+Knocks an element off the scene, turning as it goes, like [`player-spin-away`](#spin-away) for players. It stays
+off-screen until its scene resets.
+
+```json
+{ "effect": "item-spin-away", "target": ".ring-gone", "durationMs": 600, "opacity": 0, "zoom": 1.5 }
+```
+
+| Property     | Type                               | Default                     | Meaning                                                                                   |
+| ------------ | ---------------------------------- | --------------------------- | ----------------------------------------------------------------------------------------- |
+| `durationMs` | `number \| "indefinite"`           | `1000`                      | Time until the element is off-screen. If `"indefinite"`, it spins away again, repeatedly. |
+| `cycleMs`    | number                             | `1000`                      | The length of one spin, when `"indefinite"`.                                              |
+| `angle`      | `{ "min": number, "max": number }` | `{ "min": -60, "max": 60 }` | The directions it may leave in, as for `player-spin-away`. One is picked at random.       |
+| `zoom`       | number                             | `1`                         | How much bigger or smaller it is by the time it is off-screen, as a multiple above 0.     |
+| `opacity`    | number, 0–1                        | `1`                         | How opaque it is by the time it is off-screen.                                            |
+| `rotations`  | number                             | `2`                         | How many times it turns on the way. The direction of spin is random.                      |
+| `easing`     | CSS easing function                | `ease-out`                  | How the movement slows.                                                                   |
+
+It turns about the element's transform origin: its centre, or its anchor if it is a floor item. It fades with a
+`filter`, which adds to any filter it has. A player can't be its target: use `player-spin-away`.
 
 ### Highlight
 

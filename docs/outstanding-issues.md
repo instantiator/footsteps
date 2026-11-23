@@ -84,6 +84,8 @@ the screen (nearer the camera), the feet may not have reached it yet on that fra
 them. Then wait for the feet to settle (still for a frame, or level with the ground they left) before picking the
 landing element, at the cost of a frame of delay.
 
+See also [prompt 993.00.00](prompts/993.00.00.prompt%20-%20jump%20detection%20review.md).
+
 ## A quick step back and forth can look like a jump
 
 Jumps are told from walking by the feet's movement alone. A quick step back then forward rises and falls like a
@@ -91,6 +93,9 @@ jump.
 
 **Act when:** players report jumps they didn't make. Then also require the head to rise with the feet, for models
 that place the head ([ADR 0008](ADRs/0008-jump-detection.md), option 3).
+
+See also [prompt 993.00.00](prompts/993.00.00.prompt%20-%20jump%20detection%20review.md), which plans a wider review of
+jump detection.
 
 ## Gap filling is off by default
 
@@ -433,6 +438,17 @@ uses; it plays the game by mouse.
 [Landing, progress, and keep-awake](testing/manual-testing.md#landing-progress-and-keep-awake)), and tune the
 thresholds, the lanes' heights and the obstacles' sizes.
 
+## Jump and duck's first obstacles missed by a still mouse: not reproduced
+
+Manual testing (003.00.00) found the first two snowballs and the first two bats passing under a still mouse without
+costing a life. The browser suite couldn't reproduce this, with the pointer parked in a lane before the run or moving
+in it (`tests/browser/jump-and-duck.spec.ts`). It did find that one obstacle could cost several lives, as a pointer
+crossed its edge or the bat's notched outline more than once. Obstacles now pop on a hit, so each costs one life at
+most.
+
+**Act when:** the next manual session. Play a run with a still mouse and note whether the first obstacles still pass
+without a hit, and whether the camera was on, the game full screen, or the mouse untouched since the stage opened.
+
 ## Overview and stage dialogs sit behind players
 
 A dialog or scroll draws its image and text together in its scene's foreground (prompt 002.03.10). For a challenge
@@ -559,3 +575,29 @@ left, when its panel scrolls.
 
 **Act when:** the calibration panel scrolls on a common laptop screen. Then size it as the landing preview is, with a
 container query.
+
+## The 003.00.00 demo stages aren't proven on a real camera
+
+The browser suite plays the new and changed Demo scenes stages by mouse and mouse-feet, or with a still photo as the
+camera. Real camera checks are still owed for these:
+
+- **Balloons:** hands pop them.
+- **Bridge across lava:** a foot on lava shows the full-screen warning, and keeping it there drops the player.
+  Section 4 appears through static, then takes feet.
+- **Ring collection:** standing near a ring, or touching it with a hand, collects it.
+- **Effects:** the floating items are within reach of a raised hand from anywhere on the floor, including the back.
+- **Overview:** a hand over a candle's tip lights it.
+
+The hand-height of the effects stage's floating band (`top: 28cqh`) and the 0.05 thresholds are first guesses.
+
+**Act when:** the next real-camera session. Follow the rules demo checklist in
+[manual testing](testing/manual-testing.md), and tune the band's height and the thresholds from what you see.
+
+## The test game's title background points at a missing path
+
+`public/test-repository.json` gives the test game's title `backgroundImage: url('/samples/test-game/lava-cave-01.jpeg')`.
+The image is at `public/games/test-game/lava-cave-01.jpeg`, and nothing serves `/samples/`. Its licence is unchecked,
+which is why the bridge stage draws its cavern with gradients instead.
+
+**Act when:** the test game's title is next looked at. Then point the path at `games/test-game/`, or drop the image
+if its licence can't be confirmed.

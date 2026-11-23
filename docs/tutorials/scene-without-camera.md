@@ -2,11 +2,11 @@
 
 This tutorial builds two scenes that the player solves with the mouse: three lamps to light, and three doors to pick
 from. Along the way it covers clickable elements, a scene's **state**, the **rules** that change it, and the effects
-and rewards rules can trigger. It follows the **Demo (no camera)** game's "Light the lamps" and "Pick a door" stages,
+and rewards rules can trigger. It follows the **Demo scenes** game's "Light the lamps" and "Pick a door" stages,
 and finishes with its scroll.
 
 Start from [your first game](your-first-game.md), which builds the rest of this game. Every snippet here is quoted
-from `public/game-repository.json` and `public/games/demo-no-camera/`.
+from `public/game-repository.json` and `public/games/rules-demo/demo-no-camera/`.
 
 ## The `mouse` avatar
 
@@ -32,13 +32,14 @@ will complete it instead.
       "scenes": [
         {
           "purpose": "challenge-in-progress",
+          "scene": "2D",
           "component": {
             "type": "template",
             "data": {},
 …
             "foregroundTemplate": {
               "sourceType": "relative",
-              "templateSource": "games/demo-no-camera/lamps.html"
+              "templateSource": "games/rules-demo/demo-no-camera/lamps.html"
             },
             "foregroundTemplateStyle": { "width": "100%", "height": "100%" }
 ```
@@ -47,7 +48,7 @@ The template draws three lamps. Each has an `id` for a rule to target, and is a 
 keyboard.
 
 <!-- prettier-ignore -->
-```html [public/games/demo-no-camera/lamps.html]
+```html [public/games/rules-demo/demo-no-camera/lamps.html]
 <div class="ndc-lamps">
   <div id="lamp-1" class="ndc-lamp{{#if state.lamp1}} lit{{/if}}" role="button" tabindex="0" aria-label="Lamp 1"></div>
   <div id="lamp-2" class="ndc-lamp{{#if state.lamp2}} lit{{/if}}" role="button" tabindex="0" aria-label="Lamp 2"></div>
@@ -57,7 +58,7 @@ keyboard.
 
 A lamp is dark until it has the `lit` class:
 
-```css [public/games/demo-no-camera/demo-no-camera.css]
+```css [public/games/rules-demo/demo-no-camera/demo-no-camera.css]
 .ndc-lamp {
   width: 14vmin;
   aspect-ratio: 1;
@@ -150,7 +151,7 @@ A `when` rule fires when its expression turns true, after any change of state:
 The template's message shows the new state:
 
 <!-- prettier-ignore -->
-```html [public/games/demo-no-camera/lamps.html]
+```html [public/games/rules-demo/demo-no-camera/lamps.html]
 <p class="ndc-message">{{#if state.done}}All lit. Well done!{{else}}Click each lamp to light it. Click a lit one to put it out.{{/if}}</p>
 ```
 
@@ -164,7 +165,7 @@ The template's message shows the new state:
 Three doors, one right. The template is like the lamps', with a message that changes when the player picks wrong:
 
 <!-- prettier-ignore -->
-```html [public/games/demo-no-camera/doors.html]
+```html [public/games/rules-demo/demo-no-camera/doors.html]
 <p id="doors-message" class="ndc-message">{{#if state.wrong}}Not that one. Try another.{{else}}One of these doors hides the prize. Which one?{{/if}}</p>
 <div class="ndc-doors">
   <div id="door-1" class="ndc-door" role="button" tabindex="0" aria-label="Red door">1</div>
