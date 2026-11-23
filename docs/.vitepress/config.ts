@@ -42,6 +42,11 @@ export default defineConfig({
     config(md) {
       // Handlebars examples sit in inline code: without v-pre, Vue reads {{ … }} as interpolation
       md.renderer.rules.code_inline = (tokens, idx) => `<code v-pre>${md.utils.escapeHtml(tokens[idx].content)}</code>`;
+      // and in plain text too, where a prompt or plan quotes a template, eg. "Collected {{state.score}} rings"
+      md.renderer.rules.text = (tokens, idx) => {
+        const text = md.utils.escapeHtml(tokens[idx].content);
+        return text.includes("{{") ? `<span v-pre>${text}</span>` : text;
+      };
     },
   },
   themeConfig: {
