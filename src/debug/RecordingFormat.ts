@@ -1,4 +1,5 @@
 import type { Corners } from "../components/camera/FloorGeometry";
+import type { PlayerState } from "../components/camera/PlayerRegistry";
 import type { PersonReadout } from "../components/camera/Spectators";
 import type { AppConfig } from "../config/AppConfig";
 import type { KeyPoints } from "../vision/VisionTypes";
@@ -71,6 +72,18 @@ export interface RecordedFrameEntry {
   detected: RecordedDetection[];
   /** Everyone the game tracked, players and spectators. */
   players: RecordedPlayer[];
+  /** Each player the game knows, by id, and what is happening to them; removed players are here, though not drawn. */
+  states: Record<number, PlayerState>;
+}
+
+/** The scenes showing from a moment in a recording until the next entry. */
+export interface RecordedScene {
+  /** When they started showing, in milliseconds from the video's start; 0 for those showing as it started. */
+  fromMs: number;
+  /** The game's id. */
+  game: string;
+  /** The overview, stage and challenge scenes showing, by scope, as JSON. */
+  scenes: string;
 }
 
 /** A label for a stretch of the recording (eg. "jump"), for 993's calibration game to fill in. */
@@ -95,6 +108,8 @@ export interface Recording extends RecordingContext {
   videoType: string;
   /** Labelled stretches of the recording; empty unless something labelled them. */
   labels: RecordingLabel[];
+  /** The scenes played, in order. */
+  scenes: RecordedScene[];
   /** Every frame processed while recording, in order. */
   frames: RecordedFrameEntry[];
 }

@@ -27,6 +27,7 @@ const frameAt = (timestamp: number, mask = [1, 1, 0, 0], strays?: number[]): Fra
     ],
   },
   players: [{ id: 1, number: 1, role: "player", offBy: 0, keyPoints: noKeyPoints() }],
+  states: { 1: "active", 2: "removed" },
 });
 
 describe("Recorder", () => {
@@ -64,7 +65,26 @@ describe("Recorder", () => {
     expect([...files[first.detected[0].strays!]]).toEqual([0, 1, 0, 0]);
     expect(second.detected[0].strays).toBeUndefined();
     expect(first.players[0]).toMatchObject({ id: 1, role: "player" });
+    expect(first.states).toEqual({ 1: "active", 2: "removed" });
     expect(recording.config.recordingMaxSeconds).toBe(DEFAULT_APP_CONFIG.recordingMaxSeconds);
+  });
+
+  it("notes the scenes showing as it starts, and each change while it runs, timed from the video's start", async () => {
+    const [title, pits] = [
+      { game: "demo", scenes: '{"overview":"title"}' },
+      { game: "demo", scenes: '{"stage":"pits"}' },
+    ];
+    recorder.setScene(title);
+    recorder.start(video, CONTEXT);
+    now = 1500;
+    recorder.setScene(pits);
+    await recorder.stop();
+    recorder.setScene(title);
+
+    expect(recordingIn(await unzipped()).scenes).toEqual([
+      { ...title, fromMs: 0 },
+      { ...pits, fromMs: 500 },
+    ]);
   });
 
   it("keeps no frames after it stops", async () => {

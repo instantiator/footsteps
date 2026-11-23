@@ -1,13 +1,14 @@
 import _ from "lodash";
 import { useReward } from "partycles";
 import { useMediaQuery } from "@uidotdev/usehooks";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { GameOverviewScenePurpose } from "../../entities/data/scenes/GameSceneData";
 import type { GameChallengeId } from "../../entities/data/GameChallengeData";
 import type { GameData, GameId, GameRewardData } from "../../entities/data/GameData";
 import type { GameChallengeAnswerValidation } from "../../entities/data/GameChallengeSolution";
 import type { GameStageId } from "../../entities/data/GameStageData";
 import type { SceneScope, GameState, QueuedEffect } from "../../entities/state/GameState";
+import { RecorderContext } from "../../debug/RecorderContext";
 import useAppConfig from "../../providers/AppConfigHook";
 import { useGameData } from "../../providers/GameDataHook";
 import useGameMusic from "../../providers/GameMusicHook";
@@ -343,6 +344,17 @@ const useRenderData = (gameState: GameState, resources: Record<string, string>, 
 };
 
 /**
+ * The key of the scenes showing, which changes when any of them does. The debug recorder, if there is one, is told
+ * of each change, so a recording says where it was played.
+ */
+const useSceneKey = (game: GameId, renderData: LayeredGameSceneRenderData): string => {
+  const recorder = useContext(RecorderContext);
+  const scenes = useMemo(() => getSceneKey(renderData), [renderData]);
+  useEffect(() => recorder?.setScene({ game, scenes }), [recorder, game, scenes]);
+  return scenes;
+};
+
+/**
  * The game itself: builds layered render data from the game state, and hands it to {@link GameLayersLayout}
  * along with the click handling, feedback (music, sound effects, rewards) and title screen keys.
  */
@@ -360,7 +372,7 @@ export default function Game() {
 
   const onAnswer = useAnswerHandler();
   const renderData = useRenderData(gameState, resources, gameId);
-  const sceneKey = useMemo(() => getSceneKey(renderData), [renderData]);
+  const sceneKey = useSceneKey(gameId, renderData);
   const { onSceneEvent, cameraRules, onPlayerInteraction, players, playerEffects, onPlayerPositions, onActionEnd } =
     useGameRules();
   const ruleRewards = useRuleEffects(reducedMotion, playerEffects, onActionEnd);

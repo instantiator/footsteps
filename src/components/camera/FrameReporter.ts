@@ -89,7 +89,15 @@ export const frameReporter = ({ onStats, onPeople, recorder }: FrameReporterHand
     const describe = () => describePeople(people, where, watching, (id) => registry.numberOf(id));
     reportPeople(describe);
     const players = recorder?.state === "recording" ? recordedPlayers(people, describe()) : undefined;
-    if (players) recorder?.addFrame({ timestamp, inferenceMs: inferenceEnd - timestamp, detected, players });
+    if (players) {
+      const states = Object.fromEntries(
+        [...registry.knownIds()].flatMap((id) => {
+          const state = registry.stateOf(id);
+          return state ? [[id, state]] : [];
+        }),
+      );
+      recorder?.addFrame({ timestamp, inferenceMs: inferenceEnd - timestamp, detected, players, states });
+    }
     reportStats(detected, timestamp, inferenceEnd, {
       trackMs: trackEnd - inferenceEnd,
       monitorMs: monitorEnd - trackEnd,

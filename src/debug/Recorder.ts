@@ -5,6 +5,7 @@ import {
   RECORDING_VERSION,
   type RecordedFrameEntry,
   type RecordedPlayer,
+  type RecordedScene,
   type Recording,
   type RecordingContext,
 } from "./RecordingFormat";
@@ -49,6 +50,8 @@ export interface FrameToRecord {
   detected: VisionFrame;
   /** Everyone the game tracked. */
   players: RecordedPlayer[];
+  /** Each known player's state, by id. */
+  states: RecordedFrameEntry["states"];
 }
 
 /** The camera a recording would capture, and what to say about it when it starts. */
@@ -77,6 +80,7 @@ interface Take {
   video: VideoRecorder;
   startedAt: number;
   frames: RecordedFrameEntry[];
+  scenes: RecordedScene[];
   zip: Zip;
   chunks: Uint8Array<ArrayBuffer>[];
   blob?: Blob;
@@ -106,6 +110,7 @@ const addFile = (zip: Zip, path: string, data: Uint8Array, deflate = true) => {
 export class Recorder {
   private take?: Take;
   private source?: RecordingSource;
+  private scene?: Omit<RecordedScene, "fromMs">;
   private listeners = new Set<() => void>();
   private readonly options: Required<RecorderOptions>;
 
@@ -142,6 +147,13 @@ export class Recorder {
     this.changed();
   }
 
+  /** Notes the scenes now showing, so a recording says where each stretch of it was played. */
+  setScene(scene: Omit<RecordedScene, "fromMs">) {
+    this.scene = scene;
+    const take = this.take;
+    if (take && !take.blob) take.scenes.push({ ...scene, fromMs: this.elapsedMs });
+  }
+
   /** Starts recording the camera, discarding any recording held. */
   record() {
     if (this.source) this.start(this.source.video(), this.source.describe());
@@ -162,6 +174,7 @@ export class Recorder {
       recordedAt: new Date().toISOString(),
       video,
       frames: [],
+      scenes: this.scene ? [{ ...this.scene, fromMs: 0 }] : [],
       zip,
       chunks,
       stopTimer: setTimeout(() => void this.stop(), this.options.maxMs),
@@ -171,7 +184,7 @@ export class Recorder {
   }
 
   /** Adds a processed frame while recording; ignored otherwise. */
-  addFrame({ timestamp, inferenceMs, detected, players }: FrameToRecord) {
+  addFrame({ timestamp, inferenceMs, detected, players, states }: FrameToRecord) {
     const take = this.take;
     if (!take || take.blob) return;
     const index = take.frames.length;
@@ -190,6 +203,7 @@ export class Recorder {
       height: detected.height,
       detected: people,
       players,
+      states,
     });
   }
 
@@ -216,6 +230,7 @@ export class Recorder {
       video,
       videoType: take.video.mimeType,
       labels: [],
+      scenes: take.scenes,
       frames: take.frames,
     };
     addFile(take.zip, video, new Uint8Array(await take.blob.arrayBuffer()), false);

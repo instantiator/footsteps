@@ -77,6 +77,9 @@ test("records the camera with each frame's masks and players, timed to the video
   for (const { detected, width, height } of found)
     for (const { mask } of detected) expect(files[mask]).toHaveLength(width * height);
   expect(found.some(({ players }) => players.length > 0)).toBe(true);
+  // Each tracked player has a game state, and the recording says which scenes it was made in
+  expect(found.some(({ players, states }) => players.some(({ id }) => states[id] === "active"))).toBe(true);
+  expect(recording.scenes[0]).toMatchObject({ fromMs: 0, game: expect.any(String), scenes: expect.any(String) });
 
   // The video frame at each recorded frame's time shows the picture the model was given, almost always to within a
   // frame

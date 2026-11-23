@@ -546,8 +546,10 @@ The zip holds:
 
 Each frame in `recording.json` has its `timestamp`, its `videoMs` (where it is in the video), the model's time, its
 mask size, `detected` (each person the model found: key points, scale, and their mask's file) and `players` (each
-person tracked: number, role, floor position, distance off the floor, and smoothed key points). `labels` is empty, for
-labelled recordings later. `RecordingFormat.ts` describes it all.
+person tracked: number, role, floor position, distance off the floor, and smoothed key points), and `states` (what is
+happening to each player the game knows: `active`, `leaving`, `frozen` or `removed`, so a player who falls into a pit
+isn't mistaken for one the tracker lost). `scenes` lists the scenes played, each from its `fromMs`. `labels` is empty,
+for labelled recordings later. `RecordingFormat.ts` describes it all.
 
 The video frame at `videoMs` is the picture the model was given to within about a frame, so a replay sees the same
 picture most of the time, not always. The video has no seek index, so read its frames by playing it;
