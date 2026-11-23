@@ -8,7 +8,8 @@ import {
   positionMapping,
   UNSORTED_PLAYER_Z_INDEX,
 } from "../src/components/camera/PlayerPosition";
-import { noKeyPoints, type VisionFrame, type VisionPerson } from "../src/vision/VisionTypes";
+import { DEFAULT_APP_CONFIG } from "../src/config/AppConfig";
+import { noKeyPoints, type Point, type VisionFrame, type VisionPerson } from "../src/vision/VisionTypes";
 
 const WIDTH = 100;
 const HEIGHT = 100;
@@ -61,6 +62,24 @@ describe("PositionFollower", () => {
       expect(follower.update(at(x, y), time)).toEqual(at(30, 80));
     }
     expect(follower.update(at(45, 80), 400)).toEqual(at(45, 80));
+  });
+
+  it("with the default settings, moves for one frame at most through a real jump", () => {
+    // Session 1, R4 at 12 s: grounded every 80 ms, two frames in the air, two lost at the top, one coming down
+    const follower = new PositionFollower({
+      windowMs: DEFAULT_APP_CONFIG.cameraDepthWindowMs,
+      deadband: DEFAULT_APP_CONFIG.cameraDepthDeadband,
+    });
+    for (let time = -800; time <= 0; time += 80) follower.update(at(50, 70), time);
+    const jump: [Point, number][] = [
+      [at(50, 66), 80],
+      [at(50, 63), 160],
+      [at(50, 66), 400],
+      [at(50, 70), 480],
+      [at(50, 70), 560],
+    ];
+    const moved = jump.filter(([ground, time]) => follower.update(ground, time).y !== 70);
+    expect(moved.length).toBeLessThanOrEqual(1);
   });
 
   it("follows walking across at once", () => {
