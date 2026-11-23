@@ -388,6 +388,20 @@ game's elements underneath. Each element's `id` says what a click or camera inte
 6. When the stream goes away, the model is disposed and the loop is cancelled. Starting a new stream loads a
    fresh model.
 
+### Drawing players smaller (a spike)
+
+Two settings, off by default, try out a bigger-feeling set in a small room. They are a spike, to judge on a real camera
+before deciding whether to keep them:
+
+- **`?playerScale=0.6`** draws each player at 60% of life size, shrunk about the point they stand on.
+- **`?motionGain=1.5`** moves each player's position 1.5 times further from the floor's centre than they walk, and
+  draws them there, bigger or smaller for the depth they are moved to.
+
+The drawn cut-out moves by CSS, and the masks and key points that touch things move with it, so a player's drawn hand
+is where it touches. Who is a spectator, and the debug list's positions, still use where the player really stands.
+Hands move with the body: a hand reaching out reaches as far as it really does, scaled down, rather than by the gain.
+`VirtualPlayers.ts` holds the maths.
+
 ## Configuration
 
 The vision model, camera and jump settings are app config, set in the `.env` files or for one visit in the URL

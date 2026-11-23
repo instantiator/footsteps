@@ -49,6 +49,10 @@ export interface AppConfig {
   spectatorHoldMs: number;
   /** How long a spectator must be mostly back on the floor to play again, in milliseconds. */
   spectatorReturnMs: number;
+  /** A spike: how big players are drawn, compared with life (1), so the set looks bigger. */
+  playerScale: number;
+  /** A spike: how far a player moves from the floor's centre, compared with how far they walk (1). */
+  motionGain: number;
   /** The grid players' positions are rounded to for rules and templates: the size of a cell, in position units. */
   positionCellSize: number;
   /** The most times a second players' positions reach rules and templates. */
@@ -106,6 +110,8 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   spectatorMargin: 5,
   spectatorHoldMs: 1000,
   spectatorReturnMs: 300,
+  playerScale: 1,
+  motionGain: 1,
   positionCellSize: 5,
   positionUpdatesPerSecond: 10,
   jumpMinRise: 0.04,
@@ -143,6 +149,14 @@ const fraction: Parser<number> = (raw) => {
   return raw.trim() !== "" && value >= 0 && value <= 1 ? value : undefined;
 };
 
+/** A number from `min` to `max`. */
+const between =
+  (min: number, max: number): Parser<number> =>
+  (raw) => {
+    const value = Number(raw);
+    return raw.trim() !== "" && value >= min && value <= max ? value : undefined;
+  };
+
 /** One of the given values, compared as text. */
 const oneOf =
   <T extends string | number>(...values: readonly T[]): Parser<T> =>
@@ -174,6 +188,8 @@ const PARSERS: { [K in keyof AppConfig]: Parser<AppConfig[K]> } = {
   spectatorMargin: int(0),
   spectatorHoldMs: int(0),
   spectatorReturnMs: int(0),
+  playerScale: between(0.2, 2),
+  motionGain: between(0.5, 4),
   positionCellSize: int(1),
   positionUpdatesPerSecond: int(1),
   jumpMinRise: fraction,
