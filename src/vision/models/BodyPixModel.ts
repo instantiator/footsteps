@@ -10,6 +10,7 @@ import {
   type VisionPerson,
   type VisionSource,
 } from "../VisionTypes";
+import { handsOf, type HandPixel } from "../HandClumps";
 import { keepMainBody } from "../MaskComponents";
 import { selectTfBackend } from "./TfBackend";
 
@@ -21,6 +22,9 @@ const PART_RADIUS_PER_HEAD_WIDTH = 0.4;
 
 /** A hand or foot's radius when there is no head to measure, as a fraction of the frame height. */
 const FALLBACK_RADIUS_PER_HEIGHT = 0.03;
+
+/** The least distance between two hands' centres, in hand radii; any closer, their pixels are one hand. */
+const HANDS_MIN_GAP_PER_RADIUS = 3;
 
 /** Running totals for the centroid of one part's pixels. */
 interface Centroid {
@@ -49,14 +53,11 @@ const meanOf = ({ x, y, count }: Centroid): KeyPoints["leftHand"] =>
 export const personFromParts = (id: number, { data, width, height }: bodyPix.PartSegmentation): VisionPerson => {
   const mask = new Uint8Array(width * height);
   const centroids = {
-    leftHand: { x: 0, y: 0, count: 0 },
-    rightHand: { x: 0, y: 0, count: 0 },
     leftFoot: { x: 0, y: 0, count: 0 },
     rightFoot: { x: 0, y: 0, count: 0 },
   };
+  const hands: HandPixel[] = [];
   const byPart: Partial<Record<number, Centroid>> = {
-    [PART_IDS.leftHand]: centroids.leftHand,
-    [PART_IDS.rightHand]: centroids.rightHand,
     [PART_IDS.leftFoot]: centroids.leftFoot,
     [PART_IDS.rightFoot]: centroids.rightFoot,
   };
@@ -69,7 +70,9 @@ export const personFromParts = (id: number, { data, width, height }: bodyPix.Par
     const x = i % width;
     const y = (i - x) / width;
     const centroid = byPart[part];
-    if (centroid) {
+    if (part === PART_IDS.leftHand || part === PART_IDS.rightHand) {
+      hands.push({ x, y, left: part === PART_IDS.leftHand });
+    } else if (centroid) {
       centroid.x += x;
       centroid.y += y;
       centroid.count++;
@@ -83,8 +86,6 @@ export const personFromParts = (id: number, { data, width, height }: bodyPix.Par
 
   const keyPoints: KeyPoints = {
     ...noKeyPoints(),
-    leftHand: meanOf(centroids.leftHand),
-    rightHand: meanOf(centroids.rightHand),
     leftFoot: meanOf(centroids.leftFoot),
     rightFoot: meanOf(centroids.rightFoot),
   };
@@ -99,6 +100,7 @@ export const personFromParts = (id: number, { data, width, height }: bodyPix.Par
     keyPoints.headRight = { x: face.minX, y: midY };
     scale = PART_RADIUS_PER_HEAD_WIDTH * (face.maxX - face.minX + 1);
   }
+  Object.assign(keyPoints, handsOf(hands, HANDS_MIN_GAP_PER_RADIUS * scale));
   return { id, mask, keyPoints, scale };
 };
 

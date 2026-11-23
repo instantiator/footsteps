@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fillFromPrevious, OneEuroFilter, PersonTracker } from "../src/vision/Tracking";
+import { fillFromPrevious, keepSides, OneEuroFilter, PersonTracker } from "../src/vision/Tracking";
 import { noKeyPoints, type Point, type VisionFrame, type VisionPerson } from "../src/vision/VisionTypes";
 
 const WIDTH = 100;
@@ -250,5 +250,36 @@ describe("OneEuroFilter", () => {
     const filter = new OneEuroFilter();
     filter.filter(0, 10);
     expect(filter.filter(100, 10)).toBe(0);
+  });
+});
+
+describe("keepSides", () => {
+  const hands = (left: Point | null, right: Point | null) => ({ ...noKeyPoints(), leftHand: left, rightHand: right });
+  const [a, b] = [
+    { x: 10, y: 10 },
+    { x: 80, y: 10 },
+  ];
+
+  it("swaps hands back when the model swapped them", () => {
+    expect(keepSides(hands(b, a), hands(a, b))).toEqual(hands(a, b));
+  });
+
+  it("leaves hands that stayed on their sides", () => {
+    expect(keepSides(hands(a, b), hands(a, b))).toEqual(hands(a, b));
+  });
+
+  it("moves a lone hand to the side it was on", () => {
+    expect(keepSides(hands(b, null), hands(a, b))).toEqual(hands(null, b));
+  });
+
+  it("leaves a lone hand when there is nothing to compare it with", () => {
+    expect(keepSides(hands(b, null), hands(null, a))).toEqual(hands(b, null));
+  });
+
+  it("keeps a player's hands on their sides from frame to frame in the tracker", () => {
+    const tracker = new PersonTracker();
+    tracker.update(frame(0, { ...personAt(0, 20), keyPoints: hands(a, b) }));
+    const [person] = tracker.update(frame(33, { ...personAt(0, 20), keyPoints: hands(b, a) })).people;
+    expect(person.keyPoints.leftHand).toEqual(a);
   });
 });

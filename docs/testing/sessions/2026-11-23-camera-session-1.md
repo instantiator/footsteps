@@ -61,6 +61,13 @@ depth settings are `cameraDepthWindowMs` and `cameraDepthDeadband`, set by URL q
 - **The games otherwise felt reasonable.** Stepping over and into a pit registered, and the bridge's pieces fell
   reliably.
 
+## Measured fixes
+
+- **F5:** R5's frames at 20.9–23 s, 36–38 s and 43–46 s are a fixture (`tests/data/recordings/session-1-r5-hands.json`)
+  scored by `tests/RecordedHands.test.ts`. On the frames where BodyPix is confident of both wrists, each hand is on
+  its own wrist in 44% of them by label, and 81% from the hand pixels' two clumps. The rest are mostly frames where
+  one hand has no hand pixels at all, which no grouping can fix; R7's door frames are all like that, so aren't scored.
+
 ## Actions
 
 | Finding | Action                                                                             | Where                  |

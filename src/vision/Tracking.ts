@@ -135,6 +135,39 @@ const movement = (now: KeyPoints, before: KeyPoints, centre: Point, centreBefore
 /** The squared distance between two points. */
 const distanceSquared = (a: Point, b: Point): number => (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
 
+/** Left and right key points a model may swap between frames (BodyPix does from behind: camera session 1, F5). */
+const SIDE_PAIRS = [["leftHand", "rightHand"]] as const;
+
+/** The total distance between the pairs of points that are both placed, and how many pairs that is. */
+const pairedDistance = (pairs: [Point | null, Point | null][]): { total: number; count: number } =>
+  pairs.reduce(
+    ({ total, count }, [a, b]) =>
+      a && b ? { total: total + Math.sqrt(distanceSquared(a, b)), count: count + 1 } : { total, count },
+    { total: 0, count: 0 },
+  );
+
+/**
+ * Key points with each left and right pair swapped back if the model swapped them: if, compared on the same number of
+ * points, swapping puts them nearer where they were the frame before.
+ */
+export const keepSides = (now: KeyPoints, before: KeyPoints): KeyPoints => {
+  const kept = { ...now };
+  for (const [left, right] of SIDE_PAIRS) {
+    const straight = pairedDistance([
+      [now[left], before[left]],
+      [now[right], before[right]],
+    ]);
+    const swapped = pairedDistance([
+      [now[left], before[right]],
+      [now[right], before[left]],
+    ]);
+    if (swapped.count > 0 && swapped.count === straight.count && swapped.total < straight.total) {
+      [kept[left], kept[right]] = [now[right], now[left]];
+    }
+  }
+  return kept;
+};
+
 /**
  * Follows people from frame to frame: each keeps their id while they stay in view, and their key points are smoothed.
  *
@@ -173,8 +206,9 @@ export class PersonTracker {
     const owners = this.match(centres, width);
     const seen = new Set<Track>();
 
-    const people = frame.people.map((person, index) => {
+    const people = frame.people.map((raw, index) => {
       let track = owners.get(index);
+      const person = track ? { ...raw, keyPoints: keepSides(raw.keyPoints, track.last.keyPoints) } : raw;
       if (!track) {
         const { keyPoints: detected } = person;
         track = { id: this.nextId++, centre: { x: 0, y: 0 }, lastSeen: timestamp, last: person, detected, filters: {} };
