@@ -689,6 +689,7 @@ Every template, and every Handlebars value in a style, is rendered with `GameTem
 | `state`          | This scene's [state](#state)                                                                                                                              |
 | `game`           | The game's progress, as rules' [expressions](#expressions) see it                                                                                         |
 | `resources`      | Resource name → resolved URL                                                                                                                              |
+| `scale`          | Person-scale sizes in floor units on the player's floor: see [person scale](positions-sizes-units.md#person-scale)                                        |
 | `challenge`      | The challenge's `GameChallengeData`. Challenge scenes only, otherwise undefined.                                                                          |
 | `challengeState` | Its `GameChallengeState` (`succeeded`, …). Challenge scenes only.                                                                                         |
 

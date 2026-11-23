@@ -186,12 +186,20 @@ The calibration page has the landing page's look: the game's title and the steps
 includes the default corners an uncalibrated configuration starts on. The picture takes the height left above the
 bar, so the page fits a laptop screen without scrolling; on a narrow screen the columns stack and scroll.
 
-1. Drag each blue corner to a corner of the space you can walk around in. The floor can be any convex shape. A drag
-   that would fold it stops at the limit. With the keyboard, Tab moves between the corners, and the arrow keys move
+1. Mark a rectangle on the floor to walk around in, and drag each blue corner onto one of its corners. The page says
+   the playing area must be a rectangle: the corners can make any convex shape, but floor coordinates, and the
+   [person-scale](positions-sizes-units.md#person-scale) sizes, assume a rectangle. A drag that would fold it stops at
+   the limit. With the keyboard, Tab moves between the corners, and the arrow keys move
    the focused one (Shift moves it further).
 2. Walk to each corner. Your feet should stay green: each foot is green on the floor and red off it, and the head and
    hands are marked too.
 3. Press **Save and close** when it fits: it saves the floor and goes back to the landing page.
+
+**Floor size (optional).** Under the picture, the player can enter the floor's measured width and depth in metres. Both
+or neither: half a size, or one outside 0.5–20 m, can't be saved. With a size, games can make people-sized things
+life-size in this room ([person scale](positions-sizes-units.md#person-scale)); without one, the
+[default floor](#the-default-floor)'s 2.6 m × 2 m is assumed. It is saved and cleared with the corners, under its own
+`localStorage` key, `footsteps:floor-sizes`, by the same configuration key.
 
 Calibration expects one person. While more are in view, it warns over the picture, the feet stop turning green or red,
 and Save and close is disabled, though everyone is still marked. The bar along the bottom also has:

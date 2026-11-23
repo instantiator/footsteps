@@ -1,12 +1,16 @@
 import { isDefined } from "../../util/ObjectUtils";
 import { sizeOf, type CameraChoice } from "./CameraChoice";
 import { CORNER_NAMES, DEFAULT_CORNERS, isValidFloor, type Corners } from "./FloorGeometry";
+import { isFloorSize, type FloorSize } from "./FloorSize";
 
 /**
  * The local storage key holding each camera configuration's floor corners. They describe the room, not a game, so
  * every game shares them, and they are in image fractions, so changing the mirror setting doesn't invalidate them.
  */
 const CALIBRATION_KEY = "footsteps:floor-calibrations";
+
+/** The local storage key holding each camera configuration's measured floor size, which is optional. */
+const FLOOR_SIZE_KEY = "footsteps:floor-sizes";
 
 /** Where calibrations were kept before they were per configuration; they were taken at an unknown size, so dropped. */
 const OLD_CALIBRATION_KEY = "footsteps:floor-calibration";
@@ -38,19 +42,48 @@ const isCorners = (value: unknown): value is Corners =>
     );
   });
 
-/** Every saved calibration; storage that can't be read, or holds anything unexpected, counts as none. */
+/** Every value saved under a key, by camera key; storage that can't be read, or holds anything unexpected, is none. */
+const loadStore = <T>(key: string, isValid: (value: unknown) => value is T): Record<string, T> => {
+  try {
+    const saved: unknown = JSON.parse(localStorage.getItem(key) ?? "{}");
+    if (typeof saved !== "object" || saved === null) return {};
+    return Object.fromEntries(Object.entries(saved).filter((entry): entry is [string, T] => isValid(entry[1])));
+  } catch {
+    return {};
+  }
+};
+
+/** Whether a stored value is a usable set of corners. */
+const isSavedCorners = (value: unknown): value is Corners => isCorners(value) && isValidFloor(value);
+
+/** Every saved calibration. */
 const loadAll = (): Record<string, Corners> => {
   try {
     localStorage.removeItem(OLD_CALIBRATION_KEY);
-    const saved: unknown = JSON.parse(localStorage.getItem(CALIBRATION_KEY) ?? "{}");
-    if (typeof saved !== "object" || saved === null) return {};
-    return Object.fromEntries(
-      Object.entries(saved).filter(
-        (entry): entry is [string, Corners] => isCorners(entry[1]) && isValidFloor(entry[1]),
-      ),
-    );
   } catch {
     return {};
+  }
+  return loadStore(CALIBRATION_KEY, isSavedCorners);
+};
+
+/** The camera configuration's measured floor size, if the player gave one. */
+export const loadFloorSize = (cameraKey: string): FloorSize | undefined =>
+  loadStore(FLOOR_SIZE_KEY, isFloorSize)[cameraKey];
+
+/**
+ * Saves the camera configuration's measured floor size, or forgets it when there is none.
+ * @returns whether it was saved
+ */
+export const saveFloorSize = (cameraKey: string, size: FloorSize | undefined): boolean => {
+  try {
+    const all = loadStore(FLOOR_SIZE_KEY, isFloorSize);
+    if (size) all[cameraKey] = size;
+    else delete all[cameraKey];
+    localStorage.setItem(FLOOR_SIZE_KEY, JSON.stringify(all));
+    return true;
+  } catch (error) {
+    console.warn("Could not save the floor size:", error);
+    return false;
   }
 };
 
@@ -83,6 +116,7 @@ export const forgetCalibration = (cameraKey: string): void => {
     const all = loadAll();
     delete all[cameraKey];
     localStorage.setItem(CALIBRATION_KEY, JSON.stringify(all));
+    saveFloorSize(cameraKey, undefined);
   } catch (error) {
     console.warn("Could not forget the floor calibration:", error);
   }
@@ -92,6 +126,7 @@ export const forgetCalibration = (cameraKey: string): void => {
 export const forgetAllCalibrations = (): void => {
   try {
     localStorage.removeItem(CALIBRATION_KEY);
+    localStorage.removeItem(FLOOR_SIZE_KEY);
   } catch (error) {
     console.warn("Could not forget the floor calibrations:", error);
   }

@@ -6,7 +6,9 @@ import {
   forgetCalibration,
   isCalibrated,
   loadCalibration,
+  loadFloorSize,
   saveCalibration,
+  saveFloorSize,
 } from "../src/components/camera/FloorCalibration";
 import { DEFAULT_CORNERS, type Corners } from "../src/components/camera/FloorGeometry";
 
@@ -77,5 +79,26 @@ describe("floor calibration storage", () => {
     expect(loadCalibration("laptop")).toBeUndefined();
     expect(loadCalibration("rear")).toBeUndefined();
     expect(loadCalibration("ok")).toEqual(NARROW);
+  });
+
+  it("keeps each camera's measured floor size, forgetting it with the corners", () => {
+    saveFloorSize("laptop", { width: 3, depth: 2.5 });
+    saveFloorSize("rear", { width: 4, depth: 3 });
+    expect(loadFloorSize("laptop")).toEqual({ width: 3, depth: 2.5 });
+
+    saveFloorSize("laptop", undefined);
+    expect(loadFloorSize("laptop")).toBeUndefined();
+    forgetCalibration("rear");
+    expect(loadFloorSize("rear")).toBeUndefined();
+
+    saveFloorSize("laptop", { width: 3, depth: 2.5 });
+    forgetAllCalibrations();
+    expect(loadFloorSize("laptop")).toBeUndefined();
+  });
+
+  it("ignores stored floor sizes that are corrupt or out of range", () => {
+    localStorage.setItem("footsteps:floor-sizes", JSON.stringify({ tiny: { width: 0.1, depth: 2 }, text: "3x2" }));
+    expect(loadFloorSize("tiny")).toBeUndefined();
+    expect(loadFloorSize("text")).toBeUndefined();
   });
 });

@@ -78,6 +78,26 @@ units thick.
 
 ![A low wooden fence along the back of a green floor](tutorials/images/fence.png)
 
+### Person scale
+
+Floor units are relative to the floor, so a fixed size like `data-floor-height="7"` is shin height on a large floor and
+waist height on a small one. To size things to people, use the `scale` template values. They are in floor units, worked
+out from the floor size measured at [calibration](camera-mode.md#calibrating-the-floor), or from the default floor
+(2.6 m × 2 m) when none was:
+
+| Value                 | What it is                                       | On the default floor |
+| --------------------- | ------------------------------------------------ | -------------------- |
+| `{{scale.metre}}`     | a metre across the floor, or up from it          | 38.5                 |
+| `{{scale.metreDeep}}` | a metre from the floor's back to its front, in y | 50                   |
+| `{{scale.person}}`    | an adult's height (1.7 m)                        | 65.4                 |
+| `{{scale.waist}}`     | waist height (0.9 m)                             | 34.6                 |
+| `{{scale.chest}}`     | chest height (1.3 m)                             | 50                   |
+| `{{scale.door}}`      | a door's height (2 m)                            | 76.9                 |
+| `{{scale.doorWidth}}` | a door's width, across the floor (0.9 m)         | 34.6                 |
+
+For example, `data-floor-height="{{scale.chest}}"` floats an item at chest height in any room. Handlebars can't do
+arithmetic, so use the nearest named size.
+
 ### A tiled floor
 
 A floor area covering the whole floor (`0 0 100 100`) is 100 floor units square, so its box is square

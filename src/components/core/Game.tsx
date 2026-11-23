@@ -7,6 +7,7 @@ import type { GameChallengeId } from "../../entities/data/GameChallengeData";
 import type { GameData, GameRewardData } from "../../entities/data/GameData";
 import type { GameChallengeAnswerValidation } from "../../entities/data/GameChallengeSolution";
 import type { GameStageId } from "../../entities/data/GameStageData";
+import type { GameId } from "../../entities/data/GameData";
 import type { SceneScope, GameState, QueuedEffect } from "../../entities/state/GameState";
 import useAppConfig from "../../providers/AppConfigHook";
 import { useGameData } from "../../providers/GameDataHook";
@@ -42,6 +43,9 @@ import { playAudio } from "./sfx/AudioUtils";
 import RewardBurst from "./sfx/RewardBurst";
 import { useGameRules } from "./GameRulesHook";
 import { useWakeLock } from "./WakeLockHook";
+import { loadCameraChoice } from "../camera/CameraChoice";
+import { cameraKeyOf, loadFloorSize } from "../camera/FloorCalibration";
+import { DEFAULT_FLOOR_SIZE, floorScale } from "../camera/FloorSize";
 
 /**
  * Submits an answer to a challenge.
@@ -329,6 +333,16 @@ function useSceneSettings(gameData: GameData, renderData: LayeredGameSceneRender
   }, [gameData, renderData, setGameState]);
 }
 
+/** The render data for the game state, with the person-scale sizes of the chosen camera's measured floor. */
+const useRenderData = (gameState: GameState, resources: Record<string, string>, gameId: GameId) => {
+  // The floor is measured on the calibration page, so it can't change while the game runs
+  const scale = useMemo(() => floorScale(loadFloorSize(cameraKeyOf(loadCameraChoice())) ?? DEFAULT_FLOOR_SIZE), []);
+  return useMemo(
+    () => getLayeredRenderData(gameState, resources, gameId, scale),
+    [gameState, resources, gameId, scale],
+  );
+};
+
 /**
  * The game itself: builds layered render data from the game state, and hands it to {@link GameLayersLayout}
  * along with the click handling, feedback (music, sound effects, rewards) and title screen keys.
@@ -346,7 +360,7 @@ export default function Game() {
   useWakeLock(!gameState.stages.every((stage) => stage.completion === "completed"));
 
   const onAnswer = useAnswerHandler();
-  const renderData = useMemo(() => getLayeredRenderData(gameState, resources, gameId), [gameState, resources, gameId]);
+  const renderData = useRenderData(gameState, resources, gameId);
   const sceneKey = useMemo(() => getSceneKey(renderData), [renderData]);
   const { onSceneEvent, cameraRules, onPlayerInteraction, players, playerEffects, onPlayerPositions, onActionEnd } =
     useGameRules();
