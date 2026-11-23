@@ -623,3 +623,11 @@ also save each model input frame (eg. as a JPEG in the zip, or a second video of
 `RecorderProvider` wraps only the game page, so the scene renderer's HUD shows no Record button.
 
 **Act when:** someone needs to record from the scene renderer. Wrap its `Game` in `RecorderProvider` too.
+
+## The camera-off scene test fails now and then
+
+`camera.spec.ts`'s "stops the camera on a camera-off scene, and reacquires it on return" failed once in five runs of
+the camera, floor and recordings specs together (2026-11-23), and passed alone three times out of three. Its error
+wasn't kept. It clicks the floating title and stage links with `force: true`, which may land before they're ready.
+
+**Act when:** it fails again. Keep the run's `test-results/` and read its error context before changing the test.

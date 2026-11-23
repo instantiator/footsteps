@@ -181,9 +181,9 @@ function RecordButtons() {
     <>
       {state === "recording" ? (
         <>
-          <span role="status" style={{ ...buttonStyle, color: "#e00", fontWeight: "bold" }}>
+          <output style={{ ...buttonStyle, color: "#e00", fontWeight: "bold" }}>
             ● Recording {minutesAndSeconds(elapsedMs)}
-          </span>
+          </output>
           <button style={buttonStyle} onClick={() => void recorder.stop()}>
             Stop
           </button>

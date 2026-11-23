@@ -10,14 +10,13 @@ import type { Corners } from "./FloorGeometry";
 import { feetOf } from "./CameraSupport";
 import type { MaskType } from "./DrawPeople";
 import { drawPlayers } from "./DrawPlayers";
-import { frameQuality, FrameStatsRecorder, type FrameStats, type FrameSteps } from "./FrameStats";
+import type { FrameStats } from "./FrameStats";
 import { PlayerCanvases } from "./PlayerCanvases";
 import type { PlayerRegistry } from "./PlayerRegistry";
 import { PlayerRegistryContext } from "../../providers/PlayerRegistryContext";
 import { PlayerPositions, positionMapping, type PlayerPosition, type PositionSettings } from "./PlayerPosition";
 import type { PlayerFrame } from "./PlayerMonitor";
 import {
-  describePeople,
   NO_SPECTATORS,
   RETURN_DISTANCE,
   SpectatorWatch,
@@ -26,10 +25,10 @@ import {
   type SpectatorSettings,
 } from "./Spectators";
 import { SpectatorsContext, type ShownSpectators } from "../../providers/SpectatorsContext";
-import { placePlayers, type PlacementFloor, type VirtualSettings } from "./VirtualPlayers";
 import { mediaVideoRecorder, type Recorder } from "../../debug/Recorder";
+import { frameReporter, type FrameReporterHandlers } from "./FrameReporter";
+import { placePlayers, type PlacementFloor, type VirtualSettings } from "./VirtualPlayers";
 import { RecorderContext } from "../../debug/RecorderContext";
-import type { RecordedPlayer } from "../../debug/RecordingFormat";
 
 /** Props for {@link CharacterCanvas}. */
 interface CharacterCanvasProps {
@@ -101,9 +100,6 @@ const useRecordingSource = (
     return () => recorder.setSource(undefined);
   }, [recorder, stream, latest]);
 };
-
-/** How often the stats readout updates, in milliseconds; every frame would re-render too often. */
-const STATS_INTERVAL_MS = 500;
 
 /** Holds the configured vision model while there is a camera stream, and releases it when there isn't. */
 const useVisionModel = (
@@ -183,22 +179,17 @@ const detectFrame = async (
 };
 
 /** What the tracking loop reports to, and how it draws. */
-type LoopHandlers = Pick<CharacterCanvasProps, "offScreenThreshold_percent" | "onPlayersChange"> & {
-  /** How the silhouettes are tinted. */
-  maskType: MaskType;
-  /** How the loop follows, holds and draws players. */
-  settings: LoopSettings;
-  /** Called at most every {@link STATS_INTERVAL_MS} with the loop's speed; omitted when nobody is looking. */
-  onStats?: (stats: FrameStats) => void;
-  /** Called at most every {@link STATS_INTERVAL_MS} with each person found; omitted when nobody is looking. */
-  onPeople?: (people: PersonReadout[]) => void;
-  /** The floor players stand on now, read each frame as scenes change. */
-  floor: RefObject<PlayersFloor>;
-  /** How spectators show now, and what their return does, read each frame as scenes change. */
-  shownSpectators: RefObject<ShownSpectators>;
-  /** The debug recorder, given each frame while it records. */
-  recorder: Recorder | null;
-};
+type LoopHandlers = Pick<CharacterCanvasProps, "offScreenThreshold_percent" | "onPlayersChange"> &
+  FrameReporterHandlers & {
+    /** How the silhouettes are tinted. */
+    maskType: MaskType;
+    /** How the loop follows, holds and draws players. */
+    settings: LoopSettings;
+    /** The floor players stand on now, read each frame as scenes change. */
+    floor: RefObject<PlayersFloor>;
+    /** How spectators show now, and what their return does, read each frame as scenes change. */
+    shownSpectators: RefObject<ShownSpectators>;
+  };
 
 /** How players' ground points become positions, and whether they are sorted among the foreground by them. */
 interface PlayersFloor extends PlacementFloor {
@@ -287,23 +278,6 @@ const useModelConfig = (config: AppConfig): AppConfig => {
   return useMemo(() => JSON.parse(modelKey) as AppConfig, [modelKey]);
 };
 
-/**
- * Records each frame's timings, and reports the loop's speed at most every {@link STATS_INTERVAL_MS}.
- * @returns a function to call once per frame, after it has been drawn
- */
-const statsReporter = (onStats?: (stats: FrameStats) => void) => {
-  const recorder = new FrameStatsRecorder();
-  let shownAt = 0;
-  return (frame: VisionFrame, start: number, inferenceEnd: number, steps: FrameSteps) => {
-    recorder.record(start, inferenceEnd, steps);
-    const timing = recorder.timing();
-    const now = performance.now();
-    if (!timing || now - shownAt < STATS_INTERVAL_MS) return;
-    shownAt = now;
-    onStats?.({ ...timing, ...frameQuality(frame) });
-  };
-};
-
 /** Sizes the canvases to the video, and starts following people afresh at its width. */
 const sizeToVideo = (
   video: HTMLVideoElement,
@@ -317,74 +291,9 @@ const sizeToVideo = (
   registry.resetTracking(video.videoWidth);
 };
 
-/** Reports each person found at most every {@link STATS_INTERVAL_MS}, working them out only when it does. */
-const peopleReporter = (onPeople?: (people: PersonReadout[]) => void) => {
-  let shownAt = 0;
-  return (describe: () => PersonReadout[]) => {
-    const now = performance.now();
-    if (!onPeople || now - shownAt < STATS_INTERVAL_MS) return;
-    shownAt = now;
-    onPeople(describe());
-  };
-};
-
 /** Tells the game when a spectator returned to the floor away from where they left it. */
 const noteReturns = (watching: SpectatorReport, shown: ShownSpectators) => {
   if (watching.returned.some(({ distance }) => distance > RETURN_DISTANCE)) shown.onReturnElsewhere?.();
-};
-
-/** Each person drawn, as the recorder keeps them: their readout and tracked key points. */
-const recordedPlayers = (people: VisionFrame["people"], readouts: PersonReadout[]): RecordedPlayer[] =>
-  readouts.flatMap((readout) => {
-    const person = people.find(({ id }) => id === readout.id);
-    return person ? [{ ...readout, keyPoints: person.keyPoints }] : [];
-  });
-
-/** When a frame reached each step of the loop, in `performance.now()` milliseconds. */
-interface FrameTimes {
-  /** When it was given to the model. */
-  timestamp: number;
-  /** When the model returned it. */
-  inferenceEnd: number;
-  /** When it had been tracked. */
-  trackEnd: number;
-  /** When the monitors had been given it. */
-  monitorEnd: number;
-}
-
-/** Who a frame tracked: the people drawn, where they stand, and who watches. */
-interface FramePeople {
-  /** The people drawn. */
-  people: VisionFrame["people"];
-  /** Each person's floor position, by id. */
-  where: Map<number, PlayerPosition>;
-  /** The spectator watch's report. */
-  watching: SpectatorReport;
-}
-
-/**
- * Reports each drawn frame: its speed and its people to the debug readouts, at most every {@link STATS_INTERVAL_MS},
- * and the whole frame to the recorder while it records.
- * @returns a function to call once per frame, after it has been drawn
- */
-const frameReporter = (
-  { onStats, onPeople, recorder }: Pick<LoopHandlers, "onStats" | "onPeople" | "recorder">,
-  registry: PlayerRegistry,
-) => {
-  const reportStats = statsReporter(onStats);
-  const reportPeople = peopleReporter(onPeople);
-  return (detected: VisionFrame, times: FrameTimes, { people, where, watching }: FramePeople) => {
-    const { timestamp, inferenceEnd, trackEnd, monitorEnd } = times;
-    const describe = () => describePeople(people, where, watching, (id) => registry.numberOf(id));
-    reportPeople(describe);
-    const players = recorder?.state === "recording" ? recordedPlayers(people, describe()) : undefined;
-    if (players) recorder?.addFrame({ timestamp, inferenceMs: inferenceEnd - timestamp, detected, players });
-    reportStats(detected, timestamp, inferenceEnd, {
-      trackMs: trackEnd - inferenceEnd,
-      monitorMs: monitorEnd - trackEnd,
-      drawMs: performance.now() - monitorEnd,
-    });
-  };
 };
 
 /** A frame given to the model. */
