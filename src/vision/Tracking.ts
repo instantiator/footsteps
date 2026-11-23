@@ -120,7 +120,7 @@ const median = (values: number[]): number => {
  * a part, which is when a fill is needed. The median, because one stray pixel can throw several points at once (a
  * model's head points all come from one part's extent).
  */
-const movement = (now: KeyPoints, before: KeyPoints, centre: Point | null, centreBefore: Point): Point => {
+const movement = (now: KeyPoints, before: KeyPoints, centre: Point, centreBefore: Point): Point => {
   const moves = (Object.keys(now) as KeyPointName[]).flatMap((name) => {
     const [a, b] = [before[name], now[name]];
     return a && b ? [{ x: b.x - a.x, y: b.y - a.y }] : [];
@@ -128,7 +128,7 @@ const movement = (now: KeyPoints, before: KeyPoints, centre: Point | null, centr
   const move =
     moves.length > 0
       ? { x: median(moves.map(({ x }) => x)), y: median(moves.map(({ y }) => y)) }
-      : { x: (centre ?? centreBefore).x - centreBefore.x, y: (centre ?? centreBefore).y - centreBefore.y };
+      : { x: centre.x - centreBefore.x, y: centre.y - centreBefore.y };
   return { x: Math.round(move.x), y: Math.round(move.y) };
 };
 
@@ -162,11 +162,14 @@ export class PersonTracker {
    * The frame with each person's id made stable and their key points smoothed, and anyone held added.
    * @param noFill the ids of tracks not worth filling, as nobody plays with them (eg. spectators)
    */
-  update(frame: VisionFrame, noFill: ReadonlySet<number> = new Set()): VisionFrame {
-    const { width, timestamp } = frame;
+  update(detected: VisionFrame, noFill: ReadonlySet<number> = new Set()): VisionFrame {
+    const { width, timestamp } = detected;
     const timeout = Math.max(TRACK_TIMEOUT_MS, this.hold.holdMs + this.hold.fadeMs);
     this.tracks = this.tracks.filter((track) => timestamp - track.lastSeen <= timeout);
-    const centres = frame.people.map((person) => centreOf(person, width));
+    // A person with no pixels (BodyPix reports some) can't be followed, and would become a new player each frame
+    const found = detected.people.map((person) => ({ person, centre: centreOf(person, width) }));
+    const frame = { ...detected, people: found.flatMap(({ person, centre }) => (centre ? [person] : [])) };
+    const centres = found.flatMap(({ centre }) => (centre ? [centre] : []));
     const owners = this.match(centres, width);
     const seen = new Set<Track>();
 
@@ -181,7 +184,7 @@ export class PersonTracker {
         this.fillGaps && owners.has(index) && !noFill.has(track.id)
           ? this.fill(person, track, centres[index], width)
           : undefined;
-      track.centre = centres[index] ?? track.centre;
+      track.centre = centres[index];
       track.lastSeen = timestamp;
       const keyPoints = this.smooth(track, person.keyPoints, timestamp);
       track.last = { ...person, id: track.id, keyPoints, ...(filled && { filled }) };
@@ -193,7 +196,7 @@ export class PersonTracker {
   }
 
   /** The person's mask filled from their track's last one, moved as far as they have; nothing if that's too far. */
-  private fill(person: VisionPerson, track: Track, centre: Point | null, width: number): Uint8Array | undefined {
+  private fill(person: VisionPerson, track: Track, centre: Point, width: number): Uint8Array | undefined {
     const moved = movement(person.keyPoints, track.detected, centre, track.centre);
     const reach = MAX_FILL_SHIFT * width;
     if (Math.abs(moved.x) > reach || Math.abs(moved.y) > reach) return undefined;
@@ -212,11 +215,10 @@ export class PersonTracker {
   }
 
   /** Pairs people with existing tracks, nearest first, within reach; returns the track for each matched person. */
-  private match(centres: (Point | null)[], width: number): Map<number, Track> {
+  private match(centres: Point[], width: number): Map<number, Track> {
     const reach = (MAX_MATCH_DISTANCE * width) ** 2;
     const pairs: [person: number, track: Track, distance: number][] = [];
     centres.forEach((centre, person) => {
-      if (!centre) return;
       for (const track of this.tracks) {
         const distance = distanceSquared(centre, track.centre);
         if (distance <= reach) pairs.push([person, track, distance]);

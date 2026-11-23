@@ -65,6 +65,18 @@ describe("PersonTracker holding", () => {
     expect(tracker.update(frame(700)).people).toEqual([]);
   });
 
+  it("holds someone the model reports with no pixels, rather than making a new person of them", () => {
+    const tracker = new PersonTracker(hold);
+    const [seen] = tracker.update(frame(0, personAt(0, 20))).people;
+    const empty = { ...personAt(0, 20), mask: new Uint8Array(WIDTH * HEIGHT) };
+    for (const time of [70, 140, 210]) {
+      expect(tracker.update(frame(time, empty)).people).toEqual([
+        expect.objectContaining({ id: seen.id, held: { opacity: 1 } }),
+      ]);
+    }
+    expect(tracker.update(frame(280, personAt(0, 21))).people).toEqual([expect.objectContaining({ id: seen.id })]);
+  });
+
   it("shows someone found again as themselves, with the same id, not held", () => {
     const tracker = new PersonTracker(hold);
     const [seen] = tracker.update(frame(0, personAt(0, 20))).people;
