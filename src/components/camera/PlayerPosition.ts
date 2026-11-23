@@ -1,5 +1,6 @@
 import type { Point, VisionFrame } from "../../vision/VisionTypes";
-import { screenFloorForImage, type Corners } from "./FloorGeometry";
+import { imageForScreenFloor, screenFloorForImage, type Corners } from "./FloorGeometry";
+import type { PlacementFloor } from "./VirtualPlayers";
 
 /** How far a player's silhouette may go below their ground point, as a fraction of it; ignores stray pixels. */
 const GROUND_STRAY_FRACTION = 0.01;
@@ -189,9 +190,29 @@ export class PlayerPositions {
 export const depthZIndex = (depth: number): number =>
   DEPTH_Z_INDEX_BASE + Math.round(Math.min(Math.max(depth, 0), 100));
 
-/** Draws a player's ground point's height as a line across their canvas, for debugging. */
-export const drawDepthLine = (ctx: CanvasRenderingContext2D, ground: number): void => {
+/**
+ * The line of a player's depth, in image fractions: from the floor's left edge to its right through their ground
+ * point (a percentage of the frame), so it follows the floor's slope; without a floor, level across the frame.
+ */
+export const depthLineOf = (ground: Point, { corners, mirrored }: PlacementFloor): [from: Point, to: Point] => {
+  const image = { x: ground.x / 100, y: ground.y / 100 };
+  if (!corners)
+    return [
+      { ...image, x: 0 },
+      { ...image, x: 1 },
+    ];
+  const { y } = screenFloorForImage(corners, image, mirrored);
+  return [imageForScreenFloor(corners, { x: 0, y }, mirrored), imageForScreenFloor(corners, { x: 100, y }, mirrored)];
+};
+
+/** Draws a player's depth line (see {@link depthLineOf}) across their canvas, for debugging. */
+export const drawDepthLine = (ctx: CanvasRenderingContext2D, ground: Point, floor: PlacementFloor): void => {
   const { width, height } = ctx.canvas;
-  ctx.fillStyle = "lime";
-  ctx.fillRect(0, (height * ground) / 100 - 1, width, 3);
+  const [from, to] = depthLineOf(ground, floor);
+  ctx.strokeStyle = "lime";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(from.x * width, from.y * height);
+  ctx.lineTo(to.x * width, to.y * height);
+  ctx.stroke();
 };

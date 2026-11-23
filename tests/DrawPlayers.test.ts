@@ -34,7 +34,7 @@ const drawSpectator = (settings: GameSpectatorsData, { debugging = false, specta
     drawPlayers(
       document.createElement("video"),
       { interactive: drawn, drawn, frozenIds: new Set(), knownIds: new Set([id]) },
-      { canvases, positions: new Map(), sorted: false, players, spectators },
+      { canvases, positions: new Map(), sorted: false, floor: { mirrored: false }, players, spectators },
       { maskType: debugging ? "colored" : "binary", featherPx: 0 },
     );
   draw();

@@ -511,8 +511,9 @@ has `?debug=true` (the [`debug` setting](configuration.md)). In camera mode they
   marked faded (they can't interact until found again);
 - show the vision stats readout over the silhouette: the frame rate, the time each step takes (inference, tracking,
   monitors, drawing), and the people, hands and feet found. `?showFps=true` shows the readout on its own;
-- draw a bright green line across each player at the height of the ground point their [position](#player-positions)
-  comes from, and shade what is off the floor in a 2.5D scene.
+- draw a bright green line through the ground point each player's [position](#player-positions) comes from: in a
+  2.5D scene it runs between the floor's edges at their depth, sloping as the floor does, and what is off the floor is
+  shaded; in a 2D scene it is level.
 - list each person found, below the stats: their player number, whether they play, watch as a spectator, or are held,
   where they stand on the floor, how far outside it they are, and how long a change between player and spectator has
   been waiting. A player stuck as a spectator while standing on the floor shows here.

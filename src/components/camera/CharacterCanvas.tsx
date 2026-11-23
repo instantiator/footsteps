@@ -456,7 +456,7 @@ const startTrackingLoop = (
     drawPlayers(
       video,
       frames,
-      { canvases, ...placed, sorted, players: registry, spectators: drawnSpectators },
+      { canvases, ...placed, sorted, floor: floor.current, players: registry, spectators: drawnSpectators },
       { maskType, featherPx },
     );
     reportStats(detected, timestamp, inferenceEnd, {

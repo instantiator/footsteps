@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_CORNERS } from "../src/components/camera/FloorGeometry";
+import { DEFAULT_CORNERS, screenFloorForImage } from "../src/components/camera/FloorGeometry";
 import {
+  depthLineOf,
   depthZIndex,
   groundPointOf,
   PlayerPositions,
@@ -197,5 +198,32 @@ describe("depthZIndex", () => {
   it("keeps depths off the floor to its ends", () => {
     expect(depthZIndex(-20)).toBe(depthZIndex(0));
     expect(depthZIndex(130)).toBe(depthZIndex(100));
+  });
+});
+
+describe("depthLineOf", () => {
+  // Session 1's floor: the camera is tilted, so the back edge drops from left to right
+  const corners = {
+    backLeft: { x: 0.41, y: 0.544 },
+    backRight: { x: 0.767, y: 0.579 },
+    frontRight: { x: 0.875, y: 0.971 },
+    frontLeft: { x: 0.293, y: 0.914 },
+  };
+
+  it("runs from the floor's left edge to its right, through the ground point, sloping with the floor", () => {
+    const ground = { x: 55, y: 70 };
+    const [from, to] = depthLineOf(ground, { corners, mirrored: false });
+    expect(screenFloorForImage(corners, from, false).x).toBeCloseTo(0);
+    expect(screenFloorForImage(corners, to, false).x).toBeCloseTo(100);
+    expect(to.y).toBeGreaterThan(from.y);
+    const along = (ground.x / 100 - from.x) / (to.x - from.x);
+    expect(from.y + along * (to.y - from.y)).toBeCloseTo(ground.y / 100);
+  });
+
+  it("is level across the frame without a floor", () => {
+    expect(depthLineOf({ x: 30, y: 60 }, { mirrored: false })).toEqual([
+      { x: 0, y: 0.6 },
+      { x: 1, y: 0.6 },
+    ]);
   });
 });

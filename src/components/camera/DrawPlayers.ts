@@ -7,7 +7,7 @@ import type { PlayerFrames, PlayerRegistry } from "./PlayerRegistry";
 import type { StaticLook } from "./PlayerStatic";
 import type { SpectatorReport } from "./Spectators";
 import type { GameSpectatorLook, GameSpectatorsData } from "../../entities/data/scenes/GameSpectatorsData";
-import { placementStyle, type Placement } from "./VirtualPlayers";
+import { placementStyle, type Placement, type PlacementFloor } from "./VirtualPlayers";
 
 /** How spectators are drawn this frame. */
 export interface DrawnSpectators {
@@ -133,6 +133,8 @@ interface DrawnPositions {
   placements?: Map<number, Placement>;
   /** Whether players sort among the foreground, as they do on a floor. */
   sorted: boolean;
+  /** The floor, which the debug depth line follows. */
+  floor: PlacementFloor;
 }
 
 /**
@@ -164,6 +166,7 @@ export const drawPlayers = (
     sorted,
     players,
     spectators,
+    floor,
   }: DrawnPositions & { canvases: PlayerCanvases; players: PlayerRegistry; spectators: DrawnSpectators },
   style: DrawStyle,
 ) => {
@@ -182,7 +185,7 @@ export const drawPlayers = (
     const look = staticNow(players, id) ?? spectatorLook;
     const frozen = frozenIds.has(id);
     drawPlayerImage(player, ctx, { look, frozen, draw: (onto) => drawPeople(video, playerFrame, onto, style) });
-    if (!frozen && debugging && where) drawDepthLine(ctx, where.ground.y);
+    if (!frozen && debugging && where) drawDepthLine(ctx, where.ground, floor);
   };
   canvases.draw(frame, drawOne, knownIds);
 };
