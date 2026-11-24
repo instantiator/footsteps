@@ -75,14 +75,14 @@
     </defs>
     <path id="bridge-1" class="bridge-section{{#if state.gone1}} gone{{/if}}" d="M0.00 100.00 L36.83 100.00 L31.17 74.50 L0.00 74.50Z" />
     <path id="bridge-2" class="bridge-section{{#if state.gone2}} gone{{/if}}" d="M36.83 100.00 L88.63 61.89 L47.37 62.11 L31.17 74.50Z" />
-    <path id="bridge-3" class="bridge-section{{#if state.gone3}} gone{{/if}}" d="M88.63 61.89 L49.95 32.87 L22.05 43.13 L47.37 62.11Z" />
-    <path id="bridge-4" class="bridge-section{{#unless state.appearing4}} unseen{{else}}{{#unless state.solid4}} appearing{{/unless}}{{/unless}}{{#if state.gone4}} gone{{/if}}" d="M49.95 32.87 L52.19 27.50 L39.81 0.50 L22.05 43.13Z" />
-    <path id="bridge-5" class="bridge-section{{#if state.gone5}} gone{{/if}}" d="M52.19 27.50 L66.00 27.50 L66.00 0.50 L39.81 0.50Z" />
+    <path id="bridge-3" class="bridge-section{{#if state.gone3}} gone{{/if}}" d="M88.63 61.89 L48.98 32.15 L23.02 43.85 L47.37 62.11Z" />
+    <path id="bridge-4" class="bridge-section{{#unless state.appearing4}} unseen{{else}}{{#unless state.solid4}} appearing{{/unless}}{{/unless}}{{#if state.gone4}} gone{{/if}}" d="M48.98 32.15 L51.26 24.74 L36.74 0.00 L23.02 43.85Z" />
+    <path id="bridge-5" class="bridge-section{{#if state.gone5}} gone{{/if}}" d="M51.26 24.74 L62.88 23.45 L61.12 0.00 L36.74 0.00Z" />
     </svg>
   </div>
-  <!-- A stone landing at the bridge's end, safe from the lava, with the door at the very back; standing in front of the
-       door or beside it opens it, as does a hand or foot on it from close by -->
-  <div class="bridge-landing" data-floor-area="62 0 100 20"></div>
+  <!-- A stone landing where the bridge's last section, along the back, ends: safe from the lava, with the door at the
+       very back. Standing in front of the door or beside it opens it, as does a hand or foot on it from close by -->
+  <div class="bridge-landing" data-floor-area="60 0 100 24"></div>
   <div id="door-front" class="door-area" data-floor-area="64 4 100 16"></div>
   <div id="door-side" class="door-area" data-floor-area="54 0 64 10"></div>
   <div id="door" class="bridge-door" data-floor-x="82" data-floor-y="2" data-floor-thickness="24" role="button" tabindex="0"></div>
