@@ -118,7 +118,7 @@ for it in real life:
 - **Things to touch by hand** float between waist and chest: anchor their bottom at `{{scale.waist}}` and make them
   about 0.4 m tall. Give each a floor area beneath it too, so standing near counts, as hands aren't always found from
   behind.
-- **Doors** are about 2 m × 0.9 m, and open on any of: standing in front of them or behind them (floor areas, held for
+- **Doors** are about 2 m × 0.9 m, and open on any of: standing in front of them or beside them (floor areas, held for
   0.5 s), a hand or foot on them while standing near, or a click. Give the door `data-floor-thickness`, so a hand or
   foot only counts from someone standing near it in depth, then one rule covers both:
 
@@ -130,7 +130,8 @@ for it in real life:
   ]
   ```
 
-  with the same `if` and `do` in each, and `.door-area` the floor areas in front of and behind it.
+  with the same `if` and `do` in each, and `.door-area` the floor areas in front of and beside it. A door at the very back of
+  the floor uses the most of the floor, and has no floor behind it.
 
 - **Signs and markers** stand about waist high, so they read as objects in the room rather than marks on the floor.
 - **Hazards and paths** are sized to a stride: a pit about 0.4 m deep and a metre or more across can't be stepped

@@ -215,11 +215,11 @@ describe("rules demo, played by camera", () => {
     await waitFor(() => expect($("#stage-link-pits")).toHaveClass("completed"));
   });
 
-  it("opens the pits door to a player standing in the floor area behind it", async () => {
+  it("opens the pits door to a player standing in the floor area beside it", async () => {
     await start();
     touch("#stage-link-pits", "hand-enter");
     await returnToStart();
-    touch("#door-behind", "foot-enter");
+    touch("#door-side", "foot-enter");
     await waitFor(() => expect($("#stage-link-pits")).toHaveClass("completed"));
   });
 

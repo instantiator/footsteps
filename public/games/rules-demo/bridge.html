@@ -80,12 +80,12 @@
     <path id="bridge-5" class="bridge-section{{#if state.gone5}} gone{{/if}}" d="M52.19 27.50 L66.00 27.50 L66.00 0.50 L39.81 0.50Z" />
     </svg>
   </div>
-  <!-- A stone landing at the bridge's end, safe from the lava, where the door stands; standing in front of the door or
-       behind it opens it, as does a hand or foot on it from close by -->
-  <div class="bridge-landing" data-floor-area="64 0 100 28"></div>
-  <div id="door-front" class="door-area" data-floor-area="66 17 100 28"></div>
-  <div id="door-behind" class="door-area" data-floor-area="66 0 100 10"></div>
-  <div id="door" class="bridge-door" data-floor-x="83" data-floor-y="13" data-floor-thickness="24" role="button" tabindex="0"></div>
+  <!-- A stone landing at the bridge's end, safe from the lava, with the door at the very back; standing in front of the
+       door or beside it opens it, as does a hand or foot on it from close by -->
+  <div class="bridge-landing" data-floor-area="62 0 100 20"></div>
+  <div id="door-front" class="door-area" data-floor-area="64 4 100 16"></div>
+  <div id="door-side" class="door-area" data-floor-area="54 0 64 10"></div>
+  <div id="door" class="bridge-door" data-floor-x="82" data-floor-y="2" data-floor-thickness="24" role="button" tabindex="0"></div>
   <p id="bridge-message" class="demo-score bridge-message">
     {{#if state.warning}}Get off the lava!{{else}}Cross the bridge to the door.{{/if}}
   </p>
