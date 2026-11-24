@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { useState, type ReactNode } from "react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -7,6 +7,10 @@ import { completeChallenge } from "../src/components/core/logic/GameStateUtils";
 import { createBlankGameState, type GameState } from "../src/entities/state/GameState";
 import { GameDataContext } from "../src/providers/GameDataContext";
 import { GameStateContext } from "../src/providers/GameStateContext";
+import { Recorder } from "../src/debug/Recorder";
+import { RecorderContext } from "../src/debug/RecorderContext";
+import { DEFAULT_APP_CONFIG } from "../src/config/AppConfig";
+import { FakeVideo } from "./data/FakeVideo";
 import { simpleGameData } from "./data/SampleGameState";
 import { smallGame } from "./data/SmallGame";
 
@@ -264,5 +268,47 @@ describe("HeadsUpDisplay debug button, in the menu", () => {
     renderHud(true, () => {});
     openMenu();
     expect(screen.queryByText(/fps/)).toBeNull();
+  });
+});
+
+describe("HeadsUpDisplay recording, while debugging", () => {
+  /** The HUD with a recorder that has a camera to record, or none. */
+  const renderHud = (debug: boolean, withCamera = true) => {
+    const recorder = new Recorder({ maxMs: 60_000 });
+    if (withCamera)
+      recorder.setSource({ video: () => new FakeVideo(), describe: () => ({ config: DEFAULT_APP_CONFIG }) });
+    render(
+      <InGame gameState={titleState}>
+        <GameStateContext.Provider value={{ gameState: titleState, setGameState: () => {} }}>
+          <RecorderContext.Provider value={recorder}>
+            <HeadsUpDisplay debug={debug} />
+          </RecorderContext.Provider>
+        </GameStateContext.Provider>
+      </InGame>,
+    );
+  };
+
+  it("offers to record only while debugging a game with a camera", () => {
+    renderHud(false);
+    expect(screen.queryByRole("button", { name: "Record" })).toBeNull();
+    cleanup();
+    renderHud(true, false);
+    expect(screen.queryByRole("button", { name: "Record" })).toBeNull();
+    cleanup();
+    renderHud(true);
+    expect(screen.getByRole("button", { name: "Record" })).toBeEnabled();
+  });
+
+  it("shows it's recording, then offers the recording to download once stopped", async () => {
+    renderHud(true);
+    // Recording starts once any screen sharing has been asked for
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Record" })));
+    expect(screen.getByRole("status")).toHaveTextContent("Recording 0:00");
+    expect(screen.queryByRole("button", { name: "Download" })).toBeNull();
+
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Stop" })));
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.getByRole("button", { name: "Download" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Record" })).toBeVisible();
   });
 });

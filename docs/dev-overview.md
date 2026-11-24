@@ -11,17 +11,17 @@ Footsteps is a Vite + React + TypeScript app. It uses React Router's framework m
 
 ## Layout
 
-| Path                         | What it is                                                                                                                              |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `react-router.config.ts`     | Static build settings: no server, the routes to prerender, the base path                                                                |
-| `src/root.tsx`               | The HTML document every page renders into (head tags, security policy)                                                                  |
-| `src/routes.ts`              | Route config: `/`, `/game/:id`, `/game/:id/play`, `/game/:id/calibrate`, `/game/:id/json`, `/scene-renderer`, `/setup`, `/dependencies` |
-| `src/pages/`, `src/Home.tsx` | Route modules (one page each); the home page's tabs are `src/components/landing/Tabs.tsx`                                               |
-| `src/components/`            | Game engine UI: layers, scenes, camera, and the game logic in `core/logic/`                                                             |
-| `src/config/`                | App config; see [Configuration](configuration.md)                                                                                       |
-| `src/vision/`                | Vision models behind one interface, body-part queries, tracking, the worker                                                             |
-| `src/providers/`             | React contexts: repository, game data, game state, content cache, music, app config, player registry, spectators                        |
-| `tests/`                     | Vitest unit and component tests                                                                                                         |
+| Path                         | What it is                                                                                                                                         |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `react-router.config.ts`     | Static build settings: no server, the routes to prerender, the base path                                                                           |
+| `src/root.tsx`               | The HTML document every page renders into (head tags, security policy)                                                                             |
+| `src/routes.ts`              | Route config: `/`, `/game/:id`, `/game/:id/play`, `/game/:id/calibrate`, `/game/:id/json`, `/scene-renderer`, `/setup`, `/replay`, `/dependencies` |
+| `src/pages/`, `src/Home.tsx` | Route modules (one page each); the home page's tabs are `src/components/landing/Tabs.tsx`                                                          |
+| `src/components/`            | Game engine UI: layers, scenes, camera, and the game logic in `core/logic/`                                                                        |
+| `src/config/`                | App config; see [Configuration](configuration.md)                                                                                                  |
+| `src/vision/`                | Vision models behind one interface, body-part queries, tracking, the worker                                                                        |
+| `src/providers/`             | React contexts: repository, game data, game state, content cache, music, app config, player registry, spectators                                   |
+| `tests/`                     | Vitest unit and component tests                                                                                                                    |
 
 ## Invocations
 

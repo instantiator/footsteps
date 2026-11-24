@@ -89,6 +89,8 @@ React Router re-reads the query when the URL changes, so a setting can be change
 | `spectatorMargin`          | `5`     | whole number  | How far outside the floor someone must stand to be a spectator, in floor units                                                                     |
 | `spectatorHoldMs`          | `1000`  | whole number  | How long someone must be mostly (80% of frames) off the floor to be a spectator                                                                    |
 | `spectatorReturnMs`        | `300`   | whole number  | How long a spectator must be mostly (80% of frames) back on the floor to play again                                                                |
+| `recordingMaxSeconds`      | `60`    | whole number  | The longest a [debug recording](camera-mode.md#recording) runs before it stops itself, in seconds                                                  |
+| `recordingScreen`          | `false` | boolean       | Whether a [debug recording](camera-mode.md#recording) asks to record the game's screen too, beside the camera                                      |
 | `playerScale`              | `1`     | number, 0.2–2 | A spike: draws players this size compared with life, shrunk about where they stand ([camera mode](camera-mode.md#drawing-players-smaller-a-spike)) |
 | `motionGain`               | `1`     | number, 0.5–4 | A spike: moves each player this many times further from the floor's centre than they walk                                                          |
 | `positionCellSize`         | `5`     | whole number  | The grid players' positions are rounded to for rules and templates, in position units                                                              |

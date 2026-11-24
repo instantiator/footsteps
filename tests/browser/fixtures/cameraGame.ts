@@ -27,6 +27,8 @@ export interface CameraGameOptions {
   sceneMode?: GameSceneMode;
   /** Turns the camera on in the challenges' scenes too, such as its scrolls. */
   cameraOnChallenges?: boolean;
+  /** Paints when each frame was painted across the top of the fake camera's picture; see {@link installFakeCamera}. */
+  timeCode?: boolean;
 }
 
 /**
@@ -71,7 +73,7 @@ const patchRepository = async (page: Page, options: CameraGameOptions): Promise<
 export const openCameraGame = async (page: Page, options: CameraGameOptions = {}): Promise<void> => {
   await page.context().grantPermissions(["camera"]);
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await installFakeCamera(page, options.photos, options.cameraSize);
+  await installFakeCamera(page, options.photos, options.cameraSize, options.timeCode);
   await installCameraDrawCounter(page);
   await patchRepository(page, options);
   await seedCalibration(page); // the game is 2.5D unless a test says otherwise, so a granted camera needs a floor

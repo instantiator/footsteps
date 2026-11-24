@@ -601,3 +601,34 @@ which is why the bridge stage draws its cavern with gradients instead.
 
 **Act when:** the test game's title is next looked at. Then point the path at `games/test-game/`, or drop the image
 if its licence can't be confirmed.
+
+## Debug recordings are unproven in Safari
+
+Camera session 1 (2026-11-23) made seven recordings on a real webcam in Chrome: each video played, and its frames
+matched it well enough to build a test fixture from (`docs/testing/sessions/2026-11-23-camera-session-1.md`). Nothing
+yet shows that Safari's MP4 recording and download work.
+
+**Act when:** the game is next played in Safari. Record 10 s in `?debug=true`, download it, and check the video plays
+and `recording.json` lists frames with players.
+
+## Recordings can't replay the game's decisions exactly
+
+A recorded frame's `videoMs` finds the picture the model was given to within about a frame, not always exactly, so a
+replay may see a neighbouring frame and decide differently.
+
+**Act when:** a replay test (eg. 993's bench) needs to reproduce a decision exactly, or misses one because of it. Then
+also save each model input frame (eg. as a JPEG in the zip, or a second video of only those frames, one per frame).
+
+## The scene renderer has no recorder
+
+`RecorderProvider` wraps only the game page, so the scene renderer's HUD shows no Record button.
+
+**Act when:** someone needs to record from the scene renderer. Wrap its `Game` in `RecorderProvider` too.
+
+## The camera-off scene test fails now and then
+
+`camera.spec.ts`'s "stops the camera on a camera-off scene, and reacquires it on return" failed once in five runs of
+the camera, floor and recordings specs together (2026-11-23), and passed alone three times out of three. Its error
+wasn't kept. It clicks the floating title and stage links with `force: true`, which may land before they're ready.
+
+**Act when:** it fails again. Keep the run's `test-results/` and read its error context before changing the test.

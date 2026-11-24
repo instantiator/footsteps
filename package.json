@@ -40,6 +40,7 @@
     "@tensorflow/tfjs-backend-webgpu": "4.22.0",
     "@uidotdev/usehooks": "^2.4.1",
     "dompurify": "^3.4.17",
+    "fflate": "^0.8.3",
     "filtrex": "3.1.0",
     "handlebars": "^4.7.10",
     "idiomorph": "0.8.0",

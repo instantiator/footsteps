@@ -51,7 +51,8 @@
 .characterCamera {
   position: absolute;
   right: 2vw;
-  top: 2vh;
+  /* Below the HUD and its open menu, whose height the HUD layer sets */
+  top: calc(var(--hud-height, 0px) + 2vh);
   pointer-events: none;
 }
 
