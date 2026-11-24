@@ -14,7 +14,7 @@
 <section class="tsd-panel tsd-comment">
 <div class="tsd-comment tsd-typography"><p>When someone counts as off the floor, and for how long before it changes who they are.</p>
 </div></section>
-<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">SpectatorSettings</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#holdms">holdMs</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#margin">margin</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
+<div class="tsd-signature"><span class="tsd-signature-keyword">interface</span> <span class="tsd-kind-interface">SpectatorSettings</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#holdms">holdMs</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#margin">margin</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#returnms">returnMs</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
 <li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/Spectators.ts#L5">components/camera/Spectators.ts:5</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
@@ -26,6 +26,7 @@
 <h3 class="tsd-index-heading tsd-anchor-link" id="properties">Properties<a href="#properties" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-index-list"><a href="#holdms" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>hold<wbr/>Ms</span></a>
 <a href="#margin" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>margin</span></a>
+<a href="#returnms" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>return<wbr/>Ms</span></a>
 </div></section></div></details></section></section>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="properties-1">Properties<a href="#properties-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
@@ -33,7 +34,7 @@
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="holdms"><span>hold<wbr/>Ms</span><a href="#holdms" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">holdMs</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
-<div class="tsd-comment tsd-typography"><p>How long someone must stay off the floor to become a spectator, or on it to become a player again, in ms.</p>
+<div class="tsd-comment tsd-typography"><p>How long someone must have been mostly off the floor to become a spectator, in ms.</p>
 </div><aside class="tsd-sources">
 <ul>
 <li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/Spectators.ts#L9">components/camera/Spectators.ts:9</a></li></ul></aside></section>
@@ -43,7 +44,14 @@
 <div class="tsd-comment tsd-typography"><p>How far outside the floor someone must stand to be off it, in floor units.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/Spectators.ts#L7">components/camera/Spectators.ts:7</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/Spectators.ts#L7">components/camera/Spectators.ts:7</a></li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="returnms"><span>return<wbr/>Ms</span><a href="#returnms" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">returnMs</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
+<div class="tsd-comment tsd-typography"><p>How long a spectator must have been mostly back on the floor to become a player again, in ms.</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/Spectators.ts#L11">components/camera/Spectators.ts:11</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -60,7 +68,7 @@
 <h3>On This Page</h3></summary>
 <div class="tsd-accordion-details">
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Properties</summary>
-<div><a href="#holdms"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>hold<wbr/>Ms</span></a><a href="#margin"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>margin</span></a></div></details></div></details></div>
+<div><a href="#holdms"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>hold<wbr/>Ms</span></a><a href="#margin"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>margin</span></a><a href="#returnms"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>return<wbr/>Ms</span></a></div></details></div></details></div>
 <div class="site-menu">
 <nav class="tsd-navigation"><a href="../index.html">Footsteps API</a>
 <ul class="tsd-small-nested-navigation" id="tsd-nav-container">

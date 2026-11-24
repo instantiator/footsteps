@@ -187,7 +187,7 @@ describe("rules demo, played by camera", () => {
     touch("#reset-start", "foot-enter");
     await waitFor(() => expect($("#reset-message")).toHaveTextContent("Get ready!"));
     await wait(3000);
-    await waitFor(() => expect($("#door-base")).not.toBeNull());
+    await waitFor(() => expect($("#door")).not.toBeNull());
   };
 
   it("asks for the start before the pits, sends a player who falls in back after the fall, and completes at the door", async () => {
@@ -196,13 +196,30 @@ describe("rules demo, played by camera", () => {
     await returnToStart();
 
     touch("#pit-2", "foot-enter");
-    touch("#door-base", "foot-enter"); // too late: they are already falling
+    touch("#door", "foot-enter"); // too late: they are already falling
     // With nobody in view to fall, the fall ends at once, and the reset follows its 500 ms pause
     await wait(200);
     expect($("#pit-2")).not.toBeNull();
     await returnToStart();
-    touch("#door-base", "foot-enter");
+    touch("#door", "foot-enter");
 
+    await waitFor(() => expect($("#stage-link-pits")).toHaveClass("completed"));
+  });
+
+  it("opens the pits door to a hand on it, as to a foot, with a mat in front that opens it too", async () => {
+    await start();
+    touch("#stage-link-pits", "hand-enter");
+    await returnToStart();
+    expect(document.querySelectorAll(".door-area")).toHaveLength(1);
+    touch("#door", "hand-enter"); // the same rule as a foot on it, so a hand opens it too
+    await waitFor(() => expect($("#stage-link-pits")).toHaveClass("completed"));
+  });
+
+  it("opens the pits door to a player standing on its mat", async () => {
+    await start();
+    touch("#stage-link-pits", "hand-enter");
+    await returnToStart();
+    touch("#door-mat", "foot-enter");
     await waitFor(() => expect($("#stage-link-pits")).toHaveClass("completed"));
   });
 

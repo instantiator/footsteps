@@ -15,7 +15,7 @@
 <div class="tsd-comment tsd-typography"><p>Follows one player's ground point, smoothed into a position that jumps and jitter don't change.</p>
 </div></section><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerPosition.ts#L75">components/camera/PlayerPosition.ts:75</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerPosition.ts#L91">components/camera/PlayerPosition.ts:91</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -48,7 +48,7 @@
 <li><span><span class="tsd-kind-parameter">settings</span>: <a href="../interfaces/components_camera_PlayerPosition.PositionSettings.html" class="tsd-signature-type tsd-kind-interface">PositionSettings</a></span></li></ul></div>
 <h4 class="tsd-returns-title">Returns <a href="" class="tsd-signature-type tsd-kind-class">PositionFollower</a></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerPosition.ts#L80">components/camera/PlayerPosition.ts:80</a></li></ul></aside></div></li></ul></section></section></details>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerPosition.ts#L96">components/camera/PlayerPosition.ts:96</a></li></ul></aside></div></li></ul></section></section></details>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Accessors"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="accessors-1">Accessors<a href="#accessors-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
 <section>
@@ -62,7 +62,7 @@
 </div>
 <h4 class="tsd-returns-title">Returns <a href="../interfaces/vision_VisionTypes.Point.html" class="tsd-signature-type tsd-kind-interface">Point</a> <span class="tsd-signature-symbol">|</span> <span class="tsd-signature-type">undefined</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerPosition.ts#L105">components/camera/PlayerPosition.ts:105</a></li></ul></aside></div></li></ul></section></section></details>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerPosition.ts#L125">components/camera/PlayerPosition.ts:125</a></li></ul></aside></div></li></ul></section></section></details>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="methods-1">Methods<a href="#methods-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
 <section>
@@ -83,11 +83,12 @@
 <li><span><span class="tsd-kind-parameter">timestamp</span>: <span class="tsd-signature-type">number</span></span>
 <div class="tsd-comment tsd-typography"><p>when it was seen, in milliseconds</p>
 </div></li></ul></div>
-<h4 class="tsd-returns-title">Returns <a href="../interfaces/vision_VisionTypes.Point.html" class="tsd-signature-type tsd-kind-interface">Point</a></h4><p>the player's ground point: coming nearer shows at once, and moving away only after the window has passed.
+<h4 class="tsd-returns-title">Returns <a href="../interfaces/vision_VisionTypes.Point.html" class="tsd-signature-type tsd-kind-interface">Point</a></h4><p>the player's ground point: coming nearer shows once most of the window agrees, and moving away only after
+the window has passed.
 Moving across shows while they are on the ground, so a jump holds where they took off from.</p>
 <aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerPosition.ts#L91">components/camera/PlayerPosition.ts:91</a></li></ul></aside></div></li></ul></section></section></details></div>
+<li>Defined in <a href="https://github.com/instantiator/footsteps/blob/main/src/components/camera/PlayerPosition.ts#L108">components/camera/PlayerPosition.ts:108</a></li></ul></aside></div></li></ul></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

@@ -166,6 +166,7 @@ export const CharacterCanvasLayerWrapper = ({
         canvasRef={canvasRef}
         maskType={debug ? "colored" : "binary"}
         showStats={debug || showFps}
+        showPeople={debug}
         floor={corners}
         mirrored={mirror}
       />

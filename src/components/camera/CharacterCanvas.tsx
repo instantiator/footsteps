@@ -16,8 +16,17 @@ import type { PlayerRegistry } from "./PlayerRegistry";
 import { PlayerRegistryContext } from "../../providers/PlayerRegistryContext";
 import { PlayerPositions, positionMapping, type PlayerPosition, type PositionSettings } from "./PlayerPosition";
 import type { PlayerFrame } from "./PlayerMonitor";
-import { NO_SPECTATORS, RETURN_DISTANCE, SpectatorWatch, type SpectatorSettings } from "./Spectators";
+import {
+  describePeople,
+  NO_SPECTATORS,
+  RETURN_DISTANCE,
+  SpectatorWatch,
+  type PersonReadout,
+  type SpectatorReport,
+  type SpectatorSettings,
+} from "./Spectators";
 import { SpectatorsContext, type ShownSpectators } from "../../providers/SpectatorsContext";
+import { placePlayers, type PlacementFloor, type VirtualSettings } from "./VirtualPlayers";
 
 /** Props for {@link CharacterCanvas}. */
 interface CharacterCanvasProps {
@@ -41,6 +50,8 @@ interface CharacterCanvasProps {
   maskType?: MaskType;
   /** Shows the loop's frame rate and the time each step takes, which benchmarks also read from its data attributes. */
   showStats?: boolean;
+  /** Lists each person found, with whether they play or watch and why, for debugging who counts as a spectator. */
+  showPeople?: boolean;
   /** The floor players stand on in a 2.5D scene; none in a 2D one. Changing it doesn't restart tracking. */
   floor?: Corners;
   /** Whether the canvas is shown flipped like a mirror, so positions run from the screen's left. */
@@ -59,7 +70,10 @@ const useLatest = <T,>(value: T): RefObject<T> => {
 /** The floor players stand on now, for the tracking loop to read each frame. */
 const usePlayersFloor = (floor: Corners | undefined, mirrored: boolean): RefObject<PlayersFloor> =>
   useLatest(
-    useMemo(() => ({ toPosition: positionMapping(floor, mirrored), sorted: isDefined(floor) }), [floor, mirrored]),
+    useMemo(
+      () => ({ toPosition: positionMapping(floor, mirrored), sorted: isDefined(floor), corners: floor, mirrored }),
+      [floor, mirrored],
+    ),
   );
 
 /** How often the stats readout updates, in milliseconds; every frame would re-render too often. */
@@ -150,6 +164,8 @@ type LoopHandlers = Pick<CharacterCanvasProps, "offScreenThreshold_percent" | "o
   settings: LoopSettings;
   /** Called at most every {@link STATS_INTERVAL_MS} with the loop's speed; omitted when nobody is looking. */
   onStats?: (stats: FrameStats) => void;
+  /** Called at most every {@link STATS_INTERVAL_MS} with each person found; omitted when nobody is looking. */
+  onPeople?: (people: PersonReadout[]) => void;
   /** The floor players stand on now, read each frame as scenes change. */
   floor: RefObject<PlayersFloor>;
   /** How spectators show now, and what their return does, read each frame as scenes change. */
@@ -157,7 +173,7 @@ type LoopHandlers = Pick<CharacterCanvasProps, "offScreenThreshold_percent" | "o
 };
 
 /** How players' ground points become positions, and whether they are sorted among the foreground by them. */
-interface PlayersFloor {
+interface PlayersFloor extends PlacementFloor {
   /** How a ground point becomes a position. */
   toPosition: ReturnType<typeof positionMapping>;
   /** Whether players sort among the foreground by depth, which they do on a floor. */
@@ -180,12 +196,15 @@ interface LoopSettings {
   position: PositionSettings;
   /** Who counts as off the floor. */
   spectators: SpectatorSettings;
+  /** How big players are drawn, and how far they move (a spike, off by default). */
+  virtual: VirtualSettings;
 }
 
 /** The loop's settings from the app config, the same object until one of them changes. */
 const useLoopSettings = (config: AppConfig): LoopSettings => {
   const { visionSmoothing, cameraHoldMs, cameraFadeMs, cameraFillGaps, visionInputWidth, cameraFeatherPx } = config;
-  const { cameraDepthWindowMs, cameraDepthDeadband, spectatorMargin, spectatorHoldMs } = config;
+  const { cameraDepthWindowMs, cameraDepthDeadband, spectatorMargin, spectatorHoldMs, spectatorReturnMs } = config;
+  const { playerScale, motionGain } = config;
   return useMemo(
     () => ({
       smoothing: visionSmoothing,
@@ -194,7 +213,8 @@ const useLoopSettings = (config: AppConfig): LoopSettings => {
       inputWidth: visionInputWidth,
       featherPx: cameraFeatherPx,
       position: { windowMs: cameraDepthWindowMs, deadband: cameraDepthDeadband },
-      spectators: { margin: spectatorMargin, holdMs: spectatorHoldMs },
+      spectators: { margin: spectatorMargin, holdMs: spectatorHoldMs, returnMs: spectatorReturnMs },
+      virtual: { playerScale, motionGain },
     }),
     [
       visionSmoothing,
@@ -207,6 +227,9 @@ const useLoopSettings = (config: AppConfig): LoopSettings => {
       cameraDepthDeadband,
       spectatorMargin,
       spectatorHoldMs,
+      spectatorReturnMs,
+      playerScale,
+      motionGain,
     ],
   );
 };
@@ -222,6 +245,9 @@ const DRAWING_SETTINGS = [
   "cameraDepthDeadband",
   "spectatorMargin",
   "spectatorHoldMs",
+  "spectatorReturnMs",
+  "playerScale",
+  "motionGain",
 ] as const;
 
 /** The config the model is made from, the same object while only {@link DRAWING_SETTINGS} change, so the model is kept. */
@@ -248,6 +274,35 @@ const statsReporter = (onStats?: (stats: FrameStats) => void) => {
     shownAt = now;
     onStats?.({ ...timing, ...frameQuality(frame) });
   };
+};
+
+/** Sizes the canvases to the video, and starts following people afresh at its width. */
+const sizeToVideo = (
+  video: HTMLVideoElement,
+  reference: HTMLCanvasElement,
+  canvases: PlayerCanvases,
+  registry: PlayerRegistry,
+) => {
+  reference.width = video.videoWidth;
+  reference.height = video.videoHeight;
+  canvases.resize();
+  registry.resetTracking(video.videoWidth);
+};
+
+/** Reports each person found at most every {@link STATS_INTERVAL_MS}, working them out only when it does. */
+const peopleReporter = (onPeople?: (people: PersonReadout[]) => void) => {
+  let shownAt = 0;
+  return (describe: () => PersonReadout[]) => {
+    const now = performance.now();
+    if (!onPeople || now - shownAt < STATS_INTERVAL_MS) return;
+    shownAt = now;
+    onPeople(describe());
+  };
+};
+
+/** Tells the game when a spectator returned to the floor away from where they left it. */
+const noteReturns = (watching: SpectatorReport, shown: ShownSpectators) => {
+  if (watching.returned.some(({ distance }) => distance > RETURN_DISTANCE)) shown.onReturnElsewhere?.();
 };
 
 /** A frame given to the model. */
@@ -367,20 +422,19 @@ const startTrackingLoop = (
     offScreenThreshold_percent,
     onPlayersChange,
     maskType,
-    settings: { smoothing, hold, fillGaps, inputWidth, featherPx, position, spectators },
+    settings: { smoothing, hold, fillGaps, inputWidth, featherPx, position, spectators, virtual },
     onStats,
+    onPeople,
     floor,
     shownSpectators,
   }: LoopHandlers,
 ): (() => void) => {
   const detections = videoDetections(model, video, inputWidth);
-  reference.width = video.videoWidth;
-  reference.height = video.videoHeight;
-  canvases.resize();
-  registry.resetTracking(video.videoWidth);
+  sizeToVideo(video, reference, canvases, registry);
   const positions = new PlayerPositions(position);
   const watch = new SpectatorWatch(spectators);
   const reportStats = statsReporter(onStats);
+  const reportPeople = peopleReporter(onPeople);
   const tracker = smoothing ? new PersonTracker(hold, fillGaps) : null;
 
   const reportAndDraw = (timestamp: number, detected: VisionFrame, inferenceEnd: number) => {
@@ -390,18 +444,19 @@ const startTrackingLoop = (
     // Only a floor has an outside to watch from
     const watching = sorted ? watch.update(where, detected.timestamp, registry.knownIds()) : NO_SPECTATORS;
     registry.setSpectators(watching.spectators);
-    if (watching.returned.some(({ distance }) => distance > RETURN_DISTANCE))
-      shownSpectators.current.onReturnElsewhere?.();
-    const playing = frames.interactive.people.filter(({ id }) => !watching.spectators.has(id));
-    const players = playersOf({ ...frames.interactive, people: playing }, where, offScreenThreshold_percent);
+    noteReturns(watching, shownSpectators.current);
+    const placed = placePlayers(frames.interactive, where, floor.current, virtual);
+    const playing = placed.frame.people.filter(({ id }) => !watching.spectators.has(id));
+    const players = playersOf({ ...placed.frame, people: playing }, placed.positions, offScreenThreshold_percent);
     const trackEnd = performance.now();
     onPlayersChange?.(players, timestamp);
+    reportPeople(() => describePeople(frames.drawn.people, where, watching, (id) => registry.numberOf(id)));
     const monitorEnd = performance.now();
     const drawnSpectators = { report: watching, settings: shownSpectators.current.settings, margin: spectators.margin };
     drawPlayers(
       video,
       frames,
-      { canvases, positions: where, sorted, players: registry, spectators: drawnSpectators },
+      { canvases, ...placed, sorted, floor: floor.current, players: registry, spectators: drawnSpectators },
       { maskType, featherPx },
     );
     reportStats(detected, timestamp, inferenceEnd, {
@@ -416,6 +471,34 @@ const startTrackingLoop = (
     stopDetecting();
     registry.resetTracking(reference.width);
     canvases.removeAllBut(registry.knownIds());
+  };
+};
+
+/** Each person found, as "P1 player (42, 87) off 0" or "spectator (50, 112) off 12 → player in 180 ms". */
+const PeopleReadout = ({ people }: { people: PersonReadout[] }) => (
+  <output
+    className="vision-people"
+    style={{ position: "absolute", top: "1.6em", left: 0, padding: "2px 6px", background: "#000a", color: "#fff" }}
+  >
+    {people.map(({ id, number, role, position, offBy, pendingMs }) => (
+      <div key={id} data-person-id={id} data-role={role} data-off-by={offBy.toFixed(1)}>
+        {number === undefined ? `#${id}` : `P${number}`} {role}
+        {position && ` (${position.x.toFixed(0)}, ${position.y.toFixed(0)})`} off {offBy.toFixed(1)}
+        {pendingMs !== undefined && ` → ${role === "spectator" ? "player" : "spectator"} in ${pendingMs.toFixed(0)} ms`}
+      </div>
+    ))}
+  </output>
+);
+
+/** The readouts shown over the canvas, and the loop's callbacks that fill them: none for a readout that's off. */
+const useReadouts = (showStats: boolean, showPeople: boolean) => {
+  const [stats, setStats] = useState<FrameStats | null>(null);
+  const [people, setPeople] = useState<PersonReadout[]>([]);
+  return {
+    stats: showStats ? stats : null,
+    people: showPeople ? people : null,
+    onStats: showStats ? setStats : undefined,
+    onPeople: showPeople ? setPeople : undefined,
   };
 };
 
@@ -450,6 +533,7 @@ export default function CharacterCanvas({
   style,
   maskType = "binary",
   showStats = false,
+  showPeople = false,
   floor,
   mirrored = false,
   ...loopProps
@@ -457,7 +541,7 @@ export default function CharacterCanvas({
   const config = useAppConfig();
   const model = useVisionModel(loopProps.mediaStream, useModelConfig(config));
   const settings = useLoopSettings(config);
-  const [stats, setStats] = useState<FrameStats | null>(null);
+  const { stats, people, onStats, onPeople } = useReadouts(showStats, showPeople);
   const internalCanvasRef = useRef<HTMLCanvasElement>(null);
   const canvas = canvasRef ?? internalCanvasRef;
   const canvasesRef = useRef<PlayerCanvases | null>(null);
@@ -470,13 +554,13 @@ export default function CharacterCanvas({
   useEffect(() => {
     const canvasElement = canvas.current;
     if (!model || !video || !mediaStream || !canvasElement) return;
-    const onStats = showStats ? setStats : undefined;
     const handlers = {
       offScreenThreshold_percent,
       onPlayersChange,
       maskType,
       settings,
       onStats,
+      onPeople,
       floor: floorRef,
       shownSpectators: spectatorsRef,
     };
@@ -492,7 +576,8 @@ export default function CharacterCanvas({
     offScreenThreshold_percent,
     maskType,
     settings,
-    showStats,
+    onStats,
+    onPeople,
     floorRef,
     spectatorsRef,
   ]);
@@ -500,7 +585,8 @@ export default function CharacterCanvas({
   return (
     <>
       <canvas ref={canvas} className={className} style={style} />
-      {showStats && stats && <FrameStatsReadout stats={stats} />}
+      {stats && <FrameStatsReadout stats={stats} />}
+      {people && <PeopleReadout people={people} />}
     </>
   );
 }

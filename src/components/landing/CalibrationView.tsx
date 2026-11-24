@@ -3,7 +3,16 @@ import { useNavigate } from "react-router";
 import { isDefined } from "../../util/ObjectUtils";
 import { sizeOf } from "../camera/CameraChoice";
 import CharacterCanvas from "../camera/CharacterCanvas";
-import { calibrationOrDefault, cameraKeyOf, loadCalibration, saveCalibration } from "../camera/FloorCalibration";
+import {
+  calibrationOrDefault,
+  cameraKeyOf,
+  loadCalibration,
+  loadFloorSize,
+  saveCalibration,
+  saveFloorSize,
+} from "../camera/FloorCalibration";
+import { floorSizeOfText, textOfFloorSize, type FloorSize } from "../camera/FloorSize";
+import FloorSizeFields from "./FloorSizeFields";
 import {
   CORNER_NAMES,
   DEFAULT_CORNERS,
@@ -26,7 +35,7 @@ import { useCameraPicker } from "./useCameraPicker";
 
 /** The steps shown to the player, in order. */
 const STEPS = [
-  "Drag each blue corner to a corner of the space you can walk around in.",
+  "Mark a rectangle on the floor to walk around in, then drag each blue corner onto one of its corners.",
   "Walk to each corner. Your feet should stay green.",
   "Press Save and close when it fits.",
 ];
@@ -104,8 +113,35 @@ function CornerHandles({
   ));
 }
 
-/** The chosen camera's corners as they are being changed, what is saved, and how far through the steps the player is. */
+/** Whether two floor sizes are the same, or both absent. */
+const sameSize = (a: FloorSize | undefined, b: FloorSize | undefined): boolean =>
+  a?.width === b?.width && a?.depth === b?.depth;
+
+/** The floor's measured size as it is being typed, and what is saved. */
+function useFloorSize(cameraKey: string) {
+  const [saved, setSaved] = useState(() => loadFloorSize(cameraKey));
+  const [text, setText] = useState(() => textOfFloorSize(saved));
+  const size = floorSizeOfText(text);
+  return {
+    text,
+    setText,
+    invalid: size === "invalid",
+    unsaved: size !== "invalid" && !sameSize(size, saved),
+    /** @returns whether the size was saved */
+    save: () => size !== "invalid" && saveFloorSize(cameraKey, size),
+    cleared: () => {
+      setSaved(undefined);
+      setText(textOfFloorSize(undefined));
+    },
+  };
+}
+
+/**
+ * The chosen camera's corners and floor size as they are being changed, what is saved, and how far through the steps
+ * the player is.
+ */
 function useCalibration(cameraKey: string, players: PlayerFrame[]) {
+  const floorSize = useFloorSize(cameraKey);
   const [corners, setCorners] = useState(() => calibrationOrDefault(cameraKey));
   const [saved, setSaved] = useState(() => loadCalibration(cameraKey));
   const [moved, setMoved] = useState(false);
@@ -116,8 +152,9 @@ function useCalibration(cameraKey: string, players: PlayerFrame[]) {
   if (moved && !seenOnFloor && people.length === 1 && feetOnFloor(people[0], corners)) setSeenOnFloor(true);
   return {
     corners,
+    floorSize,
     // An uncalibrated configuration starts on the default corners, which aren't saved yet
-    unsaved: !sameCorners(corners, saved),
+    unsaved: !sameCorners(corners, saved) || floorSize.unsaved,
     onePerson,
     step: !moved ? 0 : !seenOnFloor ? 1 : 2,
     move: (name: CornerName, to: { x: number; y: number }) => {
@@ -125,9 +162,12 @@ function useCalibration(cameraKey: string, players: PlayerFrame[]) {
       setMoved(true);
     },
     reset: () => setCorners(DEFAULT_CORNERS),
-    /** @returns whether the corners were saved */
-    save: () => saveCalibration(cameraKey, corners),
-    cleared: () => setSaved(undefined),
+    /** @returns whether the corners and floor size were saved */
+    save: () => saveCalibration(cameraKey, corners) && floorSize.save(),
+    cleared: () => {
+      setSaved(undefined);
+      floorSize.cleared();
+    },
   };
 }
 
@@ -213,7 +253,7 @@ export default function CalibrationView({ backTo, title, style }: CalibrationVie
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
   const [players, setPlayers] = useState<PlayerFrame[]>([]);
   const calibration = useCalibration(cameraKeyOf(choice), players);
-  const { corners, onePerson, unsaved } = calibration;
+  const { corners, onePerson, unsaved, floorSize } = calibration;
   const label = cameras.find(({ deviceId }) => deviceId === activeDeviceId)?.label ?? "";
 
   // Share the video with the tracking once it exists, as the game's camera does
@@ -250,13 +290,14 @@ export default function CalibrationView({ backTo, title, style }: CalibrationVie
             </div>
             <PictureWarnings warnings={onePerson ? [] : ["Only one person should be in view to calibrate"]} />
           </div>
+          <FloorSizeFields text={floorSize.text} invalid={floorSize.invalid} onChange={floorSize.setText} />
         </section>
       </div>
       <div hidden>
         <CharacterCanvas video={video} mediaStream={stream} onPlayersChange={setPlayers} />
       </div>
       <CalibrationBar
-        canSave={onePerson}
+        canSave={onePerson && !floorSize.invalid}
         onClose={close}
         onReset={calibration.reset}
         onCleared={calibration.cleared}

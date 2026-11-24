@@ -48,6 +48,8 @@ export interface VisionPerson {
    * frame). Drawing only: interactions use `mask`.
    */
   filled?: Uint8Array;
+  /** The stray patches removed from the person's pixels, if there were any, for the debug view to show. */
+  strays?: Uint8Array;
 }
 
 /**

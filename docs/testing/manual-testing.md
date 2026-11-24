@@ -400,3 +400,26 @@ What the suite proves:
 The suite does not prove that a physical camera works, that a real player's body is segmented
 accurately, or that the model download succeeds on every network. Cover those with the manual
 checks above.
+
+## Fixtures from recordings
+
+A debug recording (see [camera mode](../camera-mode.md)) can become a vision test fixture, so a fix is measured
+against real footage rather than judged by eye. Unzip the recording, then run BodyPix on the stretches that show the
+problem (it runs on the CPU, at about a second a frame, and needs ffmpeg):
+
+```sh
+node scripts/recording-fixture.ts <unzipped recording> tests/data/recordings/<name>.json 20.9-23 43-46
+```
+
+Each frame keeps BodyPix's hand pixels, with their labels, and its pose wrists. `tests/RecordedHands.test.ts` scores
+hand-finding on them; its thresholds sit just below what the current code achieves, so a change that does worse
+fails.
+
+Tracking and positions need no model: the recording already holds what the model found. This keeps each frame's
+people, cut down to their outline's size, centre and ground point:
+
+```sh
+RECORDING=<unzipped recording> FIXTURE=tests/data/recordings/<name>-tracking.json npx vitest run tests/tools
+```
+
+`tests/RecordedTracking.test.ts` replays such fixtures through the depth follower and the tracker. Session write-ups in `sessions/` say which recordings exist and what each shows.

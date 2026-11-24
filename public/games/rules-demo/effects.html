@@ -1,17 +1,17 @@
-<div class="noClicks demo-screen">
+<div class="noClicks demo-screen" style="--metre: calc(1cqw * {{scale.metre}})">
   <div class="horizon-background demo-horizon"></div>
   <div class="floor-background demo-ground"></div>
   <!-- The floor is a solid slab with a border; the tiles on it leave lanes to walk around and between -->
   <div class="effects-floor" data-floor-area="0 0 100 100"></div>
   <p id="effects-message" class="demo-score effects-message">{{state.message}}{{#if state.fell}} · Player {{state.fell}} fell{{/if}} · {{game.players.active}} playing, {{game.players.removed}} gone, {{game.players.frozen}} frozen</p>
 
-  <!-- Floating items to wave a hand into, in a band across the upper scene -->
-  <div id="rock" class="effects-item" style="left: 4cqw; top: 28cqh">Quake</div>
-  <div id="crate" class="effects-item" style="left: 20cqw; top: 28cqh">Fall</div>
-  <div id="lift" class="effects-item" style="left: 36cqw; top: 28cqh">Move</div>
-  <div id="lamp" class="effects-item" style="left: 52cqw; top: 28cqh">Lamp</div>
-  <div id="bridge" class="effects-item" style="left: 68cqw; top: 28cqh">Delay</div>
-  <div id="prize" class="effects-item" style="left: 84cqw; top: 28cqh">Reward</div>
+  <!-- Floating items to wave a hand into, at waist height in a row between the tiles -->
+  <div id="rock" class="effects-item" data-floor-x="8" data-floor-y="39" data-floor-height="{{scale.waist}}">Quake</div>
+  <div id="crate" class="effects-item" data-floor-x="24" data-floor-y="39" data-floor-height="{{scale.waist}}">Fall</div>
+  <div id="lift" class="effects-item" data-floor-x="40" data-floor-y="39" data-floor-height="{{scale.waist}}">Move</div>
+  <div id="lamp" class="effects-item" data-floor-x="56" data-floor-y="39" data-floor-height="{{scale.waist}}">Lamp</div>
+  <div id="bridge" class="effects-item" data-floor-x="72" data-floor-y="39" data-floor-height="{{scale.waist}}">Delay</div>
+  <div id="prize" class="effects-item" data-floor-x="88" data-floor-y="39" data-floor-height="{{scale.waist}}">Reward</div>
 
   <!-- Tiles to walk onto, three across and two deep, clear of Start at the front left -->
   <div class="effects-tile pit" data-floor-area="10 14 28 32">Pit</div>

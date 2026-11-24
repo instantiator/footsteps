@@ -248,6 +248,30 @@ for (const screen of [
   });
 }
 
+test("lists each person when debugging: player or spectator, where they stand, and how far off the floor", async ({
+  page,
+}) => {
+  await openWalkAround(page, { query: "?debug=true" });
+  const person = page.locator("output.vision-people [data-person-id]").first();
+  await expect(person).toBeAttached({ timeout: MODEL_TIMEOUT });
+  await expect(person).toHaveAttribute("data-role", /^(player|spectator|held)$/);
+  await expect(person).toHaveText(/^(P\d+|#\d+) (player|spectator|held)( \(-?\d+, -?\d+\))? off [\d.]+/);
+});
+
+/** The first player's own canvas, which the spike moves and shrinks. */
+const playerCanvas = (page: Page) => page.locator("#character-canvas-container .player canvas").first();
+
+test("draws players smaller and moves them further with the playerScale and motionGain spike", async ({ page }) => {
+  await openWalkAround(page, { query: "playerScale=0.5&motionGain=2" });
+  await expect(playerCanvas(page)).toHaveCSS("transform", /^matrix\(0\.[1-6]/, { timeout: MODEL_TIMEOUT });
+});
+
+test("draws players life-size where they stand without the spike", async ({ page }) => {
+  await openWalkAround(page);
+  await expect(playerCanvas(page)).toBeAttached({ timeout: MODEL_TIMEOUT });
+  await expect(playerCanvas(page)).toHaveCSS("transform", "none");
+});
+
 test("outlines the floor, shades what's off it, and marks the player's feet when debugging", async ({ page }) => {
   await openWalkAround(page, { query: "?debug=true" });
   const overlay = page.locator("#debug-overlay-container");

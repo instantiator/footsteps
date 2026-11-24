@@ -4,7 +4,13 @@ import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CameraChoice } from "../src/components/camera/CameraChoice";
 import type CharacterCanvas from "../src/components/camera/CharacterCanvas";
-import { cameraKeyOf, loadCalibration, saveCalibration } from "../src/components/camera/FloorCalibration";
+import {
+  cameraKeyOf,
+  loadCalibration,
+  loadFloorSize,
+  saveCalibration,
+  saveFloorSize,
+} from "../src/components/camera/FloorCalibration";
 import { DEFAULT_CORNERS, isValidFloor, type Corners } from "../src/components/camera/FloorGeometry";
 import type { PlayerFrame } from "../src/components/camera/PlayerMonitor";
 import CalibrationView from "../src/components/landing/CalibrationView";
@@ -87,7 +93,7 @@ describe("CalibrationView", () => {
       .filter((button) => button.classList.contains("calibration-corner"))
       .map((button) => button.getAttribute("aria-label"));
     expect(names).toEqual(["Back left corner", "Back right corner", "Front right corner", "Front left corner"]);
-    expect(screen.getByText(/Drag each blue corner/).closest("li")).toHaveAttribute("aria-current", "step");
+    expect(screen.getByText(/Mark a rectangle on the floor/).closest("li")).toHaveAttribute("aria-current", "step");
   });
 
   it("names the corners from the picture's side when it is mirrored", () => {
@@ -185,6 +191,32 @@ describe("CalibrationView", () => {
     expect(loadCalibration(cameraKeyOf({ deviceId: "rear" }))?.backLeft.x).toBeCloseTo(0.24, 6);
     expect(loadCalibration(cameraKeyOf({}))).toBeUndefined();
     expect(screen.getByText("The landing page")).toBeInTheDocument();
+  });
+
+  it("saves the floor's measured size with the corners, and leaves it unsaved until then", () => {
+    saveCalibration(cameraKeyOf({}), DEFAULT_CORNERS);
+    renderView();
+    expect(heading()).not.toHaveTextContent(/\*$/);
+    fireEvent.change(screen.getByLabelText(/Width/), { target: { value: "3.5" } });
+    fireEvent.change(screen.getByLabelText(/Depth/), { target: { value: "2.5" } });
+    expect(heading()).toHaveTextContent(/\*$/);
+
+    fireEvent.click(screen.getByRole("button", { name: "Save and close" }));
+    expect(loadFloorSize(cameraKeyOf({}))).toEqual({ width: 3.5, depth: 2.5 });
+  });
+
+  it("won't save half a floor size, and shows a saved one to change", () => {
+    saveFloorSize(cameraKeyOf({}), { width: 3, depth: 2 });
+    renderView();
+    expect(screen.getByLabelText(/Width/)).toHaveValue(3);
+    fireEvent.change(screen.getByLabelText(/Depth/), { target: { value: "" } });
+    expect(screen.getByRole("alert")).toHaveTextContent(/Enter both/);
+    expect(screen.getByRole("button", { name: "Save and close" })).toBeDisabled();
+  });
+
+  it("reminds the player that the playing area must be a rectangle", () => {
+    renderView();
+    expect(screen.getByRole("group", { name: /Floor size/ })).toHaveTextContent(/must be a rectangle/);
   });
 
   it("closes without asking when nothing is unsaved", () => {

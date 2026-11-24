@@ -1,15 +1,19 @@
-<div class="noClicks demo-screen">
+<!-- Sized for a person (see docs/positions-sizes-units.md): two long pits, a stride deep, make a zig-zag path to the door -->
+<div class="noClicks demo-screen" style="--metre: calc(1cqw * {{scale.metre}})">
   <div class="horizon-background demo-horizon"></div>
   <div class="floor-background demo-ground"></div>
   <div class="demo-pits-floor" data-floor-area="0 0 100 100"></div>
-  <div id="pit-1" class="pit" data-floor-area="10 44 34 70"></div>
-  <div id="pit-2" class="pit" data-floor-area="56 60 80 86"></div>
-  <div id="pit-3" class="pit" data-floor-area="34 12 58 38"></div>
-  <!-- Warning signs beside the pits: placement owns the outer element, so each lean is a rotate on the inner one -->
-  <div class="pit-sign" data-floor-x="8" data-floor-y="72" data-floor-height="9"><div class="pit-sign-lean" style="rotate: -8deg"><div class="pit-sign-board">&#9760;</div></div></div>
-  <div class="pit-sign" data-floor-x="84" data-floor-y="88" data-floor-height="9"><div class="pit-sign-lean" style="rotate: 5deg"><div class="pit-sign-board">&#9760;</div></div></div>
-  <div class="pit-sign" data-floor-x="30" data-floor-y="36" data-floor-height="9"><div class="pit-sign-lean" style="rotate: -3deg"><div class="pit-sign-board">&#9760;</div></div></div>
-  <div id="start" class="demo-start">Start</div>
-  <div id="door" class="pits-door" data-floor-x="88" data-floor-y="8"><div id="door-base" class="pits-door-base"></div></div>
+  <!-- Where the shared reset's Start cell was: a soft glow on the floor, so the player sees where they set off from -->
+  <div id="start" class="pits-start" data-floor-area="0 80 20 100"></div>
+  <div id="pit-1" class="pit" data-floor-area="0 60 70 80"></div>
+  <div id="pit-2" class="pit" data-floor-area="30 24 100 44"></div>
+  <!-- The door stands at the very back, in the corner; standing in front of it or beside it opens it, as does a hand
+       or foot on it from close by. It comes first, so the nearer signs are drawn over it -->
+  <div id="door-mat" class="door-area" data-floor-area="52 -6 106 16"></div>
+  <div id="door" class="pits-door" data-floor-x="82" data-floor-y="2" data-floor-thickness="24" role="button" tabindex="0"></div>
+  <!-- Warning signs at the pits' far ends, out of the path, waist high: placement owns the outer element, so each
+       lean is a rotate on the inner one -->
+  <div class="pit-sign" data-floor-x="3" data-floor-y="57"><div class="pit-sign-lean" style="rotate: -6deg"><div class="pit-sign-board">&#9760;</div></div></div>
+  <div class="pit-sign" data-floor-x="97" data-floor-y="47"><div class="pit-sign-lean" style="rotate: 5deg"><div class="pit-sign-board">&#9760;</div></div></div>
   <p id="pits-message" class="demo-score">Reach the door without falling into a pit.</p>
 </div>

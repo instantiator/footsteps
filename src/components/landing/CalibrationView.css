@@ -54,6 +54,33 @@
   padding-left: 1.5rem;
 }
 
+/* The optional floor size, in a row under the picture: its measurements, then the rectangle reminder */
+.calibration-size {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  border: none;
+}
+
+.calibration-size legend {
+  float: left;
+  padding: 0;
+  font-weight: bold;
+}
+
+.calibration-size p {
+  margin: 0;
+}
+
+.calibration-size input {
+  width: 4em;
+  margin: 0 0.25em;
+  font: inherit;
+}
+
 /* Takes the column's height, and scrolls only when the picture is at its smallest */
 .calibration-panel {
   min-height: 0;
@@ -105,7 +132,7 @@
 .calibration-picture video {
   display: block;
   max-width: 100%;
-  max-height: max(14rem, calc(100dvh - 12rem));
+  max-height: max(14rem, calc(100dvh - 15rem));
   border-radius: 0.4rem;
   background: #22303c;
 }

@@ -1,5 +1,6 @@
 import type { Point, VisionFrame } from "../../vision/VisionTypes";
-import { screenFloorForImage, type Corners } from "./FloorGeometry";
+import { imageForScreenFloor, screenFloorForImage, type Corners } from "./FloorGeometry";
+import type { PlacementFloor } from "./VirtualPlayers";
 
 /** How far a player's silhouette may go below their ground point, as a fraction of it; ignores stray pixels. */
 const GROUND_STRAY_FRACTION = 0.01;
@@ -71,6 +72,21 @@ export const groundPointOf = (mask: Uint8Array, width: number): Point | null => 
   return null;
 };
 
+/**
+ * How low in the window's ground points a player's depth is taken from (0–1): near the lowest, so a jump, whose points
+ * are higher, doesn't move them, but short of it, so one stray low point can't hold them nearer for the whole window.
+ */
+const DEPTH_PERCENTILE = 0.8;
+
+/**
+ * The value at a percentile of some numbers (0 the smallest, 1 the largest), rounding towards the largest, so a few
+ * numbers give their largest and only a full window can leave its largest out.
+ */
+const percentile = (values: number[], at: number): number => {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.ceil(at * (sorted.length - 1))];
+};
+
 /** Follows one player's ground point, smoothed into a position that jumps and jitter don't change. */
 export class PositionFollower {
   private readonly settings: PositionSettings;
@@ -85,14 +101,18 @@ export class PositionFollower {
    * Takes a new ground point.
    * @param ground the ground point, as percentages of the frame
    * @param timestamp when it was seen, in milliseconds
-   * @returns the player's ground point: coming nearer shows at once, and moving away only after the window has passed.
+   * @returns the player's ground point: coming nearer shows once most of the window agrees, and moving away only after
+   * the window has passed.
    * Moving across shows while they are on the ground, so a jump holds where they took off from.
    */
   update(ground: Point, timestamp: number): Point {
     const { windowMs, deadband } = this.settings;
     this.samples = this.samples.filter((sample) => timestamp - sample.timestamp < windowMs);
     this.samples.push({ timestamp, y: ground.y });
-    const lowest = Math.max(...this.samples.map((sample) => sample.y));
+    const lowest = percentile(
+      this.samples.map((sample) => sample.y),
+      DEPTH_PERCENTILE,
+    );
     const last = this.position ?? ground;
     const y = this.position === undefined || Math.abs(lowest - last.y) > deadband ? lowest : last.y;
     const grounded = Math.abs(ground.y - y) <= deadband;
@@ -170,9 +190,29 @@ export class PlayerPositions {
 export const depthZIndex = (depth: number): number =>
   DEPTH_Z_INDEX_BASE + Math.round(Math.min(Math.max(depth, 0), 100));
 
-/** Draws a player's ground point's height as a line across their canvas, for debugging. */
-export const drawDepthLine = (ctx: CanvasRenderingContext2D, ground: number): void => {
+/**
+ * The line of a player's depth, in image fractions: from the floor's left edge to its right through their ground
+ * point (a percentage of the frame), so it follows the floor's slope; without a floor, level across the frame.
+ */
+export const depthLineOf = (ground: Point, { corners, mirrored }: PlacementFloor): [from: Point, to: Point] => {
+  const image = { x: ground.x / 100, y: ground.y / 100 };
+  if (!corners)
+    return [
+      { ...image, x: 0 },
+      { ...image, x: 1 },
+    ];
+  const { y } = screenFloorForImage(corners, image, mirrored);
+  return [imageForScreenFloor(corners, { x: 0, y }, mirrored), imageForScreenFloor(corners, { x: 100, y }, mirrored)];
+};
+
+/** Draws a player's depth line (see {@link depthLineOf}) across their canvas, for debugging. */
+export const drawDepthLine = (ctx: CanvasRenderingContext2D, ground: Point, floor: PlacementFloor): void => {
   const { width, height } = ctx.canvas;
-  ctx.fillStyle = "lime";
-  ctx.fillRect(0, (height * ground) / 100 - 1, width, 3);
+  const [from, to] = depthLineOf(ground, floor);
+  ctx.strokeStyle = "lime";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(from.x * width, from.y * height);
+  ctx.lineTo(to.x * width, to.y * height);
+  ctx.stroke();
 };

@@ -51,14 +51,14 @@ describe("personFromParts", () => {
   it("places hands and feet at the centre of their pixels, and leaves missing ones unplaced", () => {
     const { keyPoints } = personFromParts(
       0,
-      segmentation(10, 10, [
-        [2, 2, LEFT_HAND],
-        [4, 4, LEFT_HAND],
-        [7, 9, RIGHT_FOOT],
+      segmentation(100, 100, [
+        [20, 20, LEFT_HAND],
+        [24, 24, LEFT_HAND],
+        [70, 90, RIGHT_FOOT],
       ]),
     );
-    expect(keyPoints.leftHand).toEqual({ x: 3, y: 3 });
-    expect(keyPoints.rightFoot).toEqual({ x: 7, y: 9 });
+    expect(keyPoints.leftHand).toEqual({ x: 22, y: 22 });
+    expect(keyPoints.rightFoot).toEqual({ x: 70, y: 90 });
     expect(keyPoints.rightHand).toBeNull();
     expect(keyPoints.leftFoot).toBeNull();
   });

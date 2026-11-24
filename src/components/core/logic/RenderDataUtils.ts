@@ -23,6 +23,7 @@ import { avatarOver } from "./AvatarModeUtils";
 import { resetSceneOf } from "./NamedResets";
 import { sceneRun, getActiveStageStateChallenges, getStageState } from "./GameStateUtils";
 import { decorateGameState, type DecoratedGameState } from "./TemplateUtils";
+import { DEFAULT_FLOOR_SIZE, floorScale, type FloorScale } from "../../camera/FloorSize";
 
 /** Whether the game is showing its overview, or a stage (and its challenges). */
 export type GameRenderMode = "overview" | "stage";
@@ -69,6 +70,8 @@ export interface GameTemplateData {
   game: GameSnapshot;
   /** Resolved resource URLs, by resource name. */
   resources: Record<string, string>;
+  /** Person-scale sizes in floor units, for the chosen camera's floor: `{{scale.door}}` is a door's height. */
+  scale: FloorScale;
   /** Only set for challenge scenes. */
   challenge: GameChallengeData | undefined;
   /** Only set for challenge scenes. */
@@ -236,7 +239,7 @@ export const getShownScenes = (state: GameState): ShownScene[] =>
   });
 
 /** The template values every scene shares, worked out once per render. */
-type SharedTemplateData = Pick<GameTemplateData, "gameState" | "game" | "resources">;
+type SharedTemplateData = Pick<GameTemplateData, "gameState" | "game" | "resources" | "scale">;
 
 /** A scene's template data: the shared values, plus its own data, state and challenge. */
 const templateDataFor = (
@@ -253,13 +256,17 @@ const templateDataFor = (
   challengeState,
 });
 
-/** Gathers the render data for every layer of the current scene. */
+/**
+ * Gathers the render data for every layer of the current scene.
+ * @param scale the person-scale sizes templates are given; the default floor's unless measured
+ */
 export const getLayeredRenderData = (
   state: GameState,
   resources: Record<string, string>,
   gameId: GameId,
+  scale: FloorScale = floorScale(DEFAULT_FLOOR_SIZE),
 ): LayeredGameSceneRenderData => {
-  const shared = { gameState: decorateGameState(state), game: toGameSnapshot(gameId, state), resources };
+  const shared = { gameState: decorateGameState(state), game: toGameSnapshot(gameId, state), resources, scale };
   return {
     overviewRenderData: getOverviewRenderData(state, shared),
     stageRenderData: getStageSceneRenderData(state, shared),

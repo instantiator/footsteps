@@ -21,6 +21,10 @@ export interface AppConfig {
   visionSmoothing: boolean;
   /** Frames a body part must stay over an element before the interaction counts. */
   visionStableFrames: number;
+  /** The smallest separate patch of a person's pixels kept beside their body, as a share of the body's pixels. */
+  visionBlobMinShare: number;
+  /** The furthest a separate patch of a person's pixels may be from their body and be kept, as a share of the frame's width. */
+  visionBlobMaxGap: number;
   /** The widest frame the model is given, in pixels; wider camera frames are scaled down first. 0 gives every frame at full size. */
   visionInputWidth: number;
   /** The camera resolution to ask for; the camera may give something else. */
@@ -41,8 +45,14 @@ export interface AppConfig {
   cameraDepthDeadband: number;
   /** How far outside the floor someone must stand to be a spectator rather than a player, in floor units. */
   spectatorMargin: number;
-  /** How long someone must stay off the floor to become a spectator, or on it to play again, in milliseconds. */
+  /** How long someone must be mostly off the floor to become a spectator, in milliseconds. */
   spectatorHoldMs: number;
+  /** How long a spectator must be mostly back on the floor to play again, in milliseconds. */
+  spectatorReturnMs: number;
+  /** A spike: how big players are drawn, compared with life (1), so the set looks bigger. */
+  playerScale: number;
+  /** A spike: how far a player moves from the floor's centre, compared with how far they walk (1). */
+  motionGain: number;
   /** The grid players' positions are rounded to for rules and templates: the size of a cell, in position units. */
   positionCellSize: number;
   /** The most times a second players' positions reach rules and templates. */
@@ -86,6 +96,8 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   visionMaxPeople: 4,
   visionSmoothing: true,
   visionStableFrames: 2,
+  visionBlobMinShare: 0.002,
+  visionBlobMaxGap: 0.1,
   visionInputWidth: 960,
   cameraWidth: 1280,
   cameraHeight: 720,
@@ -93,10 +105,13 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   cameraHoldMs: 400,
   cameraFadeMs: 300,
   cameraFillGaps: false,
-  cameraDepthWindowMs: 700,
-  cameraDepthDeadband: 2,
+  cameraDepthWindowMs: 300,
+  cameraDepthDeadband: 1,
   spectatorMargin: 5,
   spectatorHoldMs: 1000,
+  spectatorReturnMs: 300,
+  playerScale: 1,
+  motionGain: 1,
   positionCellSize: 5,
   positionUpdatesPerSecond: 10,
   jumpMinRise: 0.04,
@@ -134,6 +149,14 @@ const fraction: Parser<number> = (raw) => {
   return raw.trim() !== "" && value >= 0 && value <= 1 ? value : undefined;
 };
 
+/** A number from `min` to `max`. */
+const between =
+  (min: number, max: number): Parser<number> =>
+  (raw) => {
+    const value = Number(raw);
+    return raw.trim() !== "" && value >= min && value <= max ? value : undefined;
+  };
+
 /** One of the given values, compared as text. */
 const oneOf =
   <T extends string | number>(...values: readonly T[]): Parser<T> =>
@@ -151,6 +174,8 @@ const PARSERS: { [K in keyof AppConfig]: Parser<AppConfig[K]> } = {
   visionMaxPeople: int(1),
   visionSmoothing: bool,
   visionStableFrames: int(1),
+  visionBlobMinShare: fraction,
+  visionBlobMaxGap: fraction,
   visionInputWidth: int(0),
   cameraWidth: int(1),
   cameraHeight: int(1),
@@ -162,6 +187,9 @@ const PARSERS: { [K in keyof AppConfig]: Parser<AppConfig[K]> } = {
   cameraDepthDeadband: int(0),
   spectatorMargin: int(0),
   spectatorHoldMs: int(0),
+  spectatorReturnMs: int(0),
+  playerScale: between(0.2, 2),
+  motionGain: between(0.5, 4),
   positionCellSize: int(1),
   positionUpdatesPerSecond: int(1),
   jumpMinRise: fraction,

@@ -8,6 +8,7 @@ import { decorateGameState } from "../src/components/core/logic/TemplateUtils";
 import { SMALL_GAME_ID, smallRepository } from "./data/SmallGame";
 import { simpleGameState } from "./data/SampleGameState";
 import GameProviders from "./helpers/GameProviders";
+import { DEFAULT_FLOOR_SIZE, floorScale } from "../src/components/camera/FloorSize";
 
 const renderScene = (
   component: GameSceneComponentData,
@@ -26,6 +27,7 @@ const renderScene = (
       data: {},
       state: {},
       resources,
+      scale: floorScale(DEFAULT_FLOOR_SIZE),
       challenge: undefined,
       challengeState: undefined,
     },

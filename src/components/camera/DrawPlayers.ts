@@ -7,6 +7,7 @@ import type { PlayerFrames, PlayerRegistry } from "./PlayerRegistry";
 import type { StaticLook } from "./PlayerStatic";
 import type { SpectatorReport } from "./Spectators";
 import type { GameSpectatorLook, GameSpectatorsData } from "../../entities/data/scenes/GameSpectatorsData";
+import { placementStyle, type Placement, type PlacementFloor } from "./VirtualPlayers";
 
 /** How spectators are drawn this frame. */
 export interface DrawnSpectators {
@@ -128,13 +129,26 @@ const drawPlayerImage = (
 interface DrawnPositions {
   /** Each player's position, by id. */
   positions: Map<number, PlayerPosition>;
+  /** Where each player's cut-out is moved to, by id, when they are drawn other than life-size (a spike). */
+  placements?: Map<number, Placement>;
   /** Whether players sort among the foreground, as they do on a floor. */
   sorted: boolean;
+  /** The floor, which the debug depth line follows. */
+  floor: PlacementFloor;
 }
 
-/** Sorts a player to their floor depth. Unsorted, they keep the reference's z-index, as their wrapper was made with. */
-const sortPlayer = (wrapper: HTMLElement, where: PlayerPosition | undefined) => {
-  if (where) wrapper.style.zIndex = String(depthZIndex(where.position.y));
+/**
+ * Sorts a player to their floor depth on a floor, and moves their cut-out to its placement, if it has one. Unsorted,
+ * they keep the reference's z-index, as their wrapper was made with.
+ */
+const arrangePlayer = (
+  { wrapper, canvas }: PlayerCanvas,
+  where: PlayerPosition | undefined,
+  placement: Placement | undefined,
+  sorted: boolean,
+) => {
+  if (sorted && where) wrapper.style.zIndex = String(depthZIndex(where.position.y));
+  Object.assign(canvas.style, placementStyle(placement));
 };
 
 /**
@@ -148,9 +162,11 @@ export const drawPlayers = (
   {
     canvases,
     positions,
+    placements,
     sorted,
     players,
     spectators,
+    floor,
   }: DrawnPositions & { canvases: PlayerCanvases; players: PlayerRegistry; spectators: DrawnSpectators },
   style: DrawStyle,
 ) => {
@@ -161,7 +177,7 @@ export const drawPlayers = (
     const { hidden, look: spectatorLook } = showSpectator(wrapper, id, spectators, debugging);
     if (hidden) return;
     const where = positions.get(id);
-    if (sorted) sortPlayer(wrapper, where);
+    arrangePlayer(player, where, placements?.get(id), sorted);
     if (id !== undefined) namePlayer(wrapper, players.numberOf(id));
     // The 2D context is missing in some environments (eg. tests); the reports above still happen
     const ctx = canvas.getContext("2d");
@@ -169,7 +185,7 @@ export const drawPlayers = (
     const look = staticNow(players, id) ?? spectatorLook;
     const frozen = frozenIds.has(id);
     drawPlayerImage(player, ctx, { look, frozen, draw: (onto) => drawPeople(video, playerFrame, onto, style) });
-    if (!frozen && debugging && where) drawDepthLine(ctx, where.ground.y);
+    if (!frozen && debugging && where) drawDepthLine(ctx, where.ground, floor);
   };
   canvases.draw(frame, drawOne, knownIds);
 };

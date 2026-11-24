@@ -9,6 +9,8 @@ import type GameLayersLayout from "../src/components/core/layout/GameLayersLayou
 import { completeChallenge, startSceneRuns } from "../src/components/core/logic/GameStateUtils";
 import { createBlankGameState } from "../src/entities/state/GameState";
 import { saveGameState } from "../src/entities/state/GameStateStorage";
+import { loadCameraChoice } from "../src/components/camera/CameraChoice";
+import { cameraKeyOf, saveFloorSize } from "../src/components/camera/FloorCalibration";
 import { SMALL_GAME_ID, smallGame, smallRepository } from "./data/SmallGame";
 import GameProviders from "./helpers/GameProviders";
 import { stubMediaPlayback } from "./helpers/media";
@@ -655,5 +657,34 @@ describe("Game sounds and reward", () => {
     answer("trifle");
 
     await waitFor(() => expect(sentinel.released).toBe(true));
+  });
+});
+
+describe("Game's person-scale sizes", () => {
+  /** Renders the small game's overview with a template that shows a door's height in floor units. */
+  const renderDoorHeight = () => {
+    const data: GameData = structuredClone(smallGame);
+    data.scenes[0].component.foregroundTemplate = {
+      sourceType: "embedded",
+      content: '<p id="door">{{scale.door}}</p>',
+    };
+    render(
+      <GameProviders repository={{ games: { [SMALL_GAME_ID]: data } }} gameId={SMALL_GAME_ID}>
+        <Game />
+      </GameProviders>,
+    );
+  };
+  afterEach(() => localStorage.clear());
+
+  it("gives templates sizes for the default floor when nobody has measured it", async () => {
+    renderDoorHeight();
+    // A 2 m door on a 2.6 m wide floor
+    await vi.waitFor(() => expect(document.getElementById("door")).toHaveTextContent("76.9"));
+  });
+
+  it("gives templates sizes for the chosen camera's measured floor", async () => {
+    saveFloorSize(cameraKeyOf(loadCameraChoice()), { width: 4, depth: 3 });
+    renderDoorHeight();
+    await vi.waitFor(() => expect(document.getElementById("door")).toHaveTextContent("50"));
   });
 });

@@ -8,7 +8,10 @@ let model: FootstepsVisionModelImplementation | undefined;
 
 /** Sends a response, handing over the masks' buffers rather than copying them. */
 const respond = (response: VisionWorkerResponse) => {
-  const transfer = response.type === "frame" ? response.frame.people.map(({ mask }) => mask.buffer) : [];
+  const transfer =
+    response.type === "frame"
+      ? response.frame.people.flatMap(({ mask, strays }) => (strays ? [mask.buffer, strays.buffer] : [mask.buffer]))
+      : [];
   self.postMessage(response, transfer);
 };
 

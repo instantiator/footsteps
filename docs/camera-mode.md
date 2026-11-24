@@ -143,6 +143,12 @@ isn't known, at that size, starts on the generic webcam. The page shows the floo
 (and where the picture's centre meets the floor), the margins left over, and an isometric drawing of the result. Every
 value and assumption has − and + buttons, so the effect of a change can be watched.
 
+The page is laid out like the landing page, in panels: a title, then inputs on the left in collapsible groups ("Your
+space", open, with the room, the webcam and the players; "Space around the floor", "Camera details and field-of-view
+check" and "Assumptions", closed) beside the results, drawing and screen view on the right, and two explainers along the
+bottom. "Getting the most from your space" gives plain advice (choose the biggest rectangle first, then the camera's
+height and distance, with a worked example from the planner's defaults); "How it works" describes the calculation.
+
 Below the drawing, a wireframe shows what the screen will show: the camera's picture of the room's floor, walls and
 ceiling edges, with the game floor shaded, the tallest player at its front and back, and the picture's edge kept clear
 for tracking dashed. The picture is fitted to a screen whose size is one of the assumptions, by default a 55-inch
@@ -180,12 +186,20 @@ The calibration page has the landing page's look: the game's title and the steps
 includes the default corners an uncalibrated configuration starts on. The picture takes the height left above the
 bar, so the page fits a laptop screen without scrolling; on a narrow screen the columns stack and scroll.
 
-1. Drag each blue corner to a corner of the space you can walk around in. The floor can be any convex shape. A drag
-   that would fold it stops at the limit. With the keyboard, Tab moves between the corners, and the arrow keys move
+1. Mark a rectangle on the floor to walk around in, and drag each blue corner onto one of its corners. The page says
+   the playing area must be a rectangle: the corners can make any convex shape, but floor coordinates, and the
+   [person-scale](positions-sizes-units.md#person-scale) sizes, assume a rectangle. A drag that would fold it stops at
+   the limit. With the keyboard, Tab moves between the corners, and the arrow keys move
    the focused one (Shift moves it further).
 2. Walk to each corner. Your feet should stay green: each foot is green on the floor and red off it, and the head and
    hands are marked too.
 3. Press **Save and close** when it fits: it saves the floor and goes back to the landing page.
+
+**Floor size (optional).** Under the picture, the player can enter the floor's measured width and depth in metres. Both
+or neither: half a size, or one outside 0.5–20 m, can't be saved. With a size, games can make people-sized things
+life-size in this room ([person scale](positions-sizes-units.md#person-scale)); without one, the
+[default floor](#the-default-floor)'s 2.6 m × 2 m is assumed. It is saved and cleared with the corners, under its own
+`localStorage` key, `footsteps:floor-sizes`, by the same configuration key.
 
 Calibration expects one person. While more are in view, it warns over the picture, the feet stop turning green or red,
 and Save and close is disabled, though everyone is still marked. The bar along the bottom also has:
@@ -374,6 +388,20 @@ game's elements underneath. Each element's `id` says what a click or camera inte
 6. When the stream goes away, the model is disposed and the loop is cancelled. Starting a new stream loads a
    fresh model.
 
+### Drawing players smaller (a spike)
+
+Two settings, off by default, try out a bigger-feeling set in a small room. They are a spike, to judge on a real camera
+before deciding whether to keep them:
+
+- **`?playerScale=0.6`** draws each player at 60% of life size, shrunk about the point they stand on.
+- **`?motionGain=1.5`** moves each player's position 1.5 times further from the floor's centre than they walk, and
+  draws them there, bigger or smaller for the depth they are moved to.
+
+The drawn cut-out moves by CSS, and the masks and key points that touch things move with it, so a player's drawn hand
+is where it touches. Who is a spectator, and the debug list's positions, still use where the player really stands.
+Hands move with the body: a hand reaching out reaches as far as it really does, scaled down, rather than by the gain.
+`VirtualPlayers.ts` holds the maths.
+
 ## Configuration
 
 The vision model, camera and jump settings are app config, set in the `.env` files or for one visit in the URL
@@ -483,8 +511,12 @@ has `?debug=true` (the [`debug` setting](configuration.md)). In camera mode they
   marked faded (they can't interact until found again);
 - show the vision stats readout over the silhouette: the frame rate, the time each step takes (inference, tracking,
   monitors, drawing), and the people, hands and feet found. `?showFps=true` shows the readout on its own;
-- draw a bright green line across each player at the height of the ground point their [position](#player-positions)
-  comes from, and shade what is off the floor in a 2.5D scene.
+- draw a bright green line through the ground point each player's [position](#player-positions) comes from: in a
+  2.5D scene it runs between the floor's edges at their depth, sloping as the floor does, and what is off the floor is
+  shaded; in a 2D scene it is level.
+- list each person found, below the stats: their player number, whether they play, watch as a spectator, or are held,
+  where they stand on the floor, how far outside it they are, and how long a change between player and spectator has
+  been waiting. A player stuck as a spectator while standing on the floor shows here.
 
 Lower a rule's `threshold` when testing interactions, and use the feet markers to see where the
 camera thinks the player is. Switching the debug aids restarts the tracking loop with the new

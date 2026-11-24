@@ -21,7 +21,12 @@ const drawSpectator = (settings: GameSpectatorsData, { debugging = false, specta
   const id = players.update(frame).drawn.people[0].id;
   const drawn = { ...frame, people: [{ ...frame.people[0], id }] };
   const spectators: DrawnSpectators = {
-    report: { spectators: new Set(spectator ? [id] : []), distances: new Map([[id, 20]]), returned: [] },
+    report: {
+      spectators: new Set(spectator ? [id] : []),
+      distances: new Map([[id, 20]]),
+      returned: [],
+      pendingMs: new Map(),
+    },
     settings,
     margin: 5,
   };
@@ -29,7 +34,7 @@ const drawSpectator = (settings: GameSpectatorsData, { debugging = false, specta
     drawPlayers(
       document.createElement("video"),
       { interactive: drawn, drawn, frozenIds: new Set(), knownIds: new Set([id]) },
-      { canvases, positions: new Map(), sorted: false, players, spectators },
+      { canvases, positions: new Map(), sorted: false, floor: { mirrored: false }, players, spectators },
       { maskType: debugging ? "colored" : "binary", featherPx: 0 },
     );
   draw();

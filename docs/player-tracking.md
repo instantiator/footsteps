@@ -32,7 +32,7 @@ Leaving players count as active until they are off-screen, so a rule that resets
 
 ## Spectators
 
-In a 2.5D scene, an active player whose position is more than `spectatorMargin` (5) floor units outside the floor for `spectatorHoldMs` (1000 ms) becomes a spectator. They become a player again after the same hold back on the floor, so stepping over an edge, or a jump at it, changes nothing. Someone first seen off the floor is a spectator at once. 2D scenes have no floor, so nobody is a spectator there. `SpectatorWatch` (`src/components/camera/Spectators.ts`) decides, and the tracking loop in `CharacterCanvas` leaves spectators out of the players it reports.
+In a 2.5D scene, an active player whose position is more than `spectatorMargin` (5) floor units outside the floor for most (80%) of `spectatorHoldMs` (1000 ms) becomes a spectator. They become a player again once they have been mostly back on the floor for `spectatorReturnMs` (300 ms), so stepping over an edge, a jump at it, or a flickering frame changes nothing, and a returning player plays again quickly. Someone first seen off the floor is a spectator at once. 2D scenes have no floor, so nobody is a spectator there. `SpectatorWatch` (`src/components/camera/Spectators.ts`) decides, and the tracking loop in `CharacterCanvas` leaves spectators out of the players it reports.
 
 - A spectator keeps their player id and number, but fires no interactions, has no position, isn't counted, and is left out of effects and rewards on `"all"` players.
 - Leaving, frozen and removed players are never spectators: what has happened to them carries on wherever they stand.

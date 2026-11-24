@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_CORNERS } from "../src/components/camera/FloorGeometry";
+import { DEFAULT_CORNERS, screenFloorForImage } from "../src/components/camera/FloorGeometry";
 import {
+  depthLineOf,
   depthZIndex,
   groundPointOf,
   PlayerPositions,
@@ -8,7 +9,8 @@ import {
   positionMapping,
   UNSORTED_PLAYER_Z_INDEX,
 } from "../src/components/camera/PlayerPosition";
-import { noKeyPoints, type VisionFrame, type VisionPerson } from "../src/vision/VisionTypes";
+import { DEFAULT_APP_CONFIG } from "../src/config/AppConfig";
+import { noKeyPoints, type Point, type VisionFrame, type VisionPerson } from "../src/vision/VisionTypes";
 
 const WIDTH = 100;
 const HEIGHT = 100;
@@ -63,6 +65,24 @@ describe("PositionFollower", () => {
     expect(follower.update(at(45, 80), 400)).toEqual(at(45, 80));
   });
 
+  it("with the default settings, moves for one frame at most through a real jump", () => {
+    // Session 1, R4 at 12 s: grounded every 80 ms, two frames in the air, two lost at the top, one coming down
+    const follower = new PositionFollower({
+      windowMs: DEFAULT_APP_CONFIG.cameraDepthWindowMs,
+      deadband: DEFAULT_APP_CONFIG.cameraDepthDeadband,
+    });
+    for (let time = -800; time <= 0; time += 80) follower.update(at(50, 70), time);
+    const jump: [Point, number][] = [
+      [at(50, 66), 80],
+      [at(50, 63), 160],
+      [at(50, 66), 400],
+      [at(50, 70), 480],
+      [at(50, 70), 560],
+    ];
+    const moved = jump.filter(([ground, time]) => follower.update(ground, time).y !== 70);
+    expect(moved.length).toBeLessThanOrEqual(1);
+  });
+
   it("follows walking across at once", () => {
     const follower = new PositionFollower(settings);
     follower.update(at(30, 60), 0);
@@ -80,6 +100,15 @@ describe("PositionFollower", () => {
     follower.update(at(30, 75), 0);
     expect(follower.update(at(30, 60), 600).y).toBe(75);
     expect(follower.update(at(30, 60), 800).y).toBe(60);
+  });
+
+  it("ignores one stray low ground point among a full window of them", () => {
+    const follower = new PositionFollower(settings);
+    // The window fills with seven points before the stray comes
+    for (let time = 0; time <= 1200; time += 100) {
+      const stray = time === 800;
+      expect(follower.update(at(30, stray ? 95 : 60), time).y).toBe(60);
+    }
   });
 
   it("doesn't flicker when the ground point jitters within the deadband", () => {
@@ -169,5 +198,32 @@ describe("depthZIndex", () => {
   it("keeps depths off the floor to its ends", () => {
     expect(depthZIndex(-20)).toBe(depthZIndex(0));
     expect(depthZIndex(130)).toBe(depthZIndex(100));
+  });
+});
+
+describe("depthLineOf", () => {
+  // Session 1's floor: the camera is tilted, so the back edge drops from left to right
+  const corners = {
+    backLeft: { x: 0.41, y: 0.544 },
+    backRight: { x: 0.767, y: 0.579 },
+    frontRight: { x: 0.875, y: 0.971 },
+    frontLeft: { x: 0.293, y: 0.914 },
+  };
+
+  it("runs from the floor's left edge to its right, through the ground point, sloping with the floor", () => {
+    const ground = { x: 55, y: 70 };
+    const [from, to] = depthLineOf(ground, { corners, mirrored: false });
+    expect(screenFloorForImage(corners, from, false).x).toBeCloseTo(0);
+    expect(screenFloorForImage(corners, to, false).x).toBeCloseTo(100);
+    expect(to.y).toBeGreaterThan(from.y);
+    const along = (ground.x / 100 - from.x) / (to.x - from.x);
+    expect(from.y + along * (to.y - from.y)).toBeCloseTo(ground.y / 100);
+  });
+
+  it("is level across the frame without a floor", () => {
+    expect(depthLineOf({ x: 30, y: 60 }, { mirrored: false })).toEqual([
+      { x: 0, y: 0.6 },
+      { x: 1, y: 0.6 },
+    ]);
   });
 });

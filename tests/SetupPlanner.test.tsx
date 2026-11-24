@@ -77,6 +77,30 @@ describe("SetupPlanner", () => {
   });
 });
 
+describe("the input groups", () => {
+  const group = (title: string) => screen.getByText(title).closest("details");
+
+  it("opens 'Your space' and closes the others", () => {
+    expect(group("Your space")).toHaveAttribute("open");
+    for (const title of ["Space around the floor", "Camera details and field-of-view check", "Assumptions"]) {
+      expect(group(title)).not.toHaveAttribute("open");
+    }
+  });
+
+  it("keeps values when a group is collapsed and expanded", () => {
+    const details = group("Your space");
+    fireEvent.change(field(/Room width/), { target: { value: "3.9" } });
+    details?.removeAttribute("open");
+    details?.setAttribute("open", "");
+    expect(field(/Room width/).value).toBe("3.9");
+  });
+
+  it("has real summaries, and the explainers", () => {
+    expect(screen.getByText("Getting the most from your space").tagName).toBe("SUMMARY");
+    expect(screen.getByText("How it works").tagName).toBe("SUMMARY");
+  });
+});
+
 describe("the known webcam choice", () => {
   const named = (text: string) => SETUP_WEBCAMS.find(({ name }) => name.includes(text));
   const lifecamSd = named("HD-3000 · SD");
