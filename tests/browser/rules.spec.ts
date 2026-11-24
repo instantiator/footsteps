@@ -341,7 +341,7 @@ test.describe("rules demo", () => {
     await returnToStart(page);
 
     const box = async (selector: string) => (await page.locator(selector).boundingBox())!;
-    const [start, one, two, front] = await Promise.all(["#start", "#pit-1", "#pit-2", "#door-front"].map(box));
+    const [start, one, two, front] = await Promise.all(["#start", "#pit-1", "#pit-2", "#door-mat"].map(box));
     const centreOf = ({ x, y, width, height }: typeof start) => ({ x: x + width / 2, y: y + height / 2 });
     // Pit 1 runs from the left edge, pit 2 to the right: up the lane right of pit 1, left along the gap between them,
     // up the lane left of pit 2, and along the back to the floor in front of the door

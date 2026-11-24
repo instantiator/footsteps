@@ -206,20 +206,20 @@ describe("rules demo, played by camera", () => {
     await waitFor(() => expect($("#stage-link-pits")).toHaveClass("completed"));
   });
 
-  it("opens the pits door to a hand on it, as to a foot, between two floor areas that open it too", async () => {
+  it("opens the pits door to a hand on it, as to a foot, with a mat in front that opens it too", async () => {
     await start();
     touch("#stage-link-pits", "hand-enter");
     await returnToStart();
-    expect(document.querySelectorAll(".door-area")).toHaveLength(2);
+    expect(document.querySelectorAll(".door-area")).toHaveLength(1);
     touch("#door", "hand-enter"); // the same rule as a foot on it, so a hand opens it too
     await waitFor(() => expect($("#stage-link-pits")).toHaveClass("completed"));
   });
 
-  it("opens the pits door to a player standing in the floor area beside it", async () => {
+  it("opens the pits door to a player standing on its mat", async () => {
     await start();
     touch("#stage-link-pits", "hand-enter");
     await returnToStart();
-    touch("#door-side", "foot-enter");
+    touch("#door-mat", "foot-enter");
     await waitFor(() => expect($("#stage-link-pits")).toHaveClass("completed"));
   });
 

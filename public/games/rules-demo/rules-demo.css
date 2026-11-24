@@ -225,10 +225,11 @@
   border-radius: 50%;
   background: #ffd166;
 }
-/* The floor in front of a door and behind it, where standing opens it: a worn mat */
+/* The floor in front of a door and beside it, where standing opens it: a worn, rounded mat */
 .door-area {
   background: rgba(216, 201, 176, 0.35);
   border: 0.3cqh dashed rgba(241, 250, 238, 0.5);
+  border-radius: 30% / 50%;
 }
 
 /*
