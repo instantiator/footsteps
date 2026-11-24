@@ -25,7 +25,7 @@ import {
   type SpectatorSettings,
 } from "./Spectators";
 import { SpectatorsContext, type ShownSpectators } from "../../providers/SpectatorsContext";
-import { mediaVideoRecorder, type Recorder } from "../../debug/Recorder";
+import { mediaVideoRecorder, screenVideoRecorder, type Recorder } from "../../debug/Recorder";
 import { frameReporter, type FrameReporterHandlers } from "./FrameReporter";
 import { placePlayers, type PlacementFloor, type VirtualSettings } from "./VirtualPlayers";
 import { RecorderContext } from "../../debug/RecorderContext";
@@ -96,7 +96,8 @@ const useRecordingSource = (
       const { width = 0, height = 0 } = track?.getSettings() ?? {};
       return { camera: { label: track?.label ?? "", width, height, mirror: mirrored }, floor, config };
     };
-    recorder.setSource({ video: () => mediaVideoRecorder(stream), describe });
+    const screen = async () => (latest.current.config.recordingScreen ? screenVideoRecorder() : undefined);
+    recorder.setSource({ video: () => mediaVideoRecorder(stream), describe, screen });
     return () => recorder.setSource(undefined);
   }, [recorder, stream, latest]);
 };

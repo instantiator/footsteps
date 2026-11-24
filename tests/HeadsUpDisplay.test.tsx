@@ -301,7 +301,8 @@ describe("HeadsUpDisplay recording, while debugging", () => {
 
   it("shows it's recording, then offers the recording to download once stopped", async () => {
     renderHud(true);
-    fireEvent.click(screen.getByRole("button", { name: "Record" }));
+    // Recording starts once any screen sharing has been asked for
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Record" })));
     expect(screen.getByRole("status")).toHaveTextContent("Recording 0:00");
     expect(screen.queryByRole("button", { name: "Download" })).toBeNull();
 

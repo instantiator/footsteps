@@ -106,6 +106,8 @@ export interface Recording extends RecordingContext {
   video: string;
   /** The video's MIME type. */
   videoType: string;
+  /** The game's screen, recorded from the same moment as the camera, if it was shared (`recordingScreen`). */
+  screen?: string;
   /** Labelled stretches of the recording; empty unless something labelled them. */
   labels: RecordingLabel[];
   /** The scenes played, in order. */

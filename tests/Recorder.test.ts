@@ -106,6 +106,36 @@ describe("Recorder", () => {
     expect(await recorder.zip()).toBeUndefined();
   });
 
+  it("records the screen beside the camera when the source shares it, and zips both", async () => {
+    const screen = new FakeVideo();
+    recorder.setSource({ video: () => video, describe: () => CONTEXT, screen: async () => screen });
+    await recorder.record();
+    expect(recorder.state).toBe("recording");
+    await recorder.stop();
+
+    const files = await unzipped();
+    expect(recordingIn(files).screen).toBe("screen.webm");
+    expect([...files["screen.webm"]]).toEqual([1, 2, 3]);
+    expect([video.stopped, screen.stopped]).toEqual([1, 1]);
+  });
+
+  it("records the camera alone when the screen isn't shared", async () => {
+    recorder.setSource({ video: () => video, describe: () => CONTEXT, screen: async () => undefined });
+    await recorder.record();
+    await recorder.stop();
+
+    const files = await unzipped();
+    expect(recordingIn(files).screen).toBeUndefined();
+    expect(Object.keys(files).some((name) => name.startsWith("screen."))).toBe(false);
+  });
+
+  it("stops the screen's video too when a running recording is discarded", () => {
+    const screen = new FakeVideo();
+    recorder.start(video, CONTEXT, screen);
+    recorder.discard();
+    expect([video.stopped, screen.stopped]).toEqual([1, 1]);
+  });
+
   it("discards the recording once downloaded", async () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
     URL.createObjectURL = vi.fn(() => "blob:recording");

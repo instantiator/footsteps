@@ -533,6 +533,9 @@ or replayed in tests.
   [`recordingMaxSeconds`](configuration.md) (60 s), as it is meant for short clips.
 - **Downloading:** the recording is held in memory until **Download** saves it as a zip. Downloading it, starting
   another, or leaving the game discards it.
+- **The screen too:** with [`recordingScreen`](configuration.md) on (`?recordingScreen=true`), **Record** first asks
+  to share the tab, and records the game's screen beside the camera, from the same moment, to show what the players
+  saw. Declining records the camera alone. Sharing ends with the recording, or from the browser's own sharing bar.
 - **Consent:** recordings never leave the browser unless downloaded. Ask anyone in view before recording them.
 
 The zip holds:
@@ -540,6 +543,7 @@ The zip holds:
 | File                                | What it holds                                                                                         |
 | ----------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | `video.webm` (or `.mp4` in Safari)  | the camera at its full size and frame rate                                                            |
+| `screen.webm` (or `.mp4`)           | the game's screen, with `recordingScreen` on and the tab shared                                       |
 | `recording.json`                    | the camera, the floor's corners, the app's settings, and each processed frame (below)                 |
 | `masks/<frame>-<person>.bin`        | each person's mask in a frame, one byte per pixel (1 for the person), row by row, at the frame's size |
 | `masks/<frame>-<person>-strays.bin` | the stray patches removed from that person's mask, when there were any                                |

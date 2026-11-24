@@ -95,3 +95,20 @@ test("records the camera with each frame's masks and players, timed to the video
   const withinAFrame = errors.filter((error) => Math.abs(error) <= FRAME_MS * 1.5);
   expect(withinAFrame.length).toBeGreaterThanOrEqual(errors.length * 0.9);
 });
+
+test("records the game's screen beside the camera with recordingScreen on", async ({ page }) => {
+  test.setTimeout(MODEL_TIMEOUT + 30_000);
+  await openCameraGame(page, { query: "?debug=true&recordingScreen=true", photos: peoplePhotoUrls() });
+  await expect.poll(() => page.evaluate(() => window.__cameraDraws), { timeout: MODEL_TIMEOUT }).toBeGreaterThan(2);
+
+  await page.getByRole("button", { name: "Record" }).click();
+  await expect(page.getByText(/● Recording \d/)).toBeVisible();
+  await page.waitForTimeout(1500);
+  await page.getByRole("button", { name: "Stop" }).click();
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download" }).click();
+  const { recording, files } = readRecording(new Uint8Array(await readFile(await (await download).path())));
+
+  expect(recording.screen).toBe("screen.webm");
+  expect(files["screen.webm"].length).toBeGreaterThan(1000);
+});

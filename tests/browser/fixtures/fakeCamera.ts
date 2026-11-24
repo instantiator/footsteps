@@ -118,6 +118,8 @@ function fakeCameraScript({ photoUrls, width, height, cameras }: FakeCameraSetup
         state.constraints.push(constraints);
         return stream;
       },
+      // Sharing the screen, which headless Chromium can't, shares the fake camera's picture: enough to record
+      getDisplayMedia: async () => canvas.captureStream(30),
       enumerateDevices: async () => cameras,
       addEventListener: () => undefined,
       removeEventListener: () => undefined,

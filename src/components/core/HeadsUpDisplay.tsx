@@ -189,7 +189,7 @@ function RecordButtons() {
           </button>
         </>
       ) : (
-        <button style={buttonStyle} onClick={() => recorder.record()} disabled={!canRecord}>
+        <button style={buttonStyle} onClick={() => void recorder.record()} disabled={!canRecord}>
           Record
         </button>
       )}

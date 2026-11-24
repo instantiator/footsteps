@@ -10,7 +10,7 @@ import {
   type RecordingContext,
 } from "./RecordingFormat";
 
-/** Records the camera's video; {@link mediaVideoRecorder} in the browser, a fake in tests. */
+/** Records a video, of the camera or the screen; {@link mediaVideoRecorder} in the browser, a fake in tests. */
 export interface VideoRecorder {
   /** The video's MIME type. */
   readonly mimeType: string;
@@ -34,9 +34,38 @@ export const mediaVideoRecorder = (stream: MediaStream): VideoRecorder => {
     start: () => recorder.start(1000),
     stop: () =>
       new Promise((resolve) => {
-        recorder.onstop = () => resolve(new Blob(chunks, { type: recorder.mimeType }));
+        const whole = () => resolve(new Blob(chunks, { type: recorder.mimeType }));
+        // A recorder whose stream has ended (eg. screen sharing stopped from the browser's bar) has stopped already
+        if (recorder.state === "inactive") return whole();
+        recorder.onstop = whole;
         recorder.stop();
       }),
+  };
+};
+
+/**
+ * Records the game's screen, after asking the player to share this tab; undefined if they don't. The sharing ends
+ * with the recording.
+ */
+export const screenVideoRecorder = async (): Promise<VideoRecorder | undefined> => {
+  // `preferCurrentTab` (Chrome) offers this tab first; other browsers ignore it
+  const options: DisplayMediaStreamOptions & { preferCurrentTab: boolean } = { video: true, preferCurrentTab: true };
+  const stream = await navigator.mediaDevices.getDisplayMedia(options).catch((error: unknown) => {
+    console.warn("The screen wasn't shared, so only the camera is recorded:", error);
+    return undefined;
+  });
+  if (!stream) return undefined;
+  const recorder = mediaVideoRecorder(stream);
+  return {
+    get mimeType() {
+      return recorder.mimeType;
+    },
+    start: () => recorder.start(),
+    stop: async () => {
+      const video = await recorder.stop();
+      stream.getTracks().forEach((track) => track.stop());
+      return video;
+    },
   };
 };
 
@@ -60,6 +89,8 @@ export interface RecordingSource {
   video: () => VideoRecorder;
   /** Describes the camera and settings as recording starts. */
   describe: () => RecordingContext;
+  /** Starts recording the screen too, if it is to be, eg. with {@link screenVideoRecorder}; undefined if not. */
+  screen?: () => Promise<VideoRecorder | undefined>;
 }
 
 /** Whether nothing is recorded, a recording is running, or one is held to download. */
@@ -78,12 +109,15 @@ interface Take {
   context: RecordingContext;
   recordedAt: string;
   video: VideoRecorder;
+  /** The screen's video, if it is recorded too. */
+  screen?: VideoRecorder;
   startedAt: number;
   frames: RecordedFrameEntry[];
   scenes: RecordedScene[];
   zip: Zip;
   chunks: Uint8Array<ArrayBuffer>[];
   blob?: Blob;
+  screenBlob?: Blob;
   stopTimer: ReturnType<typeof setTimeout>;
 }
 
@@ -91,8 +125,8 @@ interface Take {
 const maskPath = (index: number, id: number, suffix = ""): string =>
   `masks/${String(index).padStart(6, "0")}-${id}${suffix}.bin`;
 
-/** The video's name in the zip, by its type. */
-const videoPath = (mimeType: string): string => (mimeType.includes("mp4") ? "video.mp4" : "video.webm");
+/** A video's name in the zip, by its type. */
+const videoPath = (mimeType: string, name = "video"): string => `${name}.${mimeType.includes("mp4") ? "mp4" : "webm"}`;
 
 /** Adds one file to a zip, deflated or stored as-is. */
 const addFile = (zip: Zip, path: string, data: Uint8Array, deflate = true) => {
@@ -154,13 +188,21 @@ export class Recorder {
     if (take && !take.blob) take.scenes.push({ ...scene, fromMs: this.elapsedMs });
   }
 
-  /** Starts recording the camera, discarding any recording held. */
-  record() {
-    if (this.source) this.start(this.source.video(), this.source.describe());
+  /** Starts recording the camera, and the screen if the source records it, discarding any recording held. */
+  async record() {
+    const source = this.source;
+    if (!source) return;
+    // Asked first, as sharing the screen waits on the player
+    const screen = await source.screen?.();
+    this.start(source.video(), source.describe(), screen);
   }
 
-  /** Starts recording, discarding any recording held. @param video records the camera, eg. {@link mediaVideoRecorder} */
-  start(video: VideoRecorder, context: RecordingContext) {
+  /**
+   * Starts recording, discarding any recording held.
+   * @param video records the camera, eg. {@link mediaVideoRecorder}
+   * @param screen records the screen too, if given, from the same moment
+   */
+  start(video: VideoRecorder, context: RecordingContext, screen?: VideoRecorder) {
     this.discard();
     const chunks: Uint8Array<ArrayBuffer>[] = [];
     const zip = new Zip((error, chunk) => {
@@ -168,11 +210,13 @@ export class Recorder {
     });
     // Timed from the call rather than the recorder's start event, which comes a frame or more after its first frame
     video.start();
+    screen?.start();
     const take: Take = {
       startedAt: this.options.now(),
       context,
       recordedAt: new Date().toISOString(),
       video,
+      screen,
       frames: [],
       scenes: this.scene ? [{ ...this.scene, fromMs: 0 }] : [],
       zip,
@@ -212,9 +256,9 @@ export class Recorder {
     const take = this.take;
     if (!take || take.blob) return;
     clearTimeout(take.stopTimer);
-    const blob = await take.video.stop();
+    const [blob, screenBlob] = await Promise.all([take.video.stop(), take.screen?.stop()]);
     if (this.take !== take) return; // discarded while the video finished
-    take.blob = blob;
+    Object.assign(take, { blob, screenBlob });
     this.changed();
   }
 
@@ -229,11 +273,15 @@ export class Recorder {
       ...take.context,
       video,
       videoType: take.video.mimeType,
+      ...(take.screenBlob && take.screen && { screen: videoPath(take.screen.mimeType, "screen") }),
       labels: [],
       scenes: take.scenes,
       frames: take.frames,
     };
     addFile(take.zip, video, new Uint8Array(await take.blob.arrayBuffer()), false);
+    if (take.screenBlob && recording.screen) {
+      addFile(take.zip, recording.screen, new Uint8Array(await take.screenBlob.arrayBuffer()), false);
+    }
     addFile(take.zip, RECORDING_JSON, strToU8(JSON.stringify(recording)));
     take.zip.end();
     return new Blob(take.chunks, { type: "application/zip" });
@@ -257,7 +305,10 @@ export class Recorder {
     if (!take) return;
     this.take = undefined;
     clearTimeout(take.stopTimer);
-    if (!take.blob) void take.video.stop();
+    if (!take.blob) {
+      void take.video.stop();
+      void take.screen?.stop();
+    }
     this.changed();
   }
 
