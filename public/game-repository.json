@@ -703,7 +703,27 @@
                         ]
                       },
                       {
-                        "on": { "interact": ["foot-enter"], "target": "#door-base", "threshold": 0.3 },
+                        "on": { "interact": ["foot-enter"], "target": ".door-area", "threshold": 0.05, "holdMs": 500 },
+                        "if": "not state.done and not state.falling",
+                        "do": [
+                          { "set": { "done": "true" } },
+                          { "completeChallenge": true },
+                          { "sound": "fanfare" },
+                          { "reward": { "animation": "fireworks", "particleCount": 150 } }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["hand-enter", "foot-enter"], "target": "#door", "threshold": 0.05 },
+                        "if": "not state.done and not state.falling",
+                        "do": [
+                          { "set": { "done": "true" } },
+                          { "completeChallenge": true },
+                          { "sound": "fanfare" },
+                          { "reward": { "animation": "fireworks", "particleCount": 150 } }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["click"], "target": "#door" },
                         "if": "not state.done and not state.falling",
                         "do": [
                           { "set": { "done": "true" } },
@@ -1115,7 +1135,17 @@
                         "do": [{ "set": { "solid4": "true" } }]
                       },
                       {
-                        "on": { "interact": ["foot-enter"], "target": "#door", "threshold": 0.05, "holdMs": 1000 },
+                        "on": { "interact": ["foot-enter"], "target": ".door-area", "threshold": 0.05, "holdMs": 500 },
+                        "if": "state.on == 5 and not state.done",
+                        "do": [
+                          { "set": { "done": "true" } },
+                          { "completeChallenge": true },
+                          { "sound": "fanfare" },
+                          { "reward": { "animation": "fireworks", "particleCount": 150 } }
+                        ]
+                      },
+                      {
+                        "on": { "interact": ["hand-enter", "foot-enter"], "target": "#door", "threshold": 0.05 },
                         "if": "state.on == 5 and not state.done",
                         "do": [
                           { "set": { "done": "true" } },

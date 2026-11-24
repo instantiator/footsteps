@@ -1,14 +1,15 @@
-<div class="noClicks demo-screen">
+<div class="noClicks demo-screen" style="--metre: calc(1cqw * {{scale.metre}})">
   <div class="screen-background rings-dark"></div>
   <div class="rings-floor" data-floor-area="0 0 100 100"></div>
   <div class="rings-start" data-floor-area="0 80 20 100">Start</div>
   {{#unless state.done}}
-  <!-- The ring's shadow is where a foot counts as near, and the ring hovers above it; each new ring is a fresh element -->
+  <!-- The ring's shadow is where a foot counts as near, and the ring hovers above it from waist to chest height, in
+       reach of a hand; each new ring is a fresh element -->
   <div id="ring-near-{{state.index}}" class="ring-near" data-floor-area="{{state.left}} {{state.back}} {{state.right}} {{state.front}}"></div>
-  <div id="ring-{{state.index}}" class="ring" data-floor-x="{{state.x}}" data-floor-y="{{state.y}}" data-floor-height="7"><div class="ring-bob"><div class="ring-body"></div></div></div>
+  <div id="ring-{{state.index}}" class="ring" data-floor-x="{{state.x}}" data-floor-y="{{state.y}}" data-floor-height="{{scale.waist}}"><div class="ring-bob"><div class="ring-body"></div></div></div>
   {{/unless}}
   {{#if state.goneIndex}}{{#unless state.done}}
-  <div id="ring-gone-{{state.goneIndex}}" class="ring-gone" data-floor-x="{{state.goneX}}" data-floor-y="{{state.goneY}}" data-floor-height="7"><div class="ring-body"></div></div>
+  <div id="ring-gone-{{state.goneIndex}}" class="ring-gone" data-floor-x="{{state.goneX}}" data-floor-y="{{state.goneY}}" data-floor-height="{{scale.waist}}"><div class="ring-body"></div></div>
   {{/unless}}{{/if}}
   <p class="rings-scroll">Collected {{state.score}} {{#if state.one}}ring{{else}}rings{{/if}}</p>
   {{#unless state.done}}<p class="rings-timer">{{state.t}}</p>{{/unless}}

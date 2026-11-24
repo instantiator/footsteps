@@ -259,18 +259,19 @@ countdown from 3, and then the posts appear.
 
 ## Bridge across lava
 
-The last stage puts these pieces to work. The whole floor background is lava, except a curved bridge from the Start
-cell to a door. The bridge is five SVG paths in one floor area covering the whole floor, so the SVG's coordinates are
+The last stage puts these pieces to work. The whole floor background is lava, except a zig-zag bridge, about a
+person's width, from the Start cell to a stone landing where a life-size door stands. The bridge is five SVG paths in one floor area covering the whole floor, so the SVG's coordinates are
 floor percentages. The template is the challenge's **background**, so everything in it, bridge included, stays behind
 the player.
 
 <!-- prettier-ignore -->
 ```html [public/games/rules-demo/bridge.html]
-<div class="noClicks demo-screen">
+<div class="noClicks demo-screen" style="--metre: calc(1cqw * {{scale.metre}})">
   <div class="screen-background cavern-dark"></div>
   <div class="rear-background cavern-rock" data-fill-width></div>
   <div id="lava" class="floor-background lava"></div>
-  <!-- One curved bridge in five sections, drawn in floor percentages; only its painted shapes catch feet -->
+  <!-- A zig-zag bridge about 0.5 m wide (on the default floor) in five sections, drawn in floor percentages; only its
+       painted shapes catch feet -->
   <div class="bridge-floor" data-floor-area="0 0 100 100">
     <svg viewBox="0 0 100 100" preserveAspectRatio="none">
 …
@@ -319,8 +320,9 @@ touch ([what can be clicked or touched](../game-data.md#what-can-be-clicked-or-t
 lava shows through where it was.
 
 **Look for:** stand on Start and the bridge appears under you. Step along it, and each section falls behind you. Step
-off onto the lava, and the screen's edge glows red; stay there and you fall and start again. Stand on the door from the
-last section to finish.
+off onto the lava, and the screen's edge glows red; stay there and you fall and start again. From the last section, stand in
+front of the door for half a second, or touch it, to finish ([sizing to a person](../positions-sizes-units.md#person-scale)
+describes the door's rules).
 
 ## Next
 

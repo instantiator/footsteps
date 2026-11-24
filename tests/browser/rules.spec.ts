@@ -29,9 +29,57 @@ const challengeOf = (game: GameData, stageId: string) =>
 
 /** Clicks the middle of an element wherever it is now, as a moving element is never stable enough to wait for. */
 /** The middle of an element, on the page. */
-const centreOf = async (page: Page, selector: string): Promise<[number, number]> => {
-  const box = (await page.locator(selector).boundingBox())!;
-  return [box.x + box.width / 2, box.y + box.height / 2];
+
+/**
+ * The point most inside an element as drawn, with the most room around it: a section of the zig-zag bridge needn't
+ * cover its box's middle, and the mouse's feet have a width that mustn't hang over its edge. It is found as if the
+ * element were showing and took the pointer, whatever is drawn over it, so a hidden or covered section can be found.
+ * While a scene changes it takes no pointer, so this tries until it does.
+ */
+const pointOn = async (page: Page, selector: string): Promise<[number, number]> => {
+  let point: [number, number] = [0, 0];
+  await expect(async () => {
+    point = await pointOnNow(page, selector);
+  }).toPass({ timeout: 4000 });
+  return point;
+};
+
+/** See {@link pointOn}: one try. */
+const pointOnNow = (page: Page, selector: string): Promise<[number, number]> =>
+  page.evaluate((target) => {
+    const element = document.querySelector<SVGElement | HTMLElement>(target)!;
+    const box = element.getBoundingClientRect();
+    const { pointerEvents, visibility } = element.style;
+    Object.assign(element.style, { pointerEvents: "auto", visibility: "visible" });
+    const on = (x: number, y: number) => document.elementsFromPoint(x, y).includes(element);
+    /** How far the element reaches around a point in every direction, in steps of 2 px. */
+    const room = (x: number, y: number) => {
+      let r = 0;
+      while (r < 100 && [-1, 0, 1].every((ox) => [-1, 0, 1].every((oy) => on(x + ox * (r + 2), y + oy * (r + 2))))) {
+        r += 2;
+      }
+      return on(x, y) ? r : -1;
+    };
+    try {
+      let best: { point: [number, number]; room: number } = { point: [0, 0], room: -1 };
+      for (let i = 1; i < 16; i++) {
+        for (let j = 1; j < 16; j++) {
+          const point: [number, number] = [box.x + (box.width * i) / 16, box.y + (box.height * j) / 16];
+          const around = room(...point);
+          if (around > best.room) best = { point, room: around };
+        }
+      }
+      if (best.room < 0) throw new Error(`Nowhere on ${target} takes the pointer`);
+      return best.point;
+    } finally {
+      Object.assign(element.style, { pointerEvents, visibility });
+    }
+  }, selector);
+
+/** Moves the mouse onto an element as drawn (see {@link pointOn}). */
+const moveOnto = async (page: Page, selector: string) => {
+  const [x, y] = await pointOn(page, selector);
+  await page.mouse.move(x, y);
 };
 
 /** Moves the mouse to the middle of an element, whatever is drawn over it. */
@@ -50,7 +98,7 @@ const returnToStart = async (page: Page) => {
   await expect(page.locator("#reset-message")).toHaveText("Stand on Start, or put your mouse on it");
   await page.locator("#reset-start").hover();
   await expect(page.locator("#reset-message")).toHaveText("Get ready!");
-  await expect(page.locator("#door-base")).toBeVisible({ timeout: 6000 });
+  await expect(page.locator("#door")).toBeVisible({ timeout: 6000 });
 };
 
 /** Puts the mouse on the shared reset's Start, and waits out its countdown for the bridge. */
@@ -72,7 +120,7 @@ const moveOntoLava = async (page: Page) => {
 const walkOnto = async (page: Page, n: number) => {
   // Section 4 only turns solid once it has appeared, so a foot put there sooner would be on lava
   if (n === 4) await expect(page.locator("#bridge-4")).not.toHaveClass(/unseen|appearing/, { timeout: 4000 });
-  await moveTo(page, `#bridge-${n}`);
+  await moveOnto(page, `#bridge-${n}`);
   if (n > 1) await expect(page.locator(`#bridge-${n - 1}`)).toHaveClass(/gone/, { timeout: 4000 });
 };
 
@@ -283,7 +331,7 @@ test.describe("rules demo", () => {
     await page.locator("#pit-1").hover();
     await returnToStart(page);
 
-    await page.locator("#door-base").hover();
+    await page.locator("#door").hover();
     await expect(page.locator("#stage-link-pits")).toHaveClass(/completed/);
   });
 
@@ -292,20 +340,23 @@ test.describe("rules demo", () => {
     await page.locator("#stage-link-pits").click();
     await returnToStart(page);
 
-    const centre = async (selector: string) => {
-      const box = (await page.locator(selector).boundingBox())!;
-      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-    };
-    const [start, one, two, three, door] = await Promise.all(
-      ["#start", "#pit-1", "#pit-2", "#pit-3", "#door-base"].map(centre),
-    );
-    // Up the channel between the first two pits, then across the gap in front of the third, then to the door
-    const channelX = (one.x + two.x) / 2;
-    const gapY = (two.y + three.y) / 2;
-    const gapX = (two.x + three.x) / 2;
-    const path = [{ x: channelX, y: start.y }, { x: channelX, y: gapY }, { x: gapX, y: gapY }, door];
-
-    await page.mouse.move(start.x, start.y);
+    const box = async (selector: string) => (await page.locator(selector).boundingBox())!;
+    const [start, one, two, front] = await Promise.all(["#start", "#pit-1", "#pit-2", "#door-front"].map(box));
+    const centreOf = ({ x, y, width, height }: typeof start) => ({ x: x + width / 2, y: y + height / 2 });
+    // Pit 1 runs from the left edge, pit 2 to the right: up the lane right of pit 1, left along the gap between them,
+    // up the lane left of pit 2, and along the back to the floor in front of the door
+    const rightLane = one.x + one.width * 1.15;
+    const leftLane = two.x - two.width * 0.15;
+    const gapY = (one.y + two.y + two.height) / 2;
+    const backY = centreOf(front).y;
+    const path = [
+      { x: rightLane, y: centreOf(start).y },
+      { x: rightLane, y: gapY },
+      { x: leftLane, y: gapY },
+      { x: leftLane, y: backY },
+      centreOf(front),
+    ];
+    await page.mouse.move(centreOf(start).x, centreOf(start).y);
     for (const point of path) await page.mouse.move(point.x, point.y, { steps: 25 });
 
     await expect(page.locator("#stage-link-pits")).toHaveClass(/completed/);
@@ -317,7 +368,7 @@ test.describe("rules demo", () => {
     await page.locator("#stage-link-pits").click();
     await returnToStart(page);
 
-    await expect(page.locator(".pit-sign")).toHaveCount(3);
+    await expect(page.locator(".pit-sign")).toHaveCount(2);
     for (const sign of await page.locator(".pit-sign-board").all()) {
       const box = (await sign.boundingBox())!;
       const caught = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest(".pit-sign") !== null, {
@@ -411,7 +462,7 @@ test.describe("rules demo", () => {
     await expect(page.locator(".bridge-glow")).toBeVisible();
     await expect(page.locator("#bridge-message")).toContainText("Get off the lava");
 
-    await moveTo(page, "#bridge-1");
+    await moveOnto(page, "#bridge-1");
     await expect(page.locator(".bridge-glow")).toHaveCount(0);
     await page.waitForTimeout(2500); // past the 2 s it would have taken to fall
     await expect(page.locator("#reset-message")).toHaveCount(0);
@@ -468,7 +519,7 @@ test.describe("rules demo", () => {
     await walkOnto(page, 2);
     await expect(page.locator("#bridge-4")).toBeHidden();
     // Where it will be, a foot is on lava
-    const [x, y] = await centreOf(page, "#bridge-4");
+    const [x, y] = await pointOn(page, "#bridge-4");
     expect(await page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.id, [x, y])).toBe("lava");
   });
 
@@ -477,10 +528,10 @@ test.describe("rules demo", () => {
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await crossingStart(page);
     await walkOnto(page, 2);
-    await moveTo(page, "#bridge-3"); // not waiting for section 2 to fall, as that outlasts the static
+    await moveOnto(page, "#bridge-3"); // not waiting for section 2 to fall, as that outlasts the static
     await expect(page.locator("#bridge-4")).toHaveClass(/appearing/);
     const started = Date.now();
-    const [x, y] = await centreOf(page, "#bridge-4");
+    const [x, y] = await pointOn(page, "#bridge-4");
     // Static, not stone: lava still takes the foot while it appears
     expect(await page.evaluate(([px, py]) => document.elementFromPoint(px, py)?.id, [x, y])).toBe("lava");
 
@@ -497,10 +548,10 @@ test.describe("rules demo", () => {
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await crossingStart(page);
     await walkOnto(page, 2);
-    await moveTo(page, "#bridge-3");
+    await moveOnto(page, "#bridge-3");
     await expect(page.locator("#bridge-4")).toHaveClass(/appearing/);
 
-    await moveTo(page, "#bridge-4");
+    await moveOnto(page, "#bridge-4");
     await expect(page.locator(".bridge-glow")).toBeVisible();
     await expect(page.locator("#bridge-message")).toContainText("Get off the lava");
   });
@@ -559,7 +610,7 @@ test.describe("rules demo", () => {
     await expect(page.locator("#cover")).toBeVisible();
 
     await moveTo(page, "#pit-1");
-    await expect(page.locator("#door-base")).toBeVisible();
+    await expect(page.locator("#door")).toBeVisible();
 
     await moveTo(page, "#pit-2");
     await expect(page.locator("#reset-message")).toBeVisible();

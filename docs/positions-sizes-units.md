@@ -98,6 +98,45 @@ out from the floor size measured at [calibration](camera-mode.md#calibrating-the
 For example, `data-floor-height="{{scale.chest}}"` floats an item at chest height in any room. Handlebars can't do
 arithmetic, so use the nearest named size.
 
+**Sizing items in metres.** A floor item is sized as it would appear at the front edge, where a floor unit is `1cqw`.
+So set a metre once on the template's outer element, and size items with CSS `calc`, which can do arithmetic:
+
+```html
+<div class="demo-screen" style="--metre: calc(1cqw * {{scale.metre}})">…</div>
+```
+
+```css
+.door {
+  width: calc(var(--metre) * 0.9);
+  height: calc(var(--metre) * 2);
+}
+```
+
+**A guide to person-sized scenes.** Players stand in the room, so what they reach for should be where they would reach
+for it in real life:
+
+- **Things to touch by hand** float between waist and chest: anchor their bottom at `{{scale.waist}}` and make them
+  about 0.4 m tall. Give each a floor area beneath it too, so standing near counts, as hands aren't always found from
+  behind.
+- **Doors** are about 2 m × 0.9 m, and open on any of: standing in front of them or behind them (floor areas, held for
+  0.5 s), a hand or foot on them while standing near, or a click. Give the door `data-floor-thickness`, so a hand or
+  foot only counts from someone standing near it in depth, then one rule covers both:
+
+  ```json
+  [
+    { "on": { "interact": "foot-enter", "target": ".door-area", "threshold": 0.05, "holdMs": 500 }, "do": [] },
+    { "on": { "interact": ["hand-enter", "foot-enter"], "target": "#door", "threshold": 0.05 }, "do": [] },
+    { "on": { "interact": "click", "target": "#door" }, "do": [] }
+  ]
+  ```
+
+  with the same `if` and `do` in each, and `.door-area` the floor areas in front of and behind it.
+
+- **Signs and markers** stand about waist high, so they read as objects in the room rather than marks on the floor.
+- **Hazards and paths** are sized to a stride: a pit about 0.4 m deep and a metre or more across can't be stepped
+  over by accident, and a path or bridge about 0.5 m wide fits one person's feet. On a small floor, fewer, larger
+  hazards keep their peril better than many small ones.
+
 ### A tiled floor
 
 A floor area covering the whole floor (`0 0 100 100`) is 100 floor units square, so its box is square
