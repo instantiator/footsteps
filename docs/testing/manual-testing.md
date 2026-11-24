@@ -413,4 +413,13 @@ node scripts/recording-fixture.ts <unzipped recording> tests/data/recordings/<na
 
 Each frame keeps BodyPix's hand pixels, with their labels, and its pose wrists. `tests/RecordedHands.test.ts` scores
 hand-finding on them; its thresholds sit just below what the current code achieves, so a change that does worse
-fails. Session write-ups in `sessions/` say which recordings exist and what each shows.
+fails.
+
+Tracking and positions need no model: the recording already holds what the model found. This keeps each frame's
+people, cut down to their outline's size, centre and ground point:
+
+```sh
+RECORDING=<unzipped recording> FIXTURE=tests/data/recordings/<name>-tracking.json npx vitest run tests/tools
+```
+
+`tests/RecordedTracking.test.ts` replays such fixtures through the depth follower and the tracker. Session write-ups in `sessions/` say which recordings exist and what each shows.

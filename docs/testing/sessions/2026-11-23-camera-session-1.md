@@ -63,6 +63,12 @@ depth settings are `cameraDepthWindowMs` and `cameraDepthDeadband`, set by URL q
 
 ## Measured fixes
 
+- **F3 and F4:** R3, R4 and R5 are fixtures of what the model found in each frame
+  (`tests/data/recordings/session-1-r*-tracking.json`), replayed through the game's own code by
+  `tests/RecordedTracking.test.ts`:
+  - R3's depth now lags the ground point by about 100 ms, where the old settings lagged 500 ms;
+  - R4's two jumps move the depth for one frame of 13;
+  - R5's player is followed as 3 people, one for each stretch the model saw them, where the old tracker made 34.
 - **F5:** R5's frames at 20.9–23 s, 36–38 s and 43–46 s are a fixture (`tests/data/recordings/session-1-r5-hands.json`)
   scored by `tests/RecordedHands.test.ts`. On the frames where BodyPix is confident of both wrists, each hand is on
   its own wrist in 44% of them by label, and 81% from the hand pixels' two clumps. The rest are mostly frames where
