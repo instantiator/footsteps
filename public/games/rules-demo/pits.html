@@ -3,6 +3,8 @@
   <div class="horizon-background demo-horizon"></div>
   <div class="floor-background demo-ground"></div>
   <div class="demo-pits-floor" data-floor-area="0 0 100 100"></div>
+  <!-- Where the shared reset's Start cell was: a soft glow on the floor, so the player sees where they set off from -->
+  <div id="start" class="pits-start" data-floor-area="0 80 20 100"></div>
   <div id="pit-1" class="pit" data-floor-area="0 60 70 80"></div>
   <div id="pit-2" class="pit" data-floor-area="30 24 100 44"></div>
   <!-- Standing in front of the door or behind it opens it, as does a hand or foot on it from close by; it comes first, so
@@ -14,6 +16,5 @@
        lean is a rotate on the inner one -->
   <div class="pit-sign" data-floor-x="3" data-floor-y="57"><div class="pit-sign-lean" style="rotate: -6deg"><div class="pit-sign-board">&#9760;</div></div></div>
   <div class="pit-sign" data-floor-x="97" data-floor-y="47"><div class="pit-sign-lean" style="rotate: 5deg"><div class="pit-sign-board">&#9760;</div></div></div>
-  <div id="start" class="demo-start">Start</div>
   <p id="pits-message" class="demo-score">Reach the door without falling into a pit.</p>
 </div>
