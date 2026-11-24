@@ -559,6 +559,13 @@ The video frame at `videoMs` is the picture the model was given to within about 
 picture most of the time, not always. The video has no seek index, so read its frames by playing it;
 `tests/browser/recordings.ts` has helpers to unzip a recording and read its frames.
 
+**Replaying:** `/replay` (<http://localhost:5173/replay>) opens a downloaded zip in the browser, without uploading it.
+It plays the camera's video with what the game saw drawn over it, frame by frame: each person's outline, tinted as in
+debug mode, their hands (yellow), feet (green) and head (red), and a label with their player number, role, state and
+floor position. **Previous frame** and **Next frame** step through the frames the game processed, and the details
+below list each one's people and the scenes showing. A recorded screen plays beside the camera, in step with it.
+Recordings made before scenes and states were recorded open too, without them.
+
 ## Where the code lives
 
 | Path                                                  | What it does                                                                                                                                              |

@@ -1,20 +1,7 @@
 import type { Page } from "@playwright/test";
-import { strFromU8, unzipSync } from "fflate";
-import { RECORDING_JSON, type Recording } from "../../src/debug/RecordingFormat";
+import type { UnzippedRecording } from "../../src/debug/Replay";
 
-/** A downloaded debug recording, unzipped: its `recording.json`, and every file by its zip path. */
-export interface UnzippedRecording {
-  /** The frames and what was recorded with. */
-  recording: Recording;
-  /** The video and masks, by zip path. */
-  files: Record<string, Uint8Array>;
-}
-
-/** Unzips a debug recording, as the HUD's Download button saves it. */
-export const readRecording = (zip: Uint8Array): UnzippedRecording => {
-  const files = unzipSync(zip);
-  return { recording: JSON.parse(strFromU8(files[RECORDING_JSON])), files };
-};
+export { readRecording, type UnzippedRecording } from "../../src/debug/Replay";
 
 /**
  * Plays a recording's video in the page, reading a strip of pixels from every frame as it plays. The video from

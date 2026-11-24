@@ -96,7 +96,7 @@ test("records the camera with each frame's masks and players, timed to the video
   expect(withinAFrame.length).toBeGreaterThanOrEqual(errors.length * 0.9);
 });
 
-test("records the game's screen beside the camera with recordingScreen on", async ({ page }) => {
+test("records the game's screen beside the camera with recordingScreen on, and replays both", async ({ page }) => {
   test.setTimeout(MODEL_TIMEOUT + 30_000);
   await openCameraGame(page, { query: "?debug=true&recordingScreen=true", photos: peoplePhotoUrls() });
   await expect.poll(() => page.evaluate(() => window.__cameraDraws), { timeout: MODEL_TIMEOUT }).toBeGreaterThan(2);
@@ -107,8 +107,16 @@ test("records the game's screen beside the camera with recordingScreen on", asyn
   await page.getByRole("button", { name: "Stop" }).click();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download" }).click();
-  const { recording, files } = readRecording(new Uint8Array(await readFile(await (await download).path())));
+  const zip = await (await download).path();
+  const { recording, files } = readRecording(new Uint8Array(await readFile(zip)));
 
   expect(recording.screen).toBe("screen.webm");
   expect(files["screen.webm"].length).toBeGreaterThan(1000);
+
+  // The replay page plays it back: both videos, and what the game saw in each frame
+  await page.goto("/replay");
+  await page.getByLabel("Recording:").setInputFiles(zip);
+  await expect(page.locator("video")).toHaveCount(2);
+  await page.getByRole("button", { name: "Next frame" }).click();
+  await expect(page.locator("#replay-frame")).toContainText(`Frame 1 of ${recording.frames.length}`);
 });
